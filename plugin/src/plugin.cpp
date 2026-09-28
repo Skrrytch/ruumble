@@ -122,6 +122,15 @@ ruumble::Config config;
 
 // ---------------------------------------------------------------- Pflicht-Exporte
 
+namespace {
+/** aus mumble_setMumbleInfo; Mumble ruft das als Erstes auf, noch vor mumble_init */
+std::string mumbleVersion;
+} // namespace
+
+void mumble_setMumbleInfo(mumble_version_t version, mumble_version_t, mumble_version_t) {
+	mumbleVersion = std::to_string(version.major) + "." + std::to_string(version.minor) + "." + std::to_string(version.patch);
+}
+
 mumble_error_t mumble_init(mumble_plugin_id_t id) {
 	ownId  = id;
 	config = ruumble::Config::load();
@@ -130,6 +139,7 @@ mumble_error_t mumble_init(mumble_plugin_id_t id) {
 
 	ruumble::Settings settings;
 	settings.pluginVersion = RUUMBLE_VERSION;
+	settings.mumbleVersion = mumbleVersion;
 	settings.autoOpen      = config.autoOpen;
 	settings.bridgeUrl     = config.bridgeUrl;
 	core = std::make_unique< ruumble::Core >(

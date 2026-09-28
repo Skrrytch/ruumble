@@ -135,6 +135,7 @@ struct Fixture {
 	explicit Fixture(std::optional< std::string > bridgeUrl = std::nullopt) {
 		Settings s;
 		s.pluginVersion  = "0.1.0";
+		s.mumbleVersion  = "1.5.735";
 		s.bridgeUrl      = bridgeUrl;
 		s.spacing        = 40ms;
 		s.confirmTimeout = 150ms;
@@ -195,6 +196,7 @@ TEST_CASE("Adresse aus der Root-Beschreibung, hello erst nach dem Verbindungsauf
 	CHECK(hello["session"] == 7);
 	CHECK(hello["certHash"] == HASH);
 	CHECK(hello["paired"] == false);
+	CHECK(hello["mumbleVersion"] == "1.5.735");
 }
 
 TEST_CASE("Kopplungslink nur einmal je Dienst öffnen") {

@@ -216,6 +216,8 @@ app.get("/healthz", async (_req, reply) => {
     lastPoll: lastPoll ? new Date(lastPoll).toISOString() : null,
     lastError,
     plugins: hub.pluginCount,
+    mumbleServer: hub.serverVersion,
+    clients: hub.clientVersions(),
     board: { usedMB: Math.round(store.usedBytes() / 1024 / 1024), quotaMB },
   });
 });

@@ -68,7 +68,9 @@ Vorlage: [`deploy/compose/ruumble.docker-compose.yml`](../deploy/compose/ruumble
    docker save ruumble:<version> | gzip | ssh <server> 'gunzip | docker load'
    ```
 2. **Compose-Datei** anpassen (Image-Tag, `PUBLIC_URL`, Port-Bindung an `<LAN-IP>`) und starten: `docker compose up -d`.
-3. **Prüfen:** `curl http://<LAN-IP>:8080/healthz` → `{"ice":"ok",…}`
+3. **Prüfen:** `curl http://<LAN-IP>:8080/healthz` → `{"ice":"ok",…}`. Dort stehen auch die Version des Mumble-Servers (`mumbleServer`) und die verbundenen Clients je Mumble- und Plugin-Version (`clients`, ab Plugin 0.4).
+
+Ist der Mumble-Server älter als 1.5, bricht der Dienst mit einer klaren Meldung ab („… braucht Mumble-Server ab 1.5 …“).
 
 Das Image enthält das Plugin (gebaut auf Debian 12, glibc 2.36, läuft damit auch auf älteren Distributionen). Nutzer laden es unter `http://<LAN-IP>:8080/download`.
 
