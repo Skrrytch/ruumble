@@ -1,5 +1,7 @@
 # Machbarkeitstest S1: Ice aus Node.js
 
+> Der Spike-Code wurde nach Abschluss entfernt (Git-Historie). Weiter genutzt werden nur Setup-Skript, Test-Bot und Client-Images, heute unter `tools/live-test/`.
+
 Datum: 28.09.2026 · Code: `spikes/s1-ice/` · Ergebnis: **bestanden**. Der Dienst wird in Node.js/TypeScript geschrieben, wie in ADR-0006 vorgesehen.
 
 ## Aufbau

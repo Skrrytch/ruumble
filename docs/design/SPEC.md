@@ -4,7 +4,7 @@
 
 Grafische Oberfläche für einen Mumble-Server, die den Kanalbaum als Bürogebäude darstellt. Nutzer sehen, wer wo sitzt, und wechseln den Kanal per Klick auf einen Raum.
 
-Visuelle Referenz: `prototype/index.html` (lauffähig, pixelgenau zum Design). Tokens: `tokens.css`.
+Visuelle Referenz: `prototype/index.html` (lauffähig, zum ursprünglichen Design). Kopfzeile und Raumbreiten haben sich seitdem geändert (Abschnitt 2, E31); der Layouttest vergleicht deshalb nur noch Lage und Höhe. Tokens: `tokens.css`.
 
 ---
 
@@ -93,7 +93,7 @@ type User = { session: number; name: string; channel: number; selfMute: boolean;
 type Snapshot = { server: { name: string; label: string; version: string }; self: { session: number }; channels: Channel[]; users: User[] };
 ```
 
-Die Ableitungen (Etagen, Räume, Belegung, Breiten) sind reine Funktionen. Sie sind im Prototyp unter „Ableitung Gebäude aus Kanalbaum“ zu finden und sollten 1:1 übernommen und unit-getestet werden.
+Die Ableitungen (Etagen, Räume, Belegung, Breiten) sind reine Funktionen. Sie stammen aus dem Prototyp („Ableitung Gebäude aus Kanalbaum“) und liegen heute in `web/src/lib/model/building.ts`; die Breiten folgen inzwischen dem Rang statt dem Namen (E31).
 
 ## 7. Barrierefreiheit
 
