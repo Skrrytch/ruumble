@@ -1,72 +1,52 @@
 # Ruumble
 
-Eine alternative Oberfläche für [Mumble](https://www.mumble.info/). Ruumble zeigt die Kanäle eines Mumble-Servers als **Bürogebäude**: Etagen, Flure und Büros, in denen die Personen sitzen. Ein Klick auf einen Raum wechselt den Kanal.
+Eine alternative Oberfläche für [Mumble](https://www.mumble.info/): Ruumble zeigt die Kanäle eines Mumble-Servers als **Bürogebäude** im Browser. Man sieht, wer wo sitzt, wechselt per Klick den Raum und heftet Notizen, Code, Bilder und Dateien an die Pinnwand des Raums. Gesprochen wird weiter über den normalen Mumble-Client.
 
-- Kanäle der 1. Ebene werden zu **Etagen**, der Etagenkanal selbst ist der **Flur**.
-- Kanäle der 2. Ebene werden zu **Räumen**.
-- Etagen mit tieferer Struktur oder mehr als 8 Räumen sind im Aufzug gesperrt.
-- Die Reihenfolge kommt aus dem Feld **Position** der Kanäle in Mumble; der erste Kanal ist das Erdgeschoss.
+## Anleitungen
 
-Außerdem:
-- **Anwesenheit:** Sprechanzeige, Stumm und Taub, „still“ und „abwesend“, Mitlauschen, Aufnahme, Avatare aus Mumble.
-- **Pinnwand** in jedem Raum: Text (Markdown), Quellcode mit Hervorhebung, Bilder mit Vollbild und Zoom, Dateien bis 10 MB. Wer im Raum ist, sieht und bearbeitet sie; die anderen Anwesenden bekommen einen Hinweis im Mumble-Protokoll.
+| Für wen | Anleitung |
+|---|---|
+| **Nutzer**: Plugin installieren, koppeln, bedienen | [docs/anleitung.md](docs/anleitung.md) |
+| **Betreiber** eines Mumble-Servers: Ruumble daneben einrichten | [docs/betrieb.md](docs/betrieb.md) |
+| **Entwickler**: bauen, testen, mitarbeiten | [docs/entwicklung.md](docs/entwicklung.md) |
 
-> **Status:** Version 0.6 (Dienst und Oberfläche), Plugin 0.3. Im Einsatz auf einem privaten Homeserver. Stand der Arbeitspakete: [docs/FEINPLANUNG.md](docs/FEINPLANUNG.md).
+![Ruumble: eine Etage mit Räumen, Aufzug und Pinnwand](docs/images/ruumble.png)
+
+## Was Ruumble kann
+
+- Kanäle der 1. Ebene werden zu **Etagen**, der Etagenkanal selbst ist der **Flur**, Kanäle der 2. Ebene sind **Räume**. Die Reihenfolge kommt aus dem Feld **Position** in Mumble; der erste Kanal ist das Erdgeschoss.
+- Etagen mit tieferer Struktur oder mehr als 8 Räumen sind im Aufzug gesperrt, verlinkte Kanäle werden ausgeblendet.
+- **Anwesenheit:** Sprechanzeige, stumm und taub, „still“ und „abwesend“, Mitlauschen, Aufnahme, Avatare aus Mumble.
+- **Pinnwand** in jedem Raum: Text (Markdown), Quellcode mit Hervorhebung, Bilder mit Vollbild und Zoom, Dateien bis 10 MB. Wer im Raum ist, sieht und bearbeitet sie; die anderen bekommen einen Hinweis im Mumble-Protokoll.
+
+**Voraussetzungen:** Mumble-Server ab 1.5 mit aktiviertem Ice, Mumble-Client ab 1.4 unter Linux. Details: [docs/betrieb.md](docs/betrieb.md#voraussetzungen).
+
+> **Status:** Version 0.6 (Dienst und Oberfläche), Plugin 0.3. Stand der Arbeitspakete: [docs/FEINPLANUNG.md](docs/FEINPLANUNG.md).
 
 ## Architektur
 
 ```
-Browser/PWA ──wss──▶ Ruumble-Dienst ──Ice (nur lesen)──▶ Mumble-Server
-                         ▲
-                         │ wss (ausgehend)
-                    Ruumble-Plugin ──Plugin-API──▶ Mumble-Client (Audio unverändert)
+Browser ──http(s)──▶ Ruumble-Dienst ──Ice (nur lesen)──▶ Mumble-Server
+                          ▲
+                          │ WebSocket (ausgehend)
+                     Ruumble-Plugin ──Plugin-API──▶ Mumble-Client (Audio unverändert)
 ```
 
 - **Mumble bleibt unverändert.** Ruumble nutzt den normalen Mumble-Client und das offizielle Server-Image.
-- **Plugin** (`plugin/`): Liefert die eigene Identität und das Sprechen, führt Kanalwechsel, Stumm und Taub im eigenen Client aus.
-- **Dienst** (`bridge/`): Liest Kanalbaum und Nutzerstatus per Ice **nur lesend**, liefert die Oberfläche aus und leitet Befehle an das Plugin weiter.
+- **Plugin** (`plugin/`): liefert die eigene Identität und das Sprechen, führt Kanalwechsel, Stumm und Taub im eigenen Client aus.
+- **Dienst** (`bridge/`): liest Kanalbaum und Nutzerstatus per Ice **nur lesend**, liefert die Oberfläche aus, leitet Befehle an das Plugin weiter und speichert die Pinnwand.
 - **Oberfläche** (`web/`): Svelte. Das Gebäude wird dort aus dem Kanalbaum abgeleitet.
 
-Die Begründungen stehen in den [Architekturentscheidungen](docs/decisions/README.md).
-
-## Betrieb und Installation
-
-1. **Dienst** als Docker-Container neben dem Mumble-Server, mit dem Ice-**Read**-Secret (nie dem Write-Secret). Vorlage und Ablauf: [deploy/homeserver/](deploy/homeserver/README.md).
-2. **Adresse bekanntgeben:** Eine Zeile in der Beschreibung des obersten Kanals, die auf `ruumble: <adresse>` endet, z. B. `ruumble: http://192.0.2.10:8080` (ADR-0010).
-3. **Plugin** für jeden Nutzer: `http://<dienst>/download` lädt `ruumble-<version>.mumble_plugin`; Doppelklick oder in Mumble unter Einstellungen → Plugins installieren. Beim ersten Verbinden öffnet das Plugin die Oberfläche mit einem Kopplungslink.
-
-## Entwickeln
-
-Voraussetzungen: Node 22 und corepack (`corepack enable`).
-
-```sh
-pnpm install
-pnpm -F @ruumble/web dev          # Oberfläche gegen den Mock: http://localhost:5173/?debug
-pnpm lint && pnpm test            # Typprüfung und Unit-Tests aller Pakete
-pnpm -F @ruumble/web e2e          # Browser-Tests inkl. Layoutvergleich mit dem Prototyp
-cmake -S plugin -B plugin/build && cmake --build plugin/build && (cd plugin/build && ctest)   # Plugin
-```
-
-Live-Tests gegen einen echten Mumble-Server mit headless Clients: [tools/live-test/](tools/live-test/README.md) und `web/playwright.live.config.ts`.
-
-URL-Parameter der Oberfläche, solange sie gegen den Mock läuft:
-- `?fixture=musterhaus|sonderfaelle|leerstand|nicht-gekoppelt`
-- `?debug` für das Debug-Panel
-- `?talking=0` schaltet die simulierten Sprechereignisse ab
-
-## Dokumentation
+## Weitere Dokumentation
 
 | Dokument | Inhalt |
 |---|---|
 | [docs/PLANUNG.md](docs/PLANUNG.md) | Ziele, Leitplanken, fachliche Regeln, Entscheidungen, offene Fragen |
 | [docs/FEINPLANUNG.md](docs/FEINPLANUNG.md) | Arbeitspakete mit Schritten und Abnahmekriterien |
-| [docs/analyse/mumble-schnittstellen.md](docs/analyse/mumble-schnittstellen.md) | Jeder genutzte Mumble-Aufruf, mit Beleg im Mumble-Code |
 | [docs/decisions/](docs/decisions/README.md) | Architekturentscheidungen (ADR) |
+| [docs/analyse/mumble-schnittstellen.md](docs/analyse/mumble-schnittstellen.md) | Jeder genutzte Mumble-Aufruf, mit Beleg im Mumble-Code |
 | [docs/design/](docs/design/README.md) | Designspezifikation, Referenzprototyp, Tokens |
-
-## Abhängigkeit zu Mumble
-
-Aus Mumble werden nur zwei Schnittstellendateien übernommen, unverändert und festgelegt auf ein Release: [third_party/mumble/](third_party/mumble/README.md).
+| [third_party/mumble/](third_party/mumble/README.md) | Die zwei übernommenen Mumble-Schnittstellendateien |
 
 ## Lizenz
 
