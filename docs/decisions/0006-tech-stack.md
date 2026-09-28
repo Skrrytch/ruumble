@@ -11,7 +11,7 @@ Status: angenommen für Svelte und Node.js, vorgeschlagen für den Rest (28.09.2
 | Dienst `bridge` | **Node.js LTS + TypeScript**, Ice for JavaScript 3.7 (`ice` von npm, Stubs mit `slice2js` aus `src/murmur/MumbleServer.ice` erzeugt), WebSocket mit `ws`, HTTP mit `fastify` | Entscheidung. Nachrichtentypen werden mit der Oberfläche geteilt. Polling ohne Callbacks reicht (ADR-0002). **Fallback:** Python, falls Machbarkeitstest S1 scheitert. |
 | Gemeinsame Typen `protocol` | TypeScript-Typen plus daraus erzeugtes JSON-Schema | Ein Paket für Oberfläche und Dienst. Das Plugin richtet sich nach dem JSON-Schema. |
 | Plugin `plugin` | **C++17**, eigenes CMake, Plugin-API **1.0.x**, WebSocket-Client **IXWebSocket** (BSD-3, per FetchContent) mit OpenSSL, JSON mit **nlohmann/json** | Kompatibel ab Mumble 1.4. Der Mumble-Header kommt als Include-Pfad `third_party/mumble/plugins` hinein. |
-| Workspace | pnpm-Workspace im Repo-Root (`web`, `bridge`, `protocol`) | Gemeinsame Abhängigkeiten, ein Befehl für den Build |
+| Workspace | pnpm-Workspace im Repo-Root (`web`, `bridge`, `protocol`), **pnpm 11** über corepack | Gemeinsame Abhängigkeiten, ein Befehl für den Build. pnpm 12 läuft nicht mit dem corepack 0.32 aus Node 22. |
 
 ## Konsequenzen
 - Für Oberfläche, Dienst und Typen gibt es eine gemeinsame Sprache. C++ kommt nur im Plugin vor, und das bleibt klein.
