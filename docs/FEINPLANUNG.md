@@ -412,6 +412,14 @@ Schritte:
 Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 
 ### AP11.1 – Speicher und Schnittstelle (Dienst, Protokoll)
+
+**✔ Erledigt am 28.09.2026** (Branch `ap11-pinnwand`):
+- `bridge/src/board/`: `store.ts` (SQLite im WAL-Modus, Migrationen, Anhänge nach SHA-256, Aufbewahrung, gelöschte Kanäle, verwaiste Anhänge, Kontingent, Sicherung), `routes.ts` (REST mit Rechteprüfung, Rate-Limit), `media.ts` (Bildtyp und Bildmaße aus dem Dateikopf, Dateinamen bereinigen)
+- Hub: `whoIs`, `isBoardRoom`, `boardChanged`, `boards` im Snapshot
+- CSP und `nosniff` für die Oberfläche. `/healthz` meldet den Füllstand. `node dist/main.mjs backup <ziel>`.
+- 16 neue Tests (42 im Dienst insgesamt). Live-Test und Browser-Tests laufen mit der CSP unverändert grün.
+- `better-sqlite3` bleibt außerhalb des esbuild-Bündels (natives Modul). Im Image läuft es mit einer fertig gebauten Binärdatei.
+
 1. **Protokoll** (`protocol`):
    - `Post`: `id`, `channelId`, `kind: text|code|image|file`, `text`, `language?`, `attachment?`, `authorName`, `mine`, `createdAt`, `updatedAt`, `updatedByName?`
    - `Attachment`: `id` (Hash), `name`, `mime`, `size`, bei Bildern `width`/`height`
@@ -441,7 +449,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 1. **Adapter:** Methoden für die Pinnwand (laden, anheften, bearbeiten, löschen). Der Mock hält die Beiträge im Speicher und liefert Beispielbeiträge in den Fixtures.
 2. **Seitenleiste** `Board.svelte`:
    - Rechts im Grundriss als eigener „Raum“ mit Wand, wie im Entwurf.
-   - Kopf mit „Pinnwand“, Raumname und „N Beiträge · sichtbar für alle im Raum“, dazu Einklappen per `›`. Der Zustand wird im Browser gemerkt.
+   - Kopf mit „Pinnwand“, Raumname und „N Beiträge · sichtbar für alle im Raum“, dazu Ausblenden per `›`. Zu Beginn ist sie **ausgeblendet**, eingeblendet wird sie über die Pinnwand-Grafik im eigenen Raum (AP11.4). Bis dahin dient in AP11.2 ein vorläufiger Schalter im Kopf.
    - Filter: Alle, Text, Code, Bilder, Dateien.
    - Außerhalb eines Raums (Eingang, Flur, gesperrte Etage) steht der Hinweis „Pinnwände gibt es nur in Räumen“.
 3. **Karten:**
@@ -464,7 +472,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 4. **Tests:** Upload-Grenzen, Bildgrößen, E2E (Einfügen, Ziehen, Vollbild)
 
 ### AP11.4 – Pinnwand im Grundriss, Hinweis in Mumble, Betrieb
-1. **Grafik im Raum: Variante B mit zwei Zetteln** (Entscheidung 28.09.2026), rechtsbündig oben, feste Größe, ohne Mengenangabe. Sie erscheint nur, wenn im Raum etwas hängt. Klick auf die Grafik im eigenen Raum klappt die Seitenleiste auf.
+1. **Grafik im Raum: Variante B mit zwei Zetteln** (Entscheidung 28.09.2026), rechtsbündig oben, feste Größe, ohne Mengenangabe. Sie erscheint nur, wenn im Raum etwas hängt. Im eigenen Raum ist sie immer sichtbar, ohne Beiträge blass und gestrichelt. **Ein Klick darauf blendet die Seitenleiste ein oder aus, zu Beginn ist sie ausgeblendet** (Entscheidung 28.09.2026).
 2. **Plugin:** Befehl `notify{text}` → `log`. Der Dienst schickt ihn beim Anheften an die Anwesenden außer dem Autor.
 3. **Live-Test:** Zwei Clients im selben Raum, einer heftet an, der andere sieht den Beitrag sofort. Das Mumble-Protokoll zeigt den Hinweis, ein dritter Nutzer außerhalb des Raums bekommt `403`.
 4. **Betrieb:** Grenzwerte und Sicherung in `deploy/homeserver`, Füllstand in `/healthz`, Bereinigung der Daten beim Löschen

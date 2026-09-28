@@ -22,7 +22,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/Dockerfile
-    image: ruumble:0.3.0
+    image: ruumble:0.4.0-dev
     depends_on: [mumble]
     environment:
       ICE_HOST: mumble
