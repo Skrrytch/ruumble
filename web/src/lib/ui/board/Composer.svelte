@@ -56,7 +56,7 @@
     {#if codeMode}
       <select bind:value={language} aria-label="Sprache"><option value="">automatisch</option>{#each CODE_LANGUAGES as l (l)}<option value={l}>{l}</option>{/each}</select>
     {:else}
-      <span class="hint">Markdown · Strg+Enter sendet</span>
+      <span class="hint">Markdown</span>
     {/if}
     <button type="submit" class="pin" aria-label="Senden" title="Senden (Strg+Enter)" disabled={busy || !text.trim()}><SendHorizontal size={20} /></button>
   </div>
