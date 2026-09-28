@@ -1,0 +1,17 @@
+{
+  "name": "spike-s1-ice",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "gen": "node src/gen-ice.cjs && node src/fetch-proto.cjs",
+    "setup": "node src/setup.cjs",
+    "s1": "node src/s1.cjs"
+  },
+  "dependencies": {
+    "ice": "3.7.110",
+    "protobufjs": "^7.4.0"
+  },
+  "devDependencies": {
+    "slice2js": "3.7.110"
+  }
+}

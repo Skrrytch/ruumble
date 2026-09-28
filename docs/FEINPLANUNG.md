@@ -74,7 +74,7 @@ Die UI-Stränge AP2 bis AP4 hängen nicht von Mumble ab und können **parallel**
 
 Jeder Test ist zeitlich begrenzt auf höchstens 1 Tag. Das Ergebnis ist eine kurze Notiz unter `docs/analyse/spike-<n>.md`, der Code liegt in `spikes/` und wird danach verworfen oder übernommen.
 
-### S1 – Ice aus Node.js (prüft P1–P3)
+### S1 – Ice aus Node.js (prüft P1–P3, P8) · ✔ bestanden am 28.09.2026, siehe [analyse/spike-s1.md](analyse/spike-s1.md)
 1. `docker compose` mit `mumblevoip/mumble-server` aufsetzen. Ice aktivieren und beide Secrets setzen. Prüfen, ob das Image mit Ice gebaut ist, wie `ice=` gesetzt wird und welches Image-Tag zu v1.6.870 passt (P8).
 2. Ice for JavaScript 3.7 unter Node LTS installieren und aus `third_party/mumble/src/murmur/MumbleServer.ice` mit `slice2js` Stubs erzeugen. Die Stubs werden im Build erzeugt und nicht eingecheckt.
 3. Mit dem Read-Secret aufrufen: `getVersion`, `getChannels`, `getUsers`, `getListeningUsers`, `hasPermission`, `getCertificateList`, `getConf("registername")`.
@@ -171,7 +171,7 @@ Reine Funktionen ohne Svelte und ohne DOM. Die Testabdeckung liegt bei mindesten
    - `talking` nur an die eigenen Oberflächen weiterleiten (ADR-0005)
    - Befehle prüfen: Kanal existiert, `canEnter`, Rate-Limit von 2 pro Sekunde
 7. **HTTP:** Statische Oberfläche, `/download` (Plugin-Bundle), `/healthz`
-8. **Konfiguration** per Umgebungsvariablen: `ICE_HOST`, `ICE_PORT`, `ICE_SECRET_READ`, `SERVER_ID`, `PUBLIC_URL`, `TRUST_PROXY`
+8. **Konfiguration** per Umgebungsvariablen: `ICE_HOST`, `ICE_PORT`, `ICE_SECRET_READ`, optional `SERVER_ID` (Standard: erster Server aus `getBootedServers`), `PUBLIC_URL`, `TRUST_PROXY`
 9. **Tests:** Unit-Tests für Differenzbildung, Prüfung und Weiterleitung. Integrationstest gegen einen Mumble-Server im Container.
 
 **Fertig, wenn:** Der Dienst zeigt gegen einen echten Server den Live-Zustand in einer WebSocket-Konsole, und alle Regeln aus ADR-0002 bis ADR-0005 sind getestet.
