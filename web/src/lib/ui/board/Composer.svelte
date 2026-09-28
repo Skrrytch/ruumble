@@ -67,7 +67,7 @@
       return;
     }
     const pasted = e.clipboardData?.getData("text/plain") ?? "";
-    // Einfügemodus für Quellcode: automatisch vorschlagen (ideen.md, A)
+    // Einfügemodus für Quellcode: automatisch vorschlagen
     if (!codeMode && looksLikeCode(pasted)) suggestCode = true;
   }
 

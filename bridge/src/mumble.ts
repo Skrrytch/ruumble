@@ -83,7 +83,7 @@ export class IceMumbleSource implements MumbleSource {
       const endpoint = `tcp -h ${opts.host} -p ${opts.port}`;
       const meta = await MumbleServer.MetaPrx.checkedCast(communicator.stringToProxy(`Meta:${endpoint}`));
       // bis Mumble 1.4 hieß die Schnittstelle „Murmur“: dann gibt es kein MumbleServer::Meta
-      if (!meta) throw new Error(`Unter ${endpoint} antwortet kein MumbleServer-Meta. Ruumble braucht Mumble-Server ab 1.5 (bis 1.4 hieß die Ice-Schnittstelle „Murmur“).`);
+      if (!meta) throw new Error(`No MumbleServer Meta object at ${endpoint}. Ruumble needs Mumble server 1.5 or later (up to 1.4 the Ice interface was called "Murmur").`);
       let id = opts.serverId;
       if (id === undefined) {
         const booted = await meta.getBootedServers();

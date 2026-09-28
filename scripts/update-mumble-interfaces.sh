@@ -33,4 +33,4 @@ for f in "${files[@]}"; do
 done
 echo "$tag" > "$dir/VERSION"
 (cd "$dir" && sha256sum plugins/MumblePlugin.h src/murmur/MumbleServer.ice > SHA256SUMS)
-echo "Übernommen: $tag. Bitte docs/analyse/mumble-schnittstellen.md gegen die Unterschiede prüfen."
+echo "Updated to $tag. Check docs/mumble-interfaces.md against the differences."
