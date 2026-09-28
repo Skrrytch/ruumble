@@ -205,6 +205,9 @@ Die Verzeichnisse `protocol/` bis `deploy/` entstehen in den Arbeitspaketen der 
 | E22 | Repository | eigenständig als `Skrrytch/ruumble` statt Fork, Name des Plugins „Ruumble“ (ADR-0009) |
 | E23 | Lizenz | BSD-3-Clause |
 | E24 | Veröffentlichung | öffentliches Repo, Designübergabe neutralisiert (ohne Firmen-Tokens, interne Namen und Personen) |
+| E27 | Mitlauschen (O5) | Ohr-Symbol am Raum, Tooltip „N Personen hören mit“, keine Namen |
+| E28 | Server-Mute (O6) | dunkles Abzeichen mit Mikrofon-aus. Self-Mute hell mit Mikrofon-aus, Self-Deaf hell mit Kopfhörer-aus. Jedes Abzeichen hat einen Tooltip. |
+| E29 | Einstellungen (O7) | Knopf sichtbar, aber deaktiviert („noch ohne Funktion“) |
 | E26 | GPL durch Ice (O13) | akzeptiert: Der Code bleibt BSD-3, ein veröffentlichtes Image des Dienstes wird als GPL-2.0-Gesamtwerk gekennzeichnet (ADR-0006). |
 | E25 | Deployment | Homeserver des Auftraggebers (bestehendes Docker-Setup mit Mumble), Tests lokal (ADR-0008) |
 
@@ -215,9 +218,6 @@ Die Verzeichnisse `protocol/` bis `deploy/` entstehen in den Arbeitspaketen der 
 - **O2 Verlinkter Etagenkanal:** Ist ein Kanal der 1. Ebene verlinkt, verschwindet dann die **ganze Etage** samt ihren Räumen? (Vorschlag: ja, weil ohne Etagenkanal der Flur fehlt.)
 - **O3 Unterkanäle ausgeblendeter Räume:** Hat ein verlinkter (also ausgeblendeter) Raum Unterkanäle, sperrt das die Etage trotzdem (L4)? (Vorschlag: nein. Was verschwunden ist, zählt nicht mehr.)
 - **O4 Nutzer in ausgeblendeten Kanälen:** Werden sie bei „N online“ mitgezählt? Und was sieht der eigene Nutzer, wenn er selbst in einem verlinkten Kanal ist? (Vorschlag: mitzählen, damit die Gesamtzahl stimmt, und für den eigenen Nutzer denselben Hinweis zeigen wie bei gesperrten Etagen: „Du bist in einem Bereich, der hier nicht darstellbar ist“.)
-- **O5 Mitlauschen:** Zeigt das Symbol nur, *dass* jemand mitlauscht, oder auch *wer* (z. B. als Tooltip oder als halbtransparenter Avatar)? Darf der eigene Nutzer über Ruumble selbst mitlauschen?
-- **O6 Server-Mute/Unterdrückt:** Die Symbolik muss noch spezifiziert werden.
-- **O7 Einstellungen:** Den Knopf ausblenden, bis es eine Funktion gibt, oder deaktiviert anzeigen?
 - **O10 Domain und Zertifikat** für den Dienst im internen Netz: interne CA oder Let's Encrypt über DNS-Challenge?
 
 

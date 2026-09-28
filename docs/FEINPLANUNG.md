@@ -164,9 +164,9 @@ Reine Funktionen ohne Svelte und ohne DOM. Die Testabdeckung liegt bei mindesten
   - Bewusste Abweichung: Die Etagentasten sind kompakter (48 statt 52 px, Abstand 6 statt 10 px), damit 5 Etagen und der Eingang Platz haben.
   - Außerdem entfällt das Label „primary“ (E9).
 - 14 Playwright-Tests, die CI führt sie mit aus (Job `e2e`)
-- Vorläufige Umsetzung offener Fragen (bitte bestätigen oder ändern):
+- Offene Fragen, am 28.09.2026 vom Auftraggeber bestätigt (E27–E29):
   - **O5:** Ohr-Symbol am Raum, Tooltip „N Personen hören mit“, keine Namen
-  - **O6:** Server-Mute, Server-Deaf und Unterdrückt als dunkles Abzeichen mit Mikrofon-aus. Self-Mute ist hell, Self-Deaf zeigt einen Kopfhörer-aus.
+  - **O6:** Server-Mute, Server-Deaf und Unterdrückt als dunkles Abzeichen mit Mikrofon-aus. Self-Mute ist hell, Self-Deaf zeigt einen Kopfhörer-aus. Jedes Abzeichen hat einen eigenen Tooltip.
   - **O7:** Der Einstellungsknopf ist sichtbar, aber deaktiviert („noch ohne Funktion“).
 - Nicht umgesetzt: eine eigene Darstellung für kleine Fenster. Die Mindesthöhe ist 720 px, die Breite bis 1440 px flexibel.
 
