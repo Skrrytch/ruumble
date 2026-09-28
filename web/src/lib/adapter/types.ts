@@ -24,4 +24,6 @@ export interface MumbleAdapter {
   stop(): void;
   /** Führt einen Befehl im eigenen Mumble-Client aus. Das Ergebnis kommt erst nach Bestätigung (ADR-0003). */
   command(body: CommandBody): Promise<CommandResult>;
+  /** optional: eigene Adresse für Avatarbilder (Mock), sonst /avatar/<id>?v=<version> */
+  avatarUrl?(userId: number, version: string): string;
 }

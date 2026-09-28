@@ -5,6 +5,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { loadBot, registerUser, serverVersion, solidPng, unregisterUser } from "./mumble-admin.ts";
 
 const root = new URL("../../", import.meta.url).pathname;
 /** `bridgeUrl = ""`: ohne feste Adresse, das Plugin liest sie aus der Root-Beschreibung (ADR-0010) */
@@ -42,6 +43,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   });
 
   test.afterAll(async () => {
+    await unregisterUser("Robo").catch(() => {});
     stopClient("Anna");
     try { stopClient("Ben"); } catch { /* nicht gestartet */ }
   });
@@ -113,6 +115,34 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
       { polling: 50, timeout: 10_000 },
     );
     await ben.close();
+  });
+
+  test("Avatar aus Mumble erscheint (AP9)", async () => {
+    const [major, minor] = await serverVersion();
+    test.skip(major > 1 || minor >= 6, "Mumble ≥ 1.6: Ice getTexture wirft für registrierte Nutzer (Fehler in Mumble); Ruumble zeigt Initialen");
+    // registrierter Test-Bot setzt seinen Avatar selbst (so wie ein Mumble-Client über „Avatar ändern“)
+    const { Bot } = loadBot();
+    const first = new Bot("Robo");
+    await first.connect();
+    const userId = await registerUser("Robo", first.identity.sha1);
+    first.close();
+    await new Promise((r) => setTimeout(r, 500));
+    const robo = new Bot("Robo"); // gleiches Zertifikat → jetzt registriert
+    await robo.connect();
+    robo.send("UserState", { session: robo.session, texture: solidPng(64, [230, 120, 20]) });
+    try {
+      const img = page.getByRole("region", { name: "Eingang" }).locator("img");
+      await expect(img).toBeVisible({ timeout: 20_000 }); // Poll 1 s + Avatar-Abruf
+      expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(64);
+      const res = await page.request.get((await img.getAttribute("src")) as string);
+      expect(res.headers()["content-type"]).toBe("image/png");
+      // ohne Kopplung kein Bild
+      const anon = await page.context().browser()!.newContext();
+      expect((await anon.request.get(`http://127.0.0.1:8080/avatar/${userId}`)).status()).toBe(401);
+      await anon.close();
+    } finally {
+      robo.close();
+    }
   });
 
   test("ohne Kopplung: Hinweis statt Gebäude", async ({ browser }) => {

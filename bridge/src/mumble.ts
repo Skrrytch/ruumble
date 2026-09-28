@@ -26,6 +26,8 @@ export interface MumbleSource {
   canEnter(session: number, channelIds: number[]): Promise<Record<string, boolean>>;
   /** SHA1 hex von certs[0], `null` ohne Zertifikat oder bei unbekannter Session */
   certHash(session: number): Promise<string | null>;
+  /** Avatarbild eines registrierten Nutzers (Ice getTexture), `null` ohne Bild (AP9) */
+  texture(userId: number): Promise<Uint8Array | null>;
   close(): Promise<void>;
 }
 
@@ -111,6 +113,10 @@ export class IceMumbleSource implements MumbleSource {
         mute: u.mute,
         deaf: u.deaf,
         suppress: u.suppress,
+        userId: u.userid >= 0 ? u.userid : null,
+        avatar: null, // setzt der Hub aus dem Avatar-Zwischenspeicher
+        idleMinutes: Math.max(0, Math.floor(u.idlesecs / 60)), // volle Minuten: Snapshot ändert sich höchstens minütlich
+        recording: u.recording,
         address: formatAddress(u.address),
       })),
       uptime,
@@ -151,6 +157,15 @@ export class IceMumbleSource implements MumbleSource {
       const certs = await this.server.getCertificateList(session);
       if (!certs.length) return null;
       return createHash("sha1").update(Buffer.from(certs[0])).digest("hex");
+    } catch {
+      return null;
+    }
+  }
+
+  async texture(userId: number): Promise<Uint8Array | null> {
+    try {
+      const tex = await this.server.getTexture(userId);
+      return tex && tex.length > 0 ? Uint8Array.from(tex) : null;
     } catch {
       return null;
     }

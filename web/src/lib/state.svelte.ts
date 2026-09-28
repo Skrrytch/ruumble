@@ -22,7 +22,11 @@ export class RuumbleState {
   /** angezeigte Etage; `null` = eigene bzw. erste darstellbare */
   private viewFloorId = $state<number | null>(null);
 
-  building: Building | null = $derived(this.snapshot ? buildBuilding(this.snapshot) : null);
+  building: Building | null = $derived.by(() => {
+    if (!this.snapshot) return null;
+    const custom = this.adapter.avatarUrl?.bind(this.adapter); // Mock: eigene Bilder, sonst /avatar/<id>
+    return buildBuilding(this.snapshot, custom ? { avatarUrl: custom } : {});
+  });
 
   /** angezeigte Etage */
   floor: Floor | null = $derived.by(() => {

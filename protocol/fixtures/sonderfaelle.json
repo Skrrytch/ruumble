@@ -299,7 +299,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": 2,
+      "avatar": null,
+      "idleMinutes": 20,
+      "recording": false
     },
     {
       "session": 2,
@@ -309,7 +313,11 @@
       "selfDeaf": true,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": 3,
+      "avatar": null,
+      "idleMinutes": 12,
+      "recording": false
     },
     {
       "session": 3,
@@ -319,7 +327,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": true
     },
     {
       "session": 4,
@@ -329,7 +341,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": 1,
+      "avatar": "a1b2c3d4e5f60718",
+      "idleMinutes": 0,
+      "recording": false
     },
     {
       "session": 5,
@@ -339,7 +355,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
     },
     {
       "session": 6,
@@ -349,7 +369,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
     },
     {
       "session": 7,
@@ -359,7 +383,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
     },
     {
       "session": 8,
@@ -369,7 +397,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 40,
+      "recording": false
     },
     {
       "session": 9,
@@ -379,7 +411,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
     },
     {
       "session": 10,
@@ -389,7 +425,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
     },
     {
       "session": 11,
@@ -399,7 +439,11 @@
       "selfDeaf": false,
       "mute": true,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
     },
     {
       "session": 12,
@@ -409,7 +453,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": true
+      "suppress": true,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
     },
     {
       "session": 13,
@@ -419,7 +467,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
     }
   ],
   "listeners": {
