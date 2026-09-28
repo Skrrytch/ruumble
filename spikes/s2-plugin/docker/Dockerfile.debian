@@ -1,0 +1,9 @@
+# Mumble-Client (Distro-Paket) headless: Xvfb als Display, PulseAudio mit Null-Sink.
+FROM debian:trixie
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      mumble xvfb xauth pulseaudio dbus-x11 sqlite3 x11-apps imagemagick xdotool ca-certificates procps openssl \
+    && rm -rf /var/lib/apt/lists/*
+RUN useradd -m tester
+USER tester
+WORKDIR /home/tester

@@ -205,6 +205,7 @@ Die Verzeichnisse `protocol/` bis `deploy/` entstehen in den Arbeitspaketen der 
 | E22 | Repository | eigenständig als `Skrrytch/ruumble` statt Fork, Name des Plugins „Ruumble“ (ADR-0009) |
 | E23 | Lizenz | BSD-3-Clause |
 | E24 | Veröffentlichung | öffentliches Repo, Designübergabe neutralisiert (ohne Firmen-Tokens, interne Namen und Personen) |
+| E26 | GPL durch Ice (O13) | akzeptiert: Der Code bleibt BSD-3, ein veröffentlichtes Image des Dienstes wird als GPL-2.0-Gesamtwerk gekennzeichnet (ADR-0006). |
 | E25 | Deployment | Homeserver des Auftraggebers (bestehendes Docker-Setup mit Mumble), Tests lokal (ADR-0008) |
 
 ## 9. Offene Fragen
@@ -217,7 +218,6 @@ Die Verzeichnisse `protocol/` bis `deploy/` entstehen in den Arbeitspaketen der 
 - **O5 Mitlauschen:** Zeigt das Symbol nur, *dass* jemand mitlauscht, oder auch *wer* (z. B. als Tooltip oder als halbtransparenter Avatar)? Darf der eigene Nutzer über Ruumble selbst mitlauschen?
 - **O6 Server-Mute/Unterdrückt:** Die Symbolik muss noch spezifiziert werden.
 - **O7 Einstellungen:** Den Knopf ausblenden, bis es eine Funktion gibt, oder deaktiviert anzeigen?
-- **O13 GPL durch Ice:** Die Ice-Bibliothek für den Dienst steht unter GPL-2.0. Für Ice gibt es keine Alternative, auch die Python-Pakete sind GPL. Vorschlag: akzeptieren. Der Code bleibt BSD-3, und ein veröffentlichtes Docker-Image des Dienstes wird als GPL-2.0-Gesamtwerk gekennzeichnet.
 - **O10 Domain und Zertifikat** für den Dienst im internen Netz: interne CA oder Let's Encrypt über DNS-Challenge?
 
 
