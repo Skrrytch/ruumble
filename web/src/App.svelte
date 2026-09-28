@@ -110,10 +110,10 @@
   }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-sky); box-shadow: 0 0 0 3px rgb(255 255 255 / 0.7); }
 
-  /* Etage mit 1–2 Räumen: Grundriss und Pinnwand teilen sich die Breite (SPEC 2) */
+  /* Etage mit 1–2 Räumen: Grundriss und Pinnwand teilen sich die Breite */
   .plan.few :global(.floorplan), .plan.few :global(.board) { flex: 1 1 0; width: auto; min-width: 340px; }
 
-  /* Grundriss: Wände = 4 px Dunkelblau als Abstand (SPEC 2) */
+  /* Grundriss: Wände = 4 px Dunkelblau als Abstand */
   .plan {
     flex: 1 1 auto; min-height: 520px; padding: var(--wall); background: var(--color-navy);
     display: flex; gap: var(--wall);

@@ -23,12 +23,12 @@ jobs:
           set -euo pipefail
           current="$(cat third_party/mumble/VERSION)"
           latest="$(gh api repos/mumble-voip/mumble/releases/latest --jq .tag_name)"
-          echo "aktuell: $current, neuestes Release: $latest"
+          echo "current: $current, latest release: $latest"
           if [[ "$latest" == "$current" ]]; then exit 0; fi
 
-          title="Mumble $latest verfügbar (Ruumble nutzt $current)"
+          title="Mumble $latest available (Ruumble uses $current)"
           if gh issue list --state open --search "\"$title\" in:title" --json number --jq 'length' | grep -qv '^0$'; then
-            echo "Issue existiert bereits."; exit 0
+            echo "Issue already exists."; exit 0
           fi
 
           cp -r third_party/mumble /tmp/before
@@ -36,19 +36,19 @@ jobs:
           diff -ru --exclude=VERSION --exclude=SHA256SUMS --exclude=README.md /tmp/before third_party/mumble > /tmp/interfaces.diff || true
 
           {
-            echo "Es gibt ein neues Mumble-Release: **$latest** (bisher: $current)."
+            echo "A new Mumble release is available: **$latest** (Ruumble uses $current)."
             echo
-            echo "Übernahme: \`scripts/update-mumble-interfaces.sh $latest\`, danach \`docs/analyse/mumble-schnittstellen.md\` gegen die Änderungen prüfen."
+            echo "To adopt it: \`scripts/update-mumble-interfaces.sh $latest\`, then check \`docs/mumble-interfaces.md\` against the changes. The live tests were started for this release (workflow live.yml)."
             echo
             if [[ -s /tmp/interfaces.diff ]]; then
-              echo "<details><summary>Änderungen an den Schnittstellendateien</summary>"
+              echo "<details><summary>Changes to the interface files</summary>"
               echo
               echo '```diff'
               head -c 60000 /tmp/interfaces.diff
               echo '```'
               echo "</details>"
             else
-              echo "Die Schnittstellendateien sind unverändert."
+              echo "The interface files are unchanged."
             fi
           } > /tmp/body.md
           gh issue create --title "$title" --body-file /tmp/body.md
