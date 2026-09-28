@@ -1,14 +1,14 @@
 <script lang="ts">
   import { renderCode } from "../../board/render.ts";
 
-  let { code, language }: { code: string; language?: string } = $props();
+  let { code, language, numbers = true }: { code: string; language?: string; numbers?: boolean } = $props();
   const rendered = $derived(renderCode(code, language));
   const lines = $derived(code.split(/\r?\n/).length);
 </script>
 
 <!-- Zeilennummern als eigene Spalte: highlight.js-Spans können über Zeilen reichen -->
 <div class="code">
-  <pre class="gutter" aria-hidden="true">{Array.from({ length: lines }, (_, i) => i + 1).join("\n")}</pre>
+  {#if numbers}<pre class="gutter" aria-hidden="true">{Array.from({ length: lines }, (_, i) => i + 1).join("\n")}</pre>{/if}
   <!-- von DOMPurify bereinigt (render.ts) -->
   <pre class="hljs"><code>{@html rendered.html}</code></pre>
 </div>

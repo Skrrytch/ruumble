@@ -38,6 +38,15 @@ test.describe("Pinnwand (AP11.2)", () => {
     await expect(notes.getByText("zuletzt bearbeitet von Anna")).toBeVisible();
   });
 
+  test("Code: Vorschau ohne Zeilennummern, Popup mit", async ({ page }) => {
+    await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
+    const code = page.getByRole("complementary", { name: "Pinnwand" }).getByRole("article", { name: "Beitrag von Ben" });
+    await expect(code.locator(".hljs")).toBeVisible();
+    await expect(code.locator(".gutter")).toHaveCount(0);
+    await code.getByRole("button", { name: "Öffnen · bearbeiten" }).click();
+    await expect(page.getByRole("dialog").locator(".gutter")).toBeVisible();
+  });
+
   test("anheften mit Strg+Enter, filtern, löschen", async ({ page }) => {
     await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
     const board = page.getByRole("complementary", { name: "Pinnwand" });

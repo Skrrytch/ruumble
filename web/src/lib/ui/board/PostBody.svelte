@@ -3,12 +3,13 @@
   import { renderMarkdown } from "../../board/render.ts";
   import CodeBlock from "./CodeBlock.svelte";
 
-  let { post }: { post: Post } = $props();
+  /** `numbers`: Zeilennummern bei Code (nur im Popup, nicht in der Vorschau auf der Karte) */
+  let { post, numbers = false }: { post: Post; numbers?: boolean } = $props();
   const html = $derived(post.kind === "text" ? renderMarkdown(post.text) : "");
 </script>
 
 {#if post.kind === "code"}
-  <CodeBlock code={post.text} language={post.language} />
+  <CodeBlock code={post.text} language={post.language} {numbers} />
 {:else if post.kind === "text"}
   <!-- von markdown-it (ohne HTML) erzeugt und mit DOMPurify bereinigt (render.ts) -->
   <div class="md">{@html html}</div>

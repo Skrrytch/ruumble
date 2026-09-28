@@ -458,7 +458,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
    - Avatar, Name, relative Zeit („Gerade eben“), Typ
    - Inhalt **gekürzt auf 8 Zeilen**
    - „Öffnen · bearbeiten“ und „Kopieren“, dazu „zuletzt bearbeitet von …“
-4. **Darstellung:** Markdown mit markdown-it (`html: false`) plus DOMPurify, Code mit highlight.js (Sprache automatisch erkannt oder wählbar), Zeilennummern, Kopieren.
+4. **Darstellung:** Markdown mit markdown-it (`html: false`) plus DOMPurify, Code mit highlight.js (Sprache automatisch erkannt oder wählbar), Zeilennummern nur im Popup (nicht in der Vorschau), Kopieren.
 5. **Popup „Öffnen“:** voller Inhalt, bearbeiten (alle Anwesenden), kopieren, löschen (Autor oder Admin).
 6. **Eingabe:**
    - Textfeld „Etwas an die Pinnwand heften …“ mit Markdown
