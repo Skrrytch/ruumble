@@ -10,7 +10,7 @@ Status: angenommen für Docker, vorgeschlagen für den Rest (28.09.2026)
    - `proxy`: Auf dem Homeserver ist das der vorhandene **Nginx Proxy Manager** (statt Caddy, Befund vom 28.09.2026). Er übernimmt HTTPS (Pflicht für eine PWA) und leitet `/` sowie `/ws/*` (WebSocket-Unterstützung aktivieren) an `ruumble:8080` weiter.
 2. **Secrets:** `icesecretread` und `icesecretwrite` bekommen unterschiedliche Zufallswerte und liegen in einer `.env`-Datei außerhalb des Repositorys. `ruumble` erhält nur das Read-Secret.
 3. **Erreichbarkeit:** Der Dienst ist nur im internen Netz oder VPN erreichbar, nicht aus dem Internet (ADR-0004).
-4. **Plugin-Verteilung:** Das Bundle `ruumble-<version>.mumble_plugin` (Linux x64) wird vom Dienst unter `/download` angeboten. Die Installationsanleitung beschreibt: Installieren, dann **Aktivieren** unter Einstellungen → Plugins.
+4. **Plugin-Verteilung:** Das Bundle `ruumble-<version>.mumble_plugin` (Linux x64) wird im Image auf Debian 12 gebaut (glibc 2.36, läuft auch auf älteren Distributionen) und vom Dienst unter `/download` angeboten. Die Oberfläche zeigt auf ihren Hinweisseiten den Download-Link und eine Kurzanleitung: Installieren, dann **Aktivieren** unter Einstellungen → Plugins.
 5. **Plugin-Konfiguration:** Die Adresse des Dienstes kommt aus der Beschreibung des Root-Kanals (ADR-0010) und lässt sich in `~/.config/ruumble/plugin.json` (`bridgeUrl`) übersteuern.
 6. **Gesundheit:** `GET /healthz` meldet, ob Ice erreichbar ist, wann zuletzt erfolgreich abgefragt wurde und wie viele Plugins verbunden sind.
 

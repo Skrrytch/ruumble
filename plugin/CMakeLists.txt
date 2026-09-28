@@ -1,7 +1,7 @@
 # Ruumble-Plugin für Mumble (AP6). Eigenes CMake-Projekt; Mumble selbst wird nicht gebaut.
 # Der Mumble-Header kommt unverändert aus third_party/mumble (ADR-0009).
 cmake_minimum_required(VERSION 3.20)
-project(ruumble_plugin VERSION 0.2.0 LANGUAGES CXX)
+project(ruumble_plugin VERSION 0.2.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
