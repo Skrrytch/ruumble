@@ -120,7 +120,7 @@ Bisher speichert Ruumble **nichts Inhaltliches**. Es liest Mumble, und nur die G
 
 ---
 
-## D – Echte Avatare → geplant als AP9
+## D – Echte Avatare → umgesetzt als AP9
 
 **Idee:** Statt Initialen zeigt Ruumble das Avatarbild, das der Nutzer in Mumble hinterlegt hat (*Selbst → Avatar ändern*). Ohne Bild bleibt es bei den Initialen.
 
@@ -133,7 +133,9 @@ Bisher speichert Ruumble **nichts Inhaltliches**. Es liest Mumble, und nur die G
 
 **Eigener Speicher:** nein, nur ein Zwischenspeicher im Arbeitsspeicher (Hash → Bild).
 
-## E – Still, abwesend und Aufnahme sichtbar → geplant als AP10
+**Befund bei der Umsetzung (AP9):** Ab Mumble 1.6 ist Ice `getTexture` für registrierte Nutzer fehlerhaft, mit 1.5.x funktioniert es (siehe FEINPLANUNG, AP9).
+
+## E – Still, abwesend und Aufnahme sichtbar → umgesetzt als AP10
 
 **Idee:** Man sieht, wer gerade wirklich da ist, und ob jemand aufzeichnet.
 
