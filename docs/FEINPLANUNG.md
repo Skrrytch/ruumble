@@ -222,7 +222,7 @@ Ursprünglicher Plan:
    - Token prüfen und zum Plugin mit demselben Hash zuordnen
    - `snapshot` gebündelt über 100 ms verschicken
    - `talking` nur an die eigenen Oberflächen weiterleiten (ADR-0005)
-   - Befehle prüfen: Kanal existiert, `canEnter`, Rate-Limit von **1 pro Sekunde** (S2: Mumble-Standard `messagelimit=1`)
+   - Befehle prüfen: Kanal existiert, `canEnter`, Rate-Limit von **5 pro Sekunde** je Nutzer (Missbrauchsschutz; den Abstand für Mumble, `messagelimit=1`, hält das Plugin ein, ADR-0003)
 7. **HTTP:** Statische Oberfläche, `/download` (Plugin-Bundle), `/healthz`
 8. **Konfiguration** per Umgebungsvariablen: `ICE_HOST`, `ICE_PORT`, `ICE_SECRET_READ`, optional `SERVER_ID` (Standard: erster Server aus `getBootedServers`), `PUBLIC_URL`, `TRUST_PROXY`
 9. **Tests:** Unit-Tests für Differenzbildung, Prüfung und Weiterleitung. Integrationstest gegen einen Mumble-Server im Container.
@@ -257,7 +257,7 @@ Ursprünglicher Plan:
    - `join`, `mute` und `deaf` nach ADR-0003
    - bei Timeout ein Wiederholungsversuch
    - Bestätigung über ein Ereignis aus der Queue (`channelEntered` der eigenen Session) mit 3 s Timeout
-5. Kopplung: `pairUrl` einmalig mit `xdg-open` öffnen und das Flag `paired` in `~/.config/ruumble/plugin.json` setzen.
+5. Kopplung: `pairUrl` einmalig mit `xdg-open` öffnen und das merken (seit ADR-0010: `pairedWith` je Dienst in `~/.config/ruumble/plugin.json`).
 6. `mumble_shutdown`: Stop-Flag setzen, schließen, `join`. Dauert höchstens 1 s.
 7. Bundle `ruumble-<version>.mumble_plugin` mit `manifest.xml` (`os="linux" arch="x64"`)
    - Gebaut wird im **ältesten unterstützten Distributions-Container**, wegen der glibc-Version. libstdc++ wird statisch eingebunden (S2).
@@ -407,7 +407,7 @@ Schritte:
 
 ## AP11 – Pinnwand je Raum (Idee A, ADR-0011)
 
-**Ziel:** Jeder Raum hat eine Pinnwand für Text (Markdown), Quellcode, Bilder und Dateien. Rechts neben dem Grundriss steht die Pinnwand **des Raums, in dem man gerade ist** (Entwurf vom 28.09.2026). Im Grundriss zeigt eine kleine Grafik, wo etwas hängt.
+**Ziel:** Jeder Raum hat eine Pinnwand für Text (Markdown), Quellcode, Bilder und Dateien. Rechts neben dem Grundriss steht die Pinnwand **des Raums, in dem man gerade ist** (Entwurf vom 28.09.2026). Im eigenen Raum blendet eine kleine Grafik die Pinnwand ein und aus (ursprünglich sollte sie auch zeigen, wo etwas hängt; das ist entfallen).
 
 Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 
@@ -415,7 +415,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 
 **✔ Erledigt am 28.09.2026** (Branch `ap11-pinnwand`):
 - `bridge/src/board/`: `store.ts` (SQLite im WAL-Modus, Migrationen, Anhänge nach SHA-256, Aufbewahrung, gelöschte Kanäle, verwaiste Anhänge, Kontingent, Sicherung), `routes.ts` (REST mit Rechteprüfung, Rate-Limit), `media.ts` (Bildtyp und Bildmaße aus dem Dateikopf, Dateinamen bereinigen)
-- Hub: `whoIs`, `isBoardRoom`, `boardChanged`, `boards` im Snapshot
+- Hub: `whoIs`, `isBoardRoom`, `boardChanged`, `boards` im Snapshot *(entfallen am 28.09.2026: die Oberfläche braucht es nicht mehr, siehe AP11.4)*
 - CSP und `nosniff` für die Oberfläche. `/healthz` meldet den Füllstand. `node dist/main.mjs backup <ziel>`.
 - 16 neue Tests (42 im Dienst insgesamt). Live-Test und Browser-Tests laufen mit der CSP unverändert grün.
 - `better-sqlite3` bleibt außerhalb des esbuild-Bündels (natives Modul). Im Image läuft es mit einer fertig gebauten Binärdatei.
@@ -423,7 +423,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 1. **Protokoll** (`protocol`):
    - `Post`: `id`, `channelId`, `kind: text|code|image|file`, `text`, `language?`, `attachment?`, `authorName`, `mine`, `createdAt`, `updatedAt`, `updatedByName?`
    - `Attachment`: `id` (Hash), `name`, `mime`, `size`, bei Bildern `width`/`height`
-   - Snapshot: `boards: channelId[]`, also die Räume, in denen etwas hängt, nur solche mit Zutrittsrecht (für die Grafik)
+   - Snapshot: `boards: channelId[]`, also die Räume, in denen etwas hängt, nur solche mit Zutrittsrecht (für die Grafik) *(entfallen am 28.09.2026: die Oberfläche braucht es nicht mehr, siehe AP11.4)*
    - WebSocket-Ereignis `board {channelId}`: Die Oberfläche lädt dann neu.
 2. **Speicher** (`bridge/src/board/store.ts`):
    - `better-sqlite3` im WAL-Modus mit versionierten Migrationen
@@ -443,7 +443,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
    - Rate-Limit je Nutzer
 5. **Content-Security-Policy** für die ganze Oberfläche: `default-src 'self'`, Bilder aus `self`, `data:` und `blob:`, keine Inline-Skripte.
 6. **Sicherung:** `node dist/main.mjs backup <ziel>` (SQLite-Backup-API, danach die Anhänge)
-7. **Tests:** Speicher (Migration, Aufbewahrung, Kontingent, Verweiszähler), Rechte (anwesend oder nicht, fremder Raum, Flur, temporärer Kanal, Admin), REST (Grenzen, falscher Typ, fehlende Kopplung), Snapshot `boards`
+7. **Tests:** Speicher (Migration, Aufbewahrung, Kontingent, Verweiszähler), Rechte (anwesend oder nicht, fremder Raum, Flur, temporärer Kanal, Admin), REST (Grenzen, falscher Typ, fehlende Kopplung), Snapshot `boards` *(entfallen am 28.09.2026: die Oberfläche braucht es nicht mehr, siehe AP11.4)*
 
 ### AP11.2 – Seitenleiste mit Text und Code (Oberfläche)
 
@@ -470,7 +470,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 **✔ Erledigt am 28.09.2026** (Branch `ap11-pinnwand`):
 - Adapter `board` (live per `fetch`, Mock im Speicher mit Beispielbeiträgen), Zustand in `state.svelte.ts`; die Pinnwand wird bei Kanalwechsel und bei `board`-Ereignissen neu geladen.
 - Komponenten unter `web/src/lib/ui/board/`: `BoardPanel` (340 px, `id="board-panel"`), `PostCard`, `PostBody`, `CodeBlock`, `PostDialog` (natives `<dialog>`), `Composer`, `BoardNotes` (Variante B).
-- Pinnwand-Grafik: im eigenen Raum ein Schalter (`aria-expanded`, `aria-controls`), in fremden Räumen nur ein Hinweis, wenn etwas hängt. Die Raumtaste steckt dafür in einer Hülle `.wrap`, deren Basis das Raum-Padding nachbildet, damit der Layoutvergleich unverändert passt.
+- Pinnwand-Grafik: im eigenen Raum ein Schalter (`aria-expanded`, `aria-controls`), in fremden Räumen zunächst ein Hinweis, wenn etwas hängt (später entfallen, siehe AP11.4). Die Raumtaste steckt dafür in einer Hülle `.wrap`, deren Basis das Raum-Padding nachbildet, damit der Layoutvergleich unverändert passt.
 - Spracherkennung: eigene Heuristik vor highlight.js, weil dessen Automatik Python oft als CSS einordnete; CSS, Markdown und INI sind von der Automatik ausgenommen.
 - Tests: 21 Unit-Tests (Modell, Renderer mit XSS-Fällen in jsdom), 7 E2E-Tests im Mock (`web/e2e/board.spec.ts`).
 

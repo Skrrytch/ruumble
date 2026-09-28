@@ -14,13 +14,17 @@ Status: vorgeschlagen (28.09.2026)
 | Plugin → Dienst | `hello` | `session`, `certHash`, `pluginVersion`, `paired` |
 | Dienst → Plugin | `welcome` / `reject` | Bei Ablehnung mit Grund. Optional `pairUrl` |
 | Dienst → Plugin | `command` | `id`, `join{channel}` / `mute{on}` / `deaf{on}` |
+| Dienst → Plugin | `notify` | `text`: Hinweis für das Mumble-Protokoll, z. B. beim Anheften an der Pinnwand (ADR-0011) |
 | Plugin → Dienst | `result` | `id`, `ok` / `rejected` / `superseded` / `timeout` / `offline` |
 | Plugin → Dienst | `selfState` | `selfMute`, `selfDeaf` |
 | Plugin → Dienst | `talking` | `session`, `state` |
 | Plugin → Dienst | `bye` | Mumble wurde getrennt. |
 | Oberfläche → Dienst | `command` | wie oben, die Weiterleitung geht an das Plugin mit demselben Hash |
-| Dienst → Oberfläche | `snapshot` | `server{name, version}`, `self{session}`, `channels[]`, `users[]`, `listeners{cid: session[]}`, `canEnter{cid: bool}` |
-| Dienst → Oberfläche | `talking`, `result`, `status` | `status` meldet `plugin: connected/disconnected` |
+| Dienst → Oberfläche | `snapshot` | `server{name, version}`, `self{session}`, `channels[]`, `users[]` (mit `avatar`, `idleMinutes`, `recording`), `listeners{cid: session[]}`, `canEnter{cid: bool}` |
+| Dienst → Oberfläche | `talking`, `result`, `status` | `status` meldet `plugin: connected/disconnected`, optional `preview` |
+| Dienst → Oberfläche | `board` | `channelId`: An der Pinnwand dieses Raums hat sich etwas geändert (nur an Anwesende, ohne Inhalt) |
+
+Die Inhalte der Pinnwand laufen nicht über den WebSocket, sondern über REST unter `/api/board` (Beiträge, Uploads, Anhänge; ADR-0011). Die vollständigen Schemas stehen in `protocol/src/index.ts`, das JSON-Schema in `protocol/schema/`.
 
 ## Konsequenzen
 - Der Dienst bleibt einfach und kennt die Gebäuderegeln nicht. Ändert sich eine Regel, muss nur die Oberfläche angepasst werden.
