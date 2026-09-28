@@ -1,0 +1,114 @@
+import { expect, test } from "@playwright/test";
+
+test.describe("Musterhaus", () => {
+  test.beforeEach(async ({ page }) => page.goto("/?fixture=musterhaus&talking=0"));
+
+  test("Start auf der eigenen Etage, eigener Raum markiert", async ({ page }) => {
+    await expect(page.getByRole("heading", { name: "ENTWICKLUNG" })).toBeVisible();
+    await expect(page.getByText("1. Obergeschoss")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "1. Obergeschoss: ENTWICKLUNG" })).toHaveAttribute("aria-current", "page");
+  });
+
+  test("Klick auf einen Raum wechselt erst nach Bestätigung", async ({ page }) => {
+    await page.getByRole("button", { name: "Büro von Clara betreten" }).click();
+    await expect(page.getByRole("button", { name: "Büro von Clara – wird betreten" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Büro von Clara – du bist hier" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Büro von Anna betreten" })).toBeVisible();
+    await page.getByRole("button", { name: "Flur ENTWICKLUNG betreten" }).click();
+    await expect(page.getByRole("button", { name: "Flur ENTWICKLUNG – du bist hier" })).toBeVisible();
+  });
+
+  test("Etagentaste wechselt nur die Ansicht, „Zu meiner Etage“ zurück", async ({ page }) => {
+    await page.getByRole("button", { name: "Erdgeschoss: Lobby" }).click();
+    await expect(page.getByRole("heading", { name: "Lobby" })).toBeVisible();
+    await expect(page.getByText("Offene Etage ohne Büros · 3 Personen")).toBeVisible();
+    await page.getByRole("button", { name: "Zu meiner Etage" }).click();
+    await expect(page.getByRole("heading", { name: "ENTWICKLUNG" })).toBeVisible();
+  });
+
+  test("Stumm und Taub mit der Semantik von Mumble", async ({ page }) => {
+    const mute = page.getByRole("button", { name: "Mikrofon stummschalten" });
+    const deaf = page.getByRole("button", { name: "Taub schalten" });
+    await deaf.click();
+    await expect(deaf).toHaveAttribute("aria-pressed", "true");
+    await expect(mute).toHaveAttribute("aria-pressed", "true");
+    await mute.click(); // Unmute hebt Taub mit auf
+    await expect(mute).toHaveAttribute("aria-pressed", "false");
+    await expect(deaf).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByRole("img", { name: "Anna (du)" })).toBeVisible();
+  });
+});
+
+test.describe("Sonderfälle", () => {
+  test.beforeEach(async ({ page }) => page.goto("/?fixture=sonderfaelle&talking=0"));
+
+  test("gesperrte Etagen sind sichtbar, aber nicht wählbar", async ({ page }) => {
+    const archiv = page.getByRole("button", { name: "3. Obergeschoss: ARCHIV – gesperrt: Kanalstruktur zu tief" });
+    await expect(archiv).toHaveAttribute("aria-disabled", "true");
+    await archiv.click({ force: true }); // aria-disabled: Playwright klickt sonst gar nicht
+    await expect(page.getByRole("heading", { name: "ENTWICKLUNG" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "4. Obergeschoss: GROSSRAUM – gesperrt: Zu viele Räume" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /EXTERN|PARTNER/ })).toHaveCount(0);
+  });
+
+  test("Eingang, Schloss, Mitlauschen, Status-Symbole", async ({ page }) => {
+    await expect(page.getByRole("region", { name: "Eingang" }).getByRole("img")).toHaveCount(2);
+    await expect(page.getByTitle("1 Person hört mit")).toBeVisible();
+    await expect(page.getByRole("img", { name: "Nils, vom Server stummgeschaltet" })).toBeVisible();
+    await page.getByRole("button", { name: "2. Obergeschoss: VERTRIEB" }).click();
+    const locked = page.getByRole("button", { name: "Gregors Büro – kein Zutritt" });
+    await expect(locked).toHaveAttribute("aria-disabled", "true");
+    await expect(page.getByRole("button", { name: /Teeküche|Raucherecke/ })).toHaveCount(0);
+  });
+});
+
+test("gesperrter Raum: Klick bewirkt nichts", async ({ page }) => {
+  await page.goto("/?fixture=sonderfaelle&talking=0");
+  await page.getByRole("button", { name: "2. Obergeschoss: VERTRIEB" }).click();
+  await page.getByRole("button", { name: "Gregors Büro – kein Zutritt" }).click({ force: true });
+  await expect(page.getByRole("button", { name: "Gregors Büro – kein Zutritt" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("unbestätigter Wechsel zeigt nach 3 s einen Hinweis, der Nutzer bleibt im Raum", async ({ page }) => {
+  await page.goto("/?fixture=musterhaus&talking=0&debug");
+  await page.getByRole("button", { name: "Nächsten Wechsel ablehnen" }).click();
+  await page.getByRole("button", { name: "Büro von Ben betreten" }).click();
+  await expect(page.getByRole("button", { name: "Büro von Ben – wird betreten" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveText(/Wechsel nach „Büro von Ben“ nicht möglich/, { timeout: 6000 });
+  await expect(page.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible();
+});
+
+test("schnelle Klicks: der letzte Raum gewinnt", async ({ page }) => {
+  await page.goto("/?fixture=musterhaus&talking=0");
+  for (const name of ["Büro von Ben", "Büro von Clara", "Büro von David"]) await page.getByRole("button", { name: `${name} betreten` }).click();
+  await expect(page.getByRole("button", { name: "Büro von David – du bist hier" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("Unterkanal anlegen sperrt die eigene Etage live", async ({ page }) => {
+  await page.goto("/?fixture=musterhaus&talking=0&debug");
+  await page.getByRole("button", { name: "Unterkanal im 1. Raum anlegen" }).click();
+  await expect(page.getByText("Du bist in einem Bereich, der hier nicht darstellbar ist.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /ENTWICKLUNG – gesperrt/ })).toHaveAttribute("aria-current", "page");
+  await page.getByRole("button", { name: "Neue Unterkanäle entfernen" }).click();
+  await expect(page.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible();
+});
+
+test("Leerstand", async ({ page }) => {
+  await page.goto("/?fixture=leerstand&talking=0");
+  await expect(page.getByRole("heading", { name: "Leerstand" })).toBeVisible();
+  await expect(page.getByText("Keine Etage dieses Gebäudes lässt sich darstellen", { exact: false })).toBeVisible();
+});
+
+test("ohne gekoppeltes Plugin: Hinweis statt Gebäude", async ({ page }) => {
+  await page.goto("/?fixture=nicht-gekoppelt&talking=0");
+  await expect(page.getByText("Mumble ist nicht verbunden.")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Aufzug – Etagen" })).toHaveCount(0);
+});
+
+test("Sprechanzeige im eigenen Raum", async ({ page }) => {
+  await page.goto("/?fixture=musterhaus");
+  await expect(page.locator(".av.talking")).not.toHaveCount(0, { timeout: 15000 });
+});

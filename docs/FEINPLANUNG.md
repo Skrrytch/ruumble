@@ -151,6 +151,27 @@ Reine Funktionen ohne Svelte und ohne DOM. Die Testabdeckung liegt bei mindesten
 
 ## AP4 – Oberfläche gegen Mock (`web`)
 
+**✔ Erledigt am 28.09.2026** (Branch `ap4-ui-mock`):
+- Svelte 5 + Vite 8, Inter selbst gehostet, Lucide-Icons, Farben nur aus `docs/design/tokens.css`
+- `MumbleAdapter`-Interface und `MockAdapter`:
+  - Verhalten wie in S1/S2: Bestätigung, Ablehnung nach 3 s, der letzte Wechsel gewinnt, Stumm/Taub-Semantik, Sprechen nur im eigenen Raum
+  - Debug-Panel mit `?debug`
+- Zustände:
+  - Übergang beim Wechsel, Hinweis bei nicht bestätigtem Wechsel
+  - „Mumble ist nicht verbunden“, eigener Nutzer auf gesperrter Etage oder in ausgeblendetem Bereich, Leerstand
+  - Eingang, Schloss, Mitlauschen, Status-Symbole
+- **Layoutvergleich mit dem Prototyp per DOM** (Toleranz 3 px) statt Pixelvergleich, weil sich die Schrift unterscheidet
+  - Bewusste Abweichung: Die Etagentasten sind kompakter (48 statt 52 px, Abstand 6 statt 10 px), damit 5 Etagen und der Eingang Platz haben.
+  - Außerdem entfällt das Label „primary“ (E9).
+- 14 Playwright-Tests, die CI führt sie mit aus (Job `e2e`)
+- Vorläufige Umsetzung offener Fragen (bitte bestätigen oder ändern):
+  - **O5:** Ohr-Symbol am Raum, Tooltip „N Personen hören mit“, keine Namen
+  - **O6:** Server-Mute, Server-Deaf und Unterdrückt als dunkles Abzeichen mit Mikrofon-aus. Self-Mute ist hell, Self-Deaf zeigt einen Kopfhörer-aus.
+  - **O7:** Der Einstellungsknopf ist sichtbar, aber deaktiviert („noch ohne Funktion“).
+- Nicht umgesetzt: eine eigene Darstellung für kleine Fenster. Die Mindesthöhe ist 720 px, die Breite bis 1440 px flexibel.
+
+Ursprünglicher Plan:
+
 1. Vite + Svelte 5 + TypeScript einrichten. `tokens.css` einbinden, Inter selbst hosten, Lucide einbinden.
 2. `MumbleAdapter`-Interface und `MockAdapter`: liest die Fixtures, simuliert Beitreten und Verlassen, Sprechen und Ablehnungen und bietet dafür ein Debug-Panel mit `?debug`.
 3. Komponenten:

@@ -24,6 +24,22 @@ Browser/PWA ──wss──▶ Ruumble-Dienst ──Ice (nur lesen)──▶ Mum
 
 Die Begründungen stehen in den [Architekturentscheidungen](docs/decisions/README.md).
 
+## Entwickeln
+
+Voraussetzungen: Node 22 und corepack (`corepack enable`).
+
+```sh
+pnpm install
+pnpm -F @ruumble/web dev          # Oberfläche gegen den Mock: http://localhost:5173/?debug
+pnpm lint && pnpm test            # Typprüfung und Unit-Tests aller Pakete
+pnpm -F @ruumble/web e2e          # Browser-Tests inkl. Layoutvergleich mit dem Prototyp
+```
+
+URL-Parameter der Oberfläche, solange sie gegen den Mock läuft:
+- `?fixture=musterhaus|sonderfaelle|leerstand|nicht-gekoppelt`
+- `?debug` für das Debug-Panel
+- `?talking=0` schaltet die simulierten Sprechereignisse ab
+
 ## Dokumentation
 
 | Dokument | Inhalt |
