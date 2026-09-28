@@ -38,9 +38,8 @@
 
 
   const room = $derived("grow" in space ? space : null);
-  // Pinnwand-Grafik: im eigenen Raum als Schalter (auch leer), sonst nur, wenn etwas hängt
+  // Pinnwand-Grafik nur im eigenen Raum, als Schalter für die Seitenleiste
   const boardToggle = $derived(!!room && space.isSelf && !readonly && !!ontoggleboard);
-  const boardHint = $derived(!!room && room.hasBoard && !boardToggle);
   const disabled = $derived((space.locked && !space.isSelf) || readonly);
   const ariaLabel = $derived(
     `${variant === "corridor" ? `Flur ${space.name}` : space.name}` +
@@ -99,7 +98,6 @@
       {/each}
     </span>
   {/if}
-  {#if boardHint}<span class="notes" title="An der Pinnwand hängt etwas"><BoardNotes /></span>{/if}
 </button>
 {#if boardToggle}
   <button
@@ -127,10 +125,10 @@
     flex: 1 1 auto; min-width: 0; width: 100%; transition: background var(--dur) var(--ease-out);
   }
   /* Pinnwand-Grafik rechtsbündig oben (ADR-0011, Variante B) */
-  .notes { position: absolute; top: 12px; right: 12px; pointer-events: none; }
+  .notes { position: absolute; top: 12px; right: 12px; }
   /* Schalter ohne Kasten: nur die Zettel, beim Überfahren heben sie sich leicht an */
   .notes.toggle {
-    pointer-events: auto; border: 0; background: transparent; padding: 4px; margin: -4px; border-radius: var(--radius-md);
+    border: 0; background: transparent; padding: 4px; margin: -4px; border-radius: var(--radius-md);
     min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer;
     transition: transform var(--dur) var(--ease-out);
   }

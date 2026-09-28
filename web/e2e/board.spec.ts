@@ -15,11 +15,9 @@ test.describe("Pinnwand (AP11.2)", () => {
     await expect(board).toHaveCount(0);
   });
 
-  test("fremder Raum mit Beiträgen zeigt nur den Hinweis, kein Schalter", async ({ page }) => {
-    const clara = page.locator('.wrap:has(.room[data-channel="5"])');
-    await expect(clara.getByTitle("An der Pinnwand hängt etwas")).toBeVisible();
-    await expect(clara.getByRole("button", { name: /Pinnwand/ })).toHaveCount(0);
-    await expect(page.locator('.wrap:has(.room[data-channel="4"])').locator(".notes")).toHaveCount(0); // leer
+  test("fremde Räume zeigen keine Zettel, auch wenn dort etwas hängt", async ({ page }) => {
+    await expect(page.locator('.wrap:has(.room[data-channel="5"]) .notes')).toHaveCount(0); // Clara, mit Beiträgen
+    await expect(page.locator("svg.notes")).toHaveCount(1); // nur der Schalter im eigenen Raum
   });
 
   test("Karten: Code hervorgehoben, lange Texte gekürzt, Popup zeigt alles und speichert Änderungen", async ({ page }) => {
