@@ -5,22 +5,16 @@
 import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
 import { formatSize, type BoardFilter } from "./board/model.ts";
+import { t } from "./i18n/index.svelte.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
 
 export type Notice = { text: string };
 
-const BOARD_ERRORS: Record<BoardErrorCode, string> = {
-  "not-paired": "Mumble ist nicht verbunden.",
-  "not-in-room": "Du bist nicht mehr in diesem Raum.",
-  "no-board-here": "Pinnwände gibt es nur in Räumen.",
-  "not-found": "Der Beitrag existiert nicht mehr.",
-  forbidden: "Das darfst du nicht.",
-  "too-large": `Die Datei ist zu groß (höchstens ${formatSize(BOARD_LIMITS.fileBytes)}).`,
-  "bad-type": "Das ist kein Bild, das Ruumble anzeigen kann (PNG, JPEG, GIF, WebP).",
-  invalid: "Der Beitrag ist leer oder ungültig.",
-  "rate-limited": "Zu viele Beiträge in kurzer Zeit – bitte kurz warten.",
-  offline: "Keine Verbindung zum Ruumble-Dienst.",
-};
+/** Klartext zu einem Fehler der Pinnwand in der Sprache der Oberfläche */
+export function boardErrorText(error: BoardErrorCode): string {
+  const m = t().boardErrors[error];
+  return typeof m === "function" ? m(formatSize(BOARD_LIMITS.fileBytes)) : m;
+}
 
 export class RuumbleState {
   snapshot = $state<Snapshot | null>(null);
@@ -170,10 +164,6 @@ export class RuumbleState {
     return this.adapter.board.fileUrl(attachment, download);
   }
 
-  /** Klartext zu einem Fehler der Pinnwand (für Hinweise direkt an der Eingabe) */
-  boardErrorText(error: BoardErrorCode): string {
-    return BOARD_ERRORS[error];
-  }
 
   async editPost(id: string, text: string, language?: string): Promise<boolean> {
     const r = await this.adapter.board.update(id, { text, ...(language ? { language } : {}) });
@@ -190,7 +180,7 @@ export class RuumbleState {
   }
 
   private boardFailed(error: BoardErrorCode): false {
-    this.setNotice({ text: BOARD_ERRORS[error] });
+    this.setNotice({ text: boardErrorText(error) });
     return false;
   }
 
@@ -203,8 +193,8 @@ export class RuumbleState {
     const name = this.snapshot?.channels.find((c) => c.id === channelId)?.name;
     this.setNotice(
       result === "offline"
-        ? { text: "Mumble ist nicht verbunden." }
-        : { text: name ? `Wechsel nach „${name}“ nicht möglich.` : "Aktion nicht möglich." },
+        ? { text: t().common.mumbleOffline }
+        : { text: name ? t().notices.joinFailed(name) : t().notices.actionFailed },
     );
   }
 

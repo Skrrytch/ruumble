@@ -6,6 +6,7 @@
   import X from "@lucide/svelte/icons/x";
   import ZoomIn from "@lucide/svelte/icons/zoom-in";
   import ZoomOut from "@lucide/svelte/icons/zoom-out";
+  import { t } from "../../i18n/index.svelte.ts";
 
   let { src, downloadUrl, name, onclose }: { src: string; downloadUrl: string; name: string; onclose: () => void } = $props();
 
@@ -82,15 +83,15 @@
   }
 </script>
 
-<dialog bind:this={dialog} class="lightbox" aria-label="Bild: {name}" onclose={onclose} {onkeydown}>
+<dialog bind:this={dialog} class="lightbox" aria-label={t().board.image(name)} onclose={onclose} {onkeydown}>
   <div class="bar">
     <span class="name">{name}</span>
     <span class="zoom" aria-live="polite">{Math.round(scale * 100)} %</span>
-    <button type="button" aria-label="Verkleinern" title="Verkleinern (−)" disabled={scale <= MIN} onclick={() => zoomTo(scale / 1.25)}><ZoomOut size={18} /></button>
-    <button type="button" aria-label="Vergrößern" title="Vergrößern (+)" disabled={scale >= MAX} onclick={() => zoomTo(scale * 1.25)}><ZoomIn size={18} /></button>
-    <button type="button" aria-label="Einpassen" title="Einpassen (0)" disabled={scale === 1} onclick={() => zoomTo(1)}><Scan size={18} /></button>
-    <a class="btn" href={downloadUrl} download={name} aria-label="Herunterladen" title="Herunterladen"><Download size={18} /></a>
-    <button type="button" aria-label="Schließen" title="Schließen (Esc)" onclick={onclose}><X size={20} /></button>
+    <button type="button" aria-label={t().board.zoomOut} title="{t().board.zoomOut} (−)" disabled={scale <= MIN} onclick={() => zoomTo(scale / 1.25)}><ZoomOut size={18} /></button>
+    <button type="button" aria-label={t().board.zoomIn} title="{t().board.zoomIn} (+)" disabled={scale >= MAX} onclick={() => zoomTo(scale * 1.25)}><ZoomIn size={18} /></button>
+    <button type="button" aria-label={t().board.fit} title="{t().board.fit} (0)" disabled={scale === 1} onclick={() => zoomTo(1)}><Scan size={18} /></button>
+    <a class="btn" href={downloadUrl} download={name} aria-label={t().common.download} title={t().common.download}><Download size={18} /></a>
+    <button type="button" aria-label={t().common.close} title="{t().common.close} (Esc)" onclick={onclose}><X size={20} /></button>
   </div>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div

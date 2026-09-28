@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: "e2e",
   outputDir: "test-results",
   reporter: [["list"]],
-  use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, baseURL: "http://127.0.0.1:4173" },
+  // Tests prüfen die deutschen Texte (Browser-Sprache de-DE); Englisch und Umschalten prüft e2e/i18n.spec.ts
+  use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, baseURL: "http://127.0.0.1:4173", locale: "de-DE" },
   webServer: { command: "pnpm build && pnpm preview --host 127.0.0.1 --port 4173 --strictPort", url: "http://127.0.0.1:4173", reuseExistingServer: false },
 });

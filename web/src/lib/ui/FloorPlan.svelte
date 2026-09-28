@@ -1,6 +1,7 @@
 <script lang="ts">
   import { MAX_ROOMS, countText, splitRows, type Floor } from "../model/building.ts";
   import SpaceButton from "./SpaceButton.svelte";
+  import { t } from "../i18n/index.svelte.ts";
 
   let {
     floor,
@@ -21,21 +22,21 @@
   } = $props();
 
   const rows = $derived(splitRows(floor.rooms));
-  const lockText = { "too-deep": "Die Kanalstruktur dieser Etage ist tiefer als zwei Ebenen.", "too-many-rooms": `Diese Etage hat mehr als ${MAX_ROOMS} Räume.` };
+  const lockText = $derived(floor.lock === "too-many-rooms" ? t().floorPlan.lockText["too-many-rooms"](MAX_ROOMS) : t().floorPlan.lockText["too-deep"]);
 </script>
 
 <div class="floorplan">
   {#if floor.lock}
     <div class="notice" role="status">
-      <strong>Du bist in einem Bereich, der hier nicht darstellbar ist.</strong>
-      <span>{lockText[floor.lock]} Nutze für diese Etage die klassische Ansicht in Mumble.</span>
+      <strong>{t().common.notShown}</strong>
+      <span>{lockText} {t().floorPlan.useMumble}</span>
     </div>
   {:else if floor.open}
     <SpaceButton
       space={floor.corridor}
       variant="open"
       title={floor.name}
-      subtitle="Offene Etage ohne Büros · {countText(floor.population)}"
+      subtitle={t().floorPlan.openFloor(countText(floor.population))}
       pending={pendingChannel === floor.channelId}
       {talking}
       {readonly}
@@ -50,8 +51,8 @@
     <SpaceButton
       space={floor.corridor}
       variant="corridor"
-      title="Flur"
-      subtitle="Etagenkanal · {countText(floor.corridor.users.length)}"
+      title={t().common.corridor}
+      subtitle={t().floorPlan.corridorSubtitle(countText(floor.corridor.users.length))}
       pending={pendingChannel === floor.channelId}
       {talking}
       {readonly}

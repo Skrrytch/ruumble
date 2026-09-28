@@ -2,7 +2,8 @@
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import StickyNote from "@lucide/svelte/icons/sticky-note";
   import type { Post } from "@ruumble/protocol";
-  import { FILTERS, countLabel, filterPosts } from "../../board/model.ts";
+  import { FILTERS, filterPosts } from "../../board/model.ts";
+  import { t } from "../../i18n/index.svelte.ts";
   import type { RuumbleState } from "../../state.svelte.ts";
   import Composer from "./Composer.svelte";
   import PostCard from "./PostCard.svelte";
@@ -16,8 +17,8 @@
   let openId = $state<string | null>(null);
   let now = $state(Date.now());
   $effect(() => {
-    const t = setInterval(() => (now = Date.now()), 30_000); // „vor N Min.“ aktuell halten
-    return () => clearInterval(t);
+    const timer = setInterval(() => (now = Date.now()), 30_000); // „vor N Min.“ aktuell halten
+    return () => clearInterval(timer);
   });
 
   const board = $derived(app.board);
@@ -50,32 +51,32 @@
   }
 </script>
 
-<aside id="board-panel" class="board" aria-label="Pinnwand" {ondragenter} {ondragover} {ondragleave} {ondrop}>
-  {#if dragDepth > 0}<div class="drop" aria-hidden="true">Loslassen zum Anheften</div>{/if}
+<aside id="board-panel" class="board" aria-label={t().board.title} {ondragenter} {ondragover} {ondragleave} {ondrop}>
+  {#if dragDepth > 0}<div class="drop" aria-hidden="true">{t().board.dropHere}</div>{/if}
   <!-- kompakt: der Raum ist der eigene (im Grundriss markiert), deshalb kein Raumname -->
   <header>
-    <h2><StickyNote size={18} aria-hidden="true" /> Pinnwand</h2>
-    {#if board}<span class="sub">{countLabel(board.posts.length)}</span>{/if}
-    <button type="button" class="close" aria-label="Pinnwand ausblenden" title="Pinnwand ausblenden" onclick={() => app.closeBoard()}>
+    <h2><StickyNote size={18} aria-hidden="true" /> {t().board.title}</h2>
+    {#if board}<span class="sub">{t().board.count(board.posts.length)}</span>{/if}
+    <button type="button" class="close" aria-label={t().board.hide} title={t().board.hide} onclick={() => app.closeBoard()}>
       <ChevronRight size={20} />
     </button>
   </header>
 
   {#if app.boardError === "no-board-here"}
-    <p class="empty">Pinnwände gibt es nur in Räumen. Geh in einen Raum, um dort etwas anzuheften.</p>
+    <p class="empty">{t().board.onlyRooms}</p>
   {:else if app.boardError}
-    <p class="empty">Die Pinnwand ist gerade nicht erreichbar.</p>
+    <p class="empty">{t().board.unavailable}</p>
   {:else if board}
-    <div class="filters" role="toolbar" aria-label="Beiträge filtern">
-      {#each FILTERS as f (f.id)}
-        <button type="button" aria-pressed={app.boardFilter === f.id} onclick={() => (app.boardFilter = f.id)}>{f.label}</button>
+    <div class="filters" role="toolbar" aria-label={t().board.filterLabel}>
+      {#each FILTERS as f (f)}
+        <button type="button" aria-pressed={app.boardFilter === f} onclick={() => (app.boardFilter = f)}>{t().board.filters[f]}</button>
       {/each}
     </div>
     <div class="list">
       {#each posts as post (post.id)}
         <PostCard {post} {now} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} />
       {:else}
-        <p class="empty">{board.posts.length ? "Nichts in diesem Filter." : "Noch hängt hier nichts. Heft den ersten Zettel an!"}</p>
+        <p class="empty">{board.posts.length ? t().board.emptyFilter : t().board.empty}</p>
       {/each}
     </div>
     <Composer
@@ -83,7 +84,6 @@
       onpin={(kind, text, language) => app.pin(kind, text, language)}
       onupload={(file, name, progress) => app.upload(file, name, progress)}
       onattach={(attachment, caption) => app.pinAttachment(attachment, caption)}
-      errorText={(e) => app.boardErrorText(e)}
     />
   {/if}
 </aside>

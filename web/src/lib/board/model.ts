@@ -1,17 +1,11 @@
 /** Pinnwand: reine Hilfsfunktionen ohne DOM (ADR-0011, AP11.2). */
 import type { Post, PostKind } from "@ruumble/protocol";
+import { intlLocale, t } from "../i18n/index.svelte.ts";
 
 export type BoardFilter = "all" | PostKind;
 
-export const FILTERS: { id: BoardFilter; label: string }[] = [
-  { id: "all", label: "Alle" },
-  { id: "text", label: "Text" },
-  { id: "code", label: "Code" },
-  { id: "image", label: "Bilder" },
-  { id: "file", label: "Dateien" },
-];
-
-export const KIND_LABEL: Record<PostKind, string> = { text: "Text", code: "Code", image: "Bild", file: "Datei" };
+/** Filter der Seitenleiste; die Beschriftung steht in `t().board.filters` */
+export const FILTERS: readonly BoardFilter[] = ["all", "text", "code", "image", "file"];
 
 export function filterPosts(posts: readonly Post[], filter: BoardFilter): Post[] {
   return filter === "all" ? [...posts] : posts.filter((p) => p.kind === filter);
@@ -38,20 +32,17 @@ export function looksLikeCode(text: string): boolean {
   return score >= 2;
 }
 
-/** „Gerade eben“, „vor 5 Min.“, „vor 3 Std.“, „gestern“, „vor 4 Tagen“ */
+/** „Gerade eben“, „vor 5 Min.“, „vor 3 Std.“, „gestern“, „vor 4 Tagen“ (Sprache der Oberfläche) */
 export function relativeTime(then: number, now = Date.now()): string {
+  const b = t().board;
   const s = Math.max(0, Math.round((now - then) / 1000));
-  if (s < 60) return "Gerade eben";
+  if (s < 60) return b.justNow;
   const m = Math.round(s / 60);
-  if (m < 60) return `vor ${m} Min.`;
+  if (m < 60) return b.minutesAgo(m);
   const h = Math.round(m / 60);
-  if (h < 24) return `vor ${h} Std.`;
+  if (h < 24) return b.hoursAgo(h);
   const d = Math.round(h / 24);
-  return d === 1 ? "gestern" : `vor ${d} Tagen`;
-}
-
-export function countLabel(n: number): string {
-  return n === 0 ? "Noch keine Beiträge" : n === 1 ? "1 Beitrag" : `${n} Beiträge`;
+  return d === 1 ? b.yesterday : b.daysAgo(d);
 }
 
 /** Ab wie vielen Zeilen eine Karte gekürzt wird (Entwurf/ideen.md: lange Texte gekürzt, voll im Popup) */
@@ -67,7 +58,7 @@ export function isLong(text: string): boolean {
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toLocaleString("de-DE", { maximumFractionDigits: 1 })} MB`;
+  return `${(bytes / (1024 * 1024)).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} MB`;
 }
 
 export type FileKind = "image" | "pdf" | "text" | "archive" | "audio" | "video" | "other";
@@ -89,5 +80,5 @@ export function pastedName(file: { name: string; type: string }, now = new Date(
   if (file.name && file.name !== "image.png" && file.name !== "blob") return file.name;
   const ext = file.type.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `bild-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.${ext}`;
+  return `${t().board.pastedPrefix}-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.${ext}`;
 }
