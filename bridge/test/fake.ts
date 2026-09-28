@@ -11,8 +11,8 @@ export class FakeSource implements MumbleSource {
     { id: 3, parent: 1, name: "Geheim", position: 1, links: [], temporary: false },
   ];
   users: Basics["users"] = [
-    { session: 7, name: "Anna", channel: 1, selfMute: false, selfDeaf: false, mute: false, deaf: false, suppress: false, address: "10.0.0.7" },
-    { session: 8, name: "Ben", channel: 2, selfMute: false, selfDeaf: false, mute: false, deaf: false, suppress: false, address: "10.0.0.8" },
+    { session: 7, name: "Anna", channel: 1, selfMute: false, selfDeaf: false, mute: false, deaf: false, suppress: false, userId: 1, avatar: null, idleMinutes: 0, recording: false, address: "10.0.0.7" },
+    { session: 8, name: "Ben", channel: 2, selfMute: false, selfDeaf: false, mute: false, deaf: false, suppress: false, userId: null, avatar: null, idleMinutes: 3, recording: true, address: "10.0.0.8" },
   ];
   uptime = 100;
   hashes: Record<number, string> = { 7: "a".repeat(40), 8: "b".repeat(40) };
@@ -26,6 +26,8 @@ export class FakeSource implements MumbleSource {
     return Object.fromEntries(ids.filter((id) => this.denied[session]?.includes(id)).map((id) => [String(id), false]));
   }
   async certHash(session: number) { return this.hashes[session] ?? null; }
+  textures: Record<number, Uint8Array> = {};
+  async texture(userId: number) { return this.textures[userId] ?? null; }
   async close() {}
 }
 

@@ -19,6 +19,7 @@ import fastifyStatic from "@fastify/static";
 import fastifyWebsocket from "@fastify/websocket";
 import Fastify from "fastify";
 import type { WebSocket } from "ws";
+import { AvatarCache } from "./avatars.ts";
 import { Hub, type AddressCheck } from "./hub.ts";
 import { IceMumbleSource } from "./mumble.ts";
 import { Pairing } from "./pairing.ts";
@@ -74,6 +75,7 @@ async function connectIce(): Promise<IceMumbleSource> {
 }
 
 const source = await connectIce();
+const avatars: AvatarCache = new AvatarCache({ fetch: (id) => source.texture(id), onChange: () => hub.rebroadcast() });
 const hub: Hub = new Hub({
   source,
   pairing,
@@ -84,9 +86,13 @@ const hub: Hub = new Hub({
   // Zutrittsrechte nur für gekoppelte Sessions (ADR-0003)
   onSessionsChanged: (sessions) => poller.watchSessions(sessions),
   refresh: () => poller.poll(),
+  avatarVersion: (id) => avatars.version(id),
 });
 const poller: Poller = new Poller(source, {
-  onChange: (state) => hub.setState(state),
+  onChange: (state) => {
+    avatars.sync(state.users.flatMap((u) => (u.userId === null ? [] : [u.userId])));
+    hub.setState(state);
+  },
   onPolled: () => {
     lastPoll = Date.now();
     lastError = null;
@@ -142,6 +148,18 @@ app.post("/logout", async (req, reply) => {
   if (token) pairing.revoke(token);
   reply.header("Set-Cookie", `${TOKEN_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
   return { ok: true };
+});
+
+// Avatarbilder (AP9): nur für gekoppelte Oberflächen bzw. in der Vorschau; URL ist versioniert (?v=)
+app.get<{ Params: { userId: string } }>("/avatar/:userId", async (req, reply) => {
+  if (!hub.canView(pairing.certHashOf(cookieOf(req.headers.cookie, TOKEN_COOKIE)))) return reply.code(401).send();
+  const avatar = /^\d+$/.test(req.params.userId) ? avatars.get(Number(req.params.userId)) : null;
+  if (!avatar) return reply.code(404).send();
+  return reply
+    .header("Content-Type", avatar.mime)
+    .header("X-Content-Type-Options", "nosniff")
+    .header("Cache-Control", "private, max-age=86400, immutable")
+    .send(Buffer.from(avatar.bytes));
 });
 
 app.get("/healthz", async (_req, reply) => {

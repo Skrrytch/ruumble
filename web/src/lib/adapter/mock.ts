@@ -93,6 +93,13 @@ export class MockAdapter implements MumbleAdapter {
     }
   }
 
+  /** Beispiel-Avatare als SVG (im Mock gibt es keinen Dienst, der Bilder ausliefert) */
+  avatarUrl(userId: number, version: string): string {
+    const hue = (userId * 67) % 360;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><rect width="44" height="44" fill="hsl(${hue} 55% 55%)"/><circle cx="22" cy="17" r="8" fill="#fff"/><path d="M8 42c2-10 26-10 28 0" fill="#fff"/></svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}#${version}`;
+  }
+
   // ---------------------------------------------------------------- Debug-Aktionen
 
   setFixture(name: FixtureName): void {

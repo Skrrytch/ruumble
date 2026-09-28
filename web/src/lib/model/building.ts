@@ -8,6 +8,13 @@ import type { Channel, Snapshot, User } from "@ruumble/protocol";
 /** Mehr Räume passen nicht sinnvoll auf eine Etage (PLANUNG 2.3). */
 export const MAX_ROOMS = 8;
 
+/** Ab so vielen Minuten ohne Sprechen gilt jemand als still (E30). Ice idlesecs zählt nur Sprechen. */
+export const QUIET_MINUTES = 15;
+/** Selbst taub und mindestens so viele Minuten still: abwesend (E30). */
+export const AWAY_MINUTES = 5;
+
+export type Presence = "active" | "quiet" | "away";
+
 export type LockReason = "too-deep" | "too-many-rooms";
 
 export interface UserView {
@@ -20,6 +27,12 @@ export interface UserView {
   selfDeafened: boolean;
   /** vom Server stummgeschaltet, taub geschaltet oder unterdrückt (Symbolik: O6) */
   serverMuted: boolean;
+  /** Avatarbild (AP9), `null`: Initialen */
+  avatarUrl: string | null;
+  /** Anwesenheit ohne Berücksichtigung des Sprechens; wer spricht, zeigt die Oberfläche immer als aktiv (AP10) */
+  presence: Presence;
+  idleMinutes: number;
+  recording: boolean;
 }
 
 /** Ein betretbarer Bereich: Raum, Flur oder offene Etage. */
@@ -32,6 +45,8 @@ export interface Space {
   locked: boolean;
   /** Sessions, die hier mitlauschen */
   listeners: number[];
+  /** Jemand im Raum zeichnet auf (AP10) */
+  recording: boolean;
 }
 
 export interface Room extends Space {
@@ -131,13 +146,27 @@ export function isMutedRoomName(name: string): boolean {
   return /\(stumm\)/i.test(name);
 }
 
+export function presenceOf(u: Pick<User, "selfDeaf" | "idleMinutes">): Presence {
+  if (u.selfDeaf && u.idleMinutes >= AWAY_MINUTES) return "away";
+  if (u.idleMinutes >= QUIET_MINUTES) return "quiet";
+  return "active";
+}
+
+/** Standard: Bild vom Dienst, versioniert (AP9) */
+export const defaultAvatarUrl = (userId: number, version: string) => `/avatar/${userId}?v=${version}`;
+
+export interface BuildOptions {
+  avatarUrl?: (userId: number, version: string) => string;
+}
+
 export function floorLabels(index: number): { level: string; badge: string } {
   return index === 0 ? { level: "Erdgeschoss", badge: "EG" } : { level: `${index}. Obergeschoss`, badge: String(index) };
 }
 
 // ---------------------------------------------------------------- Gebäude
 
-export function buildBuilding(snapshot: Snapshot): Building {
+export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): Building {
+  const avatarUrl = options.avatarUrl ?? defaultAvatarUrl;
   const selfSession = snapshot.self?.session ?? null;
   const visible = visibleChannels(snapshot.channels);
   const visibleIds = new Set(visible.map((c) => c.id));
@@ -158,6 +187,10 @@ export function buildBuilding(snapshot: Snapshot): Building {
     selfMuted: u.selfMute || u.selfDeaf,
     selfDeafened: u.selfDeaf,
     serverMuted: u.mute || u.deaf || u.suppress,
+    avatarUrl: u.userId !== null && u.avatar ? avatarUrl(u.userId, u.avatar) : null,
+    presence: presenceOf(u),
+    idleMinutes: u.idleMinutes,
+    recording: u.recording,
   });
   const viewsIn = (id: number) =>
     (usersIn.get(id) ?? []).slice().sort((a, b) => collator.compare(a.name, b.name)).map(userView);
@@ -170,6 +203,7 @@ export function buildBuilding(snapshot: Snapshot): Building {
     isSelf: selfUser?.channel === c.id,
     locked: snapshot.canEnter[String(c.id)] === false,
     listeners: snapshot.listeners[String(c.id)] ?? [],
+    recording: (usersIn.get(c.id) ?? []).some((u) => u.recording),
   });
   const subtreePopulation = (id: number): number =>
     (usersIn.get(id)?.length ?? 0) + childrenOf(id).reduce((n, c) => n + subtreePopulation(c.id), 0);

@@ -38,6 +38,14 @@ export const User = z.object({
   mute: z.boolean(),
   deaf: z.boolean(),
   suppress: z.boolean(),
+  /** registrierte Nutzer-ID, `null` für unregistrierte Nutzer (AP9) */
+  userId: z.number().int().min(0).nullable(),
+  /** Version des Avatarbilds (Hash), `null` ohne Avatar; Bild unter /avatar/<userId>?v=<avatar> (AP9) */
+  avatar: z.string().regex(/^[0-9a-f]{16}$/).nullable(),
+  /** volle Minuten seit dem letzten Sprechen (Ice idlesecs zählt nur Sprechen, AP10) */
+  idleMinutes: z.number().int().min(0),
+  /** zeichnet gerade auf (AP10) */
+  recording: z.boolean(),
 });
 export type User = z.infer<typeof User>;
 
