@@ -4,7 +4,8 @@
 name: ruumble-local
 services:
   mumble:
-    image: mumblevoip/mumble-server:v1.6.870
+    # andere Server-Version: MUMBLE_VERSION=v1.5.735 docker compose … (Live-Tests in der CI prüfen mehrere)
+    image: mumblevoip/mumble-server:${MUMBLE_VERSION:-v1.6.870}
     environment:
       MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'
       MUMBLE_CONFIG_ICESECRETREAD: s1-read-secret

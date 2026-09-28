@@ -1,5 +1,5 @@
 /**
- * Live-Test: echter Mumble-Server (v1.6.870), Ruumble-Dienst im Container und headless Mumble-Clients mit dem
+ * Live-Test: echter Mumble-Server (Version über MUMBLE_VERSION im lokalen Stack, Standard v1.6.870), Ruumble-Dienst im Container und headless Mumble-Clients mit dem
  * echten Ruumble-Plugin. Die Oberfläche steuert Annas Mumble-Client; geprüft wird, was der Server zurückmeldet.
  */
 import { execFileSync } from "node:child_process";

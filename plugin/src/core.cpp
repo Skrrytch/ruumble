@@ -145,13 +145,14 @@ void Core::sendHello() {
 		if (session_ && certHash_.empty()) api_.log("kein Client-Zertifikat, Anmeldung beim Dienst nicht möglich");
 		return;
 	}
-	transport_.send(json{ { "v", V },
-						  { "type", "hello" },
-						  { "session", *session_ },
-						  { "certHash", certHash_ },
-						  { "pluginVersion", settings_.pluginVersion },
-						  { "paired", isPaired_(bridgeUrl_) } }
-						.dump());
+	json hello{ { "v", V },
+				{ "type", "hello" },
+				{ "session", *session_ },
+				{ "certHash", certHash_ },
+				{ "pluginVersion", settings_.pluginVersion },
+				{ "paired", isPaired_(bridgeUrl_) } };
+	if (!settings_.mumbleVersion.empty()) hello["mumbleVersion"] = settings_.mumbleVersion;
+	transport_.send(hello.dump());
 }
 
 void Core::handleMessage(const std::string &text) {

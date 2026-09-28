@@ -6,7 +6,8 @@
       "session": 4,
       "certHash": "1ee6f93d0d62fca3455963a99a94a8220b1a80fc",
       "pluginVersion": "0.1.0",
-      "paired": false
+      "paired": false,
+      "mumbleVersion": "1.5.735"
     },
     {
       "v": 1,

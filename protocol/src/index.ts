@@ -81,6 +81,8 @@ export const PluginHello = z.object({
   pluginVersion: z.string(),
   /** Das Plugin hat für diesen Dienst schon einmal gekoppelt (`pairedWith` in plugin.json, ADR-0010) */
   paired: z.boolean(),
+  /** Version des Mumble-Clients (mumble_setMumbleInfo), ab Plugin 0.4; für Betrieb und Kompatibilität */
+  mumbleVersion: z.string().max(32).optional(),
 });
 
 export const PluginResult = z.object({ v, type: z.literal("result"), id: commandId, result: CommandResult });
