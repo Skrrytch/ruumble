@@ -121,6 +121,15 @@ Ursprünglicher Plan:
 
 ## AP3 – `building-model` (`web/src/lib/model`)
 
+**✔ Erledigt am 28.09.2026** (Branch `ap3-building-model`): `web/src/lib/model/building.ts`, 32 Tests, Abdeckung 100 % Zeilen / 98 % Verzweigungen (Schwelle 95 % in `pnpm test`). Detailregeln, die bei der Umsetzung festgelegt wurden:
+- Ein verlinkter Kanal verschwindet **samt allen Unterkanälen**. Die Etagennummern werden danach lückenlos vergeben.
+- „Zu tief“ zählt nur **sichtbare** Unterkanäle sichtbarer Räume (O3). Treffen beide Sperrgründe zu, hat „zu tief“ Vorrang.
+- Die Belegung einer Etage umfasst den ganzen sichtbaren Teilbaum, also auch die 3. Ebene gesperrter Etagen. Nutzer in ausgeblendeten Kanälen zählen nur bei „online“ (O4).
+- Die Nutzer eines Raums werden alphabetisch sortiert. Die Initialen sind Grapheme-sicher.
+- `homeFloor`: die eigene Etage, auch wenn sie gesperrt ist (dann erscheint der Hinweis), sonst die erste darstellbare. `isVacant`: keine darstellbare Etage.
+
+Ursprünglicher Plan:
+
 Reine Funktionen ohne Svelte und ohne DOM. Die Testabdeckung liegt bei mindestens 95 %.
 
 | Funktion | Regel | Quelle |
