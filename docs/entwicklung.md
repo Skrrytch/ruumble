@@ -86,11 +86,13 @@ pnpm -F @ruumble/web exec playwright test -c playwright.live.config.ts
 RUUMBLE_CLIENT=fedora pnpm -F @ruumble/web exec playwright test -c playwright.live.config.ts   # anderer Client
 ```
 
-Voraussetzung: lokaler Stack läuft, `plugin/build` ist gebaut, Client-Images sind vorhanden.
+Voraussetzung: lokaler Stack läuft, `plugin/build` ist gebaut, Client-Images sind vorhanden. Eine andere Server-Version: `MUMBLE_VERSION=v1.5.735 docker compose -f deploy/local/docker-compose.yml up -d` (vorher `down -v`, ältere Server lesen die Datenbank neuerer nicht).
+
+In GitHub laufen die Live-Tests als Workflow `live.yml`: wöchentlich gegen Server 1.5.735, 1.6.870 und `latest` (Ubuntu-Client) sowie 1.6.870 mit Debian- und Fedora-Client, dazu von Hand mit beliebigem Tag.
 
 ## Mumble-Schnittstellen aktualisieren
 
-Ein wöchentlicher GitHub-Workflow meldet neue Mumble-Releases als Issue, mit dem Diff der Schnittstellendateien. Übernehmen:
+Ein wöchentlicher GitHub-Workflow meldet neue Mumble-Releases als Issue, mit dem Diff der Schnittstellendateien, und startet die Live-Tests gegen das neue Release. So fallen auch Verhaltensänderungen auf, die ein Diff nicht zeigt. Übernehmen:
 
 ```sh
 scripts/update-mumble-interfaces.sh v1.6.870     # gewünschtes Tag

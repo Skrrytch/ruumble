@@ -53,6 +53,9 @@ interface PluginEntry {
   conn: Conn<BridgeToPlugin>;
   certHash: string;
   session: number;
+  /** Mumble-Client und Plugin, wie das Plugin sie meldet (Betrieb, Kompatibilität) */
+  mumbleVersion: string;
+  pluginVersion: string;
 }
 
 /** Missbrauchsschutz je Nutzer; die Mumble-Grenzen behandelt das Plugin (ADR-0003) */
@@ -153,11 +156,11 @@ export class Hub {
           const previous = this.plugins.get(msg.certHash);
           if (previous && previous.conn !== conn) previous.conn.close(4001, "replaced");
           if (entry && entry.certHash !== msg.certHash) this.removePlugin(entry);
-          entry = { conn, certHash: msg.certHash, session: msg.session };
+          entry = { conn, certHash: msg.certHash, session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unbekannt", pluginVersion: msg.pluginVersion };
           this.plugins.set(msg.certHash, entry);
           const pairUrl = msg.paired ? undefined : `${this.opts.publicUrl}/pair?code=${this.opts.pairing.createCode(msg.certHash, name)}`;
           conn.send(pairUrl ? { v, type: "welcome", pairUrl } : { v, type: "welcome" });
-          this.log("Plugin verbunden", { session: msg.session, name });
+          this.log("Plugin verbunden", { session: msg.session, name, plugin: msg.pluginVersion, mumble: entry.mumbleVersion });
           this.sessionsChanged();
           this.forUis(msg.certHash, (ui) => {
             ui.conn.send({ v, type: "status", plugin: "connected" });
@@ -312,6 +315,21 @@ export class Hub {
 
   private log(msg: string, extra?: Record<string, unknown>): void {
     this.opts.log?.(msg, extra);
+  }
+
+  /** verbundene Clients je Version, z. B. `{ "mumble 1.5.735 / plugin 0.4.0": 2 }` (für /healthz) */
+  clientVersions(): Record<string, number> {
+    const counts: Record<string, number> = {};
+    for (const p of this.plugins.values()) {
+      const key = `mumble ${p.mumbleVersion} / plugin ${p.pluginVersion}`;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  /** Version des Mumble-Servers (Ice), sobald bekannt */
+  get serverVersion(): string | null {
+    return this.state?.info.version ?? null;
   }
 
   get pluginCount(): number {

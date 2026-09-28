@@ -31,6 +31,10 @@
             },
             "paired": {
               "type": "boolean"
+            },
+            "mumbleVersion": {
+              "type": "string",
+              "maxLength": 32
             }
           },
           "required": [
