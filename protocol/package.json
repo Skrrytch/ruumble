@@ -1,0 +1,27 @@
+{
+  "name": "@ruumble/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nachrichten zwischen Ruumble-Oberfläche, -Dienst und -Plugin (ADR-0007)",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./fixtures/*": "./fixtures/*"
+  },
+  "scripts": {
+    "lint": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "build": "tsx scripts/gen-schema.ts --check",
+    "gen:schema": "tsx scripts/gen-schema.ts"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.0.2"
+  }
+}

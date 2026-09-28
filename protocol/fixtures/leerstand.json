@@ -1,0 +1,59 @@
+{
+  "v": 1,
+  "type": "snapshot",
+  "server": {
+    "name": "Musterhaus",
+    "version": "1.6.870"
+  },
+  "self": {
+    "session": 4
+  },
+  "channels": [
+    {
+      "id": 0,
+      "parent": null,
+      "name": "Musterhaus",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 16,
+      "parent": 0,
+      "name": "ARCHIV",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 17,
+      "parent": 16,
+      "name": "Aktenraum",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 18,
+      "parent": 17,
+      "name": "Unterkanal",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    }
+  ],
+  "users": [
+    {
+      "session": 4,
+      "name": "Anna",
+      "channel": 0,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    }
+  ],
+  "listeners": {},
+  "canEnter": {}
+}

@@ -1,0 +1,127 @@
+{
+  "PluginToBridge": [
+    {
+      "v": 1,
+      "type": "hello",
+      "session": 4,
+      "certHash": "1ee6f93d0d62fca3455963a99a94a8220b1a80fc",
+      "pluginVersion": "0.1.0",
+      "paired": false
+    },
+    {
+      "v": 1,
+      "type": "result",
+      "id": "c-17",
+      "result": "ok"
+    },
+    {
+      "v": 1,
+      "type": "selfState",
+      "selfMute": true,
+      "selfDeaf": false
+    },
+    {
+      "v": 1,
+      "type": "talking",
+      "session": 1,
+      "state": "talking"
+    },
+    {
+      "v": 1,
+      "type": "bye"
+    }
+  ],
+  "BridgeToPlugin": [
+    {
+      "v": 1,
+      "type": "welcome",
+      "pairUrl": "https://ruumble.example/pair?code=abc123"
+    },
+    {
+      "v": 1,
+      "type": "welcome"
+    },
+    {
+      "v": 1,
+      "type": "reject",
+      "reason": "hash-mismatch"
+    },
+    {
+      "v": 1,
+      "type": "command",
+      "id": "c-17",
+      "body": {
+        "cmd": "join",
+        "channel": 5
+      }
+    },
+    {
+      "v": 1,
+      "type": "command",
+      "id": "c-18",
+      "body": {
+        "cmd": "deaf",
+        "on": true
+      }
+    }
+  ],
+  "UiToBridge": [
+    {
+      "v": 1,
+      "type": "command",
+      "id": "c-17",
+      "body": {
+        "cmd": "mute",
+        "on": false
+      }
+    }
+  ],
+  "BridgeToUi": [
+    {
+      "v": 1,
+      "type": "talking",
+      "session": 1,
+      "state": "passive"
+    },
+    {
+      "v": 1,
+      "type": "result",
+      "id": "c-17",
+      "result": "superseded"
+    },
+    {
+      "v": 1,
+      "type": "status",
+      "plugin": "disconnected"
+    }
+  ],
+  "invalid": [
+    {
+      "v": 2,
+      "type": "bye"
+    },
+    {
+      "v": 1,
+      "type": "hello",
+      "session": 0,
+      "certHash": "x",
+      "pluginVersion": "0",
+      "paired": false
+    },
+    {
+      "v": 1,
+      "type": "command",
+      "id": "c-1",
+      "body": {
+        "cmd": "join",
+        "channel": -1
+      }
+    },
+    {
+      "v": 1,
+      "type": "result",
+      "id": "c-1",
+      "result": "maybe"
+    }
+  ]
+}

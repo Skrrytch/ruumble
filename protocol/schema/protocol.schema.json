@@ -1,0 +1,675 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruumble-Protokoll v1",
+  "description": "Erzeugt aus protocol/src/index.ts – nicht von Hand ändern (pnpm -F @ruumble/protocol gen:schema).",
+  "$defs": {
+    "PluginToBridge": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "hello"
+            },
+            "session": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "certHash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "pluginVersion": {
+              "type": "string"
+            },
+            "paired": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "session",
+            "certHash",
+            "pluginVersion",
+            "paired"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "result"
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "ok",
+                "rejected",
+                "superseded",
+                "timeout",
+                "offline"
+              ]
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "id",
+            "result"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "selfState"
+            },
+            "selfMute": {
+              "type": "boolean"
+            },
+            "selfDeaf": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "selfMute",
+            "selfDeaf"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "talking"
+            },
+            "session": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "passive",
+                "talking",
+                "whispering",
+                "shouting",
+                "talking-muted"
+              ]
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "session",
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "bye"
+            }
+          },
+          "required": [
+            "v",
+            "type"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "BridgeToPlugin": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "welcome"
+            },
+            "pairUrl": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "required": [
+            "v",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "reject"
+            },
+            "reason": {
+              "type": "string",
+              "enum": [
+                "unknown-session",
+                "hash-mismatch",
+                "address-mismatch",
+                "no-certificate",
+                "unsupported-version"
+              ]
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "command"
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "body": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "cmd": {
+                      "type": "string",
+                      "const": "join"
+                    },
+                    "channel": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "cmd",
+                    "channel"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "cmd": {
+                      "type": "string",
+                      "const": "mute"
+                    },
+                    "on": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "cmd",
+                    "on"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "cmd": {
+                      "type": "string",
+                      "const": "deaf"
+                    },
+                    "on": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "cmd",
+                    "on"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "id",
+            "body"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "UiToBridge": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "command"
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "body": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "cmd": {
+                      "type": "string",
+                      "const": "join"
+                    },
+                    "channel": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "cmd",
+                    "channel"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "cmd": {
+                      "type": "string",
+                      "const": "mute"
+                    },
+                    "on": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "cmd",
+                    "on"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "cmd": {
+                      "type": "string",
+                      "const": "deaf"
+                    },
+                    "on": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "cmd",
+                    "on"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "id",
+            "body"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "BridgeToUi": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "snapshot"
+            },
+            "server": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ],
+              "additionalProperties": false
+            },
+            "self": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "session": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "session"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "channels": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "parent": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "links": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "temporary": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "parent",
+                  "name",
+                  "position",
+                  "links",
+                  "temporary"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "users": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "session": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "channel": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "selfMute": {
+                    "type": "boolean"
+                  },
+                  "selfDeaf": {
+                    "type": "boolean"
+                  },
+                  "mute": {
+                    "type": "boolean"
+                  },
+                  "deaf": {
+                    "type": "boolean"
+                  },
+                  "suppress": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "session",
+                  "name",
+                  "channel",
+                  "selfMute",
+                  "selfDeaf",
+                  "mute",
+                  "deaf",
+                  "suppress"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "listeners": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "canEnter": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "server",
+            "self",
+            "channels",
+            "users",
+            "listeners",
+            "canEnter"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "talking"
+            },
+            "session": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "passive",
+                "talking",
+                "whispering",
+                "shouting",
+                "talking-muted"
+              ]
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "session",
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "result"
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "ok",
+                "rejected",
+                "superseded",
+                "timeout",
+                "offline"
+              ]
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "id",
+            "result"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "status"
+            },
+            "plugin": {
+              "type": "string",
+              "enum": [
+                "connected",
+                "disconnected"
+              ]
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "plugin"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

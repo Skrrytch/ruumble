@@ -90,7 +90,7 @@ Jeder Test ist zeitlich begrenzt auf höchstens 1 Tag. Das Ergebnis ist eine kur
 4. Als `.mumble_plugin` bündeln und im Mumble-Client installieren: Ubuntu 24.04, Debian 13, Fedora (aktuell), soweit verfügbar.
 5. `mumble_shutdown` beim Deaktivieren und Beenden: kein Hänger, kein Absturz.
 
-### S3 – Identität (prüft P6, P7)
+### S3 – Identität (prüft P6, P7) · P6 ✔ in S1/S2. **P7 zurückgestellt bis AP7:** Der IP-Abgleich über echtes Netz, Proxy und VPN wird mit dem Homeserver geprüft (Entscheidung 28.09.2026).
 1. SHA1 von `getCertificateList(session)[0]` mit `getUserHash` im Plugin vergleichen.
 2. `User.address` mit der Quell-IP der WebSocket-Verbindung vergleichen, einmal direkt, einmal über Caddy (`X-Forwarded-For`) und, wenn möglich, über VPN.
 
@@ -99,6 +99,15 @@ Jeder Test ist zeitlich begrenzt auf höchstens 1 Tag. Das Ergebnis ist eine kur
 ---
 
 ## AP2 – Protokoll und gemeinsame Typen (`protocol`)
+
+**✔ Erledigt am 28.09.2026** (Branch `ap2-protocol`):
+- zod-Schemas in `protocol/src/index.ts`, `parse()` wirft nie
+- `schema/protocol.schema.json` wird erzeugt, die CI prüft es mit `build`
+- Fixtures: `musterhaus`, `sonderfaelle` (Eingang, zu tief, zu viele Räume, verlinkte Räume und Etagen, Mitlauschen, Schloss, Server-Mute, temporärer Kanal), `leerstand`, `nicht-gekoppelt`, `messages` (gültige und ungültige Nachrichten)
+- 27 Tests, darunter die Stimmigkeit der Fixtures (symmetrische Links wie in Mumble)
+- Ergänzt gegenüber ADR-0007: `TalkingState` als Text (`passive`, `talking`, `whispering`, `shouting`, `talking-muted`), Ablehnungsgründe für `reject`
+
+Ursprünglicher Plan:
 
 1. TypeScript-Typen für alle Nachrichten aus ADR-0007, dazu `v: 1`.
 2. Laufzeitprüfung mit **zod**. Aus den zod-Schemas wird ein JSON-Schema (`protocol.schema.json`) für das Plugin erzeugt.
