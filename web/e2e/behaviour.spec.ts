@@ -56,6 +56,11 @@ test.describe("Sonderfälle", () => {
     await expect(page.getByRole("region", { name: "Eingang" }).getByRole("img")).toHaveCount(2);
     await expect(page.getByTitle("1 Person hört mit")).toBeVisible();
     await expect(page.getByRole("img", { name: "Nils, vom Server stummgeschaltet" })).toBeVisible();
+    await expect(page.getByTitle("Vom Server stummgeschaltet", { exact: true })).toHaveCount(2); // Nils (unterdrückt), Mia (Server-Mute)
+    await page.getByRole("button", { name: "Erdgeschoss: Lobby" }).click();
+    await expect(page.locator(".floorplan").getByTitle("Mikrofon stumm", { exact: true })).toHaveCount(1); // Ben (der Knopf im Menü heißt genauso)
+    await expect(page.locator(".floorplan").getByTitle("Taub geschaltet", { exact: true })).toHaveCount(1); // Felix
+    await page.getByRole("button", { name: "Zu meiner Etage" }).click();
     await page.getByRole("button", { name: "2. Obergeschoss: VERTRIEB" }).click();
     const locked = page.getByRole("button", { name: "Gregors Büro – kein Zutritt" });
     await expect(locked).toHaveAttribute("aria-disabled", "true");

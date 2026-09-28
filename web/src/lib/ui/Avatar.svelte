@@ -21,11 +21,11 @@
   <span class="av" class:me={user.isSelf} class:talking aria-hidden="true">
     {user.initials}
     {#if user.serverMuted}
-      <span class="flag server"><MicOff size={12} strokeWidth={2.5} /></span>
+      <span class="flag server" title="Vom Server stummgeschaltet"><MicOff size={12} strokeWidth={2.5} /></span>
     {:else if user.selfDeafened}
-      <span class="flag"><HeadphoneOff size={12} strokeWidth={2.5} /></span>
+      <span class="flag" title="Taub geschaltet"><HeadphoneOff size={12} strokeWidth={2.5} /></span>
     {:else if user.selfMuted}
-      <span class="flag"><MicOff size={12} strokeWidth={2.5} /></span>
+      <span class="flag" title="Mikrofon stumm"><MicOff size={12} strokeWidth={2.5} /></span>
     {/if}
   </span>
   {#if showName}<span class="name" aria-hidden="true">{user.name}</span>{/if}
