@@ -111,7 +111,7 @@
     aria-controls="board-panel"
     onclick={ontoggleboard}
   >
-    <BoardNotes empty={!(room?.hasBoard ?? false)} />
+    <BoardNotes />
   </button>
 {/if}
 </div>
@@ -128,13 +128,13 @@
   }
   /* Pinnwand-Grafik rechtsbündig oben (ADR-0011, Variante B) */
   .notes { position: absolute; top: 12px; right: 12px; pointer-events: none; }
+  /* Schalter ohne Kasten: nur die Zettel, beim Überfahren heben sie sich leicht an */
   .notes.toggle {
-    pointer-events: auto; border: 0; background: transparent; padding: 6px; margin: -6px; border-radius: var(--radius-md);
+    pointer-events: auto; border: 0; background: transparent; padding: 4px; margin: -4px; border-radius: var(--radius-md);
     min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer;
-    transition: background var(--dur) var(--ease-out);
+    transition: transform var(--dur) var(--ease-out);
   }
-  .notes.toggle:hover { background: rgb(255 255 255 / 0.6); }
-  .notes.toggle[aria-expanded="true"] { background: var(--color-white); box-shadow: 0 0 0 1px var(--color-blue-300); }
+  .notes.toggle:hover { transform: translateY(-2px) rotate(-2deg) scale(1.06); }
   .notes.toggle:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
   .room:hover { background: var(--color-surface); }
   .room:focus-visible { outline: 3px solid var(--color-sky); outline-offset: -7px; }
