@@ -2,6 +2,7 @@
  * Ruumble-Dienst (AP5). Konfiguration über Umgebungsvariablen (ADR-0008):
  *
  *   ICE_HOST, ICE_PORT (6502), ICE_SECRET_READ   Ice des Mumble-Servers, nur das Read-Secret
+ *   ICE_SECRET_READ_FILE                         alternativ: Datei mit dem Read-Secret (Docker-Secret)
  *   SERVER_ID                                    optional, sonst erster laufender Server
  *   PUBLIC_URL                                   Basis-URL für Kopplungslinks (https://…)
  *   PORT (8080), HOST (0.0.0.0)                  HTTP/WebSocket
@@ -12,7 +13,7 @@
  *   TRUST_PROXY (false)                          true hinter Nginx Proxy Manager
  *   PREVIEW (false)                              true: Gebäude ohne Kopplung nur lesend sichtbar
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import fastifyStatic from "@fastify/static";
 import fastifyWebsocket from "@fastify/websocket";
@@ -34,7 +35,7 @@ const bool = (key: string) => env[key] === "true" || env[key] === "1";
 const config = {
   iceHost: required("ICE_HOST"),
   icePort: Number(env.ICE_PORT ?? 6502),
-  iceSecret: required("ICE_SECRET_READ"),
+  iceSecret: env.ICE_SECRET_READ_FILE ? readFileSync(env.ICE_SECRET_READ_FILE, "utf8").trim() : required("ICE_SECRET_READ"),
   serverId: env.SERVER_ID ? Number(env.SERVER_ID) : undefined,
   publicUrl: (env.PUBLIC_URL ?? "http://localhost:8080").replace(/\/$/, ""),
   port: Number(env.PORT ?? 8080),

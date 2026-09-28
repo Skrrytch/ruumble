@@ -13,7 +13,7 @@ set(RUUMBLE_DEFAULT_BRIDGE_URL "http://127.0.0.1:8080" CACHE STRING "Standardadr
 option(RUUMBLE_TESTS "Unit-Tests bauen" ON)
 
 include(FetchContent)
-FetchContent_Declare(nlohmann_json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
+FetchContent_Declare(nlohmann_json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 set(USE_TLS ON CACHE BOOL "" FORCE)
 set(USE_OPEN_SSL ON CACHE BOOL "" FORCE)
 set(USE_ZLIB OFF CACHE BOOL "" FORCE)
@@ -41,7 +41,7 @@ target_compile_options(ruumble PRIVATE -Wall -Wextra)
 target_link_options(ruumble PRIVATE -Wl,--exclude-libs,ALL)
 
 if(RUUMBLE_TESTS)
-  FetchContent_Declare(doctest URL https://github.com/doctest/doctest/archive/refs/tags/v2.5.3.tar.gz)
+  FetchContent_Declare(doctest URL https://github.com/doctest/doctest/archive/refs/tags/v2.5.3.tar.gz DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
   FetchContent_MakeAvailable(doctest)
   enable_testing()
   add_executable(ruumble_tests test/core_test.cpp)
