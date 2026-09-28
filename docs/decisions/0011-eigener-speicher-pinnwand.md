@@ -1,6 +1,6 @@
 # ADR-0011: Eigener Speicher für die Pinnwand
 
-Status: angenommen (28.09.2026). Offen ist nur noch die Grafik im Raum (Variante A, B oder C, siehe `docs/design/pinnwand-varianten.html`).
+Status: angenommen (28.09.2026)
 
 ## Kontext
 Die Pinnwand (Idee A) ist der erste Teil von Ruumble, der **selbst Inhalte speichert**. Bisher liest der Dienst Mumble nur und hält lediglich Geräte-Tokens. Die Beiträge (Text, Code, Bilder, Dateien) müssen dauerhaft, begrenzt und zugriffsgeschützt abgelegt werden.
@@ -19,7 +19,7 @@ Die Pinnwand (Idee A) ist der erste Teil von Ruumble, der **selbst Inhalte speic
 | **Grenzen** | **Bilder und Dateien bis 10 MB**, Text bis 100 KB, insgesamt 2 GB (`BOARD_QUOTA_MB`) |
 | **Speicher voll** | **Die ältesten Beiträge werden zuerst gelöscht**, samt Anhängen, bis wieder Platz ist |
 | **Kanal gelöscht** | Die Beiträge bleiben 7 Tage für Admins zugänglich, danach werden sie gelöscht. |
-| **Anzeige im Grundriss** | **Kein Zähler**, sondern eine Pinnwand-Grafik im Raum (1, 2 oder 3 und mehr Zettel). Sie ist für alle Gekoppelten sichtbar, in Räumen ohne Zutrittsrecht aber nicht. Der Inhalt bleibt den Anwesenden vorbehalten. |
+| **Anzeige im Grundriss** | **Kein Zähler**, sondern eine Pinnwand-Grafik: **Variante B mit zwei Zetteln**, rechtsbündig oben im Raum, immer gleich, egal wie viele Beiträge hängen. Sie erscheint, sobald im Raum mindestens ein Beitrag hängt. Sichtbar für alle Gekoppelten, in Räumen ohne Zutrittsrecht aber nicht. Der Inhalt bleibt den Anwesenden vorbehalten. |
 | **Hinweis in Mumble** | „Neuer Beitrag von X in ‚Raum‘ – in Ruumble ansehen“ als Protokollmeldung bei den Anwesenden außer dem Autor (Plugin-Befehl `notify`) |
 | **Autor** | Zertifikats-Hash (stabil) und Name zum Zeitpunkt des Beitrags. Den Hash gibt der Dienst nie heraus, die Oberfläche bekommt nur `name` und `mine`. |
 | **Sicherheit** | Der Dienst speichert Markdown als **Rohtext** und erzeugt nie HTML. Die Oberfläche rendert mit markdown-it (`html: false`) und bereinigt mit DOMPurify. Content-Security-Policy für die ganze Oberfläche. Bilder mit geprüftem `Content-Type` und `nosniff`, Dateien immer als Download (`Content-Disposition: attachment`). |

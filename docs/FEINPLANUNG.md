@@ -415,7 +415,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 1. **Protokoll** (`protocol`):
    - `Post`: `id`, `channelId`, `kind: text|code|image|file`, `text`, `language?`, `attachment?`, `authorName`, `mine`, `createdAt`, `updatedAt`, `updatedByName?`
    - `Attachment`: `id` (Hash), `name`, `mime`, `size`, bei Bildern `width`/`height`
-   - Snapshot: `boards: Record<channelId, 1|2|3>` (Füllstand für die Grafik, nur Räume mit Zutrittsrecht)
+   - Snapshot: `boards: channelId[]`, also die Räume, in denen etwas hängt, nur solche mit Zutrittsrecht (für die Grafik)
    - WebSocket-Ereignis `board {channelId}`: Die Oberfläche lädt dann neu.
 2. **Speicher** (`bridge/src/board/store.ts`):
    - `better-sqlite3` im WAL-Modus mit versionierten Migrationen
@@ -464,7 +464,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 4. **Tests:** Upload-Grenzen, Bildgrößen, E2E (Einfügen, Ziehen, Vollbild)
 
 ### AP11.4 – Pinnwand im Grundriss, Hinweis in Mumble, Betrieb
-1. **Grafik im Raum** nach der gewählten Variante (A, B oder C). Sie zeigt den Füllstand 1, 2 oder 3 und mehr, der eigene Raum zeigt auch leer eine Einladung. Klick auf die Grafik im eigenen Raum klappt die Seitenleiste auf.
+1. **Grafik im Raum: Variante B mit zwei Zetteln** (Entscheidung 28.09.2026), rechtsbündig oben, feste Größe, ohne Mengenangabe. Sie erscheint nur, wenn im Raum etwas hängt. Klick auf die Grafik im eigenen Raum klappt die Seitenleiste auf.
 2. **Plugin:** Befehl `notify{text}` → `log`. Der Dienst schickt ihn beim Anheften an die Anwesenden außer dem Autor.
 3. **Live-Test:** Zwei Clients im selben Raum, einer heftet an, der andere sieht den Beitrag sofort. Das Mumble-Protokoll zeigt den Hinweis, ein dritter Nutzer außerhalb des Raums bekommt `403`.
 4. **Betrieb:** Grenzwerte und Sicherung in `deploy/homeserver`, Füllstand in `/healthz`, Bereinigung der Daten beim Löschen
