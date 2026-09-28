@@ -10,7 +10,7 @@ test.describe("Pinnwand (AP11.2)", () => {
     await toggle.click();
     const board = page.getByRole("complementary", { name: "Pinnwand" });
     await expect(board.getByRole("heading", { name: "Büro von Anna" })).toBeVisible();
-    await expect(board.getByText("2 Beiträge · sichtbar für alle im Raum")).toBeVisible();
+    await expect(board.getByText("2 Beiträge")).toBeVisible();
     await page.getByRole("button", { name: "Pinnwand ausblenden" }).first().click();
     await expect(board).toHaveCount(0);
   });
@@ -44,7 +44,7 @@ test.describe("Pinnwand (AP11.2)", () => {
     const input = board.getByRole("textbox", { name: "Neuer Beitrag" });
     await input.fill("Kurzer **Hinweis**");
     await input.press("Control+Enter");
-    await expect(board.getByText("3 Beiträge · sichtbar für alle im Raum")).toBeVisible();
+    await expect(board.getByText("3 Beiträge")).toBeVisible();
     await expect(board.getByRole("article").first().locator("strong", { hasText: "Hinweis" })).toBeVisible();
     await expect(input).toHaveValue("");
     await board.getByRole("button", { name: "Code", exact: true }).click();
@@ -54,7 +54,7 @@ test.describe("Pinnwand (AP11.2)", () => {
     page.once("dialog", (d) => d.accept());
     await board.getByRole("article").first().getByRole("button", { name: "Öffnen · bearbeiten" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Löschen" }).click();
-    await expect(board.getByText("2 Beiträge · sichtbar für alle im Raum")).toBeVisible();
+    await expect(board.getByText("2 Beiträge")).toBeVisible();
   });
 
   test("eingefügter Code: Vorschlag „als Code anheften“", async ({ page }) => {
@@ -74,7 +74,7 @@ test.describe("Pinnwand (AP11.2)", () => {
     await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
     const board = page.getByRole("complementary", { name: "Pinnwand" });
     await board.getByRole("textbox", { name: "Neuer Beitrag" }).fill('<img src=x onerror="document.title=\'gehackt\'"> [x](javascript:alert(1))');
-    await board.getByRole("button", { name: "Anheften", exact: true }).click();
+    await board.getByRole("button", { name: "Senden" }).click();
     await expect(board.getByRole("article").first()).toContainText("<img src=x");
     await expect(board.locator("article img")).toHaveCount(0);
     expect(await page.title()).toBe("Ruumble");

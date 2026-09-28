@@ -28,7 +28,7 @@
       <div class="kicker"><StickyNote size={14} /> Pinnwand</div>
       {#if board}
         <h2>{board.channelName}</h2>
-        <div class="sub">{countLabel(board.posts.length)} · sichtbar für alle im Raum</div>
+        <div class="sub">{countLabel(board.posts.length)}</div>
       {/if}
     </div>
     <button type="button" class="close" aria-label="Pinnwand ausblenden" title="Pinnwand ausblenden" onclick={() => app.closeBoard()}>
@@ -46,7 +46,7 @@
         <button type="button" aria-pressed={app.boardFilter === f.id} onclick={() => (app.boardFilter = f.id)}>{f.label}</button>
       {/each}
     </div>
-    <div class="list raster">
+    <div class="list">
       {#each posts as post (post.id)}
         <PostCard {post} {now} onopen={(p) => (openId = p.id)} />
       {:else}
@@ -67,8 +67,9 @@
 {/if}
 
 <style>
-  .board { width: 340px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--color-white); min-height: 0; }
-  header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 16px 16px 12px; border-bottom: 1px solid var(--color-blue-100); }
+  /* leicht blau getönt, damit sich die Pinnwand vom Grundriss abhebt (ohne das Punktraster des Flurs) */
+  .board { --board-bg: color-mix(in srgb, var(--color-blue-100) 45%, var(--color-white)); width: 340px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--board-bg); min-height: 0; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 16px 16px 12px; border-bottom: 1px solid var(--color-blue-300); }
   .kicker { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-blue-500); }
   h2 { margin: 2px 0 0; font-size: 20px; }
   .sub { font-size: 13px; color: var(--color-blue-700); }
@@ -78,6 +79,5 @@
   .filters button { min-height: 32px; padding: 0 10px; border: 1px solid var(--color-blue-300); border-radius: 999px; background: var(--color-white); color: var(--color-navy); font-size: 13px; cursor: pointer; }
   .filters button[aria-pressed="true"] { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); }
   .list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 16px; min-height: 0; }
-  .raster { background-color: var(--color-white); background-image: radial-gradient(var(--raster-dot) 2px, transparent 2.4px); background-size: 10px 10px; }
   .empty { margin: 16px; font-size: 14px; color: var(--color-blue-700); }
 </style>
