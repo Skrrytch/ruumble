@@ -8,12 +8,12 @@
  *   PORT (8080), HOST (0.0.0.0)                  HTTP/WebSocket
  *   WEB_DIST                                     gebaute Oberfläche (web/dist)
  *   DATA_DIR (./data)                            Geräte-Tokens
- *   PLUGIN_BUNDLE                                optional: Pfad zum .mumble_plugin für /download
+ *   PLUGIN_BUNDLE, PLUGIN_BUNDLE_DIR             optional: .mumble_plugin für /download (Datei oder Verzeichnis)
  *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004, P7 offen)
  *   TRUST_PROXY (false)                          true hinter Nginx Proxy Manager
  *   PREVIEW (false)                              true: Gebäude ohne Kopplung nur lesend sichtbar
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import fastifyStatic from "@fastify/static";
 import fastifyWebsocket from "@fastify/websocket";
@@ -42,7 +42,11 @@ const config = {
   host: env.HOST ?? "0.0.0.0",
   webDist: resolve(env.WEB_DIST ?? new URL("../../web/dist", import.meta.url).pathname),
   dataDir: resolve(env.DATA_DIR ?? "data"),
-  pluginBundle: env.PLUGIN_BUNDLE ? resolve(env.PLUGIN_BUNDLE) : null,
+  pluginBundle: env.PLUGIN_BUNDLE
+    ? resolve(env.PLUGIN_BUNDLE)
+    : env.PLUGIN_BUNDLE_DIR && existsSync(env.PLUGIN_BUNDLE_DIR)
+      ? (readdirSync(env.PLUGIN_BUNDLE_DIR).filter((f) => f.endsWith(".mumble_plugin")).sort().map((f) => resolve(env.PLUGIN_BUNDLE_DIR!, f)).pop() ?? null)
+      : null,
   addressCheck: (env.ADDRESS_CHECK ?? "warn") as AddressCheck,
   trustProxy: bool("TRUST_PROXY"),
   preview: bool("PREVIEW"),

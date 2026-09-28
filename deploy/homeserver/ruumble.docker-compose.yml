@@ -2,7 +2,7 @@
 # Liest Mumble per Ice nur lesend. Erreichbar nur im Heimnetz (an die LAN-Adresse gebunden).
 services:
     ruumble:
-        image: ruumble:0.1.0
+        image: ruumble:0.2.0
         container_name: ruumble
         restart: unless-stopped
         deploy:
@@ -13,7 +13,7 @@ services:
             ICE_HOST: mumble-server
             ICE_SECRET_READ_FILE: /run/secrets/ice_read
             PUBLIC_URL: http://<LAN-IP>:8080
-            ADDRESS_CHECK: warn
+            ADDRESS_CHECK: enforce
         secrets:
             - ice_read
         volumes:

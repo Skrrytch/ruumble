@@ -218,6 +218,8 @@ Die Verzeichnisse `protocol/` bis `deploy/` entstehen in den Arbeitspaketen der 
 - **O2 Verlinkter Etagenkanal:** Ist ein Kanal der 1. Ebene verlinkt, verschwindet dann die **ganze Etage** samt ihren Räumen? (Vorschlag: ja, weil ohne Etagenkanal der Flur fehlt.)
 - **O3 Unterkanäle ausgeblendeter Räume:** Hat ein verlinkter (also ausgeblendeter) Raum Unterkanäle, sperrt das die Etage trotzdem (L4)? (Vorschlag: nein. Was verschwunden ist, zählt nicht mehr.)
 - **O4 Nutzer in ausgeblendeten Kanälen:** Werden sie bei „N online“ mitgezählt? Und was sieht der eigene Nutzer, wenn er selbst in einem verlinkten Kanal ist? (Vorschlag: mitzählen, damit die Gesamtzahl stimmt, und für den eigenen Nutzer denselben Hinweis zeigen wie bei gesperrten Etagen: „Du bist in einem Bereich, der hier nicht darstellbar ist“.)
+- **O14 Schwellen für „still“ und „abwesend“ (AP10):** Vorschlag 15 Minuten ohne Sprechen = still, selbst taub + 5 Minuten = abwesend. Passt das zu eurer Nutzung?
+- **O15 Pinnwand (Idee A):** Entscheidungen zum eigenen Speicher (Aufbewahrung, Grenzen, Sichtbarkeit), siehe [ideen.md](ideen.md) → ADR-0011.
 - **O10 Domain und Zertifikat** für den Dienst im internen Netz: interne CA oder Let's Encrypt über DNS-Challenge?
 
 

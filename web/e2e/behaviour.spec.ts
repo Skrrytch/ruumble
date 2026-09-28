@@ -111,6 +111,7 @@ test("ohne gekoppeltes Plugin: Hinweis statt Gebäude", async ({ page }) => {
   await page.goto("/?fixture=nicht-gekoppelt&talking=0");
   await expect(page.getByText("Mumble ist nicht verbunden.")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Aufzug – Etagen" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Ruumble-Plugin herunterladen" })).toHaveAttribute("href", "/download");
 });
 
 test("Sprechanzeige im eigenen Raum", async ({ page }) => {

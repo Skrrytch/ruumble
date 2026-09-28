@@ -40,6 +40,8 @@ Die UI-Stränge AP2 bis AP4 hängen nicht von Mumble ab und können **parallel**
 | AP6 | Ruumble-Plugin | L | AP1 (S2), AP2 |
 | AP7 | Integration und Docker Compose | M | AP4, AP5, AP6 |
 | AP8 | Dokumentation und Rollout | S | AP7 |
+| AP9 | Echte Avatare (Idee D) | S | AP7 |
+| AP10 | Still, abwesend und Aufnahme sichtbar (Idee E) | S | AP7 |
 
 ---
 
@@ -310,6 +312,75 @@ Ursprünglicher Plan:
 2. `docs/betrieb.md`: Compose, Secrets, Updates, Healthcheck, Token widerrufen.
 3. `docs/sicherheit.md`: Restrisiko aus ADR-0004 und Umgang mit Tokens.
 4. Pilot mit 2–3 Kollegen, Rückmeldungen als Issues erfassen.
+
+---
+
+## AP9 – Echte Avatare (Idee D, [ideen.md](ideen.md))
+
+**Ziel:** Registrierte Nutzer erscheinen mit ihrem Mumble-Avatar statt mit Initialen. Ohne Bild, bei unregistrierten Nutzern oder bei Fehlern bleibt es bei den Initialen.
+
+**Grundlage (Mumble-Code, v1.5.735):**
+- Ice `Server.getTexture(userid)` ist mit dem Read-Secret erlaubt, aber **nur für registrierte Nutzer**.
+- Aktuelle Clients speichern Bilddateien (PNG, JPEG …). Das alte Format (600×60 BGRA, zlib) kommt nur von sehr alten Clients (`src/mumble/Overlay.cpp:356`).
+- Standardgrenze 128 KB (`imagemessagelength`, `Meta.cpp:61`).
+- Ice meldet keine Änderung am Bild.
+
+Schritte:
+1. **Protokoll:** `User` bekommt `userId: number | null` (registrierte ID, `null` für unregistriert) und `avatar: string | null` (Version = die ersten 16 Hex-Zeichen des SHA-256 des Bildes). Fixtures und JSON-Schema werden angepasst.
+2. **Ice-Quelle:** `userid` übernehmen. Neue Methode `texture(userId)` ruft `getTexture` auf.
+3. **Avatar-Zwischenspeicher im Dienst** (`bridge/src/avatars.ts`):
+   - Für jeden registrierten, anwesenden Nutzer wird das Bild beim ersten Auftauchen geholt und danach alle **5 Minuten** erneut.
+   - Das Format wird an den ersten Bytes erkannt (PNG, JPEG, GIF, WEBP). Alles andere, auch das alte Rohformat, gilt als „kein Avatar“. Das alte Format lässt sich später bei Bedarf nachrüsten.
+   - Grenze 256 KB je Bild. Einträge von Nutzern, die seit 1 h fehlen, werden verworfen. Nichts wird auf die Platte geschrieben.
+4. **Snapshot:** `avatar` enthält die Version. Ändert sich das Bild, ändert sich die Version, und die Oberflächen laden es neu.
+5. **HTTP-Endpunkt** `GET /avatar/:userId?v=<version>`:
+   - Nur für gekoppelte Oberflächen (bzw. in der Vorschau). Sonst `401`, ohne Bild `404`.
+   - Header: `Content-Type` nach erkanntem Format, `X-Content-Type-Options: nosniff`, `Cache-Control: private, max-age=86400, immutable` (die URL ist versioniert).
+6. **Oberfläche:**
+   - `UserView.avatarUrl` im Modell.
+   - `Avatar.svelte` zeigt das Bild im Kreis (`object-fit: cover`). Bei einem Ladefehler fällt es auf die Initialen zurück.
+   - Der gelbe Ring (eigener Nutzer), der Sprech-Ring und die Status-Abzeichen bleiben unverändert.
+7. **Tests:**
+   - Dienst: Formaterkennung, Grenze, Versionswechsel, unregistriert → `null`, Zugriffsschutz des Endpunkts
+   - Modell: `avatarUrl`
+   - E2E im Mock: Fixture mit Avatar → Bild sichtbar, defektes Bild → Initialen
+   - Live-Test: Test-Nutzer per Ice registrieren (`registerUser` mit dem Zertifikats-Hash des Test-Clients) und mit `setTexture` ein Bild setzen. Beides ist nur Testvorbereitung mit dem Write-Secret. Erwartung: Das Bild erscheint in Ruumble.
+
+**Fertig, wenn:** Ein in Mumble gesetzter Avatar spätestens nach 5 Minuten in Ruumble erscheint, bei neu verbundenen Nutzern sofort, und alle Tests grün sind.
+
+---
+
+## AP10 – Still, abwesend und Aufnahme sichtbar (Idee E, [ideen.md](ideen.md))
+
+**Ziel:** Man sieht, wer gerade wirklich da ist und ob jemand aufzeichnet.
+
+**Grundlage (Mumble-Code, v1.5.735):**
+- Ice `User.idlesecs` zählt **nur die Zeit seit dem letzten Sprechen** (`MumbleServer.ice:84`). Stilles Zuhören zählt nicht als Aktivität.
+- Ice `User.recording` zeigt, ob jemand aufzeichnet (nur lesbar).
+
+Schritte:
+1. **Protokoll:** `User` bekommt `idleMinutes: number` und `recording: boolean`.
+   - Der Dienst liefert **volle Minuten** (`floor(idlesecs / 60)`). So ändert sich der Snapshot höchstens einmal pro Minute und Nutzer.
+   - Mit Sekunden würde jeder Poll einen neuen Snapshot an alle Oberflächen auslösen.
+2. **Dienst:** Felder aus Ice übernehmen.
+3. **Modell:** `UserView.presence: "active" | "quiet" | "away"`
+   - `away`: selbst taub **und** mindestens 5 Minuten still
+   - `quiet`: mindestens 15 Minuten ohne Sprechen
+   - Wer gerade spricht, ist immer `active`.
+   - Die Schwellen stehen als Konstanten zentral im Modell (siehe O14).
+   - Dazu kommt `Space.recording`: Im Raum zeichnet jemand auf.
+4. **Oberfläche:**
+   - `quiet`: Avatar mit 70 % Deckkraft, Tooltip „hat seit N Min. nicht gesprochen“
+   - `away`: Avatar mit 40 % Deckkraft und dem Zusatz „abwesend“
+   - **Aufnahme:** roter Punkt oben links am Avatar (Tooltip „zeichnet auf“) und am Raum der Hinweis „● Aufnahme“ neben dem Titel. Dafür braucht es ein neues Token `--color-alert` in `docs/design/tokens.css`, weil die bisherigen Farben keine Warnfarbe enthalten.
+   - Barrierefreiheit: Der Zustand steht auch im `aria-label` des Avatars, nicht nur in der Farbe.
+5. **Tests:**
+   - Modell: Schwellen, Sprechen hat Vorrang, Aufnahme am Raum
+   - Dienst: Übernahme und Rundung
+   - E2E im Mock: Fixture mit stillen, abwesenden und aufzeichnenden Nutzern
+   - Live-Test nur für `idleMinutes` und `recording = false`, weil eine Aufnahme im headless Client die Mumble-Oberfläche bräuchte
+
+**Fertig, wenn:** Stille, abwesende und aufzeichnende Nutzer im Mock und am echten Server richtig erscheinen und alle Tests grün sind.
 
 ---
 
