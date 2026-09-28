@@ -126,6 +126,7 @@ Alle Aufrufe sind mit dem **Read-Secret** erlaubt.
 | `Server.hasPermission(session, cid, PermissionEnter=0x04)` | nach Strukturänderung und alle 10 s, **nur für gekoppelte Nutzer** | Schloss-Symbol und Klick vorab sperren | `:1371-1382`; `.ice:150` | Nutzt den ACL-Cache des Servers. Aufwand: gekoppelte Nutzer × Räume, also klein. |
 | `Server.getState(session)` | beim `hello` des Plugins | Plausibilitätsprüfung | `:1480-1492` | Ist die Session unbekannt, kommt `InvalidSessionException` und das Plugin wird abgelehnt. |
 | `Server.getCertificateList(session)` | beim `hello` des Plugins | SHA1 von `certs[0]` mit dem Hash des Plugins vergleichen | `:1275-1300`; `Server.cpp:1552` | Der Hash ist öffentlich und nur ein Plausibilitätsmerkmal (ADR-0004). Dass `certs[0]` das Leaf-Zertifikat ist, wird im Machbarkeitstest S3 geprüft. |
+| `Server.getTexture(userid)` | beim ersten Auftauchen, dann alle 5 Min. | Avatarbild registrierter Nutzer (AP9) | `MumbleServerIce.cpp` (`impl_Server_getTexture`) | **Ab 1.6 fehlerhaft:** wirft für registrierte Nutzer `InvalidUserException` (vertauschte Bedingung, in 1.5.735 korrekt). Ruumble fällt dann auf die Initialen zurück. |
 | `Server.getUptime` | mit jedem Poll | Neustart erkennen (Uptime wird kleiner) | `:1987` | Bei einem Neustart werden die Sessions neu vergeben. Der Dienst verwirft dann alle Kopplungen zur Session, die Plugins melden sich neu an. |
 
 **Bewusst nicht genutzt:**

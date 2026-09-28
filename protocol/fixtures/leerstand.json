@@ -51,7 +51,11 @@
       "selfDeaf": false,
       "mute": false,
       "deaf": false,
-      "suppress": false
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
     }
   ],
   "listeners": {},

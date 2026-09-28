@@ -317,6 +317,18 @@ Ursprünglicher Plan:
 
 ## AP9 – Echte Avatare (Idee D, [ideen.md](ideen.md))
 
+**✔ Umgesetzt am 28.09.2026** (Branch `ap9-ap10-avatare-anwesenheit`, Ruumble 0.3.0):
+- Protokoll: `userId` und `avatar`
+- Dienst: `AvatarCache` (Erkennung von PNG, JPEG, GIF und WEBP, Grenze 256 KB, Abruf alle 5 Min., nur im RAM) und `/avatar/:userId` (nur gekoppelt, versioniert)
+- Oberfläche: Bild mit Rückfall auf die Initialen
+- Live-Test gegen **Mumble 1.5.735**: Ein registrierter Test-Bot setzt seinen Avatar, und das Bild erscheint in Ruumble.
+- **Fehler in Mumble ab 1.6** (im Code von v1.6.870 und `master` geprüft): `impl_Server_getTexture` und `impl_Server_setTexture` werfen `InvalidUserException` gerade dann, wenn der Nutzer **registriert** ist. Die Bedingung `!getRegisteredUserName(id).isEmpty()` ist vertauscht, in 1.5.735 hieß sie noch `!isUserId(id)`.
+  - Unter 1.6.x zeigt Ruumble deshalb Initialen, das ist abgefangen.
+  - Der Live-Test wird dort mit Begründung übersprungen.
+  - Mögliche Meldung an Mumble: siehe O16.
+
+Ursprünglicher Plan:
+
 **Ziel:** Registrierte Nutzer erscheinen mit ihrem Mumble-Avatar statt mit Initialen. Ohne Bild, bei unregistrierten Nutzern oder bei Fehlern bleibt es bei den Initialen.
 
 **Grundlage (Mumble-Code, v1.5.735):**
@@ -352,6 +364,14 @@ Schritte:
 
 ## AP10 – Still, abwesend und Aufnahme sichtbar (Idee E, [ideen.md](ideen.md))
 
+**✔ Umgesetzt am 28.09.2026** (Branch `ap9-ap10-avatare-anwesenheit`):
+- Protokoll: `idleMinutes` (volle Minuten) und `recording`
+- Modell: `presenceOf` mit E30 (still ab 15 Min., abwesend = selbst taub und ab 5 Min.), `Space.recording`
+- Oberfläche: Deckkraft 70 % bzw. 40 %, roter Punkt am Avatar, „● Aufnahme“ am Raum, Zustand im `aria-label`, neues Token `--color-alert`
+- Wer spricht, gilt immer als aktiv.
+
+Ursprünglicher Plan:
+
 **Ziel:** Man sieht, wer gerade wirklich da ist und ob jemand aufzeichnet.
 
 **Grundlage (Mumble-Code, v1.5.735):**
@@ -367,7 +387,7 @@ Schritte:
    - `away`: selbst taub **und** mindestens 5 Minuten still
    - `quiet`: mindestens 15 Minuten ohne Sprechen
    - Wer gerade spricht, ist immer `active`.
-   - Die Schwellen stehen als Konstanten zentral im Modell (siehe O14).
+   - Die Schwellen stehen als Konstanten zentral im Modell (E30).
    - Dazu kommt `Space.recording`: Im Raum zeichnet jemand auf.
 4. **Oberfläche:**
    - `quiet`: Avatar mit 70 % Deckkraft, Tooltip „hat seit N Min. nicht gesprochen“

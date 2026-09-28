@@ -78,6 +78,7 @@
         </span>
       {/if}
       {#if space.locked && !space.isSelf}<span class="icon" title="Kein Zutritt"><Lock size={16} /></span>{/if}
+      {#if space.recording}<span class="rec" title="Hier wird aufgezeichnet">● Aufnahme</span>{/if}
     </span>
     <span class="count">{pending ? "wird betreten …" : (subtitle ?? countText(space.users.length))}</span>
   </span>
@@ -115,6 +116,7 @@
 
   .title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; font-weight: 700; }
   .icon { display: inline-flex; color: var(--color-blue-500); }
+  .rec { font-size: 12px; font-weight: 700; color: var(--color-alert); }
   .count { font-size: 13px; color: var(--color-blue-700); display: block; margin-top: 4px; }
   .people { display: flex; flex-wrap: wrap; gap: 12px; }
 

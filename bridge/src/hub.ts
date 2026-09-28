@@ -39,6 +39,8 @@ export interface HubOptions {
   onSessionsChanged?: (sessions: number[]) => void;
   /** sofort neu abfragen, z. B. wenn ein Plugin eine Session meldet, die das Polling noch nicht kennt */
   refresh?: () => Promise<void>;
+  /** Version des Avatarbilds eines registrierten Nutzers (AP9) */
+  avatarVersion?: (userId: number | null) => string | null;
 }
 
 interface PluginEntry {
@@ -73,6 +75,16 @@ export class Hub {
   setState(state: ServerState): void {
     this.state = state;
     for (const ui of this.uis) this.sendSnapshot(ui);
+  }
+
+  /** Snapshots erneut senden, z. B. nach einem neuen Avatarbild */
+  rebroadcast(): void {
+    for (const ui of this.uis) this.sendSnapshot(ui);
+  }
+
+  /** Darf diese Oberfläche Bilder und Daten sehen? (gekoppelt oder Vorschau, ADR-0004) */
+  canView(certHash: string | null): boolean {
+    return certHash !== null || this.opts.preview;
   }
 
   /** Virtueller Server neu gestartet: Sessions sind neu vergeben, Plugins melden sich neu an (S2). */
@@ -241,7 +253,8 @@ export class Hub {
       server: s.info,
       self: session ? { session } : null,
       channels: s.channels,
-      users: s.users.map(({ address: _address, ...u }) => u), // Adressen verlassen den Dienst nie
+      // Adressen verlassen den Dienst nie
+      users: s.users.map(({ address: _address, ...u }) => ({ ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null })),
       listeners: s.listeners,
       canEnter: session ? (s.canEnter.get(session) ?? {}) : {},
     };
