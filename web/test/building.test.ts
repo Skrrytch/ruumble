@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { Snapshot, type Channel, type User } from "@ruumble/protocol";
 import {
+  AWAY_MINUTES,
   MAX_ROOMS,
+  QUIET_MINUTES,
+  presenceOf,
   buildBuilding,
   countText,
   floorLabels,
@@ -23,7 +26,8 @@ const ch = (id: number, parent: number | null, name: string, position = 0, links
   id, parent, name, position, links, temporary: false,
 });
 const user = (session: number, name: string, channel: number, extra: Partial<User> = {}): User => ({
-  session, name, channel, selfMute: false, selfDeaf: false, mute: false, deaf: false, suppress: false, ...extra,
+  session, name, channel, selfMute: false, selfDeaf: false, mute: false, deaf: false, suppress: false,
+  userId: null, avatar: null, idleMinutes: 0, recording: false, ...extra,
 });
 const snapshot = (channels: Channel[], users: User[] = [], self: number | null = null, extra: Partial<Snapshot> = {}): Snapshot => ({
   v: 1, type: "snapshot", server: { name: "Haus", version: "1.6.870" }, self: self === null ? null : { session: self },
@@ -222,5 +226,36 @@ describe("Leerstand und Live-Änderungen", () => {
   it("Umbenennen ändert die Reihenfolge bei gleicher position", () => {
     const b = buildBuilding(snapshot([ch(0, null, "R"), ch(1, 0, "Bravo"), ch(2, 0, "Alpha")]));
     expect(b.floors.map((f) => f.name)).toEqual(["Alpha", "Bravo"]);
+  });
+});
+
+describe("Avatare (AP9) und Anwesenheit (AP10)", () => {
+  const b = buildBuilding(fixture("sonderfaelle"));
+  const find = (name: string) => b.floors.flatMap((f) => [f.corridor, ...f.rooms]).flatMap((s) => s.users).concat(b.entrance).find((u) => u.name === name)!;
+
+  it("Avatar-URL nur für registrierte Nutzer mit Bild, eigene URL-Funktion möglich", () => {
+    expect(find("Anna").avatarUrl).toBe("/avatar/1?v=a1b2c3d4e5f60718");
+    expect(find("Ben").avatarUrl).toBeNull(); // registriert, aber ohne Bild
+    expect(find("Ida").avatarUrl).toBeNull(); // unregistriert
+    const custom = buildBuilding(fixture("sonderfaelle"), { avatarUrl: (id, v) => `x:${id}:${v}` });
+    expect(custom.floors[1]!.rooms[0]!.users[0]!.avatarUrl).toBe("x:1:a1b2c3d4e5f60718");
+  });
+
+  it("still ab 15 Min., abwesend nur mit selbst taub ab 5 Min.", () => {
+    expect([QUIET_MINUTES, AWAY_MINUTES]).toEqual([15, 5]);
+    expect(presenceOf({ selfDeaf: false, idleMinutes: 14 })).toBe("active");
+    expect(presenceOf({ selfDeaf: false, idleMinutes: 15 })).toBe("quiet");
+    expect(presenceOf({ selfDeaf: true, idleMinutes: 4 })).toBe("active");
+    expect(presenceOf({ selfDeaf: true, idleMinutes: 5 })).toBe("away");
+    expect(find("Ben").presence).toBe("quiet"); // 20 Min., nicht taub
+    expect(find("Felix").presence).toBe("away"); // taub, 12 Min.
+    expect(find("Jonas").presence).toBe("quiet"); // im Eingang, 40 Min.
+  });
+
+  it("Aufnahme am Nutzer und am Raum", () => {
+    expect(find("Eva").recording).toBe(true);
+    const lobby = b.floors.find((f) => f.name === "Lobby")!;
+    expect(lobby.corridor.recording).toBe(true);
+    expect(b.floors.find((f) => f.name === "ENTWICKLUNG")!.rooms.some((r) => r.recording)).toBe(false);
   });
 });

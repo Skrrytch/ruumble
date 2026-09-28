@@ -5,12 +5,20 @@
 
   let { user, talking = false, showName = true }: { user: UserView; talking?: boolean; showName?: boolean } = $props();
 
+  // Bild nicht ladbar → Initialen (AP9)
+  let failedUrl = $state<string | null>(null);
+  const imageUrl = $derived(user.avatarUrl && user.avatarUrl !== failedUrl ? user.avatarUrl : null);
+  // Wer spricht, ist aktiv – egal was idlesecs sagt (AP10)
+  const presence = $derived(talking ? "active" : user.presence);
+
   const label = $derived(
     [
       user.name + (user.isSelf ? " (du)" : ""),
       user.selfDeafened ? "taub" : user.selfMuted ? "stumm" : null,
       user.serverMuted ? "vom Server stummgeschaltet" : null,
       talking ? "spricht" : null,
+      presence === "away" ? "abwesend" : presence === "quiet" ? `seit ${user.idleMinutes} Min. still` : null,
+      user.recording ? "zeichnet auf" : null,
     ]
       .filter(Boolean)
       .join(", "),
@@ -18,8 +26,15 @@
 </script>
 
 <span class="person" title={label} aria-label={label} role="img">
-  <span class="av" class:me={user.isSelf} class:talking aria-hidden="true">
-    {user.initials}
+  <span class="av {presence}" class:me={user.isSelf} class:talking aria-hidden="true">
+    {#if imageUrl}
+      <img src={imageUrl} alt="" onerror={() => (failedUrl = imageUrl)} />
+    {:else}
+      {user.initials}
+    {/if}
+    {#if user.recording}
+      <span class="rec" title="Zeichnet auf"></span>
+    {/if}
     {#if user.serverMuted}
       <span class="flag server" title="Vom Server stummgeschaltet"><MicOff size={12} strokeWidth={2.5} /></span>
     {:else if user.selfDeafened}
@@ -38,7 +53,12 @@
     position: relative; width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%;
     background: var(--color-blue-500); color: var(--color-white);
     display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;
+    transition: opacity var(--dur) var(--ease-out);
   }
+  .av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  /* Anwesenheit (AP10): nur die Deckkraft, damit Ring und Abzeichen gut lesbar bleiben */
+  .av.quiet { opacity: 0.7; }
+  .av.away { opacity: 0.4; }
   /* eigener Nutzer: das einzige gelbe Element (SPEC 4) */
   .av.me { background: var(--color-navy); box-shadow: 0 0 0 3px var(--color-accent); }
   /* Sprechanzeige: pulsierender Ring in Mittelblau (PLANUNG 2.4) */
@@ -48,6 +68,10 @@
   }
   .av.me.talking::after { inset: -10px; }
   @keyframes pulse { 0% { opacity: 1; transform: scale(0.92); } 100% { opacity: 0.35; transform: scale(1.06); } }
+  .rec {
+    position: absolute; left: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--color-alert); border: 2px solid var(--color-white);
+  }
   .flag {
     position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 50%;
     background: var(--color-white); border: 1px solid var(--color-blue-300); color: var(--color-navy);

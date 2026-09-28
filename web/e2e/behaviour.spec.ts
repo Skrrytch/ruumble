@@ -101,6 +101,27 @@ test("Unterkanal anlegen sperrt die eigene Etage live", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible();
 });
 
+test("Avatare, Anwesenheit und Aufnahme (AP9/AP10)", async ({ page }) => {
+  await page.goto("/?fixture=sonderfaelle&talking=0");
+  await expect(page.locator(".floorplan img").first()).toBeVisible(); // Annas Avatar (Mock-SVG)
+  await page.getByRole("button", { name: "Erdgeschoss: Lobby" }).click();
+  await expect(page.getByRole("img", { name: "Ben, stumm, seit 20 Min. still" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Felix, taub, abwesend" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Eva, zeichnet auf" })).toBeVisible();
+  await expect(page.getByText("● Aufnahme")).toBeVisible();
+});
+
+test("defektes Avatarbild: Initialen statt Bild", async ({ page }) => {
+  await page.route("**/*", (route) => route.continue());
+  await page.goto("/?fixture=sonderfaelle&talking=0");
+  await page.evaluate(() => {
+    const img = document.querySelector<HTMLImageElement>(".floorplan img");
+    if (img) img.src = "/gibt-es-nicht.png";
+  });
+  await expect(page.locator(".floorplan img")).toHaveCount(0);
+  await expect(page.getByRole("img", { name: "Anna (du)" })).toContainText("An");
+});
+
 test("Leerstand", async ({ page }) => {
   await page.goto("/?fixture=leerstand&talking=0");
   await expect(page.getByRole("heading", { name: "Leerstand" })).toBeVisible();

@@ -520,6 +520,37 @@
                   },
                   "suppress": {
                     "type": "boolean"
+                  },
+                  "userId": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "avatar": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{16}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "idleMinutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "recording": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -530,7 +561,11 @@
                   "selfDeaf",
                   "mute",
                   "deaf",
-                  "suppress"
+                  "suppress",
+                  "userId",
+                  "avatar",
+                  "idleMinutes",
+                  "recording"
                 ],
                 "additionalProperties": false
               }

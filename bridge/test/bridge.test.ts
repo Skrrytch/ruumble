@@ -246,6 +246,20 @@ describe("Hub: Oberfläche", () => {
     expect(ui.sent.filter((m) => m.type === "result")).toHaveLength(2);
   });
 
+  it("Snapshot: userId, idleMinutes, recording und Avatar-Version", async () => {
+    const source = new FakeSource();
+    const pairing = new Pairing(null);
+    const hub = new Hub({ source, pairing, publicUrl: "https://r.test", addressCheck: "off", preview: true, avatarVersion: (id) => (id === 1 ? "0123456789abcdef" : null) });
+    const poller = new Poller(source, { onChange: (st) => hub.setState(st) });
+    await poller.poll();
+    const ui = recorder<BridgeToUi>();
+    hub.uiConnected(ui.conn, null);
+    const users = ui.last("snapshot")!.users;
+    expect(users.find((u) => u.name === "Anna")).toMatchObject({ userId: 1, avatar: "0123456789abcdef", idleMinutes: 0, recording: false });
+    expect(users.find((u) => u.name === "Ben")).toMatchObject({ userId: null, avatar: null, idleMinutes: 3, recording: true });
+    expect(hub.canView(null)).toBe(true);
+  });
+
   it("talking nur an die eigenen Oberflächen, selfState sofort an alle", async () => {
     const { hub, pairing } = await setup();
     const plugin = recorder<BridgeToPlugin>();
