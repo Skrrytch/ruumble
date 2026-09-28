@@ -24,7 +24,6 @@ COPY web/package.json web/
 COPY bridge/package.json bridge/
 RUN pnpm install --frozen-lockfile
 COPY third_party third_party
-COPY docs/design docs/design
 COPY protocol protocol
 COPY web web
 COPY bridge bridge

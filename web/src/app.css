@@ -1,4 +1,4 @@
-/* Basis. Farben, Maße und Motion kommen ausschließlich aus docs/design/tokens.css. */
+/* Basis. Farben, Maße und Motion kommen ausschließlich aus tokens.css. */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body {

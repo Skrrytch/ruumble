@@ -1,0 +1,36 @@
+/* Ruumble – Design-Tokens der Gebäude-Oberfläche.
+   Nur die Werte, die die Oberfläche tatsächlich nutzt. */
+:root {
+  /* Grundfarben */
+  --color-navy: #003869;       /* Text, Wände, aktive Zustände */
+  --color-sky: #5aa6e7;        /* Icons, Fokusring */
+  --color-accent: #fbd200;     /* NUR: Ring um den eigenen Avatar */
+  --color-surface: #f5f5f5;    /* Aufzugskern, Hover */
+  --color-white: #ffffff;
+  --color-navy-light: #0f4b8c;
+  --color-alert: #c62828;      /* NUR: Aufnahme-Hinweis (AP10) */
+
+  /* Blautöne */
+  --color-blue-700: #00508c;   /* Sekundärtext (Kontrast ≥ 4,5:1 auf Weiß) */
+  --color-blue-500: #0078be;   /* Avatar-Fläche fremder Nutzer, Etagen-Kicker */
+  --color-blue-300: #9ccaf1;   /* Türbögen, Rahmen Werkzeugknöpfe */
+  --color-blue-100: #cee4f8;   /* eigener Raum, Hover Werkzeugknöpfe */
+
+  /* Muster */
+  --raster-dot: #e3e3e3;       /* Hintergrundraster im Flur */
+
+  /* Verlauf (Aufzug-Panel) */
+  --gradient-elevator: linear-gradient(90deg, #0f4b8c 0%, #003869 25%);
+
+  /* Typo */
+  --font-sans: "Inter Variable", "Inter", Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Maße */
+  --wall: 4px;
+  --radius-md: 4px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 160ms;
+}

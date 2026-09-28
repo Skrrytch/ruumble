@@ -45,7 +45,7 @@ export function relativeTime(then: number, now = Date.now()): string {
   return d === 1 ? b.yesterday : b.daysAgo(d);
 }
 
-/** Ab wie vielen Zeilen eine Karte gekürzt wird (Entwurf/ideen.md: lange Texte gekürzt, voll im Popup) */
+/** Ab wie vielen Zeilen eine Karte gekürzt wird (lange Texte gekürzt, voll im Popup) */
 export const PREVIEW_LINES = 8;
 
 export function isLong(text: string): boolean {

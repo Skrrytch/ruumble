@@ -68,6 +68,7 @@ describe("Einzelregeln", () => {
   it("„(stumm)“ im Namen, unabhängig von Groß-/Kleinschreibung", () => {
     expect(isMutedRoomName("Fokusraum (stumm)")).toBe(true);
     expect(isMutedRoomName("Fokus (STUMM)")).toBe(true);
+    expect(isMutedRoomName("Focus (muted)")).toBe(true);
     expect(isMutedRoomName("stumm")).toBe(false);
   });
 
