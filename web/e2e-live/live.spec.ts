@@ -13,7 +13,7 @@ const runClient = (distro: string, name: string, bridgeUrl = "http://ruumble:808
   execFileSync(`${root}deploy/local/run-client.sh`, [distro, name], { env: { ...process.env, BRIDGE_URL: bridgeUrl } });
 /** Root-Beschreibung setzen (Testvorbereitung mit Write-Secret); `long`: über 128 Zeichen → Mumble schickt nur einen Hash */
 const setRootDescription = (long: boolean) =>
-  execFileSync("node", ["src/setup.cjs"], { cwd: `${root}spikes/s1-ice`, env: { ...process.env, RUUMBLE_DESC_PAD: long ? "1" : "" } });
+  execFileSync("node", ["src/setup.cjs"], { cwd: `${root}tools/live-test`, env: { ...process.env, RUUMBLE_DESC_PAD: long ? "1" : "" } });
 const stopClient = (name: string) => execFileSync("docker", ["rm", "-f", `ruumble-client-${name}`]);
 
 /** Mumble-Protokoll eines Test-Clients (das Plugin spiegelt es mit RUUMBLE_LOG_STDERR auf stderr) */

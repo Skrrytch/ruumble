@@ -1,11 +1,10 @@
 {
-  "name": "spike-s1-ice",
+  "name": "ruumble-live-test",
   "private": true,
   "type": "commonjs",
   "scripts": {
     "gen": "node src/gen-ice.cjs && node src/fetch-proto.cjs",
-    "setup": "node src/setup.cjs",
-    "s1": "node src/s1.cjs"
+    "setup": "node src/setup.cjs"
   },
   "dependencies": {
     "ice": "3.7.110",

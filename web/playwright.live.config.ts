@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // Live-Test gegen deploy/local (echter Mumble-Server, Ruumble-Dienst, headless Clients mit Plugin).
-//   docker compose -f deploy/local/docker-compose.yml up -d --build && (cd spikes/s1-ice && node src/setup.cjs)
+//   docker compose -f deploy/local/docker-compose.yml up -d --build && (cd tools/live-test && node src/setup.cjs)
 //   pnpm -F @ruumble/web exec playwright test -c playwright.live.config.ts
 export default defineConfig({
   testDir: "e2e-live",

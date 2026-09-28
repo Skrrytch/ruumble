@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Headless Mumble-Client mit Ruumble-Plugin für Live-Tests (Grundlage: spikes/s2-plugin).
+# Headless Mumble-Client mit Ruumble-Plugin für Live-Tests (Images: tools/live-test/clients).
 # Umgebung: SERVER_HOST, SERVER_PORT, SERVER_DIGEST, USERNAME, BRIDGE_URL, OUT (Verzeichnis für Protokolle)
 set -eu
 export DISPLAY=:99 XDG_RUNTIME_DIR=/tmp/xdg
