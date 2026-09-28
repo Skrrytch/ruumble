@@ -1,0 +1,8 @@
+packages:
+  - protocol
+  - web
+  - bridge
+
+# Installationsskripte nur ausdrücklich erlaubt (pnpm 11)
+allowBuilds:
+  esbuild: true

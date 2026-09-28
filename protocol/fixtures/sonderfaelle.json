@@ -1,0 +1,433 @@
+{
+  "v": 1,
+  "type": "snapshot",
+  "server": {
+    "name": "Musterhaus",
+    "version": "1.6.870"
+  },
+  "self": {
+    "session": 4
+  },
+  "channels": [
+    {
+      "id": 0,
+      "parent": null,
+      "name": "Musterhaus",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 1,
+      "parent": 0,
+      "name": "Lobby",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 2,
+      "parent": 0,
+      "name": "ENTWICKLUNG",
+      "position": 1,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 3,
+      "parent": 2,
+      "name": "Büro von Anna",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 4,
+      "parent": 2,
+      "name": "Büro von Ben",
+      "position": 1,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 5,
+      "parent": 2,
+      "name": "Büro von Clara",
+      "position": 2,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 6,
+      "parent": 2,
+      "name": "Büro von David",
+      "position": 3,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 7,
+      "parent": 2,
+      "name": "Büro von Eva",
+      "position": 4,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 8,
+      "parent": 2,
+      "name": "Büro von Felix",
+      "position": 5,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 9,
+      "parent": 0,
+      "name": "VERTRIEB",
+      "position": 2,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 10,
+      "parent": 9,
+      "name": "Abwesend",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 11,
+      "parent": 9,
+      "name": "Fokusraum (stumm)",
+      "position": 1,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 12,
+      "parent": 9,
+      "name": "Teeküche",
+      "position": 2,
+      "links": [
+        13
+      ],
+      "temporary": false
+    },
+    {
+      "id": 13,
+      "parent": 9,
+      "name": "Raucherecke",
+      "position": 3,
+      "links": [
+        12
+      ],
+      "temporary": false
+    },
+    {
+      "id": 14,
+      "parent": 9,
+      "name": "Gregors Büro",
+      "position": 4,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 15,
+      "parent": 9,
+      "name": "Projektraum",
+      "position": 5,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 16,
+      "parent": 0,
+      "name": "ARCHIV",
+      "position": 3,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 17,
+      "parent": 16,
+      "name": "Aktenraum",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 18,
+      "parent": 16,
+      "name": "Tiefer Raum",
+      "position": 1,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 19,
+      "parent": 18,
+      "name": "Unterkanal",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 20,
+      "parent": 0,
+      "name": "GROSSRAUM",
+      "position": 4,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 21,
+      "parent": 20,
+      "name": "Platz 1",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 22,
+      "parent": 20,
+      "name": "Platz 2",
+      "position": 1,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 23,
+      "parent": 20,
+      "name": "Platz 3",
+      "position": 2,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 24,
+      "parent": 20,
+      "name": "Platz 4",
+      "position": 3,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 25,
+      "parent": 20,
+      "name": "Platz 5",
+      "position": 4,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 26,
+      "parent": 20,
+      "name": "Platz 6",
+      "position": 5,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 27,
+      "parent": 20,
+      "name": "Platz 7",
+      "position": 6,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 28,
+      "parent": 20,
+      "name": "Platz 8",
+      "position": 7,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 29,
+      "parent": 20,
+      "name": "Platz 9",
+      "position": 8,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 30,
+      "parent": 0,
+      "name": "EXTERN",
+      "position": 5,
+      "links": [
+        31
+      ],
+      "temporary": false
+    },
+    {
+      "id": 31,
+      "parent": 0,
+      "name": "PARTNER",
+      "position": 6,
+      "links": [
+        30
+      ],
+      "temporary": false
+    },
+    {
+      "id": 32,
+      "parent": 30,
+      "name": "Gästebüro",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 33,
+      "parent": 2,
+      "name": "Besprechung (temporär)",
+      "position": 6,
+      "links": [],
+      "temporary": true
+    }
+  ],
+  "users": [
+    {
+      "session": 1,
+      "name": "Ben",
+      "channel": 1,
+      "selfMute": true,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 2,
+      "name": "Felix",
+      "channel": 1,
+      "selfMute": true,
+      "selfDeaf": true,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 3,
+      "name": "Eva",
+      "channel": 1,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 4,
+      "name": "Anna",
+      "channel": 3,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 5,
+      "name": "Gregor",
+      "channel": 12,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 6,
+      "name": "Hanna",
+      "channel": 13,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 7,
+      "name": "Ida",
+      "channel": 0,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 8,
+      "name": "Jonas",
+      "channel": 0,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 9,
+      "name": "Karl",
+      "channel": 19,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 10,
+      "name": "Lena",
+      "channel": 32,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 11,
+      "name": "Mia",
+      "channel": 33,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": true,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 12,
+      "name": "Nils",
+      "channel": 5,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": true
+    },
+    {
+      "session": 13,
+      "name": "Oskar",
+      "channel": 22,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    }
+  ],
+  "listeners": {
+    "5": [
+      3
+    ]
+  },
+  "canEnter": {
+    "14": false
+  }
+}

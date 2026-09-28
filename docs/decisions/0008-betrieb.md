@@ -3,8 +3,9 @@
 Status: angenommen für Docker, vorgeschlagen für den Rest (28.09.2026)
 
 ## Entscheidung
+0. **Ziel für das Deployment ist der Homeserver des Auftraggebers.** Dort läuft der Mumble-Server bereits per Docker. Ruumble kommt als weitere Dienste in dasselbe Setup. Entwickelt und getestet wird lokal (S1: Wegwerf-Container).
 1. **Docker Compose** mit drei Containern im selben Netz:
-   - `mumble`: das offizielle Image, unverändert, in der Version aus `third_party/mumble/VERSION`. Ice lauscht nur im internen Compose-Netz, der Port 6502 wird **nicht** veröffentlicht.
+   - `mumble`: das offizielle Image, unverändert, in der Version aus `third_party/mumble/VERSION`, also `mumblevoip/mumble-server:v1.6.870` und **nicht** `latest`. Ice wird mit `MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'` aktiviert, die Secrets kommen als Docker-Secrets `/run/secrets/MUMBLE_CONFIG_ICESECRETREAD` bzw. `…WRITE` (S1). Ice lauscht nur im internen Compose-Netz, der Port 6502 wird **nicht** veröffentlicht.
    - `ruumble`: der Dienst. Er liefert auch die gebaute Oberfläche aus.
    - `proxy`: Caddy. Er übernimmt HTTPS (Pflicht für eine PWA) und leitet `/` sowie `/ws/*` an `ruumble` weiter.
 2. **Secrets:** `icesecretread` und `icesecretwrite` bekommen unterschiedliche Zufallswerte und liegen in einer `.env`-Datei außerhalb des Repositorys. `ruumble` erhält nur das Read-Secret.
@@ -14,4 +15,5 @@ Status: angenommen für Docker, vorgeschlagen für den Rest (28.09.2026)
 6. **Gesundheit:** `GET /healthz` meldet, ob Ice erreichbar ist, wann zuletzt erfolgreich abgefragt wurde und wie viele Plugins verbunden sind.
 
 ## Offene Punkte
-Domain und Zertifikat (interne CA oder Let's Encrypt über DNS-Challenge) stehen noch nicht fest, siehe Frage O10.
+- Domain und Zertifikat (interne CA oder Let's Encrypt über DNS-Challenge) stehen noch nicht fest, siehe Frage O10.
+- Die bestehende Mumble-Konfiguration auf dem Homeserver (Version, Ice, Secrets, Netz) wird vor AP7 gesichtet, nur lesend und nach Rücksprache.

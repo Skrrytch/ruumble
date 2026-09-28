@@ -14,7 +14,7 @@ Status: vorgeschlagen (28.09.2026)
 | Plugin → Dienst | `hello` | `session`, `certHash`, `pluginVersion`, `paired` |
 | Dienst → Plugin | `welcome` / `reject` | Bei Ablehnung mit Grund. Optional `pairUrl` |
 | Dienst → Plugin | `command` | `id`, `join{channel}` / `mute{on}` / `deaf{on}` |
-| Plugin → Dienst | `result` | `id`, `ok` / `rejected` / `timeout` / `offline` |
+| Plugin → Dienst | `result` | `id`, `ok` / `rejected` / `superseded` / `timeout` / `offline` |
 | Plugin → Dienst | `selfState` | `selfMute`, `selfDeaf` |
 | Plugin → Dienst | `talking` | `session`, `state` |
 | Plugin → Dienst | `bye` | Mumble wurde getrennt. |

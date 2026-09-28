@@ -1,0 +1,7 @@
+# Mumble-Client (Distro-Paket, Fedora liefert 1.4.x) headless: Xvfb, PulseAudio mit Null-Sink.
+FROM fedora:44
+RUN dnf -y install --setopt=install_weak_deps=False mumble xorg-x11-server-Xvfb pulseaudio pulseaudio-utils \
+      dbus-x11 sqlite ImageMagick xdotool openssl procps-ng which && dnf clean all
+RUN useradd -m tester
+USER tester
+WORKDIR /home/tester

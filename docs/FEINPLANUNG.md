@@ -53,15 +53,18 @@ Die UI-Stränge AP2 bis AP4 hängen nicht von Mumble ab und können **parallel**
 - `third_party/mumble/` mit v1.6.870, `VERSION`, `SHA256SUMS` und Lizenz
 - `scripts/update-mumble-interfaces.sh`
 
-**Offen:**
+**Erledigt am 28.09.2026 (Branch `ap0-grundlage`):**
 1. `.gitignore` (`node_modules`, `dist`, `build`, `.env`) und `.editorconfig`
-2. pnpm-Workspace im Repo-Root (`pnpm-workspace.yaml`: `protocol`, `web`, `bridge`), `.nvmrc` mit Node LTS
+2. pnpm-Workspace im Repo-Root (`pnpm-workspace.yaml`: `protocol`, `web`, `bridge`), `.nvmrc` mit Node 22
 3. GitHub-Workflow **`ci.yml`**:
    - `scripts/update-mumble-interfaces.sh` ohne Argument, das prüft die Prüfsummen
    - Lint, Tests und Build für `protocol`, `web` und `bridge`
-   - Build des Plugins (CMake), sobald es AP6 gibt
+   - Build des Plugins (CMake): folgt mit AP6
 4. GitHub-Workflow **`mumble-release-watch.yml`** (wöchentlich): Neuestes Release-Tag von mumble-voip/mumble mit `third_party/mumble/VERSION` vergleichen und bei einem neueren Tag ein Issue mit dem Diff der beiden Dateien anlegen.
-5. Branch-Schutz für `main` (PR mit grüner CI), per GitHub-Einstellung
+5. Test: Eine manipulierte Schnittstellendatei lässt die Prüfung mit Exit-Code 1 scheitern.
+
+**Offen:**
+- Branch-Schutz für `main` (PR mit grüner CI) muss in den GitHub-Einstellungen gesetzt werden, das macht der Repo-Inhaber.
 
 **Fertig, wenn:** Die CI läuft grün, und eine manipulierte Schnittstellendatei lässt sie fehlschlagen.
 
@@ -71,7 +74,7 @@ Die UI-Stränge AP2 bis AP4 hängen nicht von Mumble ab und können **parallel**
 
 Jeder Test ist zeitlich begrenzt auf höchstens 1 Tag. Das Ergebnis ist eine kurze Notiz unter `docs/analyse/spike-<n>.md`, der Code liegt in `spikes/` und wird danach verworfen oder übernommen.
 
-### S1 – Ice aus Node.js (prüft P1–P3)
+### S1 – Ice aus Node.js (prüft P1–P3, P8) · ✔ bestanden am 28.09.2026, siehe [analyse/spike-s1.md](analyse/spike-s1.md)
 1. `docker compose` mit `mumblevoip/mumble-server` aufsetzen. Ice aktivieren und beide Secrets setzen. Prüfen, ob das Image mit Ice gebaut ist, wie `ice=` gesetzt wird und welches Image-Tag zu v1.6.870 passt (P8).
 2. Ice for JavaScript 3.7 unter Node LTS installieren und aus `third_party/mumble/src/murmur/MumbleServer.ice` mit `slice2js` Stubs erzeugen. Die Stubs werden im Build erzeugt und nicht eingecheckt.
 3. Mit dem Read-Secret aufrufen: `getVersion`, `getChannels`, `getUsers`, `getListeningUsers`, `hasPermission`, `getCertificateList`, `getConf("registername")`.
@@ -80,14 +83,14 @@ Jeder Test ist zeitlich begrenzt auf höchstens 1 Tag. Das Ergebnis ist eine kur
 
 **Abbruchkriterium:** Läuft Ice for JavaScript nicht stabil, wird der Dienst in Python geschrieben (ADR-0006 Fallback).
 
-### S2 – Minimal-Plugin (prüft P4, P5)
+### S2 – Minimal-Plugin (prüft P4, P5) · ✔ bestanden am 28.09.2026 mit Mumble 1.4.287, 1.5.517 und 1.5.735, siehe [analyse/spike-s2.md](analyse/spike-s2.md)
 1. Eigenes CMake unter `spikes/plugin` mit dem Include-Pfad `third_party/mumble/plugins` und API 1.0.x.
 2. `mumble_init` startet einen Thread. `onServerSynchronized` loggt Session und Hash, `onUserTalkingStateChanged` loggt die Ereignisse.
 3. Der Thread ruft nach 5 s `requestUserMove` sowie `requestLocalUserMute/Deaf` auf. Geprüft werden Timeout-Verhalten, Bestätigung per `onChannelEntered` und Ablehnung (Kanal ohne Enter-Recht).
 4. Als `.mumble_plugin` bündeln und im Mumble-Client installieren: Ubuntu 24.04, Debian 13, Fedora (aktuell), soweit verfügbar.
 5. `mumble_shutdown` beim Deaktivieren und Beenden: kein Hänger, kein Absturz.
 
-### S3 – Identität (prüft P6, P7)
+### S3 – Identität (prüft P6, P7) · P6 ✔ in S1/S2. **P7 zurückgestellt bis AP7:** Der IP-Abgleich über echtes Netz, Proxy und VPN wird mit dem Homeserver geprüft (Entscheidung 28.09.2026).
 1. SHA1 von `getCertificateList(session)[0]` mit `getUserHash` im Plugin vergleichen.
 2. `User.address` mit der Quell-IP der WebSocket-Verbindung vergleichen, einmal direkt, einmal über Caddy (`X-Forwarded-For`) und, wenn möglich, über VPN.
 
@@ -96,6 +99,15 @@ Jeder Test ist zeitlich begrenzt auf höchstens 1 Tag. Das Ergebnis ist eine kur
 ---
 
 ## AP2 – Protokoll und gemeinsame Typen (`protocol`)
+
+**✔ Erledigt am 28.09.2026** (Branch `ap2-protocol`):
+- zod-Schemas in `protocol/src/index.ts`, `parse()` wirft nie
+- `schema/protocol.schema.json` wird erzeugt, die CI prüft es mit `build`
+- Fixtures: `musterhaus`, `sonderfaelle` (Eingang, zu tief, zu viele Räume, verlinkte Räume und Etagen, Mitlauschen, Schloss, Server-Mute, temporärer Kanal), `leerstand`, `nicht-gekoppelt`, `messages` (gültige und ungültige Nachrichten)
+- 27 Tests, darunter die Stimmigkeit der Fixtures (symmetrische Links wie in Mumble)
+- Ergänzt gegenüber ADR-0007: `TalkingState` als Text (`passive`, `talking`, `whispering`, `shouting`, `talking-muted`), Ablehnungsgründe für `reject`
+
+Ursprünglicher Plan:
 
 1. TypeScript-Typen für alle Nachrichten aus ADR-0007, dazu `v: 1`.
 2. Laufzeitprüfung mit **zod**. Aus den zod-Schemas wird ein JSON-Schema (`protocol.schema.json`) für das Plugin erzeugt.
@@ -108,6 +120,15 @@ Jeder Test ist zeitlich begrenzt auf höchstens 1 Tag. Das Ergebnis ist eine kur
 ---
 
 ## AP3 – `building-model` (`web/src/lib/model`)
+
+**✔ Erledigt am 28.09.2026** (Branch `ap3-building-model`): `web/src/lib/model/building.ts`, 32 Tests, Abdeckung 100 % Zeilen / 98 % Verzweigungen (Schwelle 95 % in `pnpm test`). Detailregeln, die bei der Umsetzung festgelegt wurden:
+- Ein verlinkter Kanal verschwindet **samt allen Unterkanälen**. Die Etagennummern werden danach lückenlos vergeben.
+- „Zu tief“ zählt nur **sichtbare** Unterkanäle sichtbarer Räume (O3). Treffen beide Sperrgründe zu, hat „zu tief“ Vorrang.
+- Die Belegung einer Etage umfasst den ganzen sichtbaren Teilbaum, also auch die 3. Ebene gesperrter Etagen. Nutzer in ausgeblendeten Kanälen zählen nur bei „online“ (O4).
+- Die Nutzer eines Raums werden alphabetisch sortiert. Die Initialen sind Grapheme-sicher.
+- `homeFloor`: die eigene Etage, auch wenn sie gesperrt ist (dann erscheint der Hinweis), sonst die erste darstellbare. `isVacant`: keine darstellbare Etage.
+
+Ursprünglicher Plan:
 
 Reine Funktionen ohne Svelte und ohne DOM. Die Testabdeckung liegt bei mindestens 95 %.
 
@@ -129,6 +150,27 @@ Reine Funktionen ohne Svelte und ohne DOM. Die Testabdeckung liegt bei mindesten
 ---
 
 ## AP4 – Oberfläche gegen Mock (`web`)
+
+**✔ Erledigt am 28.09.2026** (Branch `ap4-ui-mock`):
+- Svelte 5 + Vite 8, Inter selbst gehostet, Lucide-Icons, Farben nur aus `docs/design/tokens.css`
+- `MumbleAdapter`-Interface und `MockAdapter`:
+  - Verhalten wie in S1/S2: Bestätigung, Ablehnung nach 3 s, der letzte Wechsel gewinnt, Stumm/Taub-Semantik, Sprechen nur im eigenen Raum
+  - Debug-Panel mit `?debug`
+- Zustände:
+  - Übergang beim Wechsel, Hinweis bei nicht bestätigtem Wechsel
+  - „Mumble ist nicht verbunden“, eigener Nutzer auf gesperrter Etage oder in ausgeblendetem Bereich, Leerstand
+  - Eingang, Schloss, Mitlauschen, Status-Symbole
+- **Layoutvergleich mit dem Prototyp per DOM** (Toleranz 3 px) statt Pixelvergleich, weil sich die Schrift unterscheidet
+  - Bewusste Abweichung: Die Etagentasten sind kompakter (48 statt 52 px, Abstand 6 statt 10 px), damit 5 Etagen und der Eingang Platz haben.
+  - Außerdem entfällt das Label „primary“ (E9).
+- 14 Playwright-Tests, die CI führt sie mit aus (Job `e2e`)
+- Offene Fragen, am 28.09.2026 vom Auftraggeber bestätigt (E27–E29):
+  - **O5:** Ohr-Symbol am Raum, Tooltip „N Personen hören mit“, keine Namen
+  - **O6:** Server-Mute, Server-Deaf und Unterdrückt als dunkles Abzeichen mit Mikrofon-aus. Self-Mute ist hell, Self-Deaf zeigt einen Kopfhörer-aus. Jedes Abzeichen hat einen eigenen Tooltip.
+  - **O7:** Der Einstellungsknopf ist sichtbar, aber deaktiviert („noch ohne Funktion“).
+- Nicht umgesetzt: eine eigene Darstellung für kleine Fenster. Die Mindesthöhe ist 720 px, die Breite bis 1440 px flexibel.
+
+Ursprünglicher Plan:
 
 1. Vite + Svelte 5 + TypeScript einrichten. `tokens.css` einbinden, Inter selbst hosten, Lucide einbinden.
 2. `MumbleAdapter`-Interface und `MockAdapter`: liest die Fixtures, simuliert Beitreten und Verlassen, Sprechen und Ablehnungen und bietet dafür ein Debug-Panel mit `?debug`.
@@ -166,9 +208,9 @@ Reine Funktionen ohne Svelte und ohne DOM. Die Testabdeckung liegt bei mindesten
    - Token prüfen und zum Plugin mit demselben Hash zuordnen
    - `snapshot` gebündelt über 100 ms verschicken
    - `talking` nur an die eigenen Oberflächen weiterleiten (ADR-0005)
-   - Befehle prüfen: Kanal existiert, `canEnter`, Rate-Limit von 2 pro Sekunde
+   - Befehle prüfen: Kanal existiert, `canEnter`, Rate-Limit von **1 pro Sekunde** (S2: Mumble-Standard `messagelimit=1`)
 7. **HTTP:** Statische Oberfläche, `/download` (Plugin-Bundle), `/healthz`
-8. **Konfiguration** per Umgebungsvariablen: `ICE_HOST`, `ICE_PORT`, `ICE_SECRET_READ`, `SERVER_ID`, `PUBLIC_URL`, `TRUST_PROXY`
+8. **Konfiguration** per Umgebungsvariablen: `ICE_HOST`, `ICE_PORT`, `ICE_SECRET_READ`, optional `SERVER_ID` (Standard: erster Server aus `getBootedServers`), `PUBLIC_URL`, `TRUST_PROXY`
 9. **Tests:** Unit-Tests für Differenzbildung, Prüfung und Weiterleitung. Integrationstest gegen einen Mumble-Server im Container.
 
 **Fertig, wenn:** Der Dienst zeigt gegen einen echten Server den Live-Zustand in einer WebSocket-Konsole, und alle Regeln aus ADR-0002 bis ADR-0005 sind getestet.
@@ -197,9 +239,11 @@ Reine Funktionen ohne Svelte und ohne DOM. Die Testabdeckung liegt bei mindesten
 5. Kopplung: `pairUrl` einmalig mit `xdg-open` öffnen und das Flag `paired` in `~/.config/ruumble/plugin.json` setzen.
 6. `mumble_shutdown`: Stop-Flag setzen, schließen, `join`. Dauert höchstens 1 s.
 7. Bundle `ruumble-<version>.mumble_plugin` mit `manifest.xml` (`os="linux" arch="x64"`)
+   - Gebaut wird im **ältesten unterstützten Distributions-Container**, wegen der glibc-Version. libstdc++ wird statisch eingebunden (S2).
 8. Tests:
    - Unit-Tests für Queue, Executor und Config gegen einen API-Stub. Das ist ein eigenes Fake-Struct, Mumble wird dafür nicht gebraucht.
-   - Manueller Testplan mit einem echten Client
+   - Automatische Tests mit echten Clients: die Container aus S2 (Ubuntu, Debian, Fedora, headless, Sinus-Mikrofon), geprüft per Ice
+   - Ergänzend ein manueller Testplan für den Desktop
 
 **Fertig, wenn:** Das Plugin übersteht 100 Mal Aktivieren und Deaktivieren sowie Trennen und Neuverbinden ohne Hänger, und alle Befehle funktionieren gegen einen echten Server.
 
