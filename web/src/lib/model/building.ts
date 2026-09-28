@@ -161,6 +161,11 @@ export function presenceOf(u: Pick<User, "selfDeaf" | "idleMinutes">): Presence 
 /** Standard: Bild vom Dienst, versioniert (AP9) */
 const defaultAvatarUrl = (userId: number, version: string) => `/avatar/${userId}?v=${version}`;
 
+/** Avatarbild eines Nutzers, falls er registriert ist und eins gesetzt hat */
+export function avatarUrlOf(u: Pick<User, "userId" | "avatar">, url: BuildOptions["avatarUrl"] = defaultAvatarUrl): string | null {
+  return u.userId !== null && u.avatar ? url!(u.userId, u.avatar) : null;
+}
+
 export interface BuildOptions {
   avatarUrl?: (userId: number, version: string) => string;
 }
@@ -193,7 +198,7 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
     selfMuted: u.selfMute || u.selfDeaf,
     selfDeafened: u.selfDeaf,
     serverMuted: u.mute || u.deaf || u.suppress,
-    avatarUrl: u.userId !== null && u.avatar ? avatarUrl(u.userId, u.avatar) : null,
+    avatarUrl: avatarUrlOf(u, avatarUrl),
     presence: presenceOf(u),
     idleMinutes: u.idleMinutes,
     recording: u.recording,

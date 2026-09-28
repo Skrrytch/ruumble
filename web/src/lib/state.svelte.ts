@@ -5,7 +5,7 @@
 import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
 import { formatSize, type BoardFilter } from "./board/model.ts";
-import { buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
+import { avatarUrlOf, buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
 
 export type Notice = { text: string };
 
@@ -48,6 +48,14 @@ export class RuumbleState {
     const custom = this.adapter.avatarUrl?.bind(this.adapter); // Mock: eigene Bilder, sonst /avatar/<id>
     return buildBuilding(this.snapshot, custom ? { avatarUrl: custom } : {});
   });
+
+  /** Avatarbild eines gerade verbundenen Nutzers (Benutzerbereich, Pinnwand); sonst `null` → Initialen */
+  avatarOf(name: string): string | null {
+    const u = this.snapshot?.users.find((x) => x.name === name);
+    if (!u) return null;
+    const custom = this.adapter.avatarUrl?.bind(this.adapter);
+    return custom ? avatarUrlOf(u, custom) : avatarUrlOf(u);
+  }
 
   /** angezeigte Etage */
   floor: Floor | null = $derived.by(() => {
