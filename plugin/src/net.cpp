@@ -10,8 +10,7 @@ std::string toWebSocketUrl(const std::string &url) {
 	return url;
 }
 
-WebSocketTransport::WebSocketTransport(const std::string &url) : ws_(std::make_unique< ix::WebSocket >()) {
-	ws_->setUrl(toWebSocketUrl(url));
+WebSocketTransport::WebSocketTransport() : ws_(std::make_unique< ix::WebSocket >()) {
 	ws_->enableAutomaticReconnection();
 	ws_->setMinWaitBetweenReconnectionRetries(1000);
 	ws_->setMaxWaitBetweenReconnectionRetries(30000);
@@ -42,16 +41,26 @@ WebSocketTransport::WebSocketTransport(const std::string &url) : ws_(std::make_u
 }
 
 WebSocketTransport::~WebSocketTransport() {
-	stop();
+	disconnect();
 }
 
-void WebSocketTransport::start() {
+void WebSocketTransport::connect(const std::string &baseUrl) {
+	disconnect();
+	{
+		std::lock_guard< std::mutex > lock(mutex_);
+		stopping_ = false;
+		backoff_  = std::chrono::milliseconds(0);
+		running_  = true;
+	}
+	ws_->setUrl(toWebSocketUrl(baseUrl) + "/ws/plugin");
 	ws_->start();
 }
 
-void WebSocketTransport::stop() {
+void WebSocketTransport::disconnect() {
 	{
 		std::lock_guard< std::mutex > lock(mutex_);
+		if (!running_) return;
+		running_  = false;
 		stopping_ = true;
 	}
 	cv_.notify_all(); // eine laufende Wartezeit sofort beenden

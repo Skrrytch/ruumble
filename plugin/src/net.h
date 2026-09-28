@@ -21,15 +21,15 @@ std::string toWebSocketUrl(const std::string &url);
 
 class WebSocketTransport : public Transport {
 public:
-	explicit WebSocketTransport(const std::string &url);
+	WebSocketTransport();
 	~WebSocketTransport() override;
 
 	void onOpen(std::function< void() > f) { onOpen_ = std::move(f); }
 	void onClose(std::function< void() > f) { onClose_ = std::move(f); }
 	void onMessage(std::function< void(std::string) > f) { onMessage_ = std::move(f); }
 
-	void start();
-	void stop();
+	void connect(const std::string &baseUrl) override;
+	void disconnect() override;
 	void send(const std::string &json) override;
 
 private:
@@ -40,6 +40,7 @@ private:
 	std::mutex mutex_;
 	std::condition_variable cv_;
 	bool stopping_ = false;
+	bool running_  = false;
 	std::chrono::steady_clock::time_point openedAt_{};
 	std::chrono::milliseconds backoff_{ 0 };
 	std::function< void() > onOpen_, onClose_;

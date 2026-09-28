@@ -83,6 +83,34 @@ public:
 		return v;
 	}
 
+	ruumble::Description rootDescription() override {
+		ruumble::Description d;
+		mumble_connection_t conn;
+		const char *text = nullptr;
+		if (api.getActiveServerConnection(ownId, &conn) != MUMBLE_EC_OK) return d;
+		const mumble_error_t e = api.getChannelDescription(ownId, conn, 0, &text);
+		if (e == MUMBLE_EC_UNSYNCHRONIZED_BLOB) {
+			d.status = ruumble::Description::Status::Pending; // Mumble lädt den Text erst beim Ansehen (ADR-0010)
+		} else if (e == MUMBLE_EC_OK) {
+			d.status = ruumble::Description::Status::Ok;
+			if (text) {
+				d.text = text;
+				api.freeMemory(ownId, text);
+			}
+		}
+		return d;
+	}
+
+	std::string rootName() override {
+		mumble_connection_t conn;
+		const char *name = nullptr;
+		if (api.getActiveServerConnection(ownId, &conn) != MUMBLE_EC_OK) return "Root";
+		if (api.getChannelName(ownId, conn, 0, &name) != MUMBLE_EC_OK || !name) return "Root";
+		std::string result(name);
+		api.freeMemory(ownId, name);
+		return result;
+	}
+
 	void log(const std::string &message) override { api.log(ownId, message.c_str()); }
 };
 
@@ -99,31 +127,33 @@ mumble_error_t mumble_init(mumble_plugin_id_t id) {
 	ownId  = id;
 	config = ruumble::Config::load();
 	realApi = std::make_unique< RealApi >();
-	transport = std::make_unique< ruumble::WebSocketTransport >(config.bridgeUrl + "/ws/plugin");
+	transport = std::make_unique< ruumble::WebSocketTransport >();
 
 	ruumble::Settings settings;
 	settings.pluginVersion = RUUMBLE_VERSION;
-	settings.paired        = config.paired;
 	settings.autoOpen      = config.autoOpen;
-	core = std::make_unique< ruumble::Core >(*realApi, *transport, settings, ruumble::openUrl, [] {
-		config.paired = true;
-		config.save();
-	});
+	settings.bridgeUrl     = config.bridgeUrl;
+	core = std::make_unique< ruumble::Core >(
+		*realApi, *transport, settings, ruumble::openUrl,
+		[](const std::string &url) { return config.pairedWith.count(url) > 0; },
+		[](const std::string &url) {
+			config.pairedWith.insert(url);
+			config.save();
+		});
 
 	transport->onOpen([] { core->onTransportOpen(); });
 	transport->onClose([] { core->onTransportClosed(); });
 	transport->onMessage([](std::string msg) { core->onTransportMessage(std::move(msg)); });
 	core->start();
-	transport->start();
 	// Wird das Plugin bei bestehender Verbindung aktiviert, kommt kein onServerSynchronized mehr.
 	if (realApi->connected()) core->onSynchronized();
 	return MUMBLE_STATUS_OK;
 }
 
 void mumble_shutdown() {
-	// Reihenfolge: erst das Netz (keine neuen Ereignisse), dann den Worker. Danach entlädt Mumble die Bibliothek.
-	if (transport) transport->stop();
+	// Reihenfolge: erst der Worker (er steuert das Netz), dann das Netz. Danach entlädt Mumble die Bibliothek.
 	if (core) core->stop();
+	if (transport) transport->disconnect();
 	core.reset();
 	transport.reset();
 	realApi.reset();

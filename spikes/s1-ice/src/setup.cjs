@@ -33,6 +33,12 @@ const TREE = {
     // Gregors Büro: Enter für alle verbieten
     const acl = new MumbleServer.ACL(true, true, false, -1, "all", 0, MumbleServer.PermissionEnter);
     await server.setACL(ids["Gregors Büro"], [acl], [], true);
+    // Root-Beschreibung mit der Ruumble-Adresse (ADR-0010); RUUMBLE_URL für den lokalen Live-Test
+    const root = await server.getChannelState(0);
+    // RUUMBLE_DESC_PAD verlängert die Beschreibung über 128 Zeichen: dann schickt Mumble nur einen Hash (ADR-0010)
+    const pad = process.env.RUUMBLE_DESC_PAD ? "<p>" + "Willkommen im Musterhaus. ".repeat(6) + "</p>" : "";
+    root.description = `${pad}Hier ein paar wichtige Konfigurationen für Ruumble:\n\n- ruumble: ${process.env.RUUMBLE_URL ?? "http://ruumble:8080"}\n\nDanke.`;
+    await server.setChannelState(root);
     console.log(JSON.stringify(ids));
   } finally {
     await communicator.destroy();

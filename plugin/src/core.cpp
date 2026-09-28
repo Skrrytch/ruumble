@@ -1,5 +1,7 @@
 #include "core.h"
 
+#include "discovery.h"
+
 #include <nlohmann/json.hpp>
 
 namespace ruumble {
@@ -19,9 +21,10 @@ std::optional< std::string > talkingStateName(int state) {
 	}
 }
 
-Core::Core(MumbleApi &api, Transport &transport, Settings settings, OpenUrl openUrl, SavePaired savePaired)
+Core::Core(MumbleApi &api, Transport &transport, Settings settings, OpenUrl openUrl, IsPaired isPaired,
+		   MarkPaired markPaired)
 	: api_(api), transport_(transport), settings_(std::move(settings)), openUrl_(std::move(openUrl)),
-	  savePaired_(std::move(savePaired)) {}
+	  isPaired_(std::move(isPaired)), markPaired_(std::move(markPaired)) {}
 
 Core::~Core() {
 	stop();
@@ -87,6 +90,7 @@ std::optional< Clock::time_point > Core::nextDeadline() const {
 	std::optional< Clock::time_point > next;
 	if (active_) next = active_->deadline;
 	if (!active_ && !commands_.empty() && lastChange_) next = *lastChange_ + settings_.spacing;
+	if (discoveryAt_ && (!next || *discoveryAt_ < *next)) next = discoveryAt_;
 	return next;
 }
 
@@ -99,12 +103,14 @@ void Core::handle(const Event &event) {
 				certHash_ = session_ ? api_.userHash(*session_) : "";
 				channel_  = session_ ? api_.channelOf(*session_).value_or(-1) : -1;
 				helloAcked_ = false;
-				sendHello();
+				hintShown_  = false;
+				resolveBridge(Clock::now()); // verbindet (neu) oder schickt hello auf bestehender Verbindung
 			} else if constexpr (std::is_same_v< T, Disconnected >) {
 				failAll("offline");
 				if (transportOpen_ && helloAcked_) transport_.send(json{ { "v", V }, { "type", "bye" } }.dump());
 				session_.reset();
 				helloAcked_ = false;
+				disconnectBridge(); // nächster Server kann einen anderen Dienst nennen
 			} else if constexpr (std::is_same_v< T, Entered >) {
 				if (session_ && e.user == *session_) {
 					channel_ = e.channel;
@@ -143,7 +149,7 @@ void Core::sendHello() {
 						  { "session", *session_ },
 						  { "certHash", certHash_ },
 						  { "pluginVersion", settings_.pluginVersion },
-						  { "paired", settings_.paired } }
+						  { "paired", isPaired_(bridgeUrl_) } }
 						.dump());
 }
 
@@ -153,10 +159,9 @@ void Core::handleMessage(const std::string &text) {
 	const std::string type = msg.value("type", "");
 	if (type == "welcome") {
 		helloAcked_ = true;
-		if (msg.contains("pairUrl") && msg["pairUrl"].is_string() && !settings_.paired && settings_.autoOpen) {
+		if (msg.contains("pairUrl") && msg["pairUrl"].is_string() && !isPaired_(bridgeUrl_) && settings_.autoOpen) {
 			openUrl_(msg["pairUrl"].get< std::string >());
-			settings_.paired = true;
-			savePaired_();
+			markPaired_(bridgeUrl_);
 		}
 		api_.log("Ruumble: mit dem Dienst verbunden");
 	} else if (type == "reject") {
@@ -194,7 +199,45 @@ void Core::enqueueCommand(Command command) {
 	commands_.push_back(std::move(command));
 }
 
+void Core::resolveBridge(Clock::time_point now) {
+	discoveryAt_.reset();
+	if (!session_) return;
+	std::optional< std::string > url = settings_.bridgeUrl;
+	if (!url) {
+		const Description d = api_.rootDescription();
+		if (d.status == Description::Status::Ok) url = findBridgeUrl(d.text);
+		if (!url) {
+			// noch nicht geladen, leer oder ohne Zeile: später erneut prüfen (Beschreibung kann sich ändern)
+			const bool pending = d.status == Description::Status::Pending;
+			if (pending && !hintShown_) {
+				api_.log("Fahre einmal mit der Maus über den obersten Kanal „" + api_.rootName()
+						 + "“, damit die Ruumble-Adresse aus seiner Beschreibung geladen wird.");
+				hintShown_ = true;
+			}
+			discoveryAt_ = now + (pending ? settings_.discoveryRetry : settings_.discoveryRetry * 10);
+			if (!bridgeUrl_.empty() && d.status == Description::Status::Ok) disconnectBridge(); // Zeile entfernt
+			return;
+		}
+	}
+	if (*url != bridgeUrl_) {
+		disconnectBridge();
+		bridgeUrl_ = *url;
+		transport_.connect(bridgeUrl_); // hello folgt mit TransportOpen
+	} else {
+		sendHello();
+	}
+}
+
+void Core::disconnectBridge() {
+	if (bridgeUrl_.empty()) return;
+	transport_.disconnect();
+	bridgeUrl_.clear();
+	transportOpen_ = false;
+	helloAcked_    = false;
+}
+
 void Core::step(Clock::time_point now) {
+	if (discoveryAt_ && now >= *discoveryAt_) resolveBridge(now);
 	// Bestätigung ausgeblieben: einmal wiederholen (vermutlich Rate-Limit), dann aufgeben
 	if (active_ && now >= active_->deadline) {
 		if (active_->attempts < 2) {

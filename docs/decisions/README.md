@@ -13,3 +13,4 @@ Format: MADR, kurz. Status: **angenommen** = vom Auftraggeber entschieden, **vor
 | [0007](0007-protokoll-und-ableitung.md) | Protokoll und Ort der Ableitung | vorgeschlagen |
 | [0008](0008-betrieb.md) | Betrieb | angenommen (Docker) / vorgeschlagen (Rest) |
 | [0009](0009-eigenstaendiges-repository.md) | Eigenständiges Repository statt Mumble-Fork | angenommen |
+| [0010](0010-adresse-aus-root-beschreibung.md) | Adresse des Dienstes aus der Root-Beschreibung | angenommen |

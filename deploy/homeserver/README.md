@@ -23,14 +23,22 @@ Vorlage: [`mumble.docker-compose.yml`](mumble.docker-compose.yml)
 
 ## Plugin
 
-```sh
-cmake -S plugin -B plugin/build-<name> -DCMAKE_BUILD_TYPE=Release -DRUUMBLE_TESTS=OFF \
-      -DRUUMBLE_DEFAULT_BRIDGE_URL=http://<LAN-IP>:8080
-cmake --build plugin/build-<name>
-# → plugin/build-<name>/ruumble-<version>.mumble_plugin
+Es gibt **ein** Plugin für alle Server (ADR-0010). Die Adresse des Dienstes steht in der Beschreibung des obersten Kanals, als eigene Zeile, die auf `ruumble: <adresse>` endet:
+
+```
+Hier ein paar wichtige Konfigurationen für Ruumble:
+
+- ruumble: http://<LAN-IP>:8080
 ```
 
-Die Adresse lässt sich später in `~/.config/ruumble/plugin.json` ändern (`bridgeUrl`).
+Die Beschreibung sollte möglichst **unter 128 Zeichen** bleiben. Dann bekommen sie alle Clients sofort. Bei längerer Beschreibung muss jeder Nutzer einmal mit der Maus über den obersten Kanal fahren, das Plugin weist im Mumble-Protokoll darauf hin.
+
+```sh
+cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release && cmake --build plugin/build
+# → plugin/build/ruumble-<version>.mumble_plugin
+```
+
+Übersteuern lässt sich die Adresse in `~/.config/ruumble/plugin.json` (`bridgeUrl`).
 
 ## Rückweg
 

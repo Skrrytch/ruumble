@@ -7,7 +7,12 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 const root = new URL("../../", import.meta.url).pathname;
-const runClient = (distro: string, name: string) => execFileSync(`${root}deploy/local/run-client.sh`, [distro, name]);
+/** `bridgeUrl = ""`: ohne feste Adresse, das Plugin liest sie aus der Root-Beschreibung (ADR-0010) */
+const runClient = (distro: string, name: string, bridgeUrl = "http://ruumble:8080") =>
+  execFileSync(`${root}deploy/local/run-client.sh`, [distro, name], { env: { ...process.env, BRIDGE_URL: bridgeUrl } });
+/** Root-Beschreibung setzen (Testvorbereitung mit Write-Secret); `long`: über 128 Zeichen → Mumble schickt nur einen Hash */
+const setRootDescription = (long: boolean) =>
+  execFileSync("node", ["src/setup.cjs"], { cwd: `${root}spikes/s1-ice`, env: { ...process.env, RUUMBLE_DESC_PAD: long ? "1" : "" } });
 const stopClient = (name: string) => execFileSync("docker", ["rm", "-f", `ruumble-client-${name}`]);
 
 async function pairUrl(name: string): Promise<string> {
@@ -120,5 +125,30 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   test("Mumble beendet: Oberfläche meldet „nicht verbunden“", async () => {
     stopClient("Anna");
     await expect(page.getByText("Mumble ist nicht verbunden.")).toBeVisible({ timeout: 10_000 });
+  });
+});
+
+test.describe.serial(`Adresse aus der Root-Beschreibung (${distro})`, () => {
+  test.afterAll(() => {
+    for (const name of ["Dora", "Emil"]) try { stopClient(name); } catch { /* nicht gestartet */ }
+    setRootDescription(false);
+  });
+
+  test("kurze Beschreibung: das Plugin findet die Adresse sofort", async () => {
+    setRootDescription(false);
+    runClient(distro, "Dora", "");
+    expect(await pairUrl("Dora")).toMatch(/\/pair\?code=/);
+  });
+
+  test("lange Beschreibung: erst nach einmaligem Hover über den obersten Kanal", async () => {
+    setRootDescription(true);
+    runClient(distro, "Emil", "");
+    const file = `${root}deploy/local/out/Emil/pair-url.txt`;
+    await new Promise((r) => setTimeout(r, 10_000));
+    expect(existsSync(file)).toBe(false); // Mumble hat den Text noch nicht geladen
+    // wie ein Nutzer: Maus über den obersten Kanal (Tooltip lädt die Beschreibung nach)
+    execFileSync("docker", ["exec", "ruumble-client-Emil", "bash", "-c",
+      "export DISPLAY=:99; xdotool mousemove 320 73; sleep 0.3; xdotool mousemove 322 74; sleep 2"]);
+    expect(await pairUrl("Emil")).toMatch(/\/pair\?code=/);
   });
 });
