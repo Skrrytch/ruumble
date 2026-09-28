@@ -13,6 +13,8 @@ So wurde Ruumble am 28.09.2026 zum ersten Mal neben einem laufenden Mumble-Serve
 
 **Neuaufsetzen am 28.09.2026:** Die Datenbank enthielt schon vor der Umstellung nur den Root-Kanal und den SuperUser (Sicherung von 15:37, Protokoll zurück bis 02.09.). Die Datenbank wurde deshalb auf Wunsch neu angelegt (`docker compose down`, `docker volume rm mumble-data`, `docker compose up -d`). Dabei entstand ein neues Server-Zertifikat, Clients fragen daher einmal nach, ob sie ihm vertrauen. Alle Sicherungen und das alte anonyme Volume sind erhalten.
 
+6. **Willkommensnachricht mit Link zu Ruumble** (`MUMBLE_CONFIG_WELCOMETEXT`). Plugins können in Mumble weder Knöpfe noch anklickbare Links anzeigen, die Begrüßung des Servers aber schon: Mumble zeigt sie bei jedem Verbinden im Protokoll. Der ganze Wert steht in Anführungszeichen (INI: ein Komma würde ihn sonst in eine Liste zerlegen), der Link in einfachen Anführungszeichen, Umlaute als HTML-Entities.
+
 Vorlage: [`mumble.docker-compose.yml`](mumble.docker-compose.yml)
 
 ## Ruumble
