@@ -8,7 +8,7 @@
     <Download size={18} /> Ruumble-Plugin herunterladen
   </a>
   <ol>
-    <li>In Mumble: <em>Konfigurieren → Einstellungen → Plugins → „Plugin installieren“</em> und die Datei wählen.</li>
+    <li>In Mumble: <em>Konfigurieren → Einstellungen → Plugins → „Installiere Plugin …“</em>, die Datei wählen und mit <em>Ja</em> bestätigen.</li>
     <li>Bei <strong>Ruumble</strong> den Haken <em>„Aktivieren“</em> setzen und mit OK schließen.</li>
     <li>Mit dem Server verbinden. Beim ersten Mal öffnet sich diese Seite mit einem Kopplungslink.</li>
   </ol>
