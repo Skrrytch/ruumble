@@ -168,7 +168,14 @@ app.get("/ws/ui", { websocket: true }, (socket, req) => {
 
 app.get<{ Querystring: { code?: string } }>("/pair", async (req, reply) => {
   const token = req.query.code ? pairing.redeem(req.query.code) : null;
-  if (!token) return reply.code(400).type("text/html; charset=utf-8").send("<p>Der Kopplungslink ist ungültig oder abgelaufen. Verbinde Mumble neu, um einen neuen zu erhalten.</p>");
+  if (!token) {
+    // Sprache wie die Oberfläche: Deutsch, wenn der Browser es vorzieht, sonst Englisch
+    const de = /^\s*de\b/i.test(String(req.headers["accept-language"] ?? "").split(",").find((l) => /^\s*(de|en)\b/i.test(l)) ?? "");
+    const text = de
+      ? "Der Kopplungslink ist ungültig oder abgelaufen. Verbinde Mumble neu, um einen neuen zu erhalten."
+      : "The pairing link is invalid or has expired. Reconnect Mumble to get a new one.";
+    return reply.code(400).type("text/html; charset=utf-8").send(`<!doctype html><html lang="${de ? "de" : "en"}"><meta charset="utf-8"><p>${text}</p></html>`);
+  }
   const secure = config.publicUrl.startsWith("https://") ? "; Secure" : "";
   reply.header("Set-Cookie", `${TOKEN_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${secure}`);
   return reply.redirect("/");

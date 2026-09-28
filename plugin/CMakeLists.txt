@@ -23,7 +23,7 @@ FetchContent_MakeAvailable(nlohmann_json ixwebsocket)
 find_package(Threads REQUIRED)
 
 # Kern ohne Mumble-Abhängigkeit (auch für die Tests)
-add_library(ruumble_core STATIC src/core.cpp src/config.cpp src/discovery.cpp)
+add_library(ruumble_core STATIC src/core.cpp src/config.cpp src/discovery.cpp src/messages.cpp)
 target_include_directories(ruumble_core PUBLIC src)
 target_link_libraries(ruumble_core PUBLIC nlohmann_json::nlohmann_json Threads::Threads)
 target_compile_options(ruumble_core PRIVATE -Wall -Wextra)

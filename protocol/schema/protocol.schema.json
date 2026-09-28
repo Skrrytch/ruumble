@@ -35,6 +35,13 @@
             "mumbleVersion": {
               "type": "string",
               "maxLength": 32
+            },
+            "locale": {
+              "type": "string",
+              "enum": [
+                "de",
+                "en"
+              ]
             }
           },
           "required": [

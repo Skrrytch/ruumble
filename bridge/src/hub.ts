@@ -12,6 +12,7 @@ import {
   type BridgeToUi,
   type CommandBody,
   type CommandResult,
+  type Locale,
   type Snapshot,
 } from "@ruumble/protocol";
 import type { MumbleSource } from "./mumble.ts";
@@ -56,6 +57,7 @@ interface PluginEntry {
   /** Mumble-Client und Plugin, wie das Plugin sie meldet (Betrieb, Kompatibilität) */
   mumbleVersion: string;
   pluginVersion: string;
+  locale: Locale;
 }
 
 /** Missbrauchsschutz je Nutzer; die Mumble-Grenzen behandelt das Plugin (ADR-0003) */
@@ -120,10 +122,10 @@ export class Hub {
   }
 
   /** Plugins der Anwesenden eines Raums (außer `except`) – für Hinweise im Mumble-Protokoll */
-  pluginsIn(channelId: number, except?: string): { send: (msg: BridgeToPlugin) => void }[] {
+  pluginsIn(channelId: number, except?: string): { send: (msg: BridgeToPlugin) => void; locale: Locale }[] {
     return [...this.plugins.values()]
       .filter((p) => p.certHash !== except && this.state?.users.find((u) => u.session === p.session)?.channel === channelId)
-      .map((p) => p.conn);
+      .map((p) => ({ send: (msg: BridgeToPlugin) => p.conn.send(msg), locale: p.locale }));
   }
 
   /** Darf diese Oberfläche Bilder und Daten sehen? (gekoppelt oder Vorschau, ADR-0004) */
@@ -156,7 +158,7 @@ export class Hub {
           const previous = this.plugins.get(msg.certHash);
           if (previous && previous.conn !== conn) previous.conn.close(4001, "replaced");
           if (entry && entry.certHash !== msg.certHash) this.removePlugin(entry);
-          entry = { conn, certHash: msg.certHash, session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unbekannt", pluginVersion: msg.pluginVersion };
+          entry = { conn, certHash: msg.certHash, session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unbekannt", pluginVersion: msg.pluginVersion, locale: msg.locale ?? "de" };
           this.plugins.set(msg.certHash, entry);
           const pairUrl = msg.paired ? undefined : `${this.opts.publicUrl}/pair?code=${this.opts.pairing.createCode(msg.certHash, name)}`;
           conn.send(pairUrl ? { v, type: "welcome", pairUrl } : { v, type: "welcome" });

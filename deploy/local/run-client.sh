@@ -13,7 +13,7 @@ out="$root/deploy/local/out/$user"; rm -rf "$out"; mkdir -p "$out"; chmod 777 "$
 docker rm -f "$name" >/dev/null 2>&1 || true
 docker run -d --name "$name" --network ruumble-local_default \
   -e SERVER_HOST=mumble -e SERVER_PORT=64738 -e SERVER_DIGEST="$digest" -e USERNAME="$user" \
-  -e BRIDGE_URL="${BRIDGE_URL-http://ruumble:8080}" -e OUT=/out -e RUUMBLE_LOG_STDERR=1 \
+  -e BRIDGE_URL="${BRIDGE_URL-http://ruumble:8080}" -e OUT=/out -e RUUMBLE_LOG_STDERR=1 -e LANG="${CLIENT_LANG:-de_DE.UTF-8}" \
   -v "${PLUGIN_DIR:-$root/plugin/build}:/plugin:ro" -v "$root/deploy/local/client-entrypoint.sh:/entrypoint.sh:ro" -v "$out:/out" \
   "ruumble-client-$distro" /entrypoint.sh >/dev/null
 echo "$name → $out"
