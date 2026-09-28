@@ -28,10 +28,17 @@ Config Config::load() {
 	if (!in) return c;
 	const auto j = nlohmann::json::parse(in, nullptr, /*allow_exceptions=*/false);
 	if (!j.is_object()) return c;
-	c.bridgeUrl = j.value("bridgeUrl", c.bridgeUrl);
-	c.autoOpen  = j.value("autoOpen", c.autoOpen);
-	c.paired    = j.value("paired", c.paired);
-	while (!c.bridgeUrl.empty() && c.bridgeUrl.back() == '/') c.bridgeUrl.pop_back();
+	if (j.contains("bridgeUrl") && j["bridgeUrl"].is_string()) {
+		std::string url = j["bridgeUrl"].get< std::string >();
+		while (!url.empty() && url.back() == '/') url.pop_back();
+		if (!url.empty()) c.bridgeUrl = url;
+	}
+	c.autoOpen = j.value("autoOpen", c.autoOpen);
+	if (j.contains("pairedWith") && j["pairedWith"].is_array())
+		for (const auto &u : j["pairedWith"])
+			if (u.is_string()) c.pairedWith.insert(u.get< std::string >());
+	// ältere Fassung: "paired": true galt für die feste Adresse
+	if (j.value("paired", false) && c.bridgeUrl) c.pairedWith.insert(*c.bridgeUrl);
 	return c;
 }
 
@@ -39,7 +46,8 @@ void Config::save() const {
 	const fs::path p = path();
 	std::error_code ec;
 	fs::create_directories(p.parent_path(), ec);
-	nlohmann::json j = { { "bridgeUrl", bridgeUrl }, { "autoOpen", autoOpen }, { "paired", paired } };
+	nlohmann::json j = { { "autoOpen", autoOpen }, { "pairedWith", pairedWith } };
+	if (bridgeUrl) j["bridgeUrl"] = *bridgeUrl;
 	const fs::path tmp = p.string() + ".tmp";
 	{
 		std::ofstream out(tmp);

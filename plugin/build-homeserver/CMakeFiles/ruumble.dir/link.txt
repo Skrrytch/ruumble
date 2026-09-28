@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC -O3 -DNDEBUG -Wl,--exclude-libs,ALL -shared  -o libruumble.so CMakeFiles/ruumble.dir/src/plugin.cpp.o CMakeFiles/ruumble.dir/src/net.cpp.o  libruumble_core.a /home/bespecke/projects/lab/ruumble/plugin/build/_deps/ixwebsocket-build/libixwebsocket.a -static-libstdc++ -static-libgcc /usr/lib/x86_64-linux-gnu/libssl.so /usr/lib/x86_64-linux-gnu/libcrypto.so 

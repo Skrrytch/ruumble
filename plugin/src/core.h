@@ -19,7 +19,14 @@
 
 namespace ruumble {
 
-/** Zugriff auf Mumble (umgesetzt in mumble_api.cpp, im Test gefälscht). Aufrufe nur aus dem Worker. */
+/** Beschreibung eines Kanals: Mumble lädt den Text erst, wenn ein Nutzer ihn ansieht (ADR-0010). */
+struct Description {
+	enum class Status { Ok, Pending, Error };
+	Status status = Status::Error;
+	std::string text;
+};
+
+/** Zugriff auf Mumble (umgesetzt in plugin.cpp, im Test gefälscht). Aufrufe nur aus dem Worker. */
 class MumbleApi {
 public:
 	virtual ~MumbleApi() = default;
@@ -33,22 +40,31 @@ public:
 	virtual bool setDeaf(bool on)   = 0;
 	virtual bool isMuted()          = 0;
 	virtual bool isDeafened()       = 0;
+	/** Beschreibung des Root-Kanals (ID 0) */
+	virtual Description rootDescription() = 0;
+	/** Name des Root-Kanals, wie ihn der Client zeigt (registername des Servers, sonst „Root“) */
+	virtual std::string rootName() = 0;
 	virtual void log(const std::string &message) = 0;
 };
 
-/** Verbindung zum Dienst (umgesetzt in net.cpp) */
+/** Verbindung zum Dienst (umgesetzt in net.cpp). Aufrufe nur aus dem Worker. */
 class Transport {
 public:
-	virtual ~Transport()                        = default;
-	virtual void send(const std::string &json) = 0;
+	virtual ~Transport()                               = default;
+	/** Basis-URL des Dienstes, z. B. http://192.168.1.179:8080 (verbindet mit …/ws/plugin) */
+	virtual void connect(const std::string &baseUrl) = 0;
+	virtual void disconnect()                        = 0;
+	virtual void send(const std::string &json)       = 0;
 };
 
 struct Settings {
 	std::string pluginVersion = "0.0.0";
-	bool paired               = false;
 	bool autoOpen             = true;
+	/** feste Adresse aus plugin.json; ohne sie gilt die Root-Beschreibung (ADR-0010) */
+	std::optional< std::string > bridgeUrl;
 	std::chrono::milliseconds spacing{ 1000 };
 	std::chrono::milliseconds confirmTimeout{ 3000 };
+	std::chrono::milliseconds discoveryRetry{ 3000 };
 };
 
 /** Mumble_TalkingState als Protokoll-Text; nullopt für INVALID */
@@ -56,10 +72,12 @@ std::optional< std::string > talkingStateName(int state);
 
 class Core {
 public:
-	using OpenUrl     = std::function< void(const std::string &) >;
-	using SavePaired  = std::function< void() >;
+	using OpenUrl    = std::function< void(const std::string &) >;
+	using IsPaired   = std::function< bool(const std::string &bridgeUrl) >;
+	using MarkPaired = std::function< void(const std::string &bridgeUrl) >;
 
-	Core(MumbleApi &api, Transport &transport, Settings settings, OpenUrl openUrl, SavePaired savePaired);
+	Core(MumbleApi &api, Transport &transport, Settings settings, OpenUrl openUrl, IsPaired isPaired,
+		 MarkPaired markPaired);
 	~Core();
 
 	void start();
@@ -119,13 +137,16 @@ private:
 	void sendHello();
 	void sendSelfState();
 	void failAll(const std::string &result);
+	void resolveBridge(std::chrono::steady_clock::time_point now);
+	void disconnectBridge();
 	std::optional< std::chrono::steady_clock::time_point > nextDeadline() const;
 
 	MumbleApi &api_;
 	Transport &transport_;
 	Settings settings_;
 	OpenUrl openUrl_;
-	SavePaired savePaired_;
+	IsPaired isPaired_;
+	MarkPaired markPaired_;
 
 	mutable std::mutex mutex_;
 	std::condition_variable cv_;
@@ -143,6 +164,9 @@ private:
 	std::optional< ActiveJoin > active_;
 	std::optional< std::chrono::steady_clock::time_point > lastChange_;
 	bool helloAckedShared_ = false; // für helloAcknowledged(), unter mutex_
+	std::string bridgeUrl_;         // aktuell verbundene Basis-URL
+	std::optional< std::chrono::steady_clock::time_point > discoveryAt_;
+	bool hintShown_ = false;
 };
 
 } // namespace ruumble

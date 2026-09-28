@@ -1,27 +1,25 @@
-// Konfiguration: ~/.config/ruumble/plugin.json (bzw. $XDG_CONFIG_HOME). Fehlende Werte kommen aus dem Build.
+// Konfiguration: ~/.config/ruumble/plugin.json (bzw. $XDG_CONFIG_HOME, $RUUMBLE_CONFIG).
 #pragma once
+#include <optional>
+#include <set>
 #include <string>
-
-#ifndef RUUMBLE_DEFAULT_BRIDGE_URL
-#	define RUUMBLE_DEFAULT_BRIDGE_URL "http://127.0.0.1:8080"
-#endif
 
 namespace ruumble {
 
 struct Config {
-	/** Basis-URL des Dienstes (http/https); die Plugin-API liefert keine Serveradresse (ADR-0008) */
-	std::string bridgeUrl = RUUMBLE_DEFAULT_BRIDGE_URL;
-	/** Kopplungslink beim ersten Verbinden im Browser öffnen (ADR-0004, E21) */
+	/** feste Adresse des Dienstes; ohne sie gilt die Beschreibung des Root-Kanals (ADR-0010) */
+	std::optional< std::string > bridgeUrl;
+	/** Kopplungslink beim ersten Verbinden mit einem Dienst im Browser öffnen (ADR-0004, E21) */
 	bool autoOpen = true;
-	/** bereits gekoppelt: kein Link mehr öffnen */
-	bool paired = false;
+	/** Dienste, mit denen bereits gekoppelt wurde */
+	std::set< std::string > pairedWith;
 
 	static std::string path();
 	static Config load();
 	void save() const;
 };
 
-/** öffnet eine URL im Standardbrowser (xdg-open, ohne Shell) */
+/** öffnet eine URL im Standardbrowser (xdg-open, ohne Shell-Interpolation) */
 void openUrl(const std::string &url);
 
 } // namespace ruumble

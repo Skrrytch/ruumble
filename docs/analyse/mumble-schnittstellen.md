@@ -62,6 +62,8 @@ Beide liegen unverändert unter `third_party/mumble/`. **Pfadangaben in den Bele
 | `requestLocalUserMute(bool)` | Befehl `mute` | Self-Mute | `API_v_1_x_x.cpp:1006-1031`; `src/mumble/MainWindow.cpp:2779-2813` | Verhält sich **wie der Button in Mumble**: Unmute bei Taub hebt auch Taub auf. Jeder Aufruf erzeugt einen Log-Eintrag, deshalb nur bei echter Änderung aufrufen. |
 | `requestLocalUserDeaf(bool)` | Befehl `deaf` | Self-Deaf | `API_v_1_x_x.cpp:1033-1058`; `MainWindow.cpp:2816-2858` | Taub stellt auch stumm. Aufheben von Taub hebt Stumm nur auf, wenn Stumm durch Taub kam. Das entspricht SPEC 3. |
 | `isLocalUserMuted` / `isLocalUserDeafened` | direkt nach `mute`/`deaf` | Ergebnis an den Dienst melden, damit die Oberfläche sofort reagiert, ohne auf den nächsten Ice-Abgleich zu warten | `API_v_1_x_x.cpp:615-659` | Der Audio-Wizard setzt `bMute` vorübergehend. Maßgeblich bleibt deshalb der Stand aus Ice. |
+| `getChannelDescription(conn, 0)` | beim Sync, bei Bedarf alle 3 s | Adresse des Dienstes aus der Root-Beschreibung (ADR-0010) | `API_v_1_x_x.cpp` (`getChannelDescription_v_1_0_x`) | Ab 128 Zeichen schickt der Server nur einen Hash (`Server::hashAssign`), dann kommt `MUMBLE_EC_UNSYNCHRONIZED_BLOB`, bis ein Nutzer den Tooltip ansieht. |
+| `getChannelName(conn, 0)` | für den Hinweis | Name des obersten Kanals, wie der Client ihn zeigt (`registername`) | `API_v_1_x_x.cpp:344-362` | – |
 | `freeMemory` | nach jedem Getter | Speicher freigeben | `API_v_1_x_x.cpp:165-197` | – |
 
 **Bewusst nicht genutzt:**

@@ -1,7 +1,7 @@
 # Ruumble-Plugin für Mumble (AP6). Eigenes CMake-Projekt; Mumble selbst wird nicht gebaut.
 # Der Mumble-Header kommt unverändert aus third_party/mumble (ADR-0009).
 cmake_minimum_required(VERSION 3.20)
-project(ruumble_plugin VERSION 0.1.0 LANGUAGES CXX)
+project(ruumble_plugin VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -9,7 +9,6 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(RUUMBLE_DEFAULT_BRIDGE_URL "http://127.0.0.1:8080" CACHE STRING "Standardadresse des Ruumble-Dienstes (überschreibbar in plugin.json)")
 option(RUUMBLE_TESTS "Unit-Tests bauen" ON)
 
 include(FetchContent)
@@ -24,10 +23,9 @@ FetchContent_MakeAvailable(nlohmann_json ixwebsocket)
 find_package(Threads REQUIRED)
 
 # Kern ohne Mumble-Abhängigkeit (auch für die Tests)
-add_library(ruumble_core STATIC src/core.cpp src/config.cpp)
+add_library(ruumble_core STATIC src/core.cpp src/config.cpp src/discovery.cpp)
 target_include_directories(ruumble_core PUBLIC src)
 target_link_libraries(ruumble_core PUBLIC nlohmann_json::nlohmann_json Threads::Threads)
-target_compile_definitions(ruumble_core PUBLIC RUUMBLE_DEFAULT_BRIDGE_URL="${RUUMBLE_DEFAULT_BRIDGE_URL}")
 target_compile_options(ruumble_core PRIVATE -Wall -Wextra)
 
 add_library(ruumble MODULE src/plugin.cpp src/net.cpp)

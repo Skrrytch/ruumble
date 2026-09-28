@@ -11,8 +11,13 @@ plugin="$data/Plugins/libruumble.so"
 cp /plugin/libruumble.so "$plugin"
 hash=$(printf '%s' "$plugin" | sha1sum | cut -d' ' -f1)
 
-# Plugin-Konfiguration und ein xdg-open, das den Kopplungslink nur festhält (kein Browser im Container)
-printf '{ "bridgeUrl": "%s", "autoOpen": true, "paired": false }\n' "$BRIDGE_URL" > ~/.config/ruumble/plugin.json
+# Plugin-Konfiguration (ohne BRIDGE_URL: Adresse aus der Root-Beschreibung) und ein xdg-open,
+# das den Kopplungslink nur festhält (kein Browser im Container)
+if [ -n "${BRIDGE_URL:-}" ]; then
+  printf '{ "bridgeUrl": "%s", "autoOpen": true }\n' "$BRIDGE_URL" > ~/.config/ruumble/plugin.json
+else
+  printf '{ "autoOpen": true }\n' > ~/.config/ruumble/plugin.json
+fi
 printf '#!/bin/sh\necho "$1" > "%s/pair-url.txt"\n' "$OUT" > ~/bin/xdg-open && chmod +x ~/bin/xdg-open
 export PATH=~/bin:$PATH
 
