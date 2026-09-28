@@ -127,8 +127,6 @@ export const Snapshot = z.object({
   listeners: z.record(channelKey, z.array(session)),
   /** Kanal-ID → darf der eigene Nutzer den Kanal betreten (PermissionEnter). Fehlt ein Kanal, gilt `true`. */
   canEnter: z.record(channelKey, z.boolean()),
-  /** Räume, an deren Pinnwand etwas hängt (ohne Räume ohne Zutrittsrecht, ADR-0011) */
-  boards: z.array(channelId),
 });
 export type Snapshot = z.infer<typeof Snapshot>;
 

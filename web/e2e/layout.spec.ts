@@ -37,6 +37,11 @@ test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ 
   await page.goto("/?fixture=musterhaus&talking=0");
   await expect(page.getByRole("heading", { name: "ENTWICKLUNG" })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
+  // Die Titelleiste ist kompakter als im Prototyp und der Grundriss füllt die Höhe: Fenster so weit
+  // verkleinern, dass der Grundriss so hoch ist wie im Prototyp, dann vergleichen
+  const first = await boxes(page, "data-channel");
+  const size = page.viewportSize()!;
+  await page.setViewportSize({ width: size.width, height: Math.round(size.height - (first.plan!.height - reference.plan!.height)) });
   const ours = await boxes(page, "data-channel");
   await page.screenshot({ path: info.outputPath("ruumble.png") });
 

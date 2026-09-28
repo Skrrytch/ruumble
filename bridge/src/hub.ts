@@ -41,8 +41,6 @@ export interface HubOptions {
   refresh?: () => Promise<void>;
   /** Version des Avatarbilds eines registrierten Nutzers (AP9) */
   avatarVersion?: (userId: number | null) => string | null;
-  /** Räume, an deren Pinnwand etwas hängt (ADR-0011) */
-  boardChannels?: () => number[];
 }
 
 /** Wer steht hinter einem Geräte-Token gerade wo? (Pinnwand, ADR-0011) */
@@ -116,7 +114,6 @@ export class Hub {
     for (const ui of this.uis) {
       if (this.whoIs(ui.certHash)?.channelId === channelId) ui.conn.send({ v, type: "board", channelId });
     }
-    this.rebroadcast(); // Grafik im Grundriss (boards im Snapshot)
   }
 
   /** Plugins der Anwesenden eines Raums (außer `except`) – für Hinweise im Mumble-Protokoll */
@@ -301,8 +298,6 @@ export class Hub {
       users: s.users.map(({ address: _address, ...u }) => ({ ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null })),
       listeners: s.listeners,
       canEnter: session ? (s.canEnter.get(session) ?? {}) : {},
-      // Räume mit Beiträgen, ohne solche ohne Zutrittsrecht (ADR-0011)
-      boards: (this.opts.boardChannels?.() ?? []).filter((c) => s.channels.some((x) => x.id === c) && (session ? s.canEnter.get(session)?.[String(c)] !== false : true)),
     };
     ui.conn.send(snapshot);
   }

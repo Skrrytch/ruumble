@@ -27,7 +27,7 @@ Sonderfälle:
 
 Feste Referenzgröße 1440 × 900 px (Desktop). Aufbau von oben nach unten:
 
-1. **Kopfzeile**: Kicker mit Geschossbezeichnung (15 px, Blau 500), H1 Etagenname (40 px, Bold, −0,02 em), Zusammenfassung „N Personen auf dieser Etage · M Räume“. Rechts: Hinweis „Klick auf einen Raum wechselt den Kanal. / Etagenwechsel über den Aufzug · N online“.
+1. **Kopfzeile** (kompakt, Änderung 28.09.2026): links nur der Etagenname (22 px, Bold), die Etage ist ja im Aufzug markiert. Rechts zwei Plaketten (Blau 100): Personen-Symbol mit der Zahl auf dieser Etage und „N online“ mit Punkt. Keine Geschossbezeichnung, keine Raumzahl, keine Bedienhinweise. Der Grundriss füllt die restliche Höhe.
 2. **Grundriss** (Höhe 670 px): Hintergrund Dunkelblau mit 4 px Padding und 4 px Gap. Die Lücken bilden die **Wände**.
    - **Aufzugskern** links, 300 px breit, Hintergrund Grau (`--color-surface`). Hat eine 110 px hohe Öffnung zum Flur (auf Flurhöhe, `top: 276px`).
    - **Etagenfläche** rechts: obere Raumreihe (272 px), Flur (110 px), untere Raumreihe (272 px).

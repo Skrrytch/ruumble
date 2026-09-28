@@ -1,7 +1,8 @@
 <script lang="ts">
   import Unplug from "@lucide/svelte/icons/unplug";
+  import Users from "@lucide/svelte/icons/users";
   import type { MockAdapter } from "./lib/adapter/mock.ts";
-  import { FEW_ROOMS, countText } from "./lib/model/building.ts";
+  import { FEW_ROOMS } from "./lib/model/building.ts";
   import type { RuumbleState } from "./lib/state.svelte.ts";
   import Core from "./lib/ui/Core.svelte";
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
@@ -17,12 +18,6 @@
   const fewRooms = $derived(
     app.boardOpen && !app.readonly && !!floor && !floor.lock && floor.rooms.length > 0 && floor.rooms.length <= FEW_ROOMS,
   );
-  const summary = $derived.by(() => {
-    if (!floor) return "";
-    if (floor.lock) return "Diese Etage ist hier nicht darstellbar";
-    const people = floor.population === 0 ? "Niemand" : countText(floor.population);
-    return floor.rooms.length ? `${people} auf dieser Etage · ${floor.rooms.length} Räume` : `${people} auf dieser Etage`;
-  });
   const hidden = $derived(building?.self?.kind === "hidden");
 </script>
 
@@ -44,18 +39,22 @@
       <PluginHelp />
     </div>
   {:else}
+    <!-- Titelleiste, platzsparend: die Etage ist im Aufzug markiert, hier nur Name und Zahlen -->
     <header class="head">
-      <div>
-        <div class="kicker">{floor?.level ?? building.name}</div>
+      <div class="where">
         <h1>{floor?.name ?? "Leerstand"}</h1>
-        {#if app.readonly}<div class="preview-note">Vorschau – nur lesend, ohne eigenen Nutzer</div>{/if}
-        <div class="summary">
-          {#if floor}{summary}{:else}Keine Etage dieses Gebäudes ist darstellbar{/if}
-          {#if hidden}<span class="hidden-note"> · Du bist in einem Bereich, der hier nicht darstellbar ist.</span>{/if}
-        </div>
+        {#if app.readonly}<span class="note">Vorschau, nur lesend</span>{/if}
+        {#if hidden}<span class="note">Du bist in einem Bereich, der hier nicht darstellbar ist</span>{/if}
       </div>
-      <div class="hint">
-        {#if app.readonly}Kanalwechsel nur mit dem Ruumble-Plugin.{:else}Klick auf einen Raum wechselt den Kanal.<br />Die Pinnwand zeigt, was im aktuellen Raum hängt.{/if}<br />Etagenwechsel über den Aufzug · {building.online} online
+      <div class="counts">
+        {#if floor}
+          <span class="count" title="Personen auf dieser Etage" aria-label="{floor.population} auf dieser Etage">
+            <Users size={16} aria-hidden="true" />{floor.population}
+          </span>
+        {/if}
+        <span class="count" title="Online auf dem Server">
+          <span class="dot" aria-hidden="true"></span>{building.online} online
+        </span>
       </div>
     </header>
 
@@ -96,23 +95,26 @@
 
 <style>
   .app {
-    width: min(1440px, 100%); height: 100vh; min-height: 720px; margin: 0 auto; padding: 32px 32px 24px;
-    display: flex; flex-direction: column; gap: 20px; overflow: hidden;
+    width: min(1440px, 100%); height: 100vh; min-height: 640px; margin: 0 auto; padding: 16px 32px 24px;
+    display: flex; flex-direction: column; gap: 12px; overflow: hidden;
   }
-  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
-  .kicker { font-size: 15px; color: var(--color-blue-500); }
-  h1 { margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
-  .summary { font-size: 15px; color: var(--color-blue-700); }
-  .hidden-note { font-weight: 700; }
-  .preview-note { font-size: 13px; font-weight: 700; color: var(--color-blue-500); }
-  .hint { font-size: 13px; text-align: right; line-height: 1.5; color: var(--color-blue-700); }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 40px; }
+  .where { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+  h1 { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .note { font-size: 13px; font-weight: 700; color: var(--color-blue-500); }
+  .counts { display: flex; gap: 8px; flex-shrink: 0; }
+  .count {
+    display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px;
+    background: var(--color-blue-100); color: var(--color-navy); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-sky); box-shadow: 0 0 0 3px rgb(255 255 255 / 0.7); }
 
   /* Etage mit 1–2 Räumen: Grundriss und Pinnwand teilen sich die Breite (SPEC 2) */
   .plan.few :global(.floorplan), .plan.few :global(.board) { flex: 1 1 0; width: auto; min-width: 340px; }
 
   /* Grundriss: Wände = 4 px Dunkelblau als Abstand (SPEC 2) */
   .plan {
-    height: clamp(520px, calc(100vh - 230px), 670px); padding: var(--wall); background: var(--color-navy);
+    flex: 1 1 auto; min-height: 520px; padding: var(--wall); background: var(--color-navy);
     display: flex; gap: var(--wall);
   }
   .vacancy, .screen {

@@ -594,14 +594,6 @@
               "additionalProperties": {
                 "type": "boolean"
               }
-            },
-            "boards": {
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 9007199254740991
-              }
             }
           },
           "required": [
@@ -612,8 +604,7 @@
             "channels",
             "users",
             "listeners",
-            "canEnter",
-            "boards"
+            "canEnter"
           ],
           "additionalProperties": false
         },

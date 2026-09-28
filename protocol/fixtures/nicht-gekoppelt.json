@@ -223,6 +223,5 @@
     }
   ],
   "listeners": {},
-  "canEnter": {},
-  "boards": []
+  "canEnter": {}
 }

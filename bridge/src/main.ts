@@ -104,7 +104,6 @@ const hub: Hub = new Hub({
   onSessionsChanged: (sessions) => poller.watchSessions(sessions),
   refresh: () => poller.poll(),
   avatarVersion: (id) => avatars.version(id),
-  boardChannels: () => store.channelsWithPosts(),
 });
 const poller: Poller = new Poller(source, {
   onChange: (state) => {
