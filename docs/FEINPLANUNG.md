@@ -53,15 +53,18 @@ Die UI-Stränge AP2 bis AP4 hängen nicht von Mumble ab und können **parallel**
 - `third_party/mumble/` mit v1.6.870, `VERSION`, `SHA256SUMS` und Lizenz
 - `scripts/update-mumble-interfaces.sh`
 
-**Offen:**
+**Erledigt am 28.09.2026 (Branch `ap0-grundlage`):**
 1. `.gitignore` (`node_modules`, `dist`, `build`, `.env`) und `.editorconfig`
-2. pnpm-Workspace im Repo-Root (`pnpm-workspace.yaml`: `protocol`, `web`, `bridge`), `.nvmrc` mit Node LTS
+2. pnpm-Workspace im Repo-Root (`pnpm-workspace.yaml`: `protocol`, `web`, `bridge`), `.nvmrc` mit Node 22
 3. GitHub-Workflow **`ci.yml`**:
    - `scripts/update-mumble-interfaces.sh` ohne Argument, das prüft die Prüfsummen
    - Lint, Tests und Build für `protocol`, `web` und `bridge`
-   - Build des Plugins (CMake), sobald es AP6 gibt
+   - Build des Plugins (CMake): folgt mit AP6
 4. GitHub-Workflow **`mumble-release-watch.yml`** (wöchentlich): Neuestes Release-Tag von mumble-voip/mumble mit `third_party/mumble/VERSION` vergleichen und bei einem neueren Tag ein Issue mit dem Diff der beiden Dateien anlegen.
-5. Branch-Schutz für `main` (PR mit grüner CI), per GitHub-Einstellung
+5. Test: Eine manipulierte Schnittstellendatei lässt die Prüfung mit Exit-Code 1 scheitern.
+
+**Offen:**
+- Branch-Schutz für `main` (PR mit grüner CI) muss in den GitHub-Einstellungen gesetzt werden, das macht der Repo-Inhaber.
 
 **Fertig, wenn:** Die CI läuft grün, und eine manipulierte Schnittstellendatei lässt sie fehlschlagen.
 

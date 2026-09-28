@@ -1,0 +1,16 @@
+{
+  "name": "ruumble",
+  "private": true,
+  "description": "Gebäude-Oberfläche für Mumble",
+  "license": "BSD-3-Clause",
+  "packageManager": "pnpm@11.28.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check:interfaces": "scripts/update-mumble-interfaces.sh",
+    "lint": "pnpm -r --if-present run lint",
+    "test": "pnpm -r --if-present run test",
+    "build": "pnpm -r --if-present run build"
+  }
+}
