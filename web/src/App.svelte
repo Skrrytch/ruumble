@@ -6,6 +6,7 @@
   import Core from "./lib/ui/Core.svelte";
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
   import FloorPlan from "./lib/ui/FloorPlan.svelte";
+  import PluginHelp from "./lib/ui/PluginHelp.svelte";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
 
@@ -26,6 +27,7 @@
       <Unplug size={40} />
       <strong>Dieses Gerät ist noch nicht gekoppelt.</strong>
       <span>Starte Mumble mit aktiviertem Ruumble-Plugin. Beim ersten Verbinden öffnet das Plugin diese Seite mit einem Kopplungslink.</span>
+      <PluginHelp />
     </div>
   {:else if !building}
     <div class="screen" role="status">Verbinde …</div>
@@ -34,6 +36,7 @@
       <Unplug size={40} />
       <strong>Mumble ist nicht verbunden.</strong>
       <span>Starte Mumble mit aktiviertem Ruumble-Plugin und verbinde dich mit dem Server {building.name}.</span>
+      <PluginHelp />
     </div>
   {:else}
     <header class="head">

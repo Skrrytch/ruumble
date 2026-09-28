@@ -139,9 +139,10 @@ void Core::handle(const Event &event) {
 		event);
 }
 
+// Meldungen an api_.log: ohne „Ruumble:“ davor, das setzt Mumble selbst.
 void Core::sendHello() {
 	if (!transportOpen_ || !session_ || certHash_.empty()) {
-		if (session_ && certHash_.empty()) api_.log("Ruumble: kein Client-Zertifikat, Anmeldung beim Dienst nicht möglich");
+		if (session_ && certHash_.empty()) api_.log("kein Client-Zertifikat, Anmeldung beim Dienst nicht möglich");
 		return;
 	}
 	transport_.send(json{ { "v", V },
@@ -163,10 +164,10 @@ void Core::handleMessage(const std::string &text) {
 			openUrl_(msg["pairUrl"].get< std::string >());
 			markPaired_(bridgeUrl_);
 		}
-		api_.log("Ruumble: mit dem Dienst verbunden");
+		api_.log("mit dem Dienst verbunden");
 	} else if (type == "reject") {
 		helloAcked_ = false;
-		api_.log("Ruumble: vom Dienst abgelehnt (" + msg.value("reason", std::string("?")) + ")");
+		api_.log("vom Dienst abgelehnt (" + msg.value("reason", std::string("?")) + ")");
 	} else if (type == "command" && helloAcked_) {
 		const json body = msg.value("body", json::object());
 		Command c;

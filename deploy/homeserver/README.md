@@ -22,6 +22,9 @@ Vorlage: [`mumble.docker-compose.yml`](mumble.docker-compose.yml)
 - Image: lokal gebaut (`docker build -f deploy/Dockerfile -t ruumble:<version> .`) und mit `docker save | ssh … docker load` übertragen
 - Compose: [`ruumble.docker-compose.yml`](ruumble.docker-compose.yml). Ruumble hängt nur im `mumble-network`, und der Port ist nur an die LAN-Adresse gebunden.
 - Prüfen: `curl http://<LAN-IP>:8080/healthz` → `{"ice":"ok",…}`
+- `ADDRESS_CHECK: enforce` (seit 0.2.0): Im Heimnetz stimmen die IP-Adressen von Plugin und Mumble-Verbindung überein (P7). Über VPN oder Proxy ist das noch zu prüfen.
+- Das Image enthält das Plugin (gebaut auf Debian 12, glibc 2.36). Es steht unter `http://<LAN-IP>:8080/download` bereit, und die Oberfläche verlinkt es auf ihren Hinweisseiten.
+- **Root-Beschreibung kurz halten** (unter 128 Zeichen, gemessen am gespeicherten HTML). Mumbles Editor fügt viel Formatierung ein, z. B. wurden aus drei Zeilen 398 Zeichen. Gesetzt wurde sie deshalb einmalig per Ice mit dem Write-Secret in einem kurzlebigen Hilfscontainer, nicht über Ruumble. Der alte Text liegt in `<backup>/root-description-before.html`.
 
 ## Plugin
 
