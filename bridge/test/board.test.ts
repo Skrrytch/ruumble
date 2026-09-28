@@ -125,7 +125,7 @@ describe("REST /api/board", () => {
     source.users[1]!.channel = 2;
     source.admins.add(8);
     const { store } = tempStore();
-    const hub = new Hub({ source, pairing: new Pairing(null), publicUrl: "http://r", addressCheck: "off", preview: false, boardChannels: () => store.channelsWithPosts() });
+    const hub = new Hub({ source, pairing: new Pairing(null), publicUrl: "http://r", addressCheck: "off", preview: false });
     const poller = new Poller(source, { onChange: (s) => hub.setState(s) });
     await poller.poll();
     for (const [session, hash] of [[7, A], [8, B]] as const) {
@@ -222,15 +222,12 @@ describe("REST /api/board", () => {
     expect((await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "zu viel" } })).statusCode).toBe(429);
   });
 
-  it("Oberflächen im Raum bekommen „board“, Snapshot kennt Räume mit Beiträgen", async () => {
+  it("Oberflächen im Raum bekommen „board“, der Snapshot verrät nichts über Beiträge", async () => {
     const { app, hub, as } = await setup();
-    const pairing = new Pairing(null);
     const uiAnna = recorder<BridgeToUi>();
     hub.uiConnected(uiAnna.conn, A);
-    void pairing;
-    expect(uiAnna.last("snapshot")?.boards).toEqual([]);
     await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "x" } });
     expect(uiAnna.last("board")).toEqual({ v: 1, type: "board", channelId: 2 });
-    expect(uiAnna.last("snapshot")?.boards).toEqual([2]);
+    expect(uiAnna.last("snapshot")).not.toHaveProperty("boards");
   });
 });

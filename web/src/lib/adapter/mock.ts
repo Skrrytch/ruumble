@@ -299,7 +299,6 @@ export class MockAdapter implements MumbleAdapter {
   }
 
   private emit(): void {
-    const boards = [...this.posts].filter(([, list]) => list.length > 0).map(([id]) => id);
-    this.events?.snapshot({ ...clone(this.state), boards });
+    this.events?.snapshot(clone(this.state));
   }
 }

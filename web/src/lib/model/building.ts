@@ -52,9 +52,7 @@ export interface Space {
 export interface Room extends Space {
   /** Name enthält „(stumm)“ */
   muted: boolean;
-  /** An der Pinnwand hängt etwas (ADR-0011) */
-  hasBoard: boolean;
-  /** flex-grow 0,85–1,25, stabil je Name */
+  /** flex-grow nach Rang in der Mumble-Reihenfolge (roomGrow) */
   grow: number;
 }
 
@@ -236,7 +234,6 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
         ...space(r),
         muted: isMutedRoomName(r.name),
         grow: roomGrow(i),
-        hasBoard: !r.temporary && snapshot.boards.includes(r.id),
       })),
       open: roomChannels.length === 0,
       lock,

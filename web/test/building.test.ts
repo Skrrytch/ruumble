@@ -31,7 +31,7 @@ const user = (session: number, name: string, channel: number, extra: Partial<Use
 });
 const snapshot = (channels: Channel[], users: User[] = [], self: number | null = null, extra: Partial<Snapshot> = {}): Snapshot => ({
   v: 1, type: "snapshot", server: { name: "Haus", version: "1.6.870" }, self: self === null ? null : { session: self },
-  channels, users, listeners: {}, canEnter: {}, boards: [], ...extra,
+  channels, users, listeners: {}, canEnter: {}, ...extra,
 });
 
 describe("Einzelregeln", () => {
