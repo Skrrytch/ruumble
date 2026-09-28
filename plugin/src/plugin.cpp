@@ -9,6 +9,8 @@
 #include "core.h"
 #include "net.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 
@@ -111,7 +113,13 @@ public:
 		return result;
 	}
 
-	void log(const std::string &message) override { api.log(ownId, message.c_str()); }
+	void log(const std::string &message) override {
+		api.log(ownId, message.c_str());
+		// Live-Tests lesen das Protokoll mit, Mumble selbst schreibt es nicht auf die Konsole
+		if (logToStderr) std::fprintf(stderr, "ruumble-log: %s\n", message.c_str());
+	}
+
+	const bool logToStderr = std::getenv("RUUMBLE_LOG_STDERR") != nullptr;
 };
 
 std::unique_ptr< RealApi > realApi;

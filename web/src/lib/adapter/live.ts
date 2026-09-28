@@ -2,7 +2,7 @@
  * LiveAdapter: WebSocket zum Ruumble-Dienst (`/ws/ui`, ADR-0007).
  * Verbindet sich bei Abbruch mit wachsendem Abstand neu. Ergebnisse werden den Befehlen über die ID zugeordnet.
  */
-import { BoardView, BridgeToUi, PROTOCOL_VERSION, Post, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import { BoardError, BoardView, BridgeToUi, PROTOCOL_VERSION, Post, Uploaded, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
 import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, MumbleAdapter } from "./types.ts";
 
 /** REST der Pinnwand; Cookie der Kopplung geht automatisch mit (same-origin) */
@@ -15,7 +15,10 @@ async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit 
   }
   if (res.status === 204) return { ok: true, value: true as T };
   const body: unknown = await res.json().catch(() => null);
-  if (!res.ok) return { ok: false, error: ((body as { error?: BoardErrorCode } | null)?.error ?? "invalid") };
+  if (!res.ok) {
+    const known = BoardError.safeParse(body);
+    return { ok: false, error: known.success ? known.data.error : (STATUS_ERROR[res.status] ?? "invalid") };
+  }
   const parsed = schema ? schema.safeParse(body) : { success: true as const, data: body as T };
   return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: "invalid" };
 }
@@ -25,7 +28,38 @@ export const liveBoard: BoardApi = {
   create: (post) => call(Post, "/api/board/posts", { method: "POST", body: JSON.stringify(post) }),
   update: (id, change) => call(Post, `/api/board/posts/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(change) }),
   remove: (id) => call<true>(null, `/api/board/posts/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  upload,
+  fileUrl: (a, download = false) => `/api/board/files/${a.id}${download ? "?download" : ""}`,
 };
+
+/** Fehler, die Fastify selbst meldet (z. B. Körper zu groß), haben keinen eigenen Code */
+const STATUS_ERROR: Record<number, BoardErrorCode> = { 401: "not-paired", 403: "not-in-room", 404: "no-board-here", 413: "too-large", 415: "bad-type", 429: "rate-limited" };
+
+/** XMLHttpRequest statt fetch, weil nur er den Fortschritt beim Hochladen meldet */
+function upload(file: Blob, name: string, onProgress?: (fraction: number) => void): Promise<BoardResult<Uploaded>> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/board/uploads");
+    xhr.withCredentials = true;
+    // immer Rohdaten: Fastify würde JSON und Text sonst selbst auswerten; der echte Typ geht in X-File-Type
+    xhr.setRequestHeader("content-type", "application/octet-stream");
+    if (file.type) xhr.setRequestHeader("x-file-type", file.type);
+    xhr.setRequestHeader("x-file-name", encodeURIComponent(name));
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress?.(e.loaded / e.total); };
+    xhr.onerror = () => resolve({ ok: false, error: "offline" });
+    xhr.onload = () => {
+      let body: unknown = null;
+      try { body = JSON.parse(xhr.responseText); } catch { /* kein JSON */ }
+      if (xhr.status !== 201) {
+        const known = BoardError.safeParse(body);
+        return resolve({ ok: false, error: known.success ? known.data.error : (STATUS_ERROR[xhr.status] ?? "invalid") });
+      }
+      const parsed = Uploaded.safeParse(body);
+      resolve(parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: "invalid" });
+    };
+    xhr.send(file);
+  });
+}
 
 /** Ohne Antwort des Plugins gilt ein Befehl nach dieser Zeit als `timeout` (Plugin: 3 s + Wiederholung). */
 const COMMAND_TIMEOUT_MS = 10_000;
