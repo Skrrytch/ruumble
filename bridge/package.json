@@ -1,6 +1,6 @@
 {
   "name": "@ruumble/bridge",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "description": "Ruumble-Dienst: liest den Mumble-Server per Ice (nur lesend) und vermittelt zwischen Oberfl\u00e4che und Plugin",
   "license": "BSD-3-Clause",
