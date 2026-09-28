@@ -2,6 +2,7 @@
   import HeadphoneOff from "@lucide/svelte/icons/headphone-off";
   import MicOff from "@lucide/svelte/icons/mic-off";
   import type { UserView } from "../model/building.ts";
+  import { t } from "../i18n/index.svelte.ts";
 
   let { user, talking = false, showName = true }: { user: UserView; talking?: boolean; showName?: boolean } = $props();
 
@@ -11,18 +12,21 @@
   // Wer spricht, ist aktiv – egal was idlesecs sagt (AP10)
   const presence = $derived(talking ? "active" : user.presence);
 
+  const p = $derived(t().people);
   const label = $derived(
     [
-      user.name + (user.isSelf ? " (du)" : ""),
-      user.selfDeafened ? "taub" : user.selfMuted ? "stumm" : null,
-      user.serverMuted ? "vom Server stummgeschaltet" : null,
-      talking ? "spricht" : null,
-      presence === "away" ? "abwesend" : presence === "quiet" ? `seit ${user.idleMinutes} Min. still` : null,
-      user.recording ? "zeichnet auf" : null,
+      user.name + (user.isSelf ? ` (${p.you})` : ""),
+      user.selfDeafened ? p.deaf : user.selfMuted ? p.muted : null,
+      user.serverMuted ? p.serverMuted : null,
+      talking ? p.talking : null,
+      presence === "away" ? p.away : presence === "quiet" ? p.quiet(user.idleMinutes) : null,
+      user.recording ? p.recording : null,
     ]
       .filter(Boolean)
       .join(", "),
   );
+  /** gleiche Wörter wie im Label, als Tooltip am Abzeichen großgeschrieben */
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 </script>
 
 <span class="person" title={label} aria-label={label} role="img">
@@ -33,14 +37,14 @@
       {user.initials}
     {/if}
     {#if user.recording}
-      <span class="rec" title="Zeichnet auf"></span>
+      <span class="rec" title={cap(p.recording)}></span>
     {/if}
     {#if user.serverMuted}
-      <span class="flag server" title="Vom Server stummgeschaltet"><MicOff size={12} strokeWidth={2.5} /></span>
+      <span class="flag server" title={cap(p.serverMuted)}><MicOff size={12} strokeWidth={2.5} /></span>
     {:else if user.selfDeafened}
-      <span class="flag" title="Taub geschaltet"><HeadphoneOff size={12} strokeWidth={2.5} /></span>
+      <span class="flag" title={cap(p.deaf)}><HeadphoneOff size={12} strokeWidth={2.5} /></span>
     {:else if user.selfMuted}
-      <span class="flag" title="Mikrofon stumm"><MicOff size={12} strokeWidth={2.5} /></span>
+      <span class="flag" title={cap(p.muted)}><MicOff size={12} strokeWidth={2.5} /></span>
     {/if}
   </span>
   {#if showName}<span class="name" aria-hidden="true">{user.name}</span>{/if}

@@ -2,7 +2,8 @@
   import { copyText } from "../../board/clipboard.ts";
   import X from "@lucide/svelte/icons/x";
   import type { Post } from "@ruumble/protocol";
-  import { KIND_LABEL, relativeTime } from "../../board/model.ts";
+  import { relativeTime } from "../../board/model.ts";
+  import { t } from "../../i18n/index.svelte.ts";
   import { CODE_LANGUAGES } from "../../board/render.ts";
   import PostBody from "./PostBody.svelte";
 
@@ -45,7 +46,7 @@
   }
 
   async function remove() {
-    if (!confirm("Diesen Beitrag wirklich löschen?")) return;
+    if (!confirm(t().board.confirmDelete)) return;
     busy = true;
     if (await ondelete()) onclose();
     busy = false;
@@ -57,33 +58,33 @@
   }
 </script>
 
-<dialog bind:this={dialog} aria-label="Beitrag von {post.authorName}" onclose={onclose} onkeydown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && editing) void save(); }}>
+<dialog bind:this={dialog} aria-label={t().board.postBy(post.authorName)} onclose={onclose} onkeydown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && editing) void save(); }}>
   <header>
-    <span><strong>{post.authorName}</strong> · {KIND_LABEL[post.kind]} · {relativeTime(post.createdAt)}</span>
-    <button type="button" class="icon" aria-label="Schließen" onclick={onclose}><X size={18} /></button>
+    <span><strong>{post.authorName}</strong> · {t().board.kinds[post.kind]} · {relativeTime(post.createdAt)}</span>
+    <button type="button" class="icon" aria-label={t().common.close} onclick={onclose}><X size={18} /></button>
   </header>
   <div class="content">
     {#if editing}
       {#if post.kind === "code"}
-        <label class="lang">Sprache
-          <select bind:value={language}><option value="">automatisch</option>{#each CODE_LANGUAGES as l (l)}<option value={l}>{l}</option>{/each}</select>
+        <label class="lang">{t().board.codeLanguage}
+          <select bind:value={language}><option value="">{t().common.auto}</option>{#each CODE_LANGUAGES as l (l)}<option value={l}>{l}</option>{/each}</select>
         </label>
       {/if}
-      <textarea bind:value={draft} class:mono={post.kind === "code"} class:short={hasAttachment} aria-label={hasAttachment ? "Bildunterschrift bearbeiten" : "Beitrag bearbeiten"} placeholder={hasAttachment ? "Beschreibung (optional)" : ""} spellcheck={post.kind !== "code"}></textarea>
+      <textarea bind:value={draft} class:mono={post.kind === "code"} class:short={hasAttachment} aria-label={hasAttachment ? t().board.editDescription : t().board.editPost} placeholder={hasAttachment ? t().board.captionPlaceholder : ""} spellcheck={post.kind !== "code"}></textarea>
     {:else}
       <PostBody {post} numbers large />
     {/if}
   </div>
-  {#if post.updatedByName}<p class="edited">zuletzt bearbeitet von {post.updatedByName}</p>{/if}
+  {#if post.updatedByName}<p class="edited">{t().board.editedBy(post.updatedByName)}</p>{/if}
   <footer>
-    {#if post.canDelete}<button type="button" class="danger" disabled={busy} onclick={remove}>Löschen</button>{/if}
+    {#if post.canDelete}<button type="button" class="danger" disabled={busy} onclick={remove}>{t().common.delete}</button>{/if}
     <span class="spacer"></span>
     {#if editing}
-      <button type="button" disabled={busy} onclick={() => (editing = false)}>Abbrechen</button>
-      <button type="button" class="primary" disabled={busy || (!hasAttachment && !draft.trim())} onclick={save}>Speichern</button>
+      <button type="button" disabled={busy} onclick={() => (editing = false)}>{t().common.cancel}</button>
+      <button type="button" class="primary" disabled={busy || (!hasAttachment && !draft.trim())} onclick={save}>{t().common.save}</button>
     {:else}
-      {#if post.text.trim()}<button type="button" onclick={copy}>{copied ? "Kopiert" : "Kopieren"}</button>{/if}
-      <button type="button" class="primary" onclick={startEdit}>{hasAttachment ? "Beschreibung bearbeiten" : "Bearbeiten"}</button>
+      {#if post.text.trim()}<button type="button" onclick={copy}>{copied ? t().common.copied : t().common.copy}</button>{/if}
+      <button type="button" class="primary" onclick={startEdit}>{hasAttachment ? t().board.editDescription : t().common.edit}</button>
     {/if}
   </footer>
 </dialog>

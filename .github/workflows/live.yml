@@ -38,6 +38,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Ice-Stubs des Dienstes: nutzt auch web/e2e-live/mumble-admin.ts (Registrieren, Texturen)
+      - run: pnpm -F @ruumble/bridge gen
       - name: Plugin bauen
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake g++ libssl-dev

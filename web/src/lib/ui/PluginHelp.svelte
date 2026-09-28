@@ -1,16 +1,20 @@
 <script lang="ts">
   import Download from "@lucide/svelte/icons/download";
+  import { t } from "../i18n/index.svelte.ts";
+
+  const h = $derived(t().pluginHelp);
 </script>
 
 <!-- Kurzanleitung auf den Hinweisseiten: Plugins können in Mumble weder Knöpfe noch Links anzeigen (ADR-0010). -->
-<section class="help" aria-label="Ruumble-Plugin einrichten">
+<!-- Menü- und Knopfnamen so, wie Mumble sie in der jeweiligen Sprache zeigt; hervorgehoben: jedes zweite Stück -->
+<section class="help" aria-label={h.label}>
   <a class="download" href="/download" download>
-    <Download size={18} /> Ruumble-Plugin herunterladen
+    <Download size={18} /> {h.download}
   </a>
   <ol>
-    <li>In Mumble: <em>Konfigurieren → Einstellungen → Plugins → „Installiere Plugin …“</em>, die Datei wählen und mit <em>Ja</em> bestätigen.</li>
-    <li>Bei <strong>Ruumble</strong> den Haken <em>„Aktivieren“</em> setzen und mit OK schließen.</li>
-    <li>Mit dem Server verbinden. Beim ersten Mal öffnet sich diese Seite mit einem Kopplungslink.</li>
+    <li>{h.step1[0]}<em>{h.step1[1]}</em>{h.step1[2]}<em>{h.step1[3]}</em>{h.step1[4]}</li>
+    <li>{h.step2[0]}<strong>{h.step2[1]}</strong>{h.step2[2]}<em>{h.step2[3]}</em>{h.step2[4]}</li>
+    <li>{h.step3}</li>
   </ol>
 </section>
 

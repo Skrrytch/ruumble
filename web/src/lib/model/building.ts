@@ -4,6 +4,7 @@
  * gespeichert wird nichts.
  */
 import type { Channel, Snapshot, User } from "@ruumble/protocol";
+import { t } from "../i18n/index.svelte.ts";
 
 /** Mehr Räume passen nicht sinnvoll auf eine Etage (PLANUNG 2.3). */
 export const MAX_ROOMS = 8;
@@ -143,9 +144,9 @@ export function initials(name: string): string {
   return [...segmenter.segment(name.trim())].slice(0, 2).map((s) => s.segment).join("");
 }
 
-/** „frei“ / „1 Person“ / „N Personen“ */
+/** Belegung: „frei“ / „1 Person“ / „N Personen“ (Sprache der Oberfläche) */
 export function countText(n: number): string {
-  return n === 0 ? "frei" : n === 1 ? "1 Person" : `${n} Personen`;
+  return t().people.count(n);
 }
 
 export function isMutedRoomName(name: string): boolean {
@@ -170,8 +171,10 @@ export interface BuildOptions {
   avatarUrl?: (userId: number, version: string) => string;
 }
 
+/** „Erdgeschoss“/„EG“, „1. Obergeschoss“/„1“ … (Sprache der Oberfläche) */
 export function floorLabels(index: number): { level: string; badge: string } {
-  return index === 0 ? { level: "Erdgeschoss", badge: "EG" } : { level: `${index}. Obergeschoss`, badge: String(index) };
+  const f = t().floors;
+  return index === 0 ? { level: f.ground, badge: f.groundBadge } : { level: f.upper(index), badge: String(index) };
 }
 
 // ---------------------------------------------------------------- Gebäude

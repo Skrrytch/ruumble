@@ -6,6 +6,8 @@
 // Statusänderungen, Bestätigung per channelEntered, eine Wiederholung.
 #pragma once
 
+#include "messages.h"
+
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
@@ -61,6 +63,8 @@ struct Settings {
 	std::string pluginVersion = "0.0.0";
 	/** Version des Mumble-Clients aus mumble_setMumbleInfo, leer wenn unbekannt */
 	std::string mumbleVersion;
+	/** Sprache der eigenen Meldungen und der Hinweise des Dienstes */
+	Locale locale = Locale::en;
 	bool autoOpen             = true;
 	/** feste Adresse aus plugin.json; ohne sie gilt die Root-Beschreibung (ADR-0010) */
 	std::optional< std::string > bridgeUrl;

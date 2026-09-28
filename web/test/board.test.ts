@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Post } from "@ruumble/protocol";
-import { countLabel, fileKind, filterPosts, formatSize, isLong, looksLikeCode, pastedName, relativeTime } from "../src/lib/board/model.ts";
+import { t } from "../src/lib/i18n/index.svelte.ts";
+import { fileKind, filterPosts, formatSize, isLong, looksLikeCode, pastedName, relativeTime } from "../src/lib/board/model.ts";
 
 const post = (kind: Post["kind"], id: string = kind): Post => ({ id, channelId: 3, kind, text: "x", authorName: "A", mine: false, canDelete: false, createdAt: 0, updatedAt: 0 });
 
@@ -30,7 +31,7 @@ describe("Pinnwand-Modell", () => {
     const posts = [post("text"), post("code"), post("image"), post("text", "t2")];
     expect(filterPosts(posts, "all")).toHaveLength(4);
     expect(filterPosts(posts, "text").map((p) => p.id)).toEqual(["text", "t2"]);
-    expect([0, 1, 2].map(countLabel)).toEqual(["Noch keine Beiträge", "1 Beitrag", "2 Beiträge"]);
+    expect([0, 1, 2].map((n) => t().board.count(n))).toEqual(["Noch keine Beiträge", "1 Beitrag", "2 Beiträge"]);
     expect(isLong("a\n".repeat(9))).toBe(true);
     expect(isLong("kurz")).toBe(false);
     expect(isLong("x".repeat(700))).toBe(true);

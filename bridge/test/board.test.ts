@@ -250,6 +250,20 @@ describe("REST /api/board", () => {
     expect(notifyRoom(hub, { channelId: 2, kind: "text" }, { name: "Anna", certHash: A })).toBe(0);
   });
 
+  it("Hinweis in der Sprache des Empfängers (Plugin meldet locale)", async () => {
+    const { hub } = await setup();
+    expect(["text", "code", "image", "file"].map((k) => notifyText("Anna", k as PostKind, "en"))).toEqual([
+      "Anna pinned a text to the board.",
+      "Anna pinned code to the board.",
+      "Anna pinned an image to the board.",
+      "Anna pinned a file to the board.",
+    ]);
+    const benEn = recorder<BridgeToPlugin>();
+    await hub.pluginConnected(benEn.conn, "x").onMessage(JSON.stringify({ v: 1, type: "hello", session: 8, certHash: B, pluginVersion: "0.4.0", paired: true, locale: "en" }));
+    notifyRoom(hub, { channelId: 2, kind: "code" }, { name: "Anna", certHash: A });
+    expect(benEn.last("notify")?.text).toBe("Anna pinned code to the board.");
+  });
+
   it("ungültige Eingaben, Rate-Limit", async () => {
     const { app, as } = await setup();
     expect((await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "  " } })).statusCode).toBe(400);
