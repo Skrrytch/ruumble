@@ -21,9 +21,15 @@
 </script>
 
 <div class="app">
-  {#if !building}
+  {#if app.connection === "unpaired"}
+    <div class="screen" role="status">
+      <Unplug size={40} />
+      <strong>Dieses Gerät ist noch nicht gekoppelt.</strong>
+      <span>Starte Mumble mit aktiviertem Ruumble-Plugin. Beim ersten Verbinden öffnet das Plugin diese Seite mit einem Kopplungslink.</span>
+    </div>
+  {:else if !building}
     <div class="screen" role="status">Verbinde …</div>
-  {:else if app.plugin === "disconnected" || !building.self}
+  {:else if !app.preview && (app.plugin === "disconnected" || !building.self)}
     <div class="screen" role="status">
       <Unplug size={40} />
       <strong>Mumble ist nicht verbunden.</strong>
@@ -34,19 +40,22 @@
       <div>
         <div class="kicker">{floor?.level ?? building.name}</div>
         <h1>{floor?.name ?? "Leerstand"}</h1>
+        {#if app.readonly}<div class="preview-note">Vorschau – nur lesend, ohne eigenen Nutzer</div>{/if}
         <div class="summary">
           {#if floor}{summary}{:else}Keine Etage dieses Gebäudes ist darstellbar{/if}
           {#if hidden}<span class="hidden-note"> · Du bist in einem Bereich, der hier nicht darstellbar ist.</span>{/if}
         </div>
       </div>
-      <div class="hint">Klick auf einen Raum wechselt den Kanal.<br />Etagenwechsel über den Aufzug · {building.online} online</div>
+      <div class="hint">
+        {#if app.readonly}Kanalwechsel nur mit dem Ruumble-Plugin.{:else}Klick auf einen Raum wechselt den Kanal.{/if}<br />Etagenwechsel über den Aufzug · {building.online} online
+      </div>
     </header>
 
     <div class="plan">
       <Core {app} {building} {floor} />
       {#if floor}
         <!-- auch bei Leerstand: Steht der eigene Nutzer auf einer gesperrten Etage, erscheint dort deren Hinweis -->
-        <FloorPlan {floor} pendingChannel={app.pendingChannel} talking={app.talking} onjoin={(id) => app.join(id)} />
+        <FloorPlan {floor} readonly={app.readonly} pendingChannel={app.pendingChannel} talking={app.talking} onjoin={(id) => app.join(id)} />
       {:else}
         <div class="vacancy" role="status">
           <strong>Leerstand</strong>
@@ -56,7 +65,9 @@
     </div>
   {/if}
 
-  {#if app.notice}
+  {#if app.connection === "reconnecting" && building}
+    <div class="toast" role="status">Verbindung zum Ruumble-Dienst unterbrochen, verbinde neu …</div>
+  {:else if app.notice}
     <div class="toast" role="alert">
       {app.notice.text}
       <button type="button" aria-label="Hinweis schließen" onclick={() => app.dismissNotice()}>×</button>
@@ -76,6 +87,7 @@
   h1 { margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
   .summary { font-size: 15px; color: var(--color-blue-700); }
   .hidden-note { font-weight: 700; }
+  .preview-note { font-size: 13px; font-weight: 700; color: var(--color-blue-500); }
   .hint { font-size: 13px; text-align: right; line-height: 1.5; color: var(--color-blue-700); }
 
   /* Grundriss: Wände = 4 px Dunkelblau als Abstand (SPEC 2) */

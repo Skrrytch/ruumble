@@ -124,7 +124,13 @@ export type Snapshot = z.infer<typeof Snapshot>;
 
 export const UiTalking = z.object({ v, type: z.literal("talking"), session, state: TalkingState });
 export const UiResult = z.object({ v, type: z.literal("result"), id: commandId, result: CommandResult });
-export const UiStatus = z.object({ v, type: z.literal("status"), plugin: z.enum(["connected", "disconnected"]) });
+export const UiStatus = z.object({
+  v,
+  type: z.literal("status"),
+  plugin: z.enum(["connected", "disconnected"]),
+  /** Vorschau: Gebäude nur lesend, ohne gekoppeltes Plugin (Konfiguration des Dienstes) */
+  preview: z.boolean().optional(),
+});
 
 export const BridgeToUi = z.discriminatedUnion("type", [Snapshot, UiTalking, UiResult, UiStatus]);
 export type BridgeToUi = z.infer<typeof BridgeToUi>;

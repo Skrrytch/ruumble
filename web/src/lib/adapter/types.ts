@@ -6,12 +6,17 @@ import type { CommandBody, CommandResult, Snapshot, TalkingState } from "@ruumbl
 
 export type PluginStatus = "connected" | "disconnected";
 
+/** Verbindung der Oberfläche zum Dienst (nur LiveAdapter) */
+export type ConnectionState = "connected" | "reconnecting" | "unpaired";
+
 export interface AdapterEvents {
   /** vollständiger neuer Stand, nach jeder Änderung */
   snapshot(snapshot: Snapshot): void;
   /** Sprechzustand eines Nutzers, den der eigene Client hört (ADR-0005) */
   talking(session: number, state: TalkingState): void;
-  status(plugin: PluginStatus): void;
+  /** `preview`: Der Dienst zeigt das Gebäude ohne Kopplung nur lesend. */
+  status(plugin: PluginStatus, preview: boolean): void;
+  connection(state: ConnectionState): void;
 }
 
 export interface MumbleAdapter {

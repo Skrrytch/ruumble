@@ -4,11 +4,13 @@
 
   let {
     floor,
+    readonly = false,
     pendingChannel,
     talking,
     onjoin,
   }: {
     floor: Floor;
+    readonly?: boolean;
     pendingChannel: number | null;
     talking: Record<number, boolean>;
     onjoin: (channelId: number) => void;
@@ -32,12 +34,13 @@
       subtitle="Offene Etage ohne Büros · {countText(floor.population)}"
       pending={pendingChannel === floor.channelId}
       {talking}
+      {readonly}
       {onjoin}
     />
   {:else}
     <div class="row top">
       {#each rows.top as room (room.channelId)}
-        <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {onjoin} />
+        <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} />
       {/each}
     </div>
     <SpaceButton
@@ -47,11 +50,12 @@
       subtitle="Etagenkanal · {countText(floor.corridor.users.length)}"
       pending={pendingChannel === floor.channelId}
       {talking}
+      {readonly}
       {onjoin}
     />
     <div class="row bottom">
       {#each rows.bottom as room (room.channelId)}
-        <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {onjoin} />
+        <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} />
       {/each}
     </div>
   {/if}

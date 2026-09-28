@@ -1,0 +1,31 @@
+{
+  "name": "@ruumble/bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ruumble-Dienst: liest den Mumble-Server per Ice (nur lesend) und vermittelt zwischen Oberfl\u00e4che und Plugin",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "scripts": {
+    "gen": "node scripts/gen-ice.mjs",
+    "dev": "node scripts/gen-ice.mjs && node --experimental-strip-types --watch src/main.ts",
+    "start": "node dist/main.mjs",
+    "lint": "node scripts/gen-ice.mjs && tsc -p tsconfig.json",
+    "test": "vitest run",
+    "build": "node scripts/gen-ice.mjs && esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/main.mjs --external:ice --external:fastify --external:@fastify/* --banner:js=\"import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);\""
+  },
+  "dependencies": {
+    "@fastify/static": "10.1.5",
+    "@fastify/websocket": "11.3.1",
+    "@ruumble/protocol": "workspace:*",
+    "fastify": "5.12.5",
+    "ice": "3.7.110"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "@types/ws": "8.18.1",
+    "esbuild": "0.28.2",
+    "slice2js": "3.7.110",
+    "typescript": "6.0.3",
+    "vitest": "5.0.2"
+  }
+}

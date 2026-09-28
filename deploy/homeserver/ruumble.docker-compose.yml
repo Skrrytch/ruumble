@@ -1,0 +1,36 @@
+# Ruumble: Mumble-Server als Bürogebäude (https://github.com/Skrrytch/ruumble)
+# Liest Mumble per Ice nur lesend. Erreichbar nur im Heimnetz (an die LAN-Adresse gebunden).
+services:
+    ruumble:
+        image: ruumble:0.1.0
+        container_name: ruumble
+        restart: unless-stopped
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+        environment:
+            ICE_HOST: mumble-server
+            ICE_SECRET_READ_FILE: /run/secrets/ice_read
+            PUBLIC_URL: http://<LAN-IP>:8080
+            ADDRESS_CHECK: warn
+        secrets:
+            - ice_read
+        volumes:
+            - ruumble-data:/data
+        networks:
+            - mumble-network
+        ports:
+            - <LAN-IP>:8080:8080
+
+secrets:
+    ice_read:
+        file: ../mumble/secrets/ice_read
+
+volumes:
+    ruumble-data:
+        name: ruumble-data
+
+networks:
+    mumble-network:
+        external: true

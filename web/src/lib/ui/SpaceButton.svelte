@@ -12,6 +12,7 @@
     title,
     subtitle,
     pending = false,
+    readonly = false,
     talking,
     onjoin,
   }: {
@@ -23,15 +24,17 @@
     /** Zeile unter dem Titel; Standard: Belegung */
     subtitle?: string;
     pending?: boolean;
+    /** Vorschau ohne eigenen Nutzer: nichts betretbar */
+    readonly?: boolean;
     talking: Record<number, boolean>;
     onjoin: (channelId: number) => void;
   } = $props();
 
   const room = $derived("grow" in space ? space : null);
-  const disabled = $derived(space.locked && !space.isSelf);
+  const disabled = $derived((space.locked && !space.isSelf) || readonly);
   const ariaLabel = $derived(
     `${variant === "corridor" ? `Flur ${space.name}` : space.name}` +
-      (space.isSelf ? " – du bist hier" : disabled ? " – kein Zutritt" : pending ? " – wird betreten" : " betreten"),
+      (space.isSelf ? " – du bist hier" : readonly ? "" : disabled ? " – kein Zutritt" : pending ? " – wird betreten" : " betreten"),
   );
 
   function click() {
@@ -45,7 +48,8 @@
   class="room {variant}"
   class:raster={variant === "corridor"}
   class:mine={space.isSelf}
-  class:locked={disabled}
+  class:locked={disabled && !readonly}
+  class:readonly
   class:pending
   style:flex-grow={room ? room.grow : undefined}
   aria-label={ariaLabel}
@@ -73,7 +77,7 @@
           <Ear size={18} />
         </span>
       {/if}
-      {#if disabled}<span class="icon" title="Kein Zutritt"><Lock size={16} /></span>{/if}
+      {#if space.locked && !space.isSelf}<span class="icon" title="Kein Zutritt"><Lock size={16} /></span>{/if}
     </span>
     <span class="count">{pending ? "wird betreten …" : (subtitle ?? countText(space.users.length))}</span>
   </span>
@@ -96,6 +100,7 @@
   .room:focus-visible { outline: 3px solid var(--color-sky); outline-offset: -7px; }
   .room.mine, .room.mine:hover { background: var(--color-blue-100); cursor: default; }
   .room.locked { cursor: not-allowed; }
+  .room.readonly { cursor: default; }
   .room.locked:hover { background: var(--color-white); }
   .room.pending { cursor: progress; }
   .room.pending .count { color: var(--color-blue-500); }

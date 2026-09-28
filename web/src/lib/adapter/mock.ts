@@ -52,7 +52,7 @@ export class MockAdapter implements MumbleAdapter {
 
   start(events: AdapterEvents): void {
     this.events = events;
-    events.status(this.plugin);
+    events.status(this.plugin, false);
     this.emit();
     if (this.opts.talking) this.talkTimer = setInterval(() => this.simulateTalking(), 900);
   }
@@ -104,7 +104,7 @@ export class MockAdapter implements MumbleAdapter {
 
   setPlugin(status: PluginStatus): void {
     this.plugin = status;
-    this.events?.status(status);
+    this.events?.status(status, false);
   }
 
   /** Der nächste Wechsel wird trotz Zutrittsrecht nicht bestätigt (wie beim Rate-Limit, S2). */
@@ -133,6 +133,7 @@ export class MockAdapter implements MumbleAdapter {
     const target = this.state.channels[Math.floor(Math.random() * this.state.channels.length)];
     if (user && target) {
       user.channel = target.id;
+      this.stopTalking(user.session);
       this.emit();
     }
   }
@@ -159,6 +160,7 @@ export class MockAdapter implements MumbleAdapter {
           this.pendingJoin = null;
           if (!allowed) return resolve("rejected");
           me.channel = channel;
+          for (const session of [...this.talkingNow]) this.stopTalking(session); // wie Mumble: wer nicht mehr hörbar ist → passive
           this.emit();
           resolve("ok");
         },
@@ -180,6 +182,10 @@ export class MockAdapter implements MumbleAdapter {
         this.events?.talking(u.session, (talking ? "talking" : "passive") as TalkingState);
       }
     }
+  }
+
+  private stopTalking(session: number): void {
+    if (this.talkingNow.delete(session)) this.events?.talking(session, "passive");
   }
 
   private emit(): void {
