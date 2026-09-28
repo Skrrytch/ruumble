@@ -116,7 +116,7 @@ Alle Aufrufe sind mit dem **Read-Secret** erlaubt.
 | Aufruf | Takt | Zweck | Beleg | Hinweise |
 |---|---|---|---|---|
 | `Meta.getVersion` | beim Start | Server-Version für die Versionszeile | `MumbleServerIce.cpp:2348` | Braucht kein Secret. |
-| `Meta.getBootedServers` | beim Start und bei Fehlern | virtuellen Server finden (ID 1) | `:2332-2346` | Der Proxy enthält den Endpoint aus Sicht des Servers, z. B. 127.0.0.1. Im Container deshalb direkt `s/1:tcp -h mumble -p 6502` bauen. |
+| `Meta.getBootedServers` | beim Start und bei Fehlern | virtuellen Server finden (in 1.6.870 hat die erste Instanz die **ID 0**, S1) | `:2332-2346` | Der Proxy enthält den Endpoint aus Sicht des Servers (die Container-IP). Deshalb nur die Identität übernehmen und `s/<id>:tcp -h mumble -p 6502` selbst bauen (S1). |
 | `Server.getConf("registername")`, Fallback `Meta.getDefaultConf` | beim Start, alle 60 s | Gebäudename | `:1095-1111, 2316-2330` | Ist beides leer, heißt das Gebäude „Root“, wie im Client (`src/murmur/Messages.cpp:403-404`). |
 | `Server.getChannels` | **1 s** | Baum: `id`, `name`, `parent`, `position`, `links`, `temporary` | `:1219-1233, 147-158` | Root hat `id 0` und `parent -1`. `links` sind symmetrisch und direkt (`src/Channel.cpp:188-195`). IDs temporärer Kanäle werden wiederverwendet, also nicht über Löschungen hinweg cachen. |
 | `Server.getUsers` | **1 s** | `session`, `name`, `channel`, `selfMute`, `selfDeaf`, `mute`, `deaf`, `suppress`, `address` | `:1201-1217, 108-145` | Enthält nur authentifizierte Nutzer. |
@@ -146,15 +146,15 @@ Bei der erwarteten Größe (unter 100 Nutzer, unter 50 Kanäle) ergibt das Polli
 
 ---
 
-## 4. Offene Punkte für die Machbarkeitstests
+## 4. Prüfpunkte der Machbarkeitstests
 
-| # | Prüfen | Test |
+| # | Prüfen | Test / Ergebnis |
 |---|---|---|
-| P1 | Ist das Docker-Image `mumblevoip/mumble-server` mit Ice gebaut? Wie wird `ice=` konfiguriert (Umgebungsvariable oder INI)? | S1 |
-| P2 | Funktioniert Ice for JavaScript 3.7 (`ice` von npm, `slice2js`) unter aktuellem Node LTS? | S1 |
-| P3 | Aufwand für Polling im Main-Thread des Servers | S1 |
+| P1 | Ist das Docker-Image `mumblevoip/mumble-server` mit Ice gebaut? Wie wird `ice=` konfiguriert (Umgebungsvariable oder INI)? | S1 · ✔ S1: Ice 3.7, Konfiguration über `MUMBLE_CONFIG_*` |
+| P2 | Funktioniert Ice for JavaScript 3.7 (`ice` von npm, `slice2js`) unter aktuellem Node LTS? | S1 · ✔ S1: funktioniert. Achtung: Die CLI von `slice2js` 3.7.110 ist kaputt, deshalb `compile()` nutzen. |
+| P3 | Aufwand für Polling im Main-Thread des Servers | S1 · ✔ S1: nicht messbar (< 0,1 % CPU, Ice-Aufrufe p95 < 3 ms) |
 | P4 | Lädt das Plugin mit API 1.0.x im Mumble-Client von Ubuntu, Debian und Fedora? | S2 |
 | P5 | Verhalten von Befehlen aus dem Netzwerk-Thread (Timeout nach 800 ms), Bestätigung per `onChannelEntered` | S2 |
-| P6 | Stimmt der SHA1 von `getCertificateList()[0]` mit `getUserHash` überein? | S3 |
+| P6 | Stimmt der SHA1 von `getCertificateList()[0]` mit `getUserHash` überein? | S3 · Serverseite ✔ S1 (SHA1 von `certs[0]` = Hash des Client-Zertifikats), Plugin-Seite offen |
 | P7 | Stimmen die `User.address` aus Ice und die Quell-IP der Plugin-Verbindung überein, wenn ein Reverse-Proxy und VPN dazwischen liegen? | S3 |
-| P8 | Gibt es das Server-Image passend zu v1.6.870 (Tag-Schema von `mumblevoip/mumble-server`)? | S1 |
+| P8 | Gibt es das Server-Image passend zu v1.6.870 (Tag-Schema von `mumblevoip/mumble-server`)? | S1 · ✔ S1: `mumblevoip/mumble-server:v1.6.870` (`latest` kann 1.5.x sein!) |
