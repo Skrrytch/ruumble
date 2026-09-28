@@ -3,6 +3,7 @@
  * Ice meldet keine Änderungen, deshalb wird regelmäßig neu abgefragt und über einen Hash versioniert.
  */
 import { createHash } from "node:crypto";
+import { detectImage } from "./board/media.ts";
 
 export const MAX_AVATAR_BYTES = 256 * 1024;
 
@@ -10,16 +11,6 @@ export interface Avatar {
   version: string;
   mime: string;
   bytes: Uint8Array;
-}
-
-/** Bildformat an den ersten Bytes erkennen. Das alte Mumble-Rohformat (zlib, 600×60 BGRA) gilt als „kein Bild“. */
-export function detectImage(bytes: Uint8Array): string | null {
-  const b = (i: number) => bytes[i] ?? -1;
-  if (b(0) === 0x89 && b(1) === 0x50 && b(2) === 0x4e && b(3) === 0x47) return "image/png";
-  if (b(0) === 0xff && b(1) === 0xd8 && b(2) === 0xff) return "image/jpeg";
-  if (b(0) === 0x47 && b(1) === 0x49 && b(2) === 0x46 && b(3) === 0x38) return "image/gif";
-  if (b(0) === 0x52 && b(1) === 0x49 && b(2) === 0x46 && b(3) === 0x46 && b(8) === 0x57 && b(9) === 0x45 && b(10) === 0x42 && b(11) === 0x50) return "image/webp";
-  return null;
 }
 
 export interface AvatarOptions {
@@ -67,8 +58,8 @@ export class AvatarCache {
     return this.entries.get(userId)?.avatar ?? null;
   }
 
-  /** öffentlich für Tests: ein Bild sofort (neu) laden */
-  async load(userId: number, entry = this.entries.get(userId)): Promise<void> {
+  /** ein Bild sofort (neu) laden */
+  private async load(userId: number, entry = this.entries.get(userId)): Promise<void> {
     if (!entry) return;
     entry.pending = true;
     try {

@@ -59,13 +59,14 @@ export class IceMumbleSource implements MumbleSource {
   private readonly meta: any;
   private readonly server: any;
   private readonly permissionEnter: number;
-  private readonly permissionWrite: number = 0x01; // MumbleServer.ice: PermissionWrite
+  private readonly permissionWrite: number;
 
-  private constructor(communicator: { destroy(): Promise<void> }, meta: any, server: any, permissionEnter: number) {
+  private constructor(communicator: { destroy(): Promise<void> }, meta: any, server: any, permissions: { enter: number; write: number }) {
     this.communicator = communicator;
     this.meta = meta;
     this.server = server;
-    this.permissionEnter = permissionEnter;
+    this.permissionEnter = permissions.enter;
+    this.permissionWrite = permissions.write;
   }
 
   static async connect(opts: IceOptions): Promise<IceMumbleSource> {
@@ -89,7 +90,7 @@ export class IceMumbleSource implements MumbleSource {
         id = Number(booted[0].ice_getIdentity().name);
       }
       const server = MumbleServer.ServerPrx.uncheckedCast(communicator.stringToProxy(`s/${id}:${endpoint}`));
-      return new IceMumbleSource(communicator, meta, server, MumbleServer.PermissionEnter);
+      return new IceMumbleSource(communicator, meta, server, { enter: MumbleServer.PermissionEnter, write: MumbleServer.PermissionWrite });
     } catch (e) {
       await communicator.destroy();
       throw e;

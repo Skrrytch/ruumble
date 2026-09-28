@@ -7,14 +7,15 @@
  *   PUBLIC_URL                                   Basis-URL für Kopplungslinks (https://…)
  *   PORT (8080), HOST (0.0.0.0)                  HTTP/WebSocket
  *   WEB_DIST                                     gebaute Oberfläche (web/dist)
- *   DATA_DIR (./data)                            Geräte-Tokens
+ *   DATA_DIR (./data)                            Geräte-Tokens und Pinnwand (board.sqlite, board/)
  *   PLUGIN_BUNDLE, PLUGIN_BUNDLE_DIR             optional: .mumble_plugin für /download (Datei oder Verzeichnis)
  *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004, P7 offen)
  *   TRUST_PROXY (false)                          true hinter Nginx Proxy Manager
  *   PREVIEW (false)                              true: Gebäude ohne Kopplung nur lesend sichtbar
  *   RETENTION_DAYS (30), BOARD_QUOTA_MB (2048)    Pinnwand: Aufbewahrung und Kontingent (ADR-0011)
+ *   LOG_LEVEL (info)                             Protokoll von Fastify/pino
  *
- * Sicherung der Pinnwand:  node dist/main.mjs backup <zielverzeichnis>
+ * Sicherung der Pinnwand:  node dist/main.mjs backup <zielverzeichnis>  (braucht nur DATA_DIR, kein Ice)
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
@@ -39,6 +40,17 @@ const required = (key: string) => {
 };
 const bool = (key: string) => env[key] === "true" || env[key] === "1";
 
+// Pinnwand-Speicher (ADR-0011); die Sicherung braucht nichts anderes, deshalb vor der übrigen Konfiguration
+const dataDir = resolve(env.DATA_DIR ?? "data");
+const quotaMB = Number(env.BOARD_QUOTA_MB ?? 2048);
+const store = new BoardStore(dataDir, { retentionDays: Number(env.RETENTION_DAYS ?? 30), quotaBytes: quotaMB * 1024 * 1024 });
+if (process.argv[2] === "backup") {
+  const target = resolve(process.argv[3] ?? "backup");
+  await store.backup(target);
+  console.log(`Pinnwand gesichert nach ${target}`);
+  process.exit(0);
+}
+
 const config = {
   iceHost: required("ICE_HOST"),
   icePort: Number(env.ICE_PORT ?? 6502),
@@ -48,7 +60,6 @@ const config = {
   port: Number(env.PORT ?? 8080),
   host: env.HOST ?? "0.0.0.0",
   webDist: resolve(env.WEB_DIST ?? new URL("../../web/dist", import.meta.url).pathname),
-  dataDir: resolve(env.DATA_DIR ?? "data"),
   pluginBundle: env.PLUGIN_BUNDLE
     ? resolve(env.PLUGIN_BUNDLE)
     : env.PLUGIN_BUNDLE_DIR && existsSync(env.PLUGIN_BUNDLE_DIR)
@@ -59,22 +70,10 @@ const config = {
   preview: bool("PREVIEW"),
 };
 
-// Pinnwand-Speicher (ADR-0011)
-const store = new BoardStore(config.dataDir, {
-  retentionDays: Number(env.RETENTION_DAYS ?? 30),
-  quotaBytes: Number(env.BOARD_QUOTA_MB ?? 2048) * 1024 * 1024,
-});
-if (process.argv[2] === "backup") {
-  const target = resolve(process.argv[3] ?? "backup");
-  await store.backup(target);
-  console.log(`Pinnwand gesichert nach ${target}`);
-  process.exit(0);
-}
-
 const app = Fastify({ logger: { level: env.LOG_LEVEL ?? "info" }, trustProxy: config.trustProxy });
 const log = (msg: string, extra?: Record<string, unknown>) => app.log.info(extra ?? {}, msg);
 
-const pairing = new Pairing(resolve(config.dataDir, "tokens.json"));
+const pairing = new Pairing(resolve(dataDir, "tokens.json"));
 let lastPoll = 0;
 let lastError: string | null = null;
 
@@ -203,10 +202,10 @@ await app.register(boardRoutes, {
   onNewPost: (post, viewer) => void notifyRoom(hub, post, viewer),
 });
 const cleanupTimer = setInterval(() => {
-  const removed = store.cleanup();
+  const { removed, channels } = store.cleanup();
   if (removed) {
     log("Pinnwand aufgeräumt", { removed });
-    hub.rebroadcast();
+    for (const channelId of channels) hub.boardChanged(channelId); // offene Pinnwände laden neu
   }
 }, 60 * 60_000);
 
@@ -217,7 +216,7 @@ app.get("/healthz", async (_req, reply) => {
     lastPoll: lastPoll ? new Date(lastPoll).toISOString() : null,
     lastError,
     plugins: hub.pluginCount,
-    board: { usedMB: Math.round(store.usedBytes() / 1024 / 1024), quotaMB: Number(env.BOARD_QUOTA_MB ?? 2048) },
+    board: { usedMB: Math.round(store.usedBytes() / 1024 / 1024), quotaMB },
   });
 });
 

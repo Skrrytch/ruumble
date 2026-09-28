@@ -64,6 +64,17 @@ describe("BoardStore", () => {
     expect(existsSync(store.filePath(att.id))).toBe(false);
   });
 
+  it("Löschen eines Beitrags lässt frische Uploads anderer stehen", () => {
+    const { store } = tempStore();
+    const mine = store.putFile(PNG, "image/png");
+    const p = store.create({ channelId: 3, kind: "image", text: "", attachmentId: mine.id, attachmentName: "a.png", authorHash: A, authorName: "Anna" });
+    const pending = store.putFile(Buffer.from("noch nicht angeheftet"), "text/plain"); // Ben lädt gerade hoch
+    store.delete(p.id);
+    expect(store.attachment(mine.id)).toBeNull();
+    expect(store.attachment(pending.id)).not.toBeNull();
+    expect(existsSync(store.filePath(pending.id))).toBe(true);
+  });
+
   it("Aufbewahrung 30 Tage und gelöschte Kanäle nach 7 Tagen", () => {
     let now = 1_000 * DAY;
     const { store } = tempStore({ now: () => now });
@@ -72,9 +83,9 @@ describe("BoardStore", () => {
     store.create({ channelId: 5, kind: "text", text: "Kanal verschwindet", authorHash: A, authorName: "Anna" });
     store.syncChannels([3]); // Kanal 5 ist weg
     now += 8 * DAY;
-    expect(store.cleanup()).toBe(1); // Kanal 5 nach 7 Tagen
+    expect(store.cleanup()).toEqual({ removed: 1, channels: [5] }); // Kanal 5 nach 7 Tagen
     now += 13 * DAY; // Beitrag in 3 ist jetzt 31 Tage alt
-    expect(store.cleanup()).toBe(1);
+    expect(store.cleanup().removed).toBe(1);
     expect(store.channelsWithPosts()).toEqual([]);
   });
 
@@ -86,7 +97,7 @@ describe("BoardStore", () => {
     now += 3 * DAY;
     store.syncChannels([5]);
     now += 5 * DAY;
-    expect(store.cleanup()).toBe(0);
+    expect(store.cleanup().removed).toBe(0);
   });
 
   it("Kontingent: älteste Beiträge mit Anhang zuerst", () => {
@@ -99,7 +110,7 @@ describe("BoardStore", () => {
       ids.push(store.create({ channelId: 3, kind: "file", text: "", attachmentId: att.id, attachmentName: `f${i}`, authorHash: A, authorName: "Anna" }).id);
     }
     expect(store.usedBytes()).toBe(300);
-    expect(store.cleanup()).toBe(1);
+    expect(store.cleanup().removed).toBe(1);
     expect(store.list(3).map((p) => p.id)).toEqual([ids[2], ids[1]]);
   });
 
