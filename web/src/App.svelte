@@ -7,6 +7,7 @@
   import Core from "./lib/ui/Core.svelte";
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
   import FloorPlan from "./lib/ui/FloorPlan.svelte";
+  import { t } from "./lib/i18n/index.svelte.ts";
   import PluginHelp from "./lib/ui/PluginHelp.svelte";
   import BoardPanel from "./lib/ui/board/BoardPanel.svelte";
 
@@ -25,35 +26,35 @@
   {#if app.connection === "unpaired"}
     <div class="screen" role="status">
       <Unplug size={40} />
-      <strong>Dieses Gerät ist noch nicht gekoppelt.</strong>
-      <span>Starte Mumble mit aktiviertem Ruumble-Plugin. Beim ersten Verbinden öffnet das Plugin diese Seite mit einem Kopplungslink.</span>
+      <strong>{t().screens.notPairedTitle}</strong>
+      <span>{t().screens.notPairedText}</span>
       <PluginHelp />
     </div>
   {:else if !building}
-    <div class="screen" role="status">Verbinde …</div>
+    <div class="screen" role="status">{t().screens.connecting}</div>
   {:else if !app.preview && (app.plugin === "disconnected" || !building.self)}
     <div class="screen" role="status">
       <Unplug size={40} />
-      <strong>Mumble ist nicht verbunden.</strong>
-      <span>Starte Mumble mit aktiviertem Ruumble-Plugin und verbinde dich mit dem Server {building.name}.</span>
+      <strong>{t().common.mumbleOffline}</strong>
+      <span>{t().screens.mumbleOfflineText(building.name)}</span>
       <PluginHelp />
     </div>
   {:else}
     <!-- Titelleiste, platzsparend: die Etage ist im Aufzug markiert, hier nur Name und Zahlen -->
     <header class="head">
       <div class="where">
-        <h1>{floor?.name ?? "Leerstand"}</h1>
-        {#if app.readonly}<span class="note">Vorschau, nur lesend</span>{/if}
-        {#if hidden}<span class="note">Du bist in einem Bereich, der hier nicht darstellbar ist</span>{/if}
+        <h1>{floor?.name ?? t().screens.vacancyTitle}</h1>
+        {#if app.readonly}<span class="note">{t().header.preview}</span>{/if}
+        {#if hidden}<span class="note">{t().common.notShown}</span>{/if}
       </div>
       <div class="counts">
         {#if floor}
-          <span class="count" title="Personen auf dieser Etage" aria-label="{floor.population} auf dieser Etage">
+          <span class="count" title={t().header.onFloorTitle} aria-label={t().header.onFloorLabel(floor.population)}>
             <Users size={16} aria-hidden="true" />{floor.population}
           </span>
         {/if}
-        <span class="count" title="Online auf dem Server">
-          <span class="dot" aria-hidden="true"></span>{building.online} online
+        <span class="count" title={t().header.onlineTitle}>
+          <span class="dot" aria-hidden="true"></span>{t().header.online(building.online)}
         </span>
       </div>
     </header>
@@ -73,8 +74,8 @@
         />
       {:else}
         <div class="vacancy" role="status">
-          <strong>Leerstand</strong>
-          <span>Keine Etage dieses Gebäudes lässt sich darstellen: Jede Etage ist tiefer als zwei Ebenen oder hat mehr als {MAX_ROOMS} Räume. Nutze die klassische Ansicht in Mumble.</span>
+          <strong>{t().screens.vacancyTitle}</strong>
+          <span>{t().screens.vacancyText(MAX_ROOMS)}</span>
         </div>
       {/if}
       {#if app.boardOpen && !app.readonly}<BoardPanel {app} />{/if}
@@ -82,11 +83,11 @@
   {/if}
 
   {#if app.connection === "reconnecting" && building}
-    <div class="toast" role="status">Verbindung zum Ruumble-Dienst unterbrochen, verbinde neu …</div>
+    <div class="toast" role="status">{t().screens.reconnecting}</div>
   {:else if app.notice}
     <div class="toast" role="alert">
       {app.notice.text}
-      <button type="button" aria-label="Hinweis schließen" onclick={() => app.dismissNotice()}>×</button>
+      <button type="button" aria-label={t().screens.dismissNotice} onclick={() => app.dismissNotice()}>×</button>
     </div>
   {/if}
 </div>

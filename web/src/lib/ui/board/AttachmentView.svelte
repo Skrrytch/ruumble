@@ -11,24 +11,25 @@
   import { getFileUrl } from "../../board/context.ts";
   import { fileKind, formatSize } from "../../board/model.ts";
   import Lightbox from "./Lightbox.svelte";
+  import { t } from "../../i18n/index.svelte.ts";
 
   let { post, large = false }: { post: Post; large?: boolean } = $props();
 
   const fileUrl = getFileUrl();
   const a = $derived(post.attachment!);
-  const name = $derived(a.name || "datei");
+  const name = $derived(a.name || t().board.fallbackName);
   let zoomed = $state(false);
   const ICONS = { image: FileImage, pdf: FileText, text: FileText, archive: FileArchive, audio: FileMusic, video: FilePlay, other: File };
   const Icon = $derived(ICONS[fileKind(a.mime, name)]);
 </script>
 
 {#if post.kind === "image"}
-  <button type="button" class="thumb" class:large aria-label="Bild {name} groß anzeigen" onclick={() => (zoomed = true)}>
+  <button type="button" class="thumb" class:large aria-label={t().board.showImage(name)} onclick={() => (zoomed = true)}>
     <img src={fileUrl(a)} alt={post.text || name} loading="lazy" width={a.width} height={a.height} />
   </button>
   {#if zoomed}<Lightbox src={fileUrl(a)} downloadUrl={fileUrl(a, true)} {name} onclose={() => (zoomed = false)} />{/if}
 {:else}
-  <a class="file" href={fileUrl(a, true)} download={name} title="{name} herunterladen">
+  <a class="file" href={fileUrl(a, true)} download={name} title={t().board.downloadFile(name)}>
     <span class="icon" aria-hidden="true"><Icon size={26} /></span>
     <span class="meta"><span class="fname">{name}</span><span class="size">{formatSize(a.size)}</span></span>
     <span class="dl" aria-hidden="true"><Download size={18} /></span>

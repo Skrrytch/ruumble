@@ -9,7 +9,7 @@
   let open = $state(true);
 </script>
 
-<aside class="debug" aria-label="Debug-Panel (Mock)">
+<aside class="debug" aria-label="Debug panel (mock)">
   <button type="button" class="toggle" onclick={() => (open = !open)}>{open ? "Debug ▾" : "Debug ▸"}</button>
   {#if open}
     <label>
@@ -19,14 +19,14 @@
       </select>
     </label>
     <button type="button" onclick={() => mock.setPlugin(app.plugin === "connected" ? "disconnected" : "connected")}>
-      Plugin {app.plugin === "connected" ? "trennen" : "verbinden"}
+      {app.plugin === "connected" ? "Disconnect" : "Connect"} plugin
     </button>
     <button type="button" disabled={!app.floor?.rooms[0]} onclick={() => mock.addSubchannel(app.floor!.rooms[0]!.channelId)}>
-      Unterkanal im 1. Raum anlegen
+      Add subchannel in the first room
     </button>
-    <button type="button" onclick={() => mock.removeTemporaryChannels()}>Neue Unterkanäle entfernen</button>
-    <button type="button" onclick={() => mock.moveRandomUser()}>Jemanden verschieben</button>
-    <button type="button" onclick={() => mock.rejectNextJoin()}>Nächsten Wechsel ablehnen</button>
+    <button type="button" onclick={() => mock.removeTemporaryChannels()}>Remove new subchannels</button>
+    <button type="button" onclick={() => mock.moveRandomUser()}>Move someone</button>
+    <button type="button" onclick={() => mock.rejectNextJoin()}>Reject next move</button>
   {/if}
 </aside>
 

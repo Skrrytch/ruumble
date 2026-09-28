@@ -2,7 +2,8 @@
   import { copyText } from "../../board/clipboard.ts";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
   import type { Post } from "@ruumble/protocol";
-  import { KIND_LABEL, PREVIEW_LINES, isLong, relativeTime } from "../../board/model.ts";
+  import { PREVIEW_LINES, isLong, relativeTime } from "../../board/model.ts";
+  import { intlLocale, t } from "../../i18n/index.svelte.ts";
   import { initials } from "../../model/building.ts";
   import { getFileUrl } from "../../board/context.ts";
   import PostBody from "./PostBody.svelte";
@@ -21,7 +22,7 @@
   }
 </script>
 
-<article class="card" aria-label="Beitrag von {post.authorName}">
+<article class="card" aria-label={t().board.postBy(post.authorName)}>
   <span class="pin" aria-hidden="true"></span>
   <header>
     <span class="av" class:me={post.mine} aria-hidden="true">
@@ -29,24 +30,24 @@
     </span>
     <span class="who">
       <strong>{post.authorName}</strong>
-      <span class="when" title={new Date(post.createdAt).toLocaleString("de-DE")}>{relativeTime(post.createdAt, now)}</span>
+      <span class="when" title={new Date(post.createdAt).toLocaleString(intlLocale())}>{relativeTime(post.createdAt, now)}</span>
     </span>
-    <span class="kind">{KIND_LABEL[post.kind]}</span>
+    <span class="kind">{t().board.kinds[post.kind]}</span>
   </header>
   <div class="body" class:clamped={long} style:--lines={PREVIEW_LINES}>
     <PostBody {post} />
   </div>
   {#if post.updatedByName}
-    <div class="edited">zuletzt bearbeitet von {post.updatedByName} · {relativeTime(post.updatedAt, now)}</div>
+    <div class="edited">{t().board.editedBy(post.updatedByName)} · {relativeTime(post.updatedAt, now)}</div>
   {/if}
   <footer>
-    <button type="button" class="link" onclick={() => onopen(post)}><Maximize2 size={13} /> Öffnen · bearbeiten</button>
+    <button type="button" class="link" onclick={() => onopen(post)}><Maximize2 size={13} /> {t().board.open}</button>
     {#if post.kind === "file"}
       <span></span>
     {:else if post.attachment}
-      <a class="link strong" href={fileUrl(post.attachment, true)} download={post.attachment.name || "datei"}>Herunterladen</a>
+      <a class="link strong" href={fileUrl(post.attachment, true)} download={post.attachment.name || t().board.fallbackName}>{t().common.download}</a>
     {:else}
-      <button type="button" class="link strong" onclick={copy}>{copied ? "Kopiert" : "Kopieren"}</button>
+      <button type="button" class="link strong" onclick={copy}>{copied ? t().common.copied : t().common.copy}</button>
     {/if}
   </footer>
 </article>

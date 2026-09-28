@@ -69,8 +69,8 @@ test.describe("Sonderfälle", () => {
     await expect(page.getByRole("img", { name: "Nils, vom Server stummgeschaltet" })).toBeVisible();
     await expect(page.getByTitle("Vom Server stummgeschaltet", { exact: true })).toHaveCount(2); // Nils (unterdrückt), Mia (Server-Mute)
     await page.getByRole("button", { name: "Erdgeschoss: Lobby" }).click();
-    await expect(page.locator(".floorplan").getByTitle("Mikrofon stumm", { exact: true })).toHaveCount(1); // Ben (der Knopf im Menü heißt genauso)
-    await expect(page.locator(".floorplan").getByTitle("Taub geschaltet", { exact: true })).toHaveCount(1); // Felix
+    await expect(page.locator(".floorplan").getByTitle("Stumm", { exact: true })).toHaveCount(1); // Ben
+    await expect(page.locator(".floorplan").getByTitle("Taub", { exact: true })).toHaveCount(1); // Felix
     await page.getByRole("button", { name: "Zu meiner Etage" }).click();
     await page.getByRole("button", { name: "2. Obergeschoss: VERTRIEB" }).click();
     const locked = page.getByRole("button", { name: "Gregors Büro – kein Zutritt" });
@@ -89,7 +89,7 @@ test("gesperrter Raum: Klick bewirkt nichts", async ({ page }) => {
 
 test("unbestätigter Wechsel zeigt nach 3 s einen Hinweis, der Nutzer bleibt im Raum", async ({ page }) => {
   await page.goto("/?fixture=musterhaus&talking=0&debug");
-  await page.getByRole("button", { name: "Nächsten Wechsel ablehnen" }).click();
+  await page.getByRole("button", { name: "Reject next move" }).click();
   await page.getByRole("button", { name: "Büro von Ben betreten" }).click();
   await expect(page.getByRole("button", { name: "Büro von Ben – wird betreten" })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveText(/Wechsel nach „Büro von Ben“ nicht möglich/, { timeout: 6000 });
@@ -105,10 +105,10 @@ test("schnelle Klicks: der letzte Raum gewinnt", async ({ page }) => {
 
 test("Unterkanal anlegen sperrt die eigene Etage live", async ({ page }) => {
   await page.goto("/?fixture=musterhaus&talking=0&debug");
-  await page.getByRole("button", { name: "Unterkanal im 1. Raum anlegen" }).click();
+  await page.getByRole("button", { name: "Add subchannel in the first room" }).click();
   await expect(page.getByText("Du bist in einem Bereich, der hier nicht darstellbar ist.")).toBeVisible();
   await expect(page.getByRole("button", { name: /ENTWICKLUNG – gesperrt/ })).toHaveAttribute("aria-current", "page");
-  await page.getByRole("button", { name: "Neue Unterkanäle entfernen" }).click();
+  await page.getByRole("button", { name: "Remove new subchannels" }).click();
   await expect(page.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible();
 });
 

@@ -4,7 +4,9 @@
   import X from "@lucide/svelte/icons/x";
   import SendHorizontal from "@lucide/svelte/icons/send-horizontal";
   import { BOARD_IMAGE_TYPES, BOARD_LIMITS, type PostKind, type Uploaded } from "@ruumble/protocol";
-  import type { BoardErrorCode, BoardResult } from "../../adapter/types.ts";
+  import type { BoardResult } from "../../adapter/types.ts";
+  import { t } from "../../i18n/index.svelte.ts";
+  import { boardErrorText } from "../../state.svelte.ts";
   import { formatSize, looksLikeCode, pastedName } from "../../board/model.ts";
   import { CODE_LANGUAGES } from "../../board/render.ts";
 
@@ -12,12 +14,10 @@
     onpin,
     onupload,
     onattach,
-    errorText,
   }: {
     onpin: (kind: PostKind, text: string, language?: string) => Promise<boolean>;
     onupload: (file: Blob, name: string, onProgress: (fraction: number) => void) => Promise<BoardResult<Uploaded>>;
     onattach: (attachment: Uploaded, caption: string) => Promise<boolean>;
-    errorText: (error: BoardErrorCode) => string;
   } = $props();
 
   /** Ein Anhang pro Beitrag (AP11.3): hochgeladen wird sofort, angeheftet erst beim Senden */
@@ -36,13 +36,13 @@
     codeMode = false;
     suggestCode = false;
     if (file.size > BOARD_LIMITS.fileBytes) {
-      pending.error = errorText("too-large");
+      pending.error = boardErrorText("too-large");
       return;
     }
     const r = await onupload(file, name, (f) => { if (pending && run === uploadRun) pending.progress = f; });
     if (!pending || run !== uploadRun) return; // inzwischen entfernt oder ersetzt
     if (r.ok) pending.uploaded = r.value;
-    else pending.error = errorText(r.error);
+    else pending.error = boardErrorText(r.error);
   }
 
   function clearAttachment() {
@@ -91,9 +91,9 @@
 <form class="composer" onsubmit={(e) => { e.preventDefault(); void submit(); }}>
   {#if suggestCode}
     <div class="suggest" role="status">
-      Sieht nach Code aus – als Code anheften?
-      <button type="button" onclick={() => { codeMode = true; suggestCode = false; }}>Ja</button>
-      <button type="button" onclick={() => (suggestCode = false)}>Nein</button>
+      {t().board.looksLikeCode}
+      <button type="button" onclick={() => { codeMode = true; suggestCode = false; }}>{t().common.yes}</button>
+      <button type="button" onclick={() => (suggestCode = false)}>{t().common.no}</button>
     </div>
   {/if}
   {#if pending}
@@ -104,39 +104,39 @@
         {#if pending.error}
           <span class="err" role="alert">{pending.error}</span>
         {:else if pending.uploaded}
-          <span class="size">{formatSize(pending.size)} · bereit</span>
+          <span class="size">{t().board.ready(formatSize(pending.size))}</span>
         {:else}
-          <span class="size">wird hochgeladen … {Math.round(pending.progress * 100)} %</span>
-          <progress max="1" value={pending.progress} aria-label="Hochladen"></progress>
+          <span class="size">{t().board.uploading(Math.round(pending.progress * 100))}</span>
+          <progress max="1" value={pending.progress} aria-label={t().board.uploadProgress}></progress>
         {/if}
       </span>
-      <button type="button" class="remove" aria-label="Anhang entfernen" title="Anhang entfernen" onclick={clearAttachment}><X size={16} /></button>
+      <button type="button" class="remove" aria-label={t().board.removeAttachment} title={t().board.removeAttachment} onclick={clearAttachment}><X size={16} /></button>
     </div>
   {/if}
   <textarea
     bind:value={text}
     class:mono={codeMode}
     class:short={!!pending}
-    placeholder={pending ? "Beschreibung (optional) …" : codeMode ? "Quellcode einfügen …" : "Etwas an die Pinnwand heften …"}
-    aria-label="Neuer Beitrag"
+    placeholder={pending ? t().board.captionPlaceholder : codeMode ? t().board.placeholderCode : t().board.placeholder}
+    aria-label={t().board.newPost}
     spellcheck={!codeMode}
     {onpaste}
     onkeydown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void submit(); } }}
   ></textarea>
   <div class="bar">
     <input bind:this={picker} type="file" hidden onchange={() => { const f = picker.files?.[0]; if (f) void attach(f); picker.value = ""; }} />
-    <button type="button" class="tool" aria-label="Bild oder Datei anhängen" title="Bild oder Datei anhängen (bis {formatSize(BOARD_LIMITS.fileBytes)})" onclick={() => picker.click()}>
+    <button type="button" class="tool" aria-label={t().board.attach} title={t().board.attachTitle(formatSize(BOARD_LIMITS.fileBytes))} onclick={() => picker.click()}>
       <Paperclip size={18} />
     </button>
-    <button type="button" class="tool" aria-pressed={codeMode} aria-label="Als Code anheften" title="Code-Modus" disabled={!!pending} onclick={() => (codeMode = !codeMode)}>
+    <button type="button" class="tool" aria-pressed={codeMode} aria-label={t().board.codeMode} title={t().board.codeMode} disabled={!!pending} onclick={() => (codeMode = !codeMode)}>
       <Code size={18} />
     </button>
     {#if codeMode}
-      <select bind:value={language} aria-label="Sprache"><option value="">automatisch</option>{#each CODE_LANGUAGES as l (l)}<option value={l}>{l}</option>{/each}</select>
+      <select bind:value={language} aria-label={t().board.codeLanguage}><option value="">{t().common.auto}</option>{#each CODE_LANGUAGES as l (l)}<option value={l}>{l}</option>{/each}</select>
     {:else}
       <span class="hint">Markdown</span>
     {/if}
-    <button type="submit" class="pin" aria-label="Senden" title="Senden (Strg+Enter)" disabled={busy || !canSend}><SendHorizontal size={20} /></button>
+    <button type="submit" class="pin" aria-label={t().board.send} title={t().board.sendTitle} disabled={busy || !canSend}><SendHorizontal size={20} /></button>
   </div>
 </form>
 

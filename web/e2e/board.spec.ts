@@ -187,12 +187,12 @@ test.describe("Pinnwand: Bilder und Dateien (AP11.3)", () => {
     await expect(board.getByRole("alert")).toHaveCount(0);
   });
 
-  test("Bildunterschrift im Popup bearbeiten", async ({ page }) => {
+  test("Beschreibung eines Bilds im Popup bearbeiten", async ({ page }) => {
     const board = page.getByRole("complementary", { name: "Pinnwand" });
     await board.getByRole("article", { name: "Beitrag von Clara" }).getByRole("button", { name: "Öffnen · bearbeiten" }).click();
     const dialog = page.getByRole("dialog", { name: "Beitrag von Clara" });
     await dialog.getByRole("button", { name: "Beschreibung bearbeiten" }).click();
-    await dialog.getByRole("textbox", { name: "Bildunterschrift bearbeiten" }).fill("Neue Skizze");
+    await dialog.getByRole("textbox", { name: "Beschreibung bearbeiten" }).fill("Neue Skizze");
     await dialog.getByRole("button", { name: "Speichern" }).click();
     await expect(dialog.getByText("Neue Skizze")).toBeVisible();
   });
