@@ -71,7 +71,7 @@ Bisher speichert Ruumble **nichts Inhaltliches**. Es liest Mumble, und nur die G
 3. `plugin`: neuer Befehl `notify`, der einen Text in das Mumble-Protokoll schreibt (für den Hinweis auf neue Beiträge)
 4. `web`: Seitenleiste „Pinnwand“ je Raum, Editor mit Markdown-Vorschau, Einfügen aus der Zwischenablage, Code-Hervorhebung (z. B. Shiki), Vollbildansicht für Bilder, Zähler am Raum („3 Beiträge“)
 5. Tests: Speicher (Aufbewahrung, Kontingente, Rechte), XSS-Fälle, Upload-Grenzen, E2E im Mock und im Live-Test
-6. Betrieb: Sicherung des Volumes, Grenzwerte in `deploy/homeserver`
+6. Betrieb: Sicherung des Volumes, Grenzwerte in `docs/betrieb.md`
 
 ---
 
