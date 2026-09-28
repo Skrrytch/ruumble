@@ -63,6 +63,11 @@
         "cmd": "deaf",
         "on": true
       }
+    },
+    {
+      "v": 1,
+      "type": "notify",
+      "text": "Ben hat Code an die Pinnwand geheftet."
     }
   ],
   "UiToBridge": [
