@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruumble – Referenzprototyp</title>
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-sans); background: var(--color-white); color: var(--color-navy); }
+  button { font: inherit; color: inherit; }
+
+  .app { width: 1440px; height: 900px; padding: 32px 32px 24px; display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
+
+  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+  .head .kicker { font-size: 15px; color: var(--color-blue-500); }
+  .head h1 { margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
+  .head .summary, .head .hint { font-size: 15px; color: var(--color-blue-700); }
+  .head .hint { font-size: 13px; text-align: right; line-height: 1.5; }
+
+  /* Grundriss: Wände = 4px Dunkelblau als gap/padding */
+  .plan { height: 670px; padding: var(--wall); background: var(--color-navy); display: flex; gap: var(--wall); }
+
+  /* Aufzugskern */
+  .core { position: relative; width: 300px; flex-shrink: 0; padding: 18px; background: var(--color-surface); display: flex; flex-direction: column; gap: 14px; }
+  .core .opening { position: absolute; right: calc(-1 * var(--wall)); top: 276px; width: var(--wall); height: 110px; background: var(--color-white); }
+  .sign-title { font-size: 20px; font-weight: 700; }
+  .sign-sub { font-size: 13px; color: var(--color-blue-700); }
+
+  .elevator { border-radius: var(--radius-md); padding: 14px; background: var(--gradient-elevator); color: var(--color-white); display: flex; flex-direction: column; gap: 10px; }
+  .elevator-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 8px; border-bottom: 1px solid rgba(255,255,255,.2); }
+  .elevator-head .t { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
+  .elevator-head .cur { font-size: 13px; color: var(--color-blue-100); }
+
+  .floor { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 6px 10px; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-white); text-align: left; cursor: pointer; transition: background var(--dur) var(--ease-out); }
+  .floor:hover { background: rgba(255,255,255,.08); }
+  .floor:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
+  .floor.active, .floor.active:hover { background: var(--color-white); color: var(--color-navy); }
+  .floor .badge { width: 40px; height: 40px; flex-shrink: 0; border: 2px solid rgba(255,255,255,.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+  .floor.active .badge { border-color: var(--color-navy); background: var(--color-navy); color: var(--color-white); }
+  .floor .name { font-size: 15px; font-weight: 700; display: block; }
+  .floor .sub { font-size: 13px; color: var(--color-blue-100); display: block; }
+  .floor.active .sub { color: var(--color-blue-700); }
+
+  .usermenu { margin-top: auto; display: flex; flex-direction: column; gap: 12px; padding-top: 14px; border-top: 1px solid var(--color-blue-300); }
+  .me-row { display: flex; align-items: center; gap: 12px; }
+  .me-row .n { font-size: 15px; font-weight: 700; display: block; }
+  .me-row .l { font-size: 13px; color: var(--color-blue-700); display: block; }
+  .tools { display: flex; gap: 8px; }
+  .tool { width: 44px; height: 44px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-navy); transition: background var(--dur) var(--ease-out); }
+  .tool:hover { background: var(--color-blue-100); }
+  .tool:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
+  .tool[aria-pressed="true"] { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); }
+  .tool .slash { display: none; }
+  .tool[aria-pressed="true"] .slash { display: inline; }
+  .versions { display: flex; justify-content: space-between; font-size: 12px; color: var(--color-blue-700); }
+
+  /* Etagenfläche */
+  .floorplan { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--wall); }
+  .row { display: flex; gap: var(--wall); height: 272px; }
+
+  .room { position: relative; border: 0; margin: 0; padding: 20px 22px; background: var(--color-white); text-align: left; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; flex-basis: 0; min-width: 0; transition: background var(--dur) var(--ease-out); }
+  .room:hover { background: var(--color-surface); }
+  .room:focus-visible { outline: 3px solid var(--color-sky); outline-offset: -7px; }
+  .room.mine, .room.mine:hover { background: var(--color-blue-100); cursor: default; }
+  .row.bottom .room { padding-top: 56px; }
+  .room .door { position: absolute; left: 28px; width: 48px; height: var(--wall); background: var(--color-white); }
+  .row.top .room .door { bottom: calc(-1 * var(--wall)); }
+  .row.bottom .room .door { top: calc(-1 * var(--wall)); }
+  .room .arc { position: absolute; left: 28px; }
+  .row.top .room .arc { bottom: 0; }
+  .row.bottom .room .arc { top: 0; }
+  .room .title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; font-weight: 700; }
+  .room .count { font-size: 13px; color: var(--color-blue-700); display: block; margin-top: 4px; }
+
+  .raster { background-color: var(--color-white); background-image: radial-gradient(var(--raster-dot) 2px, transparent 2.4px); background-size: 10px 10px; }
+  .room.corridor { height: 110px; flex: none; flex-direction: row; align-items: center; gap: 24px; }
+  .room.corridor:hover { background-color: var(--color-surface); }
+  .room.corridor.mine { background-color: var(--color-blue-100); }
+  .room.corridor .label { min-width: 120px; }
+  .room.open { flex-grow: 1; }
+  .room.open .title { font-size: 20px; }
+
+  .people { display: flex; flex-wrap: wrap; gap: 12px; }
+  .person { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 64px; font-size: 13px; }
+  .av { position: relative; width: 44px; height: 44px; border-radius: 50%; background: var(--color-blue-500); color: var(--color-white); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; }
+  .av.me { background: var(--color-navy); box-shadow: 0 0 0 3px var(--color-accent); }
+  .av .flag { position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--color-white); border: 1px solid var(--color-blue-300); display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ---------- Mock-Daten (identisch mit mock-data.json, inline für file://) ---------- */
+const DATA = {
+  server: { name: "Musterhaus", label: "primary", version: "[VERSION]" },
+  uiVersion: "[VERSION]",
+  self: { session: 4 },
+  channels: [
+    { id: 0, parent: null, name: "Musterhaus", position: 0 },
+    { id: 1, parent: 0, name: "Lobby", position: 0 },
+    { id: 2, parent: 0, name: "ENTWICKLUNG", position: 1 },
+    { id: 3, parent: 2, name: "Büro von Anna", position: 0 },
+    { id: 4, parent: 2, name: "Büro von Ben", position: 1 },
+    { id: 5, parent: 2, name: "Büro von Clara", position: 2 },
+    { id: 6, parent: 2, name: "Büro von David", position: 3 },
+    { id: 7, parent: 2, name: "Büro von Eva", position: 4 },
+    { id: 8, parent: 2, name: "Büro von Felix", position: 5 },
+    { id: 9, parent: 0, name: "VERTRIEB", position: 2 },
+    { id: 10, parent: 9, name: "Abwesend", position: 0 },
+    { id: 11, parent: 9, name: "Fokusraum (stumm)", position: 1 },
+    { id: 12, parent: 9, name: "Teeküche", position: 2 },
+    { id: 13, parent: 9, name: "Raucherecke", position: 3 },
+    { id: 14, parent: 9, name: "Gregors Büro", position: 4 },
+    { id: 15, parent: 9, name: "Projektraum", position: 5 }
+  ],
+  users: [
+    { session: 1, name: "Ben", channel: 1, selfMute: false, selfDeaf: false },
+    { session: 2, name: "Felix", channel: 1, selfMute: false, selfDeaf: false },
+    { session: 3, name: "Eva", channel: 1, selfMute: false, selfDeaf: false },
+    { session: 4, name: "Anna", channel: 3, selfMute: false, selfDeaf: false },
+    { session: 5, name: "Gregor", channel: 12, selfMute: false, selfDeaf: false },
+    { session: 6, name: "Hanna", channel: 12, selfMute: false, selfDeaf: false }
+  ]
+};
+
+/* ---------- Ableitung Gebäude aus Kanalbaum (reine Funktionen) ---------- */
+const byPos = (a, b) => a.position - b.position || a.name.localeCompare(b.name, "de");
+const rootId = () => DATA.channels.find(c => c.parent === null).id;
+const childrenOf = id => DATA.channels.filter(c => c.parent === id).sort(byPos);
+const usersIn = id => DATA.users.filter(u => u.channel === id);
+const me = () => DATA.users.find(u => u.session === DATA.self.session);
+
+/** Etagen = Kanäle der 1. Ebene, Räume = deren Kinder. Tiefere Ebenen werden ignoriert. */
+function buildBuilding() {
+  return childrenOf(rootId()).map((f, i) => ({
+    id: f.id, name: f.name, index: i,
+    level: i === 0 ? "Erdgeschoss" : `${i}. Obergeschoss`,
+    badge: i === 0 ? "EG" : String(i),
+    rooms: childrenOf(f.id)
+  }));
+}
+const floorPopulation = f => usersIn(f.id).length + f.rooms.reduce((n, r) => n + usersIn(r.id).length, 0);
+const floorOfChannel = (building, chId) =>
+  building.find(f => f.id === chId || f.rooms.some(r => r.id === chId));
+
+/** Deterministische Breitenvariation 0.85–1.25, damit Büros nicht wie ein starres Raster wirken. */
+function roomGrow(name) {
+  let s = 0; for (const ch of name) s += ch.codePointAt(0);
+  return (0.85 + (s % 5) * 0.1).toFixed(2);
+}
+const countText = n => n === 0 ? "frei" : n === 1 ? "1 Person" : `${n} Personen`;
+const isMutedRoom = name => /\(stumm\)/i.test(name);
+
+/* ---------- UI-State ---------- */
+const state = { viewFloor: null };
+
+/* ---------- Aktionen (hier später: echte Mumble-Anbindung) ---------- */
+function joinChannel(chId) {
+  const u = me(); if (u.channel === chId) return;
+  u.channel = chId;              // TODO: an Server senden (UserState.channel_id)
+  render();
+}
+function toggleMute() {
+  const u = me();
+  if (u.selfDeaf) { u.selfDeaf = false; u.selfMute = false; } else u.selfMute = !u.selfMute;
+  render();
+}
+function toggleDeaf() {
+  const u = me(); u.selfDeaf = !u.selfDeaf; if (u.selfDeaf) u.selfMute = true; else u.selfMute = false;
+  render();
+}
+
+/* ---------- Rendering ---------- */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ICON = {
+  elevator: '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5AA6E7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="18" height="20" rx="1"/><path d="M12 2v20M7 9l2-2 2 2M13 15l2 2 2-2"/></svg>',
+  mic: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 11a7 7 0 0 1-14 0M12 18v4"/><path class="slash" d="M3 3l18 18"/></svg>',
+  headset: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/><path class="slash" d="M3 3l18 18"/></svg>',
+  target: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>',
+  gear: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  roomMuted: '<svg aria-label="stumm" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M23 9l-6 6M17 9l6 6"/></svg>',
+  userMuted: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#003869" stroke-width="2.5" stroke-linecap="round"><path d="M2 2l20 20M9 9v3a3 3 0 0 0 5 2.2M15 9.3V5a3 3 0 0 0-6-.6M19 11a7 7 0 0 1-1.2 3.9M5 11a7 7 0 0 0 12 5M12 18v4"/></svg>',
+  arcTop: '<svg class="arc" aria-hidden="true" width="48" height="48" viewBox="0 0 48 48"><path d="M1 48 V1 A47 47 0 0 1 48 48" fill="none" stroke="#9CCAF1" stroke-width="1.5"/></svg>',
+  arcBottom: '<svg class="arc" aria-hidden="true" width="48" height="48" viewBox="0 0 48 48"><path d="M1 0 V47 A47 47 0 0 0 48 0" fill="none" stroke="#9CCAF1" stroke-width="1.5"/></svg>'
+};
+
+function personHTML(u) {
+  const self = u.session === DATA.self.session;
+  const muted = u.selfMute || u.selfDeaf;
+  return `<span class="person"><span class="av ${self ? "me" : ""}">${esc(u.name.slice(0, 2))}${
+    muted ? `<span class="flag" aria-label="stumm">${ICON.userMuted}</span>` : ""}</span>${esc(u.name)}</span>`;
+}
+function peopleHTML(chId) { return `<span class="people">${usersIn(chId).map(personHTML).join("")}</span>`; }
+
+function roomHTML(r, row) {
+  const mine = me().channel === r.id;
+  const n = usersIn(r.id).length;
+  return `<button type="button" class="room ${mine ? "mine" : ""}" style="flex-grow:${roomGrow(r.name)}"
+      data-join="${r.id}" aria-label="${esc(r.name)}${mine ? " – du bist hier" : " betreten"}">
+    <span class="door" aria-hidden="true"></span>${row === "top" ? ICON.arcTop : ICON.arcBottom}
+    <span><span class="title">${esc(r.name)}${isMutedRoom(r.name) ? ICON.roomMuted : ""}</span>
+    <span class="count">${countText(n)}</span></span>
+    ${peopleHTML(r.id)}
+  </button>`;
+}
+
+function render() {
+  const building = buildBuilding();
+  const u = me();
+  const myFloor = floorOfChannel(building, u.channel) || building[0];
+  if (state.viewFloor == null) state.viewFloor = myFloor.id;
+  const floor = building.find(f => f.id === state.viewFloor) || building[0];
+  const myRoom = DATA.channels.find(c => c.id === u.channel);
+
+  const pop = floorPopulation(floor);
+  const summary = floor.rooms.length
+    ? `${pop === 0 ? "Niemand" : countText(pop)} auf dieser Etage · ${floor.rooms.length} Räume`
+    : `${countText(pop)} auf dieser Etage`;
+
+  const half = Math.ceil(floor.rooms.length / 2);
+  const top = floor.rooms.slice(0, half), bottom = floor.rooms.slice(half);
+  const corridorMine = u.channel === floor.id;
+
+  const plan = floor.rooms.length ? `
+      <div class="row top">${top.map(r => roomHTML(r, "top")).join("")}</div>
+      <button type="button" class="room corridor raster ${corridorMine ? "mine" : ""}" data-join="${floor.id}"
+        aria-label="Flur ${esc(floor.name)}${corridorMine ? " – du bist hier" : " betreten"}">
+        <span class="label"><span class="title">Flur</span><span class="count">Etagenkanal · ${countText(usersIn(floor.id).length)}</span></span>
+        ${peopleHTML(floor.id)}
+      </button>
+      <div class="row bottom">${bottom.map(r => roomHTML(r, "bottom")).join("")}</div>`
+    : `
+      <button type="button" class="room open ${corridorMine ? "mine" : ""}" data-join="${floor.id}"
+        aria-label="${esc(floor.name)}${corridorMine ? " – du bist hier" : " betreten"}">
+        <span><span class="title">${esc(floor.name)}</span><span class="count">Offene Etage ohne Büros · ${countText(pop)}</span></span>
+        ${peopleHTML(floor.id)}
+      </button>`;
+
+  const nav = [...building].reverse().map(f => `
+      <button type="button" class="floor ${f.id === floor.id ? "active" : ""}" data-floor="${f.id}"
+        aria-current="${f.id === floor.id ? "page" : "false"}" aria-label="${f.level}: ${esc(f.name)}">
+        <span class="badge">${f.badge}</span>
+        <span><span class="name">${esc(f.name)}</span><span class="sub">${floorPopulation(f)} online</span></span>
+      </button>`).join("");
+
+  document.getElementById("app").innerHTML = `
+  <div class="app">
+    <header class="head">
+      <div><div class="kicker">${floor.level}</div><h1>${esc(floor.name)}</h1><div class="summary">${summary}</div></div>
+      <div class="hint">Klick auf einen Raum wechselt den Kanal.<br>Etagenwechsel über den Aufzug · ${DATA.users.length} online</div>
+    </header>
+    <div class="plan">
+      <aside class="core">
+        <span class="opening" aria-hidden="true"></span>
+        <div><div class="sign-title">${esc(DATA.server.name)}</div><div class="sign-sub">Mumble-Server · ${esc(DATA.server.label)}</div></div>
+        <nav class="elevator" aria-label="Aufzug – Etagen">
+          <div class="elevator-head"><span class="t">${ICON.elevator}Aufzug</span><span class="cur">Etage ${floor.badge}</span></div>
+          ${nav}
+        </nav>
+        <div class="usermenu">
+          <div class="me-row"><span class="av me">${esc(u.name.slice(0, 2))}</span>
+            <span><span class="n">${esc(u.name)}</span><span class="l">${esc(myRoom.name)} · Etage ${myFloor.badge}</span></span></div>
+          <div class="tools" role="toolbar" aria-label="Benutzermenü">
+            <button type="button" class="tool" data-act="mute" aria-pressed="${u.selfMute || u.selfDeaf}" aria-label="Mikrofon stummschalten" title="Mikrofon stumm">${ICON.mic}</button>
+            <button type="button" class="tool" data-act="deaf" aria-pressed="${u.selfDeaf}" aria-label="Taub schalten" title="Taub">${ICON.headset}</button>
+            <button type="button" class="tool" data-act="home" aria-label="Zu meiner Etage" title="Zu meiner Etage">${ICON.target}</button>
+            <button type="button" class="tool" data-act="settings" aria-label="Einstellungen" title="Einstellungen">${ICON.gear}</button>
+          </div>
+          <div class="versions"><span>Server ${esc(DATA.server.version)}</span><span>Oberfläche ${esc(DATA.uiVersion)}</span></div>
+        </div>
+      </aside>
+      <div class="floorplan">${plan}</div>
+    </div>
+  </div>`;
+}
+
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-join],[data-floor],[data-act]");
+  if (!el) return;
+  if (el.dataset.join) return joinChannel(Number(el.dataset.join));
+  if (el.dataset.floor) { state.viewFloor = Number(el.dataset.floor); return render(); }
+  const act = el.dataset.act;
+  if (act === "mute") toggleMute();
+  else if (act === "deaf") toggleDeaf();
+  else if (act === "home") { state.viewFloor = floorOfChannel(buildBuilding(), me().channel).id; render(); }
+});
+
+render();
+</script>
+</body>
+</html>
