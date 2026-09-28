@@ -11,6 +11,16 @@ test.describe("Musterhaus", () => {
     await expect(page.getByRole("button", { name: "1. Obergeschoss: ENTWICKLUNG" })).toHaveAttribute("aria-current", "page");
   });
 
+  test("Öffnung vom Aufzugskern zum Flur liegt genau am Flur, auch bei anderer Fensterhöhe", async ({ page }) => {
+    for (const height of [900, 760, 1100]) {
+      await page.setViewportSize({ width: 1440, height });
+      const opening = (await page.locator(".opening").boundingBox())!;
+      const corridor = (await page.locator('.room.corridor').boundingBox())!;
+      expect(Math.abs(opening.y - corridor.y)).toBeLessThan(1);
+      expect(Math.abs(opening.height - corridor.height)).toBeLessThan(1);
+    }
+  });
+
   test("Klick auf einen Raum wechselt erst nach Bestätigung", async ({ page }) => {
     await page.getByRole("button", { name: "Büro von Clara betreten" }).click();
     await expect(page.getByRole("button", { name: "Büro von Clara – wird betreten" })).toBeVisible();
