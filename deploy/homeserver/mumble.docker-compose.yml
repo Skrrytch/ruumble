@@ -1,0 +1,46 @@
+services:
+    mumble-server:
+        deploy:
+            resources:
+                limits:
+                    memory: 128M
+        image: mumblevoip/mumble-server:v1.5.735
+        container_name: mumble-server
+        hostname: mumble-server
+        restart: unless-stopped
+        environment:
+            # Ice für Ruumble: nur in den Docker-Netzen erreichbar, Port 6502 wird nicht veröffentlicht.
+            # Read- und Write-Secret sind verschieden; Ruumble bekommt nur das Read-Secret.
+            MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'
+        secrets:
+            - source: ice_read
+              target: MUMBLE_CONFIG_ICESECRETREAD
+            - source: ice_write
+              target: MUMBLE_CONFIG_ICESECRETWRITE
+        volumes:
+            - mumble-data:/data
+        networks:
+            - mumble-network
+            - homeserver-network
+        ports:
+            - 64738:64738
+            - 64738:64738/udp
+        expose:
+            - 6502
+
+secrets:
+    ice_read:
+        file: ./secrets/ice_read
+    ice_write:
+        file: ./secrets/ice_write
+
+volumes:
+    mumble-data:
+        name: mumble-data
+
+networks:
+    mumble-network:
+        name: mumble-network
+        driver: bridge
+    homeserver-network:
+        external: true

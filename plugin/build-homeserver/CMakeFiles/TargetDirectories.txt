@@ -1,0 +1,10 @@
+/home/bespecke/projects/lab/ruumble/plugin/build-homeserver/CMakeFiles/ruumble_core.dir
+/home/bespecke/projects/lab/ruumble/plugin/build-homeserver/CMakeFiles/ruumble.dir
+/home/bespecke/projects/lab/ruumble/plugin/build-homeserver/CMakeFiles/bundle.dir
+/home/bespecke/projects/lab/ruumble/plugin/build-homeserver/CMakeFiles/edit_cache.dir
+/home/bespecke/projects/lab/ruumble/plugin/build-homeserver/CMakeFiles/rebuild_cache.dir
+/home/bespecke/projects/lab/ruumble/plugin/build/_deps/nlohmann_json-build/CMakeFiles/edit_cache.dir
+/home/bespecke/projects/lab/ruumble/plugin/build/_deps/nlohmann_json-build/CMakeFiles/rebuild_cache.dir
+/home/bespecke/projects/lab/ruumble/plugin/build/_deps/ixwebsocket-build/CMakeFiles/ixwebsocket.dir
+/home/bespecke/projects/lab/ruumble/plugin/build/_deps/ixwebsocket-build/CMakeFiles/edit_cache.dir
+/home/bespecke/projects/lab/ruumble/plugin/build/_deps/ixwebsocket-build/CMakeFiles/rebuild_cache.dir

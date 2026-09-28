@@ -115,6 +115,8 @@ mumble_error_t mumble_init(mumble_plugin_id_t id) {
 	transport->onMessage([](std::string msg) { core->onTransportMessage(std::move(msg)); });
 	core->start();
 	transport->start();
+	// Wird das Plugin bei bestehender Verbindung aktiviert, kommt kein onServerSynchronized mehr.
+	if (realApi->connected()) core->onSynchronized();
 	return MUMBLE_STATUS_OK;
 }
 
