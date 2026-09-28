@@ -495,6 +495,12 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 
 **Fertig, wenn:** Alle vier Stufen im Mock und im Live-Test grün sind und die Pinnwand auf dem Homeserver läuft.
 
+**✔ Erledigt am 28.09.2026** (Branch `etagen-layout`, Ruumble 0.6.0, Plugin 0.3.0):
+- Protokoll: `notify{text}` vom Dienst an das Plugin (höchstens 300 Zeichen). Das Plugin schreibt den Text mit `log` ins Mumble-Protokoll, erst nach `welcome`. Mumble maskiert HTML und setzt „Ruumble:“ davor, Links sind dort also nicht möglich.
+- Dienst: `notifyRoom` (`bridge/src/board/notify.ts`) schickt beim Anheften „<Name> hat einen Text / Code / ein Bild / eine Datei an die Pinnwand geheftet.“ an die Plugins der übrigen Anwesenden, nicht an den Autor.
+- Live-Test mit zwei echten Clients: Anna heftet Code an, Ben sieht ihn ohne Neuladen und hat den Hinweis im Mumble-Protokoll, Anna nicht. Ben lädt ein echtes PNG hoch (XHR, Bytes-Prüfung), Anna bekommt den Hinweis. Nach dem Verlassen des Raums liefern Löschen und Bearbeiten `403`. Das Plugin spiegelt sein Protokoll dafür mit `RUUMBLE_LOG_STDERR=1` auf stderr (nur im Test-Client gesetzt).
+- Betrieb: Ablage, Grenzen, Füllstand und Sicherung in `deploy/homeserver/README.md`.
+
 ---
 
 ## Risiken

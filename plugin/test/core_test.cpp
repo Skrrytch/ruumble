@@ -6,6 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <mutex>
@@ -317,6 +318,24 @@ TEST_CASE("Abstand zwischen Statusänderungen, keine Änderung ohne Bedarf") {
 	REQUIRE(f.api.changes.size() == 2); // m2 änderte nichts
 	CHECK(f.api.changes[1].second - f.api.changes[0].second >= 40ms);
 	CHECK_FALSE(f.transport.of("selfState").empty());
+}
+
+TEST_CASE("notify: Hinweis ins Mumble-Protokoll, erst nach welcome") {
+	Fixture f;
+	f.core->onSynchronized();
+	REQUIRE(eventually([&] { return f.transport.connectCount() == 1; }));
+	f.core->onTransportOpen();
+	f.core->onTransportMessage(R"({"v":1,"type":"notify","text":"zu früh"})");
+	f.core->onTransportMessage(R"({"v":1,"type":"welcome"})");
+	f.core->onTransportMessage(R"({"v":1,"type":"notify","text":"Ben hat Code an die Pinnwand geheftet."})");
+	f.core->onTransportMessage(R"({"v":1,"type":"notify","text":""})");
+	REQUIRE(eventually([&] {
+		std::lock_guard< std::mutex > l(f.api.m);
+		return std::find(f.api.logs.begin(), f.api.logs.end(), "Ben hat Code an die Pinnwand geheftet.") != f.api.logs.end();
+	}));
+	std::lock_guard< std::mutex > l(f.api.m);
+	CHECK(std::find(f.api.logs.begin(), f.api.logs.end(), "zu früh") == f.api.logs.end());
+	CHECK(std::count_if(f.api.logs.begin(), f.api.logs.end(), [](const std::string &s) { return s.empty(); }) == 0);
 }
 
 TEST_CASE("talking nur nach welcome, als Text") {

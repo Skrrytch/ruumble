@@ -3,8 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
-import type { BridgeToPlugin, BridgeToUi } from "@ruumble/protocol";
+import type { BridgeToPlugin, BridgeToUi, PostKind } from "@ruumble/protocol";
 import { imageSize, safeFileName } from "../src/board/media.ts";
+import { notifyRoom, notifyText } from "../src/board/notify.ts";
 import { boardRoutes } from "../src/board/routes.ts";
 import { BoardStore } from "../src/board/store.ts";
 import { Hub } from "../src/hub.ts";
@@ -128,8 +129,9 @@ describe("REST /api/board", () => {
     const hub = new Hub({ source, pairing: new Pairing(null), publicUrl: "http://r", addressCheck: "off", preview: false });
     const poller = new Poller(source, { onChange: (s) => hub.setState(s) });
     await poller.poll();
-    for (const [session, hash] of [[7, A], [8, B]] as const) {
-      await hub.pluginConnected(recorder<BridgeToPlugin>().conn, "x").onMessage(JSON.stringify({ v: 1, type: "hello", session, certHash: hash, pluginVersion: "0", paired: true }));
+    const plugins = { anna: recorder<BridgeToPlugin>(), ben: recorder<BridgeToPlugin>() };
+    for (const [session, hash, rec] of [[7, A, plugins.anna], [8, B, plugins.ben]] as const) {
+      await hub.pluginConnected(rec.conn, "x").onMessage(JSON.stringify({ v: 1, type: "hello", session, certHash: hash, pluginVersion: "0", paired: true }));
     }
     const notified: string[] = [];
     const app = Fastify();
@@ -140,7 +142,7 @@ describe("REST /api/board", () => {
       writesPerMinute: 5,
     });
     const as = (cookie: string) => ({ cookie });
-    return { app, store, hub, source, poller, notified, as };
+    return { app, store, hub, source, poller, notified, as, plugins };
   }
 
   it("ohne Kopplung 401, Plugin nicht verbunden 401, im Flur 404, im Raum 200", async () => {
@@ -219,6 +221,22 @@ describe("REST /api/board", () => {
     const json = await app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream", "x-file-type": "application/json", "x-file-name": "daten.json" }, payload: Buffer.from('{"a":1}') });
     expect(json.statusCode).toBe(201);
     expect(json.json()).toMatchObject({ mime: "application/json", size: 7, name: "daten.json", image: false });
+  });
+
+  it("Hinweis im Mumble-Protokoll: kurz, mit Typ, an die anderen Anwesenden, nicht an den Autor", async () => {
+    const { hub, plugins, source, poller } = await setup();
+    expect(notifyText("Ben", "code")).toBe("Ben hat Code an die Pinnwand geheftet.");
+    expect(["text", "image", "file"].map((k) => notifyText("Anna", k as PostKind))).toEqual([
+      "Anna hat einen Text an die Pinnwand geheftet.",
+      "Anna hat ein Bild an die Pinnwand geheftet.",
+      "Anna hat eine Datei an die Pinnwand geheftet.",
+    ]);
+    expect(notifyRoom(hub, { channelId: 2, kind: "image" }, { name: "Anna", certHash: A })).toBe(1);
+    expect(plugins.ben.last("notify")).toEqual({ v: 1, type: "notify", text: "Anna hat ein Bild an die Pinnwand geheftet." });
+    expect(plugins.anna.last("notify")).toBeUndefined();
+    source.users[1]!.channel = 1; // Ben geht in den Flur: kein Hinweis mehr
+    await poller.poll();
+    expect(notifyRoom(hub, { channelId: 2, kind: "text" }, { name: "Anna", certHash: A })).toBe(0);
   });
 
   it("ungültige Eingaben, Rate-Limit", async () => {

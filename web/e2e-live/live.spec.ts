@@ -4,7 +4,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { loadBot, registerUser, serverVersion, solidPng, unregisterUser } from "./mumble-admin.ts";
 
 const root = new URL("../../", import.meta.url).pathname;
@@ -15,6 +15,12 @@ const runClient = (distro: string, name: string, bridgeUrl = "http://ruumble:808
 const setRootDescription = (long: boolean) =>
   execFileSync("node", ["src/setup.cjs"], { cwd: `${root}spikes/s1-ice`, env: { ...process.env, RUUMBLE_DESC_PAD: long ? "1" : "" } });
 const stopClient = (name: string) => execFileSync("docker", ["rm", "-f", `ruumble-client-${name}`]);
+
+/** Mumble-Protokoll eines Test-Clients (das Plugin spiegelt es mit RUUMBLE_LOG_STDERR auf stderr) */
+const mumbleLog = (name: string) => {
+  const file = `${root}deploy/local/out/${name}/mumble.log`;
+  return existsSync(file) ? readFileSync(file, "utf8") : "";
+};
 
 async function pairUrl(name: string): Promise<string> {
   const file = `${root}deploy/local/out/${name}/pair-url.txt`;
@@ -27,6 +33,8 @@ const frames: string[] = [];
 
 test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   let page: Page;
+  let ben: BrowserContext | null = null;
+  let benPage: Page;
 
   test.beforeAll(async ({ browser }) => {
     runClient(distro, "Anna");
@@ -43,6 +51,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   });
 
   test.afterAll(async () => {
+    await ben?.close();
     await unregisterUser("Robo").catch(() => {});
     stopClient("Anna");
     try { stopClient("Ben"); } catch { /* nicht gestartet */ }
@@ -69,6 +78,22 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await expect(page.getByRole("button", { name: "Flur ENTWICKLUNG – du bist hier" })).toBeVisible({ timeout: 5000 });
     await page.getByRole("button", { name: "Büro von Anna betreten" }).click();
     await expect(page.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Pinnwand: im eigenen Raum ist der Schalter da, anheften geht über den echten Dienst", async () => {
+    const toggle = page.getByRole("button", { name: "Pinnwand einblenden" });
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+    const board = page.getByRole("complementary", { name: "Pinnwand" });
+    await expect(board.getByRole("heading", { name: "Büro von Anna" })).toBeVisible();
+    await board.getByRole("textbox", { name: "Neuer Beitrag" }).fill("Live **Test**");
+    await board.getByRole("button", { name: "Senden" }).click();
+    await expect(board.getByRole("article").first().locator("strong", { hasText: "Test" })).toBeVisible();
+    page.once("dialog", (d) => d.accept());
+    await board.getByRole("article").first().getByRole("button", { name: "Öffnen · bearbeiten" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Löschen" }).click();
+    await expect(board.getByText("Noch keine Beiträge")).toBeVisible();
+    await page.getByRole("button", { name: "Pinnwand ausblenden" }).first().click();
   });
 
   test("Sprechanzeige kommt vom echten Client", async () => {
@@ -98,8 +123,8 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   test("zweiter Client im selben Raum: sichtbar und hörbar", async () => {
     runClient(distro, "Ben");
     const benUrl = await pairUrl("Ben");
-    const ben = await page.context().browser()!.newContext();
-    const benPage = await ben.newPage();
+    ben = await page.context().browser()!.newContext();
+    benPage = await ben.newPage();
     await benPage.goto(benUrl);
     await expect(benPage.getByRole("region", { name: "Eingang" }).getByRole("img", { name: /Ben \(du\)/ })).toBeVisible({ timeout: 10_000 });
     await benPage.getByRole("button", { name: "1. Obergeschoss: ENTWICKLUNG" }).click();
@@ -114,7 +139,40 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
       null,
       { polling: 50, timeout: 10_000 },
     );
-    await ben.close();
+  });
+
+  test("Pinnwand zu zweit: Beitrag erscheint beim anderen, Hinweis in seinem Mumble-Protokoll (AP11.4)", async () => {
+    await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
+    await benPage.getByRole("button", { name: "Pinnwand einblenden" }).click();
+    const annaBoard = page.getByRole("complementary", { name: "Pinnwand" });
+    const benBoard = benPage.getByRole("complementary", { name: "Pinnwand" });
+    await expect(benBoard.getByRole("heading", { name: "Büro von Anna" })).toBeVisible();
+    // Anna heftet Code an: Ben sieht ihn ohne Neuladen, sein Mumble meldet es, Annas nicht
+    await annaBoard.getByRole("button", { name: "Als Code anheften" }).click();
+    await annaBoard.getByRole("textbox", { name: "Neuer Beitrag" }).fill("const live = true;\nconsole.log(live);");
+    await annaBoard.getByRole("button", { name: "Senden" }).click();
+    await expect(benBoard.getByRole("article", { name: "Beitrag von Anna" }).locator(".hljs")).toBeVisible({ timeout: 5000 });
+    await expect.poll(() => mumbleLog("Ben"), { timeout: 5000 }).toContain("ruumble-log: Anna hat Code an die Pinnwand geheftet.");
+    expect(mumbleLog("Anna")).not.toContain("an die Pinnwand geheftet");
+    // Ben lädt ein echtes Bild hoch (XMLHttpRequest mit Fortschritt, Bytes-Prüfung im Dienst)
+    const [chooser] = await Promise.all([benPage.waitForEvent("filechooser"), benBoard.getByRole("button", { name: "Bild oder Datei anhängen" }).click()]);
+    await chooser.setFiles({ name: "punkt.png", mimeType: "image/png", buffer: Buffer.from(solidPng(40, [0, 120, 190])) });
+    await expect(benBoard.getByText(/· bereit$/)).toBeVisible({ timeout: 5000 });
+    await benBoard.getByRole("button", { name: "Senden" }).click();
+    const image = annaBoard.getByRole("article", { name: "Beitrag von Ben" }).locator("img");
+    await expect(image).toBeVisible({ timeout: 5000 });
+    expect(await image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(40);
+    await expect.poll(() => mumbleLog("Anna"), { timeout: 5000 }).toContain("ruumble-log: Ben hat ein Bild an die Pinnwand geheftet.");
+    // aufräumen und Rechte: Ben löscht sein Bild, verlässt den Raum und kommt dann nicht mehr an Annas Beitrag (403)
+    const posts = (await (await page.request.get("/api/board")).json()).posts as { id: string; authorName: string }[];
+    const annas = posts.find((p) => p.authorName === "Anna")!;
+    expect((await benPage.request.delete(`/api/board/posts/${posts.find((p) => p.authorName === "Ben")!.id}`)).status()).toBe(204);
+    await benPage.getByRole("button", { name: "Büro von Ben betreten" }).click();
+    await expect(benPage.getByRole("button", { name: "Büro von Ben – du bist hier" })).toBeVisible({ timeout: 5000 });
+    expect((await benPage.request.delete(`/api/board/posts/${annas.id}`)).status()).toBe(403);
+    expect((await benPage.request.patch(`/api/board/posts/${annas.id}`, { data: { text: "fremd" } })).status()).toBe(403);
+    expect((await page.request.delete(`/api/board/posts/${annas.id}`)).status()).toBe(204);
+    await page.getByRole("button", { name: "Pinnwand ausblenden" }).first().click();
   });
 
   test("Avatar aus Mumble erscheint (AP9)", async () => {
