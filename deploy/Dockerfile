@@ -4,6 +4,17 @@
 # Lizenz: Der Dienst nutzt Ice for JavaScript (GPL-2.0). Das Image ist als Gesamtwerk GPL-2.0 (E26);
 # der Ruumble-Quellcode selbst steht unter BSD-3-Clause.
 
+# Plugin: gebaut auf Debian 12 (glibc 2.36), damit es auch mit älteren Distributionen läuft
+FROM debian:bookworm-slim AS plugin
+RUN apt-get update && apt-get install -y --no-install-recommends cmake g++ make libssl-dev git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY third_party third_party
+COPY plugin plugin
+RUN cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release -DRUUMBLE_TESTS=OFF \
+    && cmake --build plugin/build -j"$(nproc)" \
+    && mkdir -p /out && cp plugin/build/*.mumble_plugin /out/
+
 FROM node:22-bookworm-slim AS build
 WORKDIR /src
 RUN corepack enable
@@ -26,12 +37,13 @@ LABEL org.opencontainers.image.title="Ruumble" \
       org.opencontainers.image.description="Mumble-Server als Bürogebäude" \
       org.opencontainers.image.source="https://github.com/Skrrytch/ruumble" \
       org.opencontainers.image.licenses="GPL-2.0-only AND BSD-3-Clause"
-ENV NODE_ENV=production WEB_DIST=/app/web DATA_DIR=/data PORT=8080
+ENV NODE_ENV=production WEB_DIST=/app/web DATA_DIR=/data PORT=8080 PLUGIN_BUNDLE_DIR=/app/plugin
 WORKDIR /app
 COPY --from=build /out/node_modules node_modules
 COPY --from=build /src/bridge/dist dist
 COPY --from=build /src/bridge/gen gen
 COPY --from=build /src/web/dist web
+COPY --from=plugin /out plugin
 RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME /data
