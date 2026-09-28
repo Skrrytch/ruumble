@@ -9,6 +9,10 @@ So wurde Ruumble am 28.09.2026 zum ersten Mal neben einem laufenden Mumble-Serve
 3. **Ice:** `MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'`. Port 6502 wird **nicht** veröffentlicht.
 4. **Secrets:** zwei verschiedene Zufallswerte in `secrets/ice_read` und `secrets/ice_write` (Rechte 600), eingebunden als Docker-Secrets `MUMBLE_CONFIG_ICESECRETREAD` bzw. `…WRITE`. Ruumble erhält **nur** das Read-Secret.
 
+5. **SuperUser-Passwort:** Es liegt als Docker-Secret `MUMBLE_SUPERUSER_PASSWORD` in `secrets/superuser_password` (Rechte 600). Das Image setzt es bei jedem Start. Nachlesen mit `cat ~/server/docker/services/mumble/secrets/superuser_password`.
+
+**Neuaufsetzen am 28.09.2026:** Die Datenbank enthielt schon vor der Umstellung nur den Root-Kanal und den SuperUser (Sicherung von 15:37, Protokoll zurück bis 02.09.). Die Datenbank wurde deshalb auf Wunsch neu angelegt (`docker compose down`, `docker volume rm mumble-data`, `docker compose up -d`). Dabei entstand ein neues Server-Zertifikat, Clients fragen daher einmal nach, ob sie ihm vertrauen. Alle Sicherungen und das alte anonyme Volume sind erhalten.
+
 Vorlage: [`mumble.docker-compose.yml`](mumble.docker-compose.yml)
 
 ## Ruumble

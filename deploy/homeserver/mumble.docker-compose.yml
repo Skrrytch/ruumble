@@ -17,6 +17,8 @@ services:
               target: MUMBLE_CONFIG_ICESECRETREAD
             - source: ice_write
               target: MUMBLE_CONFIG_ICESECRETWRITE
+            - source: superuser_password
+              target: MUMBLE_SUPERUSER_PASSWORD
         volumes:
             - mumble-data:/data
         networks:
@@ -33,6 +35,8 @@ secrets:
         file: ./secrets/ice_read
     ice_write:
         file: ./secrets/ice_write
+    superuser_password:
+        file: ./secrets/superuser_password
 
 volumes:
     mumble-data:
