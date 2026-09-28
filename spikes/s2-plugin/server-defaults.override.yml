@@ -1,6 +1,0 @@
-# S2: Mumble-Standardwerte für das Nachrichtenlimit (statt der hohen Bot-Werte aus S1).
-services:
-  mumble:
-    environment:
-      MUMBLE_CONFIG_MESSAGEBURST: "5"
-      MUMBLE_CONFIG_MESSAGELIMIT: "1"
