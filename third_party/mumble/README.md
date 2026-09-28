@@ -1,22 +1,22 @@
-# Mumble-Schnittstellendateien
+# Mumble interface files
 
-Ruumble bindet Mumble **nur** über zwei öffentliche Schnittstellen an. Genau diese zwei Dateien werden unverändert aus einem festgelegten Mumble-Release übernommen:
+Ruumble connects to Mumble **only** through two public interfaces. Exactly these two files are taken unmodified from a fixed Mumble release:
 
-| Datei | Zweck | Verwendet von |
+| File | Purpose | Used by |
 |---|---|---|
-| `plugins/MumblePlugin.h` | Client-Plugin-API (C) | `plugin/` (Include-Pfad) |
-| `src/murmur/MumbleServer.ice` | Ice-Schnittstelle des Servers | `bridge/` (Stubs per `slice2js`) |
+| `plugins/MumblePlugin.h` | client plugin API (C) | `plugin/` (include path) |
+| `src/murmur/MumbleServer.ice` | the server's Ice interface | `bridge/` (stubs via `slice2js`) |
 
-- **Version:** siehe `VERSION` (Tag in [mumble-voip/mumble](https://github.com/mumble-voip/mumble))
-- **Prüfsummen:** `SHA256SUMS`
-- **Lizenz:** BSD-3-Clause, © The Mumble Developers, siehe `LICENSE`
+- **Version:** see `VERSION` (tag in [mumble-voip/mumble](https://github.com/mumble-voip/mumble))
+- **Checksums:** `SHA256SUMS`
+- **License:** BSD-3-Clause, © The Mumble Developers, see `LICENSE`
 
-Die Dateien werden **nie von Hand geändert**. Aktualisiert werden sie nur mit:
+The files are **never edited by hand**. They are updated only with:
 
 ```sh
-scripts/update-mumble-interfaces.sh v1.6.870   # gewünschtes Release-Tag
+scripts/update-mumble-interfaces.sh v1.6.870   # desired release tag
 ```
 
-Das Skript lädt beide Dateien für das angegebene Tag, schreibt `VERSION` und `SHA256SUMS` neu und zeigt die Unterschiede an. Jede Änderung an einer Schnittstelle muss danach gegen `docs/analyse/mumble-schnittstellen.md` geprüft werden.
+The script downloads both files for the given tag, rewrites `VERSION` and `SHA256SUMS` and shows the differences. Every change to an interface must then be checked against [docs/mumble-interfaces.md](../../docs/mumble-interfaces.md).
 
-Die Server-Version im Docker-Setup (`deploy/`) muss zu `VERSION` passen.
+The server version in the Docker setup (`deploy/`) must match `VERSION`.

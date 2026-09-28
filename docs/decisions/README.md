@@ -1,17 +1,19 @@
-# Architekturentscheidungen (ADR)
+# Architecture decision records (ADR)
 
-Format: MADR, kurz. Status: **angenommen** = vom Auftraggeber entschieden, **vorgeschlagen** = von Claude entschieden und von ihm begründet, gilt, solange niemand widerspricht.
+Format: short MADR. Status: **accepted** = decided by the project owner. **proposed** = decided and justified by Claude; it applies as long as nobody objects.
 
-| Nr. | Titel | Status |
+| No. | Title | Status |
 |---|---|---|
-| [0001](0001-anbindung-und-topologie.md) | Anbindung und Topologie: Plugin und Dienst als Drehscheibe | angenommen |
-| [0002](0002-ice-nur-lesend-per-polling.md) | Ice nur lesend per Polling | vorgeschlagen |
-| [0003](0003-befehle-und-rueckmeldung.md) | Befehle und Rückmeldung | vorgeschlagen |
-| [0004](0004-identitaet-und-kopplung.md) | Identität, Kopplung und Zugriff | angenommen |
-| [0005](0005-sprechanzeige-nur-lokal.md) | Sprechanzeige nur für Gehörtes | angenommen |
-| [0006](0006-tech-stack.md) | Tech-Stack | angenommen (Svelte, Node) / vorgeschlagen (Rest) |
-| [0007](0007-protokoll-und-ableitung.md) | Protokoll und Ort der Ableitung | vorgeschlagen |
-| [0008](0008-betrieb.md) | Betrieb | angenommen (Docker) / vorgeschlagen (Rest) |
-| [0009](0009-eigenstaendiges-repository.md) | Eigenständiges Repository statt Mumble-Fork | angenommen |
-| [0010](0010-adresse-aus-root-beschreibung.md) | Adresse des Dienstes aus der Root-Beschreibung | angenommen |
-| [0011](0011-eigener-speicher-pinnwand.md) | Eigener Speicher für die Pinnwand | angenommen |
+| [0001](0001-connection-and-topology.md) | Connection and topology: plugin and service as the hub | accepted |
+| [0002](0002-read-only-ice-polling.md) | Read-only Ice access by polling | proposed |
+| [0003](0003-commands-and-feedback.md) | Commands and feedback | proposed |
+| [0004](0004-identity-and-pairing.md) | Identity, pairing and access | accepted |
+| [0005](0005-talking-indicator-local-only.md) | Talking indicator only for what you can hear | accepted |
+| [0006](0006-tech-stack.md) | Tech stack | accepted (Svelte, Node) / proposed (rest) |
+| [0007](0007-protocol-and-derivation.md) | Protocol and where the building is derived | proposed |
+| [0008](0008-operations.md) | Operations | accepted (Docker) / proposed (rest) |
+| [0009](0009-standalone-repository.md) | Standalone repository instead of a Mumble fork | accepted |
+| [0010](0010-address-from-root-description.md) | Service address from the root channel description | accepted |
+| [0011](0011-own-storage-for-the-board.md) | Own storage for the board | accepted |
+
+ADRs record a decision as it was made. Where the code has moved on since, the ADR has a short "Current state" note instead of a silent rewrite.
