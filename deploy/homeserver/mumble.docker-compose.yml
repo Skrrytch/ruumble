@@ -26,7 +26,7 @@ services:
             - mumble-data:/data
         networks:
             - mumble-network
-            - homeserver-network
+            - homeserver-network # optional: vorhandenes Netz eines Reverse-Proxys
         ports:
             - 64738:64738
             - 64738:64738/udp
@@ -49,5 +49,5 @@ networks:
     mumble-network:
         name: mumble-network
         driver: bridge
-    homeserver-network:
+    homeserver-network: # optional, siehe oben
         external: true

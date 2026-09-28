@@ -52,6 +52,8 @@ describe("Anhänge (AP11.3)", () => {
     expect(fileKind("audio/ogg")).toBe("audio");
     expect(fileKind("video/mp4")).toBe("video");
     expect(fileKind("application/octet-stream", "setup.exe")).toBe("other");
+    expect(fileKind("image/png", "x.png")).toBe("image");
+    expect(fileKind("application/octet-stream")).toBe("other");
   });
 
   it("eingefügte Bilder bekommen einen sprechenden Namen", () => {
@@ -59,5 +61,6 @@ describe("Anhänge (AP11.3)", () => {
     expect(pastedName({ name: "image.png", type: "image/png" }, at)).toBe("bild-2026-09-28-0905.png");
     expect(pastedName({ name: "", type: "image/jpeg" }, at)).toBe("bild-2026-09-28-0905.jpg");
     expect(pastedName({ name: "urlaub.jpg", type: "image/jpeg" }, at)).toBe("urlaub.jpg");
+    expect(pastedName({ name: "blob", type: "" }, at)).toBe("bild-2026-09-28-0905.png");
   });
 });

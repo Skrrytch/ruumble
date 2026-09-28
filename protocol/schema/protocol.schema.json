@@ -201,8 +201,7 @@
                 "unknown-session",
                 "hash-mismatch",
                 "address-mismatch",
-                "no-certificate",
-                "unsupported-version"
+                "no-certificate"
               ]
             }
           },

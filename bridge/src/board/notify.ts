@@ -2,7 +2,8 @@
  * Hinweis im Mumble-Protokoll beim Anheften (AP11.4): kurz und mit dem Typ des Beitrags.
  * Mumble setzt „Ruumble:“ davor und maskiert HTML selbst, der Text bleibt deshalb reiner Text.
  */
-import { PROTOCOL_VERSION, type BridgeToPlugin, type PostKind } from "@ruumble/protocol";
+import { PROTOCOL_VERSION, type PostKind } from "@ruumble/protocol";
+import type { Hub } from "../hub.ts";
 
 const WHAT: Record<PostKind, string> = { text: "einen Text", code: "Code", image: "ein Bild", file: "eine Datei" };
 
@@ -12,7 +13,7 @@ export function notifyText(authorName: string, kind: PostKind): string {
 
 /** An die Plugins der übrigen Anwesenden im Raum schicken (ohne den Autor) */
 export function notifyRoom(
-  hub: { pluginsIn: (channelId: number, except?: string) => { send: (msg: BridgeToPlugin) => void }[] },
+  hub: Pick<Hub, "pluginsIn">,
   post: { channelId: number; kind: PostKind },
   author: { name: string; certHash: string },
 ): number {

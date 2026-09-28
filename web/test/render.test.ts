@@ -59,3 +59,31 @@ describe("Darstellung: Markdown und Code ohne XSS (ADR-0011)", () => {
     expect(highlight(code).language).toBe(lang);
   });
 });
+
+describe("Spracherkennung", () => {
+  it.each([
+    ['{ "a": 1, "b": [2, 3] }', "json"],
+    ['<div class="x">\n  <p>Hallo</p>\n</div>', "xml"],
+    ["def greet(name):\n    return name", "python"],
+    ["SELECT id, name\nFROM users\nWHERE id = 1", "sql"],
+    ["FROM node:22\nRUN npm ci\nCMD [\"node\", \"main.js\"]", "dockerfile"],
+    ["$ ls -la\n$ cd /tmp", "bash"],
+    ["diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1 +1 @@", "diff"],
+    ["interface User { name: string }\nexport const u: User = { name: 'a' };", "typescript"],
+    ["const add = (a, b) => a + b;\nconsole.log(add(1, 2));", "javascript"],
+    ["package main\n\nfunc main() {\n}", "go"],
+    ["fn main() {\n    let mut x = 1;\n    println!(\"{}\", x);\n}", "rust"],
+    ["public class App {\n  private int x;\n}", "java"],
+    ["services:\n  web:\n    image: nginx\n    ports:\n      - 80:80", "yaml"],
+    [".card > .title {\n  color: red;\n  margin: 0;\n}", "css"],
+  ])("%s → %s", (code, language) => {
+    expect(highlight(code).language).toBe(language);
+  });
+
+  it("ungültiges JSON ist kein JSON, gewählte Sprache hat Vorrang, Unbekanntes bleibt maskierter Text", () => {
+    expect(highlight("{ kaputt").language).not.toBe("json");
+    expect(highlight("x = 1", "python").language).toBe("python");
+    expect(highlight("x = 1", "gibt-es-nicht").language).not.toBe("gibt-es-nicht");
+    expect(highlight("Hallo <Welt>")).toEqual({ html: "Hallo &lt;Welt&gt;", language: "" });
+  });
+});

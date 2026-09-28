@@ -9,7 +9,7 @@ test.describe("Pinnwand (AP11.2)", () => {
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
     await toggle.click();
     const board = page.getByRole("complementary", { name: "Pinnwand" });
-    await expect(board.getByRole("heading", { name: "Büro von Anna" })).toBeVisible();
+    await expect(board.getByRole("heading", { name: "Pinnwand" })).toBeVisible();
     await expect(board.getByText("4 Beiträge")).toBeVisible();
     await page.getByRole("button", { name: "Pinnwand ausblenden" }).first().click();
     await expect(board).toHaveCount(0);
@@ -196,4 +196,14 @@ test.describe("Pinnwand: Bilder und Dateien (AP11.3)", () => {
     await dialog.getByRole("button", { name: "Speichern" }).click();
     await expect(dialog.getByText("Neue Skizze")).toBeVisible();
   });
+});
+
+test("Avatarbild im Benutzerbereich und auf eigenen Pinnwand-Karten (sonst Initialen)", async ({ page }) => {
+  await page.goto("/?fixture=sonderfaelle&talking=0");
+  await expect(page.locator(".av-me img")).toBeVisible();
+  await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
+  const board = page.getByRole("complementary", { name: "Pinnwand" });
+  await expect(board.getByRole("heading", { name: "Pinnwand" })).toBeVisible();
+  await expect(board.getByRole("article", { name: "Beitrag von Anna" }).locator(".av img")).toBeVisible();
+  await expect(board.getByRole("article", { name: "Beitrag von Clara" }).locator(".av img")).toHaveCount(0); // Clara ohne Bild
 });

@@ -373,10 +373,10 @@ TEST_CASE("stop beendet den Worker zügig") {
 }
 
 TEST_CASE("findBridgeUrl: Zeile, die auf „ruumble: <adresse>“ endet") {
-	// Beispiel des Auftraggebers (Klartext mit Begleittext)
-	CHECK(*findBridgeUrl("HIer ein paart wichtige Konfigurationen für Ruumble:\n \nruumble: http://192.168.1.179:8080\n\nDanke. Bert.")
-		  == "http://192.168.1.179:8080");
-	CHECK(*findBridgeUrl("- ruumble: http://192.168.1.179:8080") == "http://192.168.1.179:8080");
+	// Klartext mit Begleittext, wie ihn Admins schreiben (auch mit Tippfehlern)
+	CHECK(*findBridgeUrl("HIer ein paart wichtige Konfigurationen für Ruumble:\n \nruumble: http://192.0.2.10:8080\n\nDanke.")
+		  == "http://192.0.2.10:8080");
+	CHECK(*findBridgeUrl("- ruumble: http://192.0.2.10:8080") == "http://192.0.2.10:8080");
 	CHECK(*findBridgeUrl("Etwas davor ruumble: https://ruumble.example/  ") == "https://ruumble.example");
 	CHECK(*findBridgeUrl("RUUMBLE: 10.0.0.5:8080") == "http://10.0.0.5:8080");
 	// so speichert Mumble Beschreibungen: HTML

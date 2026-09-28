@@ -24,6 +24,7 @@
 
   /* Typo */
   --font-sans: "Inter Variable", "Inter", Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
   /* Maße */
   --wall: 4px;

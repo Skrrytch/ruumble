@@ -57,14 +57,15 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     return false;
   }
 
-  async function toView(p: StoredPost, viewer: Viewer): Promise<Post> {
+  /** `isAdmin`: Mumble-Schreibrecht im Raum des Beitrags (je Anfrage einmal abgefragt) */
+  function toView(p: StoredPost, viewer: Viewer, isAdmin: boolean): Post {
     const mine = p.authorHash === viewer.certHash;
     return {
       id: p.id, channelId: p.channelId, kind: p.kind, text: p.text,
       ...(p.language ? { language: p.language } : {}),
       ...(p.attachment ? { attachment: p.attachment } : {}),
       authorName: p.authorName, mine,
-      canDelete: mine || (await o.source.canWrite(viewer.session, p.channelId)),
+      canDelete: mine || isAdmin,
       createdAt: p.createdAt, updatedAt: p.updatedAt,
       ...(p.updatedByName ? { updatedByName: p.updatedByName } : {}),
     };
@@ -74,7 +75,8 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     const r = room(req.headers.cookie);
     if ("error" in r) return fail(reply, r.error);
     const { viewer } = r;
-    const posts = await Promise.all(o.store.list(viewer.channelId).map((p) => toView(p, viewer)));
+    const isAdmin = await o.source.canWrite(viewer.session, viewer.channelId);
+    const posts = o.store.list(viewer.channelId).map((p) => toView(p, viewer, isAdmin));
     const view: BoardView = { channelId: viewer.channelId, channelName: o.hub.channelName(viewer.channelId), posts };
     return view;
   });
@@ -104,7 +106,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     });
     o.hub.boardChanged(viewer.channelId);
     o.onNewPost?.(post, viewer);
-    return reply.code(201).send(await toView(post, viewer));
+    return reply.code(201).send(toView(post, viewer, await o.source.canWrite(viewer.session, viewer.channelId)));
   });
 
   // Rohdaten-Upload (Bilder und Dateien), eigene Grenze statt der globalen 1 MB
@@ -137,7 +139,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     const updated = o.store.update(post.id, { text: body.data.text, ...(body.data.language ? { language: body.data.language } : {}) }, r.viewer.name)!;
     o.hub.boardChanged(post.channelId);
-    return toView(updated, r.viewer);
+    return toView(updated, r.viewer, await o.source.canWrite(r.viewer.session, post.channelId));
   });
 
   app.delete<{ Params: { id: string } }>("/api/board/posts/:id", async (req, reply) => {

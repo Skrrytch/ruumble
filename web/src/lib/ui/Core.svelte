@@ -27,6 +27,8 @@
   });
   const lockHint = { "too-deep": "Kanalstruktur zu tief", "too-many-rooms": "Zu viele Räume" };
   const muted = $derived(me ? me.selfMute || me.selfDeaf : false);
+  const myAvatar = $derived(me ? app.avatarOf(me.name) : null);
+  let avatarBroken = $state<string | null>(null); // URL, die nicht geladen werden konnte → Initialen
   const deaf = $derived(me?.selfDeaf ?? false);
 </script>
 
@@ -82,7 +84,9 @@
   <div class="usermenu">
     {#if me}
       <div class="me-row">
-        <span class="av-me" aria-hidden="true">{initials(me.name)}</span>
+        <span class="av-me" aria-hidden="true">
+          {#if myAvatar && avatarBroken !== myAvatar}<img src={myAvatar} alt="" onerror={() => (avatarBroken = myAvatar)} />{:else}{initials(me.name)}{/if}
+        </span>
         <span><span class="n">{me.name}</span><span class="l">{myPlace}</span></span>
       </div>
     {/if}
@@ -152,7 +156,9 @@
   .av-me {
     width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: var(--color-navy); color: var(--color-white);
     box-shadow: 0 0 0 3px var(--color-accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;
+    overflow: hidden;
   }
+  .av-me img { width: 100%; height: 100%; object-fit: cover; }
   .me-row .n { font-size: 15px; font-weight: 700; display: block; }
   .me-row .l { font-size: 13px; color: var(--color-blue-700); display: block; }
   .tools { display: flex; gap: 8px; }

@@ -1,7 +1,14 @@
 /** Bilder der Pinnwand: Typ an den ersten Bytes erkennen, Maße aus dem Dateikopf lesen (ohne Bibliothek). */
-import { detectImage } from "../avatars.ts";
 
-export { detectImage };
+/** Bildformat an den ersten Bytes erkennen. Das alte Mumble-Rohformat (zlib, 600×60 BGRA) gilt als „kein Bild“. */
+export function detectImage(bytes: Uint8Array): string | null {
+  const b = (i: number) => bytes[i] ?? -1;
+  if (b(0) === 0x89 && b(1) === 0x50 && b(2) === 0x4e && b(3) === 0x47) return "image/png";
+  if (b(0) === 0xff && b(1) === 0xd8 && b(2) === 0xff) return "image/jpeg";
+  if (b(0) === 0x47 && b(1) === 0x49 && b(2) === 0x46 && b(3) === 0x38) return "image/gif";
+  if (b(0) === 0x52 && b(1) === 0x49 && b(2) === 0x46 && b(3) === 0x46 && b(8) === 0x57 && b(9) === 0x45 && b(10) === 0x42 && b(11) === 0x50) return "image/webp";
+  return null;
+}
 
 /** Breite und Höhe für PNG, GIF, JPEG und WEBP; `null`, wenn nicht lesbar */
 export function imageSize(b: Uint8Array, mime: string): { width: number; height: number } | null {

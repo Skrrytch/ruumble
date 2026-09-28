@@ -170,8 +170,8 @@ void Core::handleMessage(const std::string &text) {
 		api_.log("vom Dienst abgelehnt (" + msg.value("reason", std::string("?")) + ")");
 	} else if (type == "notify" && helloAcked_) {
 		// Hinweis ins Mumble-Protokoll (Pinnwand, AP11.4); Mumble maskiert HTML und setzt „Ruumble:“ davor
-		const std::string text = msg.value("text", "");
-		if (!text.empty()) api_.log(text.substr(0, 300));
+		const std::string note = msg.value("text", "");
+		if (!note.empty()) api_.log(note.substr(0, 300));
 	} else if (type == "command" && helloAcked_) {
 		const json body = msg.value("body", json::object());
 		Command c;
@@ -263,23 +263,23 @@ void Core::step(Clock::time_point now) {
 		if (changes && lastChange_ && now < *lastChange_ + settings_.spacing) return; // Abstand halten
 		Command c = next;
 		commands_.pop_front();
-		if (!execute(c, now)) continue;
+		execute(c, now);
 	}
 }
 
-bool Core::execute(const Command &c, Clock::time_point now) {
+void Core::execute(const Command &c, Clock::time_point now) {
 	if (!session_ || !api_.connected()) {
 		reply(c.id, "offline");
-		return false;
+		return;
 	}
 	if (c.cmd == "join") {
 		if (c.channel == channel_) {
 			reply(c.id, "ok"); // Mumble würde nichts senden und nichts bestätigen (S2)
-			return false;
+			return;
 		}
 		active_ = ActiveJoin{ c, 1, now };
 		sendMove(*active_, now);
-		return true;
+		return;
 	}
 	const bool current = c.cmd == "mute" ? api_.isMuted() : api_.isDeafened();
 	if (current != c.on) {
@@ -287,12 +287,11 @@ bool Core::execute(const Command &c, Clock::time_point now) {
 		lastChange_     = now;
 		if (!sent) {
 			reply(c.id, "timeout");
-			return false;
+			return;
 		}
 	}
 	reply(c.id, "ok");
 	sendSelfState();
-	return false;
 }
 
 void Core::sendMove(ActiveJoin &join, Clock::time_point now) {

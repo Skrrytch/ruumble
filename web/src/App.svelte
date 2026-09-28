@@ -2,7 +2,7 @@
   import Unplug from "@lucide/svelte/icons/unplug";
   import Users from "@lucide/svelte/icons/users";
   import type { MockAdapter } from "./lib/adapter/mock.ts";
-  import { FEW_ROOMS } from "./lib/model/building.ts";
+  import { FEW_ROOMS, MAX_ROOMS } from "./lib/model/building.ts";
   import type { RuumbleState } from "./lib/state.svelte.ts";
   import Core from "./lib/ui/Core.svelte";
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
@@ -74,7 +74,7 @@
       {:else}
         <div class="vacancy" role="status">
           <strong>Leerstand</strong>
-          <span>Keine Etage dieses Gebäudes lässt sich darstellen: Jede Etage ist tiefer als zwei Ebenen oder hat mehr als 8 Räume. Nutze die klassische Ansicht in Mumble.</span>
+          <span>Keine Etage dieses Gebäudes lässt sich darstellen: Jede Etage ist tiefer als zwei Ebenen oder hat mehr als {MAX_ROOMS} Räume. Nutze die klassische Ansicht in Mumble.</span>
         </div>
       {/if}
       {#if app.boardOpen && !app.readonly}<BoardPanel {app} />{/if}

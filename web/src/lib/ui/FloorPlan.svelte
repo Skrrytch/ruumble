@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { countText, splitRows, type Floor } from "../model/building.ts";
+  import { MAX_ROOMS, countText, splitRows, type Floor } from "../model/building.ts";
   import SpaceButton from "./SpaceButton.svelte";
 
   let {
@@ -21,7 +21,7 @@
   } = $props();
 
   const rows = $derived(splitRows(floor.rooms));
-  const lockText = { "too-deep": "Die Kanalstruktur dieser Etage ist tiefer als zwei Ebenen.", "too-many-rooms": "Diese Etage hat mehr als 8 Räume." };
+  const lockText = { "too-deep": "Die Kanalstruktur dieser Etage ist tiefer als zwei Ebenen.", "too-many-rooms": `Diese Etage hat mehr als ${MAX_ROOMS} Räume.` };
 </script>
 
 <div class="floorplan">

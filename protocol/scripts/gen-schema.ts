@@ -1,5 +1,5 @@
 /**
- * Erzeugt schema/protocol.schema.json aus den zod-Schemas (für das C++-Plugin und Fremdwerkzeuge).
+ * Erzeugt schema/protocol.schema.json aus den zod-Schemas (Doku und Fremdwerkzeuge; das Plugin prüft selbst).
  * Mit --check wird nur geprüft, ob die Datei aktuell ist (CI).
  */
 import { readFileSync, writeFileSync } from "node:fs";
