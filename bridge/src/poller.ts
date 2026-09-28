@@ -12,11 +12,13 @@ export interface ServerState extends Basics {
   canEnter: Map<number, Record<string, boolean>>;
 }
 
+/** Abfragetakt: Grundtakt 1 s, Mithörer alle 3, Rechte alle 10, Serverinfo alle 60 Runden (ADR-0002) */
+const BASIC_MS = 1000;
+const LISTENER_EVERY = 3;
+const PERMISSION_EVERY = 10;
+const INFO_EVERY = 60;
+
 export interface PollerOptions {
-  basicMs?: number;
-  listenerEvery?: number;
-  permissionEvery?: number;
-  infoEvery?: number;
   onChange: (state: ServerState) => void;
   onError?: (error: unknown) => void;
   onRestart?: () => void;
@@ -26,7 +28,7 @@ export interface PollerOptions {
 
 export class Poller {
   private readonly source: MumbleSource;
-  private readonly opts: Required<Omit<PollerOptions, "onError" | "onRestart" | "onPolled">> & Pick<PollerOptions, "onError" | "onRestart" | "onPolled">;
+  private readonly opts: PollerOptions;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private tick = 0;
   private lastJson = "";
@@ -37,7 +39,7 @@ export class Poller {
 
   constructor(source: MumbleSource, opts: PollerOptions) {
     this.source = source;
-    this.opts = { basicMs: 1000, listenerEvery: 3, permissionEvery: 10, infoEvery: 60, ...opts };
+    this.opts = opts;
   }
 
   start(): void {
@@ -56,7 +58,7 @@ export class Poller {
     this.sessions = next;
   }
 
-  /** eine Runde abfragen (öffentlich für Tests) */
+  /** eine Runde abfragen (Takt aus `start()`, außerdem sofort auf Anfrage des Hubs und in Tests) */
   async poll(): Promise<void> {
     const basics = await this.source.basics();
     const prev = this.state;
@@ -69,11 +71,11 @@ export class Poller {
     if (structure !== this.lastStructure) this.permissionsDirty = true;
     this.lastStructure = structure;
 
-    const info = !prev || this.tick % this.opts.infoEvery === 0 ? await this.source.serverInfo() : prev.info;
-    const listeners = !prev || this.tick % this.opts.listenerEvery === 0 ? await this.source.listeners(channelIds) : prev.listeners;
+    const info = !prev || this.tick % INFO_EVERY === 0 ? await this.source.serverInfo() : prev.info;
+    const listeners = !prev || this.tick % LISTENER_EVERY === 0 ? await this.source.listeners(channelIds) : prev.listeners;
     let canEnter = prev?.canEnter ?? new Map<number, Record<string, boolean>>();
     const livingSessions = new Set(basics.users.map((u) => u.session));
-    if (this.permissionsDirty || this.tick % this.opts.permissionEvery === 0 || [...this.sessions].some((s) => livingSessions.has(s) && !canEnter.has(s))) {
+    if (this.permissionsDirty || this.tick % PERMISSION_EVERY === 0 || [...this.sessions].some((s) => livingSessions.has(s) && !canEnter.has(s))) {
       canEnter = new Map();
       for (const s of this.sessions) if (livingSessions.has(s)) canEnter.set(s, await this.source.canEnter(s, channelIds));
       this.permissionsDirty = false;
@@ -96,6 +98,6 @@ export class Poller {
     } catch (e) {
       this.opts.onError?.(e);
     }
-    this.timer = setTimeout(() => void this.loop(), Math.max(0, this.opts.basicMs - (Date.now() - started)));
+    this.timer = setTimeout(() => void this.loop(), Math.max(0, BASIC_MS - (Date.now() - started)));
   }
 }

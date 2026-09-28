@@ -33,14 +33,20 @@ export interface StoredPost {
 export interface StoreOptions {
   retentionDays?: number;
   quotaBytes?: number;
-  /** Beiträge gelöschter Kanäle bleiben so lange erhalten (für Admins) */
-  removedChannelGraceDays?: number;
   /** Anhänge ohne Beitrag (hochgeladen, nie angeheftet) werden danach gelöscht */
   orphanMinutes?: number;
   now?: () => number;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
+/** Beiträge gelöschter Kanäle bleiben so lange erhalten (ADR-0011) */
+const REMOVED_CHANNEL_GRACE_DAYS = 7;
+
+/** Ergebnis von `cleanup()`: Zahl gelöschter Beiträge und die betroffenen Räume */
+export interface CleanupResult {
+  removed: number;
+  channels: number[];
+}
 
 /** Schema-Migrationen, in dieser Reihenfolge, nie nachträglich ändern */
 const MIGRATIONS = [
@@ -75,12 +81,11 @@ export class BoardStore {
   private readonly dir: string;
   private readonly opts: Required<StoreOptions>;
 
-  /** `dir = ":memory:"`: nur im Speicher (Tests); Anhänge dann unter einem Temp-Verzeichnis */
-  constructor(dir: string, opts: StoreOptions = {}, fileDir?: string) {
-    this.opts = { retentionDays: 30, quotaBytes: 2048 * 1024 * 1024, removedChannelGraceDays: 7, orphanMinutes: 60, now: Date.now, ...opts };
-    this.dir = fileDir ?? join(dir, "board");
+  constructor(dir: string, opts: StoreOptions = {}) {
+    this.opts = { retentionDays: 30, quotaBytes: 2048 * 1024 * 1024, orphanMinutes: 60, now: Date.now, ...opts };
+    this.dir = join(dir, "board");
     mkdirSync(this.dir, { recursive: true });
-    this.db = new Database(dir === ":memory:" ? ":memory:" : join(dir, "board.sqlite"));
+    this.db = new Database(join(dir, "board.sqlite"));
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("foreign_keys = ON");
     this.migrate();
@@ -129,9 +134,19 @@ export class BoardStore {
   }
 
   delete(id: string): boolean {
-    const r = this.db.prepare("DELETE FROM posts WHERE id = ?").run(id);
-    if (r.changes) this.removeOrphans(0);
-    return r.changes > 0;
+    const post = this.db.prepare("SELECT attachment_id AS a FROM posts WHERE id = ?").get(id) as { a: string | null } | undefined;
+    if (!post) return false;
+    this.db.prepare("DELETE FROM posts WHERE id = ?").run(id);
+    // nur den eigenen Anhang entfernen: frische Uploads anderer warten noch auf ihr Anheften
+    if (post.a) this.removeIfUnreferenced(post.a);
+    return true;
+  }
+
+  /** Anhang löschen, wenn kein Beitrag mehr darauf verweist (gleiche Inhalte liegen nur einmal vor) */
+  private removeIfUnreferenced(attachmentId: string): void {
+    if (this.db.prepare("SELECT 1 FROM posts WHERE attachment_id = ? LIMIT 1").get(attachmentId)) return;
+    this.db.prepare("DELETE FROM attachments WHERE id = ?").run(attachmentId);
+    rmSync(this.filePath(attachmentId), { force: true });
   }
 
   /** Räume, in denen etwas hängt */
@@ -187,25 +202,29 @@ export class BoardStore {
     tx();
   }
 
-  /** Aufbewahrung, gelöschte Kanäle, verwaiste Anhänge, Kontingent. Liefert die Zahl gelöschter Beiträge. */
-  cleanup(): number {
+  /** Aufbewahrung, gelöschte Kanäle, verwaiste Anhänge, Kontingent */
+  cleanup(): CleanupResult {
     const now = this.opts.now();
-    let removed = 0;
-    removed += this.db.prepare("DELETE FROM posts WHERE created_at < ?").run(now - this.opts.retentionDays * DAY).changes;
-    removed += this.db
-      .prepare("DELETE FROM posts WHERE channel_id IN (SELECT channel_id FROM removed_channels WHERE removed_at < ?)")
-      .run(now - this.opts.removedChannelGraceDays * DAY).changes;
+    const channels = new Set<number>();
+    const removeWhere = (where: string, ...args: unknown[]) => {
+      const rows = this.db.prepare(`DELETE FROM posts WHERE ${where} RETURNING channel_id AS c`).all(...args) as { c: number }[];
+      for (const r of rows) channels.add(r.c);
+      return rows.length;
+    };
+    let removed = removeWhere("created_at < ?", now - this.opts.retentionDays * DAY);
+    removed += removeWhere("channel_id IN (SELECT channel_id FROM removed_channels WHERE removed_at < ?)", now - REMOVED_CHANNEL_GRACE_DAYS * DAY);
     this.db.prepare("DELETE FROM removed_channels WHERE channel_id NOT IN (SELECT DISTINCT channel_id FROM posts)").run();
     this.removeOrphans(this.opts.orphanMinutes * 60_000);
     // Kontingent: älteste Beiträge mit Anhang zuerst, bis es wieder passt (ADR-0011)
     while (this.usedBytes() > this.opts.quotaBytes) {
-      const oldest = this.db.prepare("SELECT id FROM posts WHERE attachment_id IS NOT NULL ORDER BY created_at ASC, rowid ASC LIMIT 1").get() as { id: string } | undefined;
+      const oldest = this.db.prepare("SELECT id, channel_id AS c, attachment_id AS a FROM posts WHERE attachment_id IS NOT NULL ORDER BY created_at ASC, rowid ASC LIMIT 1").get() as { id: string; c: number; a: string } | undefined;
       if (!oldest) break;
       this.db.prepare("DELETE FROM posts WHERE id = ?").run(oldest.id);
+      channels.add(oldest.c);
       removed++;
-      this.removeOrphans(0);
+      this.removeIfUnreferenced(oldest.a);
     }
-    return removed;
+    return { removed, channels: [...channels] };
   }
 
   /** Anhänge ohne Beitrag löschen, die älter als `minAgeMs` sind (frisch hochgeladene warten auf ihr Anheften) */
