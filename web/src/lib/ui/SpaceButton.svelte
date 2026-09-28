@@ -4,6 +4,7 @@
   import VolumeX from "@lucide/svelte/icons/volume-x";
   import { countText, type Room, type Space } from "../model/building.ts";
   import Avatar from "./Avatar.svelte";
+  import BoardNotes from "./board/BoardNotes.svelte";
 
   let {
     space,
@@ -15,6 +16,8 @@
     readonly = false,
     talking,
     onjoin,
+    boardOpen = false,
+    ontoggleboard,
   }: {
     space: Space | Room;
     variant: "room" | "corridor" | "open";
@@ -28,9 +31,15 @@
     readonly?: boolean;
     talking: Record<number, boolean>;
     onjoin: (channelId: number) => void;
+    /** Pinnwand-Seitenleiste offen (für den Schalter im eigenen Raum, ADR-0011) */
+    boardOpen?: boolean;
+    ontoggleboard?: () => void;
   } = $props();
 
+
   const room = $derived("grow" in space ? space : null);
+  // Pinnwand-Grafik nur im eigenen Raum, als Schalter für die Seitenleiste
+  const boardToggle = $derived(!!room && space.isSelf && !readonly && !!ontoggleboard);
   const disabled = $derived((space.locked && !space.isSelf) || readonly);
   const ariaLabel = $derived(
     `${variant === "corridor" ? `Flur ${space.name}` : space.name}` +
@@ -43,6 +52,7 @@
   }
 </script>
 
+<div class="wrap wrap-{variant}" style:flex-grow={room ? room.grow : undefined}>
 <button
   type="button"
   class="room {variant}"
@@ -51,7 +61,6 @@
   class:locked={disabled && !readonly}
   class:readonly
   class:pending
-  style:flex-grow={room ? room.grow : undefined}
   aria-label={ariaLabel}
   aria-disabled={disabled || space.isSelf || undefined}
   aria-busy={pending || undefined}
@@ -90,13 +99,41 @@
     </span>
   {/if}
 </button>
+{#if boardToggle}
+  <button
+    type="button"
+    class="notes toggle"
+    aria-label={boardOpen ? "Pinnwand ausblenden" : "Pinnwand einblenden"}
+    title={boardOpen ? "Pinnwand ausblenden" : "Pinnwand einblenden"}
+    aria-expanded={boardOpen}
+    aria-controls="board-panel"
+    onclick={ontoggleboard}
+  >
+    <BoardNotes />
+  </button>
+{/if}
+</div>
 
 <style>
+  /* Basis = horizontales Padding des Raums, damit die Breiten wie ohne Hülle verteilt werden */
+  .wrap { position: relative; display: flex; flex-basis: 44px; min-width: 0; }
+  .wrap-corridor { flex: none; }
+  .wrap-open { flex-grow: 1; }
   .room {
     position: relative; border: 0; margin: 0; padding: 20px 22px; background: var(--color-white);
     text-align: left; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
-    flex-basis: 0; min-width: 0; transition: background var(--dur) var(--ease-out);
+    flex: 1 1 auto; min-width: 0; width: 100%; transition: background var(--dur) var(--ease-out);
   }
+  /* Pinnwand-Grafik rechtsbündig oben (ADR-0011, Variante B) */
+  .notes { position: absolute; top: 12px; right: 12px; }
+  /* Schalter ohne Kasten: nur die Zettel, beim Überfahren heben sie sich leicht an */
+  .notes.toggle {
+    border: 0; background: transparent; padding: 4px; margin: -4px; border-radius: var(--radius-md);
+    min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: transform var(--dur) var(--ease-out);
+  }
+  .notes.toggle:hover { transform: translateY(-2px) rotate(-2deg) scale(1.06); }
+  .notes.toggle:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
   .room:hover { background: var(--color-surface); }
   .room:focus-visible { outline: 3px solid var(--color-sky); outline-offset: -7px; }
   .room.mine, .room.mine:hover { background: var(--color-blue-100); cursor: default; }
@@ -129,6 +166,6 @@
   .room.corridor:hover { background-color: var(--color-surface); }
   .room.corridor.mine { background-color: var(--color-blue-100); }
   .room.corridor .label { min-width: 120px; }
-  .room.open { flex-grow: 1; }
+  .room.open { flex-grow: 1; } /* innerhalb von .wrap-open */
   .room.open .title { font-size: 20px; }
 </style>

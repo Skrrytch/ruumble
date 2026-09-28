@@ -7,12 +7,55 @@
  * - Stumm/Taub folgen der Semantik der Mumble-Buttons (nur hier nachgebildet, die Oberfläche selbst tut das nicht).
  * - Sprechereignisse gibt es nur für Nutzer im eigenen Raum und nicht, wenn man selbst taub ist.
  */
-import type { CommandBody, CommandResult, Snapshot, TalkingState } from "@ruumble/protocol";
+import type { CommandBody, CommandResult, NewPost, Post, PostUpdate, Snapshot, TalkingState } from "@ruumble/protocol";
 import leerstand from "@ruumble/protocol/fixtures/leerstand.json";
 import musterhaus from "@ruumble/protocol/fixtures/musterhaus.json";
 import nichtGekoppelt from "@ruumble/protocol/fixtures/nicht-gekoppelt.json";
 import sonderfaelle from "@ruumble/protocol/fixtures/sonderfaelle.json";
-import type { AdapterEvents, MumbleAdapter, PluginStatus } from "./types.ts";
+import type { AdapterEvents, BoardApi, BoardResult, MumbleAdapter, PluginStatus } from "./types.ts";
+
+const MINUTE = 60_000;
+
+/** Beispielbeiträge für den Mock (Raum-ID → Beiträge, neueste zuerst) */
+function samplePosts(now: number): Map<number, Post[]> {
+  const post = (p: Partial<Post> & Pick<Post, "id" | "channelId" | "kind" | "text" | "authorName">): Post => ({
+    mine: false, canDelete: false, createdAt: now, updatedAt: now, ...p,
+  });
+  const code = [
+    "export function greet(name: string): string {",
+    "  if (!name) {",
+    '    throw new Error("Name fehlt");',
+    "  }",
+    "  return `Hallo ${name}!`;",
+    "}",
+    "",
+    'console.log(greet("Anna"));',
+    "// weitere Zeilen, damit gekürzt wird",
+    "const a = 1;",
+    "const b = 2;",
+  ].join("\n");
+  const notes = [
+    "## Sprint-Notizen",
+    "",
+    "- Pinnwand in Ruumble **fertig machen**",
+    "- Avatare prüfen",
+    "- Termin mit Clara: *Donnerstag 10 Uhr*",
+    "",
+    "Details stehen im [Wiki](https://example.org/wiki).",
+    "",
+    "1. Punkt eins",
+    "2. Punkt zwei",
+    "3. Punkt drei",
+    "4. Punkt vier",
+  ].join("\n");
+  return new Map([
+    [3, [
+      post({ id: "m1", channelId: 3, kind: "code", language: "typescript", authorName: "Ben", createdAt: now - 12 * MINUTE, updatedAt: now - 12 * MINUTE, text: code }),
+      post({ id: "m2", channelId: 3, kind: "text", authorName: "Anna", mine: true, canDelete: true, createdAt: now - 60 * MINUTE, updatedAt: now - 30 * MINUTE, updatedByName: "Ben", text: notes }),
+    ]],
+    [5, [post({ id: "m3", channelId: 5, kind: "text", authorName: "Clara", text: "Bin ab 14 Uhr im Kundentermin." })]],
+  ]);
+}
 
 export const FIXTURES = {
   musterhaus,
@@ -43,6 +86,44 @@ export class MockAdapter implements MumbleAdapter {
   private talkTimer: ReturnType<typeof setInterval> | null = null;
   private talkingNow = new Set<number>();
   private readonly opts: Required<MockOptions>;
+  private posts = samplePosts(Date.now());
+  private nextPostId = 1;
+  readonly board: BoardApi = {
+    load: async () => this.boardRoom((channelId) => ({ channelId, channelName: this.channelName(channelId), posts: this.posts.get(channelId) ?? [] })),
+    create: async (input: NewPost) =>
+      this.boardRoom((channelId) => {
+        const me = this.me()!;
+        const now = Date.now();
+        const post: Post = {
+          id: `mock-${this.nextPostId++}`, channelId, kind: input.kind, text: input.text,
+          ...(input.language ? { language: input.language } : {}),
+          authorName: me.name, mine: true, canDelete: true, createdAt: now, updatedAt: now,
+        };
+        this.posts.set(channelId, [post, ...(this.posts.get(channelId) ?? [])]);
+        this.boardChanged(channelId);
+        return post;
+      }),
+    update: async (id: string, change: PostUpdate) =>
+      this.boardRoom((channelId) => {
+        const list = this.posts.get(channelId) ?? [];
+        const i = list.findIndex((p) => p.id === id);
+        if (i < 0) return null;
+        const updated: Post = { ...list[i]!, text: change.text, ...(change.language ? { language: change.language } : {}), updatedAt: Date.now(), updatedByName: this.me()!.name };
+        list[i] = updated;
+        this.boardChanged(channelId);
+        return updated;
+      }),
+    remove: async (id: string) =>
+      this.boardRoom((channelId) => {
+        const list = this.posts.get(channelId) ?? [];
+        const post = list.find((p) => p.id === id);
+        if (!post) return null;
+        if (!post.canDelete) return "forbidden";
+        this.posts.set(channelId, list.filter((p) => p.id !== id));
+        this.boardChanged(channelId);
+        return true as const;
+      }),
+  };
 
   constructor(fixture: FixtureName | Snapshot = "musterhaus", opts: MockOptions = {}) {
     this.opts = { confirmMs: 250, rejectMs: 3000, talking: true, ...opts };
@@ -104,6 +185,7 @@ export class MockAdapter implements MumbleAdapter {
 
   setFixture(name: FixtureName): void {
     this.state = clone(FIXTURES[name]!);
+    this.posts = samplePosts(Date.now());
     this.unmuteOnUndeaf = false;
     this.setPlugin(this.state.self ? "connected" : "disconnected");
     this.emit();
@@ -146,6 +228,27 @@ export class MockAdapter implements MumbleAdapter {
   }
 
   // ---------------------------------------------------------------- intern
+
+  private channelName(id: number): string {
+    return this.state.channels.find((c) => c.id === id)?.name ?? "";
+  }
+
+  /** wie der Dienst: nur im eigenen Raum der 2. Ebene, nicht temporär (ADR-0011) */
+  private boardRoom<T>(fn: (channelId: number) => T | null | "forbidden"): BoardResult<T> {
+    const me = this.me();
+    if (this.plugin === "disconnected" || !me) return { ok: false, error: "not-paired" };
+    const c = this.state.channels.find((x) => x.id === me.channel);
+    const floor = c && c.parent !== null ? this.state.channels.find((x) => x.id === c.parent) : undefined;
+    if (!c || c.temporary || !floor || floor.parent !== 0) return { ok: false, error: "no-board-here" };
+    const value = fn(c.id);
+    if (value === "forbidden") return { ok: false, error: "forbidden" };
+    return value === null ? { ok: false, error: "not-found" } : { ok: true, value };
+  }
+
+  private boardChanged(channelId: number): void {
+    this.events?.board(channelId);
+    this.emit();
+  }
 
   private me() {
     return this.state.users.find((u) => u.session === this.state.self?.session);

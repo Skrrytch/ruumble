@@ -5,7 +5,8 @@ test.describe("Musterhaus", () => {
 
   test("Start auf der eigenen Etage, eigener Raum markiert", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "ENTWICKLUNG" })).toBeVisible();
-    await expect(page.getByText("1. Obergeschoss")).toBeVisible();
+    await expect(page.getByLabel("1 auf dieser Etage")).toBeVisible();
+    await expect(page.getByText("6 online", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible();
     await expect(page.getByRole("button", { name: "1. Obergeschoss: ENTWICKLUNG" })).toHaveAttribute("aria-current", "page");
   });

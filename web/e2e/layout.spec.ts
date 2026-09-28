@@ -37,6 +37,11 @@ test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ 
   await page.goto("/?fixture=musterhaus&talking=0");
   await expect(page.getByRole("heading", { name: "ENTWICKLUNG" })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
+  // Die Titelleiste ist kompakter als im Prototyp und der Grundriss füllt die Höhe: Fenster so weit
+  // verkleinern, dass der Grundriss so hoch ist wie im Prototyp, dann vergleichen
+  const first = await boxes(page, "data-channel");
+  const size = page.viewportSize()!;
+  await page.setViewportSize({ width: size.width, height: Math.round(size.height - (first.plan!.height - reference.plan!.height)) });
   const ours = await boxes(page, "data-channel");
   await page.screenshot({ path: info.outputPath("ruumble.png") });
 
@@ -46,8 +51,12 @@ test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ 
     if (!box) { deviations.push(`${key}: fehlt`); continue; }
     // Etagentasten sind bewusst kompakter als im Prototyp (Platz für mehr Etagen und den Eingang):
     // bei ihnen nur x und Breite, beim Aufzug-Panel alles außer der Höhe
+    // Raumbreiten folgen seit dem Etagen-Layout der Mumble-Reihenfolge (Raum 1 und 2 groß), nicht mehr dem Namen
+    // wie im Prototyp: bei Räumen deshalb nur Zeile (y) und Höhe
     const keys = key.startsWith("floor-")
       ? (["x", "width"] as const)
+      : key.startsWith("room-") && key !== "room-2"
+        ? (["y", "height"] as const)
       : key === "elevator"
         ? (["x", "y", "width"] as const)
         : (["x", "y", "width", "height"] as const);

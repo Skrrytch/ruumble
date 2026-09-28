@@ -99,6 +99,11 @@
       "type": "status",
       "plugin": "disconnected",
       "preview": true
+    },
+    {
+      "v": 1,
+      "type": "board",
+      "channelId": 3
     }
   ],
   "invalid": [

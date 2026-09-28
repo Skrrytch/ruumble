@@ -52,7 +52,7 @@ export interface Space {
 export interface Room extends Space {
   /** Name enthält „(stumm)“ */
   muted: boolean;
-  /** flex-grow 0,85–1,25, stabil je Name */
+  /** flex-grow nach Rang in der Mumble-Reihenfolge (roomGrow) */
   grow: number;
 }
 
@@ -117,18 +117,26 @@ export function visibleChannels(channels: readonly Channel[]): Channel[] {
   return channels.filter((c) => !hidden(c));
 }
 
-/** Deterministische Breitenvariation, damit Büros nicht wie ein starres Raster wirken (SPEC 2). */
-export function roomGrow(name: string): number {
-  let sum = 0;
-  for (const ch of name) sum += ch.codePointAt(0) ?? 0;
-  return Math.round((0.85 + (sum % 5) * 0.1) * 100) / 100;
+/**
+ * Breite nach Rang in der Mumble-Reihenfolge (SPEC 2): Raum 1 und 2 sind groß,
+ * danach werden die Räume schrittweise kleiner (1,1 bis 0,85).
+ */
+export function roomGrow(index: number): number {
+  if (index < 2) return 1.3;
+  return Math.round(Math.max(0.85, 1.1 - (index - 2) * 0.05) * 100) / 100;
 }
 
-/** Obere Reihe bekommt bei ungerader Anzahl einen Raum mehr (SPEC 2). */
+/**
+ * Oben stehen die großen Räume, deshalb bekommt die untere Reihe bei ungerader Anzahl
+ * einen Raum mehr (SPEC 2). Ein einzelner Raum steht oben.
+ */
 export function splitRows<T>(rooms: readonly T[]): { top: T[]; bottom: T[] } {
-  const half = Math.ceil(rooms.length / 2);
-  return { top: rooms.slice(0, half), bottom: rooms.slice(half) };
+  const top = Math.max(Math.min(rooms.length, 1), Math.floor(rooms.length / 2));
+  return { top: rooms.slice(0, top), bottom: rooms.slice(top) };
 }
+
+/** Etagen mit höchstens so vielen Räumen werden schmaler, wenn die Pinnwand offen ist */
+export const FEW_ROOMS = 2;
 
 const segmenter = new Intl.Segmenter("de", { granularity: "grapheme" });
 
@@ -222,7 +230,11 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
       index,
       ...floorLabels(index),
       corridor: space(f),
-      rooms: roomChannels.map((r) => ({ ...space(r), muted: isMutedRoomName(r.name), grow: roomGrow(r.name) })),
+      rooms: roomChannels.map((r, i) => ({
+        ...space(r),
+        muted: isMutedRoomName(r.name),
+        grow: roomGrow(i),
+      })),
       open: roomChannels.length === 0,
       lock,
       population: subtreePopulation(f.id),

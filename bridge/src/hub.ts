@@ -43,6 +43,14 @@ export interface HubOptions {
   avatarVersion?: (userId: number | null) => string | null;
 }
 
+/** Wer steht hinter einem Geräte-Token gerade wo? (Pinnwand, ADR-0011) */
+export interface Viewer {
+  certHash: string;
+  session: number;
+  name: string;
+  channelId: number;
+}
+
 interface PluginEntry {
   conn: Conn<BridgeToPlugin>;
   certHash: string;
@@ -80,6 +88,39 @@ export class Hub {
   /** Snapshots erneut senden, z. B. nach einem neuen Avatarbild */
   rebroadcast(): void {
     for (const ui of this.uis) this.sendSnapshot(ui);
+  }
+
+  /** gekoppelter Nutzer mit verbundenem Plugin und seinem aktuellen Kanal; sonst `null` */
+  whoIs(certHash: string | null): Viewer | null {
+    const plugin = certHash ? this.plugins.get(certHash) : undefined;
+    const user = plugin && this.state?.users.find((u) => u.session === plugin.session);
+    return plugin && user ? { certHash: plugin.certHash, session: plugin.session, name: user.name, channelId: user.channel } : null;
+  }
+
+  /** Ist dieser Kanal ein Raum mit Pinnwand? 2. Ebene, nicht temporär (ADR-0011) */
+  isBoardRoom(channelId: number): boolean {
+    const channels = this.state?.channels ?? [];
+    const c = channels.find((x) => x.id === channelId);
+    const floor = c && c.parent !== null ? channels.find((x) => x.id === c.parent) : undefined;
+    return !!c && !c.temporary && !!floor && floor.parent === 0;
+  }
+
+  channelName(channelId: number): string {
+    return this.state?.channels.find((c) => c.id === channelId)?.name ?? "";
+  }
+
+  /** Anwesende eines Raums über eine Änderung an der Pinnwand informieren (ohne Inhalt, die Oberfläche lädt neu) */
+  boardChanged(channelId: number): void {
+    for (const ui of this.uis) {
+      if (this.whoIs(ui.certHash)?.channelId === channelId) ui.conn.send({ v, type: "board", channelId });
+    }
+  }
+
+  /** Plugins der Anwesenden eines Raums (außer `except`) – für Hinweise im Mumble-Protokoll */
+  pluginsIn(channelId: number, except?: string): { send: (msg: BridgeToPlugin) => void }[] {
+    return [...this.plugins.values()]
+      .filter((p) => p.certHash !== except && this.state?.users.find((u) => u.session === p.session)?.channel === channelId)
+      .map((p) => p.conn);
   }
 
   /** Darf diese Oberfläche Bilder und Daten sehen? (gekoppelt oder Vorschau, ADR-0004) */

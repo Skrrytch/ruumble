@@ -706,6 +706,30 @@
             "plugin"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "board"
+            },
+            "channelId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "channelId"
+          ],
+          "additionalProperties": false
         }
       ]
     }
