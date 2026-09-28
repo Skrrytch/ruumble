@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { copyText } from "../../board/clipboard.ts";
   import X from "@lucide/svelte/icons/x";
   import type { Post } from "@ruumble/protocol";
   import { KIND_LABEL, relativeTime } from "../../board/model.ts";
@@ -51,8 +52,7 @@
   }
 
   async function copy() {
-    await navigator.clipboard?.writeText(post.text).catch(() => {});
-    copied = true;
+    copied = await copyText(post.text);
     setTimeout(() => (copied = false), 1500);
   }
 </script>
@@ -98,7 +98,7 @@
   .spacer { flex: 1; }
   textarea { width: 100%; min-height: 50vh; font: inherit; font-size: 14px; padding: 10px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); resize: vertical; }
   textarea.short { min-height: 96px; }
-  textarea.mono { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; }
+  textarea.mono { font-family: var(--font-mono); font-size: 13px; }
   .lang { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 8px; }
   .edited { margin: 0 16px 8px; font-size: 12px; color: var(--color-blue-700); }
   button { min-height: 36px; padding: 0 14px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); color: var(--color-navy); font-size: 14px; cursor: pointer; }

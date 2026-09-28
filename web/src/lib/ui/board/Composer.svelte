@@ -3,7 +3,7 @@
   import Paperclip from "@lucide/svelte/icons/paperclip";
   import X from "@lucide/svelte/icons/x";
   import SendHorizontal from "@lucide/svelte/icons/send-horizontal";
-  import { BOARD_LIMITS, type PostKind, type Uploaded } from "@ruumble/protocol";
+  import { BOARD_IMAGE_TYPES, BOARD_LIMITS, type PostKind, type Uploaded } from "@ruumble/protocol";
   import type { BoardErrorCode, BoardResult } from "../../adapter/types.ts";
   import { formatSize, looksLikeCode, pastedName } from "../../board/model.ts";
   import { CODE_LANGUAGES } from "../../board/render.ts";
@@ -30,7 +30,7 @@
   export async function attach(file: File): Promise<void> {
     clearAttachment();
     const name = pastedName(file);
-    const preview = /^image\/(png|jpeg|gif|webp)$/.test(file.type) ? URL.createObjectURL(file) : null;
+    const preview = (BOARD_IMAGE_TYPES as readonly string[]).includes(file.type) ? URL.createObjectURL(file) : null;
     const run = ++uploadRun;
     pending = { name, size: file.size, preview, progress: 0, uploaded: null, error: null };
     codeMode = false;
@@ -125,7 +125,7 @@
   ></textarea>
   <div class="bar">
     <input bind:this={picker} type="file" hidden onchange={() => { const f = picker.files?.[0]; if (f) void attach(f); picker.value = ""; }} />
-    <button type="button" class="tool" aria-label="Bild oder Datei anhängen" title="Bild oder Datei anhängen (bis 10 MB)" onclick={() => picker.click()}>
+    <button type="button" class="tool" aria-label="Bild oder Datei anhängen" title="Bild oder Datei anhängen (bis {formatSize(BOARD_LIMITS.fileBytes)})" onclick={() => picker.click()}>
       <Paperclip size={18} />
     </button>
     <button type="button" class="tool" aria-pressed={codeMode} aria-label="Als Code anheften" title="Code-Modus" disabled={!!pending} onclick={() => (codeMode = !codeMode)}>
@@ -144,7 +144,7 @@
   .composer { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-top: 1px solid var(--color-blue-300); background: transparent; }
   textarea { width: 100%; min-height: 64px; max-height: 40vh; resize: vertical; padding: 8px 10px; font: inherit; font-size: 14px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); }
   textarea.short { min-height: 44px; }
-  textarea.mono { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; }
+  textarea.mono { font-family: var(--font-mono); font-size: 13px; }
   textarea:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
   .bar { display: flex; align-items: center; gap: 8px; }
   .tool { width: 40px; height: 40px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); color: var(--color-navy); display: flex; align-items: center; justify-content: center; cursor: pointer; }

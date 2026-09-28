@@ -23,7 +23,7 @@ async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit 
   return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: "invalid" };
 }
 
-export const liveBoard: BoardApi = {
+const liveBoard: BoardApi = {
   load: () => call(BoardView, "/api/board"),
   create: (post) => call(Post, "/api/board/posts", { method: "POST", body: JSON.stringify(post) }),
   update: (id, change) => call(Post, `/api/board/posts/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(change) }),

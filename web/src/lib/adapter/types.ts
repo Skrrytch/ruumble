@@ -1,6 +1,6 @@
 /**
  * Schnittstelle zwischen Oberfläche und Mumble (ADR-0007).
- * Umsetzungen: MockAdapter (Fixtures, simuliertes Mumble) und später LiveAdapter (WebSocket zum Dienst, AP7).
+ * Umsetzungen: MockAdapter (Fixtures, simuliertes Mumble) und LiveAdapter (WebSocket und REST zum Dienst).
  */
 import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, CommandBody, CommandResult, NewPost, Post, PostUpdate, Snapshot, TalkingState, Uploaded } from "@ruumble/protocol";
 
@@ -13,7 +13,7 @@ export interface BoardApi {
   create(post: NewPost): Promise<BoardResult<Post>>;
   update(id: string, change: PostUpdate): Promise<BoardResult<Post>>;
   remove(id: string): Promise<BoardResult<true>>;
-  /** Anhang hochladen (Bild oder Datei, bis 10 MB); `onProgress` mit 0…1 */
+  /** Anhang hochladen (Bild oder Datei, höchstens `BOARD_LIMITS.fileBytes`); `onProgress` mit 0…1 */
   upload(file: Blob, name: string, onProgress?: (fraction: number) => void): Promise<BoardResult<Uploaded>>;
   /** Adresse eines Anhangs; `download`: immer als Datei speichern */
   fileUrl(attachment: Attachment, download?: boolean): string;

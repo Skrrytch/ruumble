@@ -137,6 +137,9 @@ export type Snapshot = z.infer<typeof Snapshot>;
 /** Grenzen der Pinnwand (ADR-0011) */
 export const BOARD_LIMITS = { fileBytes: 10 * 1024 * 1024, textChars: 100_000 } as const;
 
+/** Bildtypen, die die Pinnwand als Bild zeigt (der Dienst erkennt sie an den Bytes); SVG nie (ADR-0011) */
+export const BOARD_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"] as const;
+
 export const PostKind = z.enum(["text", "code", "image", "file"]);
 export type PostKind = z.infer<typeof PostKind>;
 
