@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/gen
+**/build
+**/test-results
+**/coverage
+spikes
+plugin
+.git

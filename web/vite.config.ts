@@ -8,5 +8,9 @@ export default defineConfig({
   plugins: [svelte()],
   define: { __UI_VERSION__: JSON.stringify(pkg.version) },
   // docs/design/tokens.css liegt außerhalb von web/ und ist die einzige Quelle für Farben und Maße
-  server: { fs: { allow: [".."] } },
+  server: {
+    fs: { allow: [".."] },
+    // ?live im Dev-Server: Dienst lokal auf :8080
+    proxy: { "/ws": { target: "ws://127.0.0.1:8080", ws: true }, "/pair": "http://127.0.0.1:8080" },
+  },
 });

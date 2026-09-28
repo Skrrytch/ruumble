@@ -660,6 +660,9 @@
                 "connected",
                 "disconnected"
               ]
+            },
+            "preview": {
+              "type": "boolean"
             }
           },
           "required": [

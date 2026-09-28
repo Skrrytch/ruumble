@@ -7,7 +7,7 @@ Status: angenommen für Docker, vorgeschlagen für den Rest (28.09.2026)
 1. **Docker Compose** mit drei Containern im selben Netz:
    - `mumble`: das offizielle Image, unverändert, in der Version aus `third_party/mumble/VERSION`, also `mumblevoip/mumble-server:v1.6.870` und **nicht** `latest`. Ice wird mit `MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'` aktiviert, die Secrets kommen als Docker-Secrets `/run/secrets/MUMBLE_CONFIG_ICESECRETREAD` bzw. `…WRITE` (S1). Ice lauscht nur im internen Compose-Netz, der Port 6502 wird **nicht** veröffentlicht.
    - `ruumble`: der Dienst. Er liefert auch die gebaute Oberfläche aus.
-   - `proxy`: Caddy. Er übernimmt HTTPS (Pflicht für eine PWA) und leitet `/` sowie `/ws/*` an `ruumble` weiter.
+   - `proxy`: Auf dem Homeserver ist das der vorhandene **Nginx Proxy Manager** (statt Caddy, Befund vom 28.09.2026). Er übernimmt HTTPS (Pflicht für eine PWA) und leitet `/` sowie `/ws/*` (WebSocket-Unterstützung aktivieren) an `ruumble:8080` weiter.
 2. **Secrets:** `icesecretread` und `icesecretwrite` bekommen unterschiedliche Zufallswerte und liegen in einer `.env`-Datei außerhalb des Repositorys. `ruumble` erhält nur das Read-Secret.
 3. **Erreichbarkeit:** Der Dienst ist nur im internen Netz oder VPN erreichbar, nicht aus dem Internet (ADR-0004).
 4. **Plugin-Verteilung:** Das Bundle `ruumble-<version>.mumble_plugin` (Linux x64) wird vom Dienst unter `/download` angeboten. Die Installationsanleitung beschreibt: Installieren, dann **Aktivieren** unter Einstellungen → Plugins.

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bundle version="1.0.0">
+  <assets>
+    <plugin os="linux" arch="x64">libruumble.so</plugin>
+  </assets>
+  <name>Ruumble</name>
+  <version>@PROJECT_VERSION@</version>
+</bundle>
