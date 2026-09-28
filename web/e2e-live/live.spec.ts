@@ -9,8 +9,9 @@ import { loadBot, registerUser, serverVersion, solidPng, unregisterUser } from "
 
 const root = new URL("../../", import.meta.url).pathname;
 /** `bridgeUrl = ""`: ohne feste Adresse, das Plugin liest sie aus der Root-Beschreibung (ADR-0010) */
-const runClient = (distro: string, name: string, bridgeUrl = "http://ruumble:8080") =>
-  execFileSync(`${root}deploy/local/run-client.sh`, [distro, name], { env: { ...process.env, BRIDGE_URL: bridgeUrl } });
+/** `lang`: Systemsprache des Clients; das Plugin schreibt seine Meldungen und bekommt Hinweise in dieser Sprache */
+const runClient = (distro: string, name: string, bridgeUrl = "http://ruumble:8080", lang = "de_DE.UTF-8") =>
+  execFileSync(`${root}deploy/local/run-client.sh`, [distro, name], { env: { ...process.env, BRIDGE_URL: bridgeUrl, CLIENT_LANG: lang } });
 /** Root-Beschreibung setzen (Testvorbereitung mit Write-Secret); `long`: über 128 Zeichen → Mumble schickt nur einen Hash */
 const setRootDescription = (long: boolean) =>
   execFileSync("node", ["src/setup.cjs"], { cwd: `${root}tools/live-test`, env: { ...process.env, RUUMBLE_DESC_PAD: long ? "1" : "" } });
@@ -121,7 +122,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   });
 
   test("zweiter Client im selben Raum: sichtbar und hörbar", async () => {
-    runClient(distro, "Ben");
+    runClient(distro, "Ben", undefined, "en_US.UTF-8"); // Ben mit englischem System
     const benUrl = await pairUrl("Ben");
     ben = await page.context().browser()!.newContext();
     benPage = await ben.newPage();
@@ -152,7 +153,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await annaBoard.getByRole("textbox", { name: "Neuer Beitrag" }).fill("const live = true;\nconsole.log(live);");
     await annaBoard.getByRole("button", { name: "Senden" }).click();
     await expect(benBoard.getByRole("article", { name: "Beitrag von Anna" }).locator(".hljs")).toBeVisible({ timeout: 5000 });
-    await expect.poll(() => mumbleLog("Ben"), { timeout: 5000 }).toContain("ruumble-log: Anna hat Code an die Pinnwand geheftet.");
+    await expect.poll(() => mumbleLog("Ben"), { timeout: 5000 }).toContain("ruumble-log: Anna pinned code to the board.");
     expect(mumbleLog("Anna")).not.toContain("an die Pinnwand geheftet");
     // Ben lädt ein echtes Bild hoch (XMLHttpRequest mit Fortschritt, Bytes-Prüfung im Dienst)
     const [chooser] = await Promise.all([benPage.waitForEvent("filechooser"), benBoard.getByRole("button", { name: "Bild oder Datei anhängen" }).click()]);

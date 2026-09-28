@@ -136,6 +136,7 @@ struct Fixture {
 		Settings s;
 		s.pluginVersion  = "0.1.0";
 		s.mumbleVersion  = "1.5.735";
+		s.locale         = Locale::de;
 		s.bridgeUrl      = bridgeUrl;
 		s.spacing        = 40ms;
 		s.confirmTimeout = 150ms;
@@ -197,6 +198,7 @@ TEST_CASE("Adresse aus der Root-Beschreibung, hello erst nach dem Verbindungsauf
 	CHECK(hello["certHash"] == HASH);
 	CHECK(hello["paired"] == false);
 	CHECK(hello["mumbleVersion"] == "1.5.735");
+	CHECK(hello["locale"] == "de");
 }
 
 TEST_CASE("Kopplungslink nur einmal je Dienst öffnen") {
@@ -338,6 +340,17 @@ TEST_CASE("notify: Hinweis ins Mumble-Protokoll, erst nach welcome") {
 	std::lock_guard< std::mutex > l(f.api.m);
 	CHECK(std::find(f.api.logs.begin(), f.api.logs.end(), "zu früh") == f.api.logs.end());
 	CHECK(std::count_if(f.api.logs.begin(), f.api.logs.end(), [](const std::string &s) { return s.empty(); }) == 0);
+}
+
+TEST_CASE("Sprache: Deutsch, sonst Englisch, POSIX-Reihenfolge") {
+	CHECK(localeFromEnv(nullptr, nullptr, "de_DE.UTF-8") == Locale::de);
+	CHECK(localeFromEnv("en_US.UTF-8", nullptr, "de_DE.UTF-8") == Locale::en); // LC_ALL gewinnt
+	CHECK(localeFromEnv("", "de_AT.UTF-8", "en_GB.UTF-8") == Locale::de);       // leere Werte zählen nicht
+	CHECK(localeFromEnv(nullptr, nullptr, "fr_FR.UTF-8") == Locale::en);
+	CHECK(localeFromEnv(nullptr, nullptr, "C") == Locale::en);
+	CHECK(localeFromEnv(nullptr, nullptr, nullptr) == Locale::en);
+	CHECK(text::hoverRoot(Locale::en, "Root").find("“Root”") != std::string::npos);
+	CHECK(text::connected(Locale::de) == "mit dem Dienst verbunden");
 }
 
 TEST_CASE("talking nur nach welcome, als Text") {

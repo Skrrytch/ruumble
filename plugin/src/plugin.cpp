@@ -140,6 +140,7 @@ mumble_error_t mumble_init(mumble_plugin_id_t id) {
 	ruumble::Settings settings;
 	settings.pluginVersion = RUUMBLE_VERSION;
 	settings.mumbleVersion = mumbleVersion;
+	settings.locale        = ruumble::localeFromEnv(std::getenv("LC_ALL"), std::getenv("LC_MESSAGES"), std::getenv("LANG"));
 	settings.autoOpen      = config.autoOpen;
 	settings.bridgeUrl     = config.bridgeUrl;
 	core = std::make_unique< ruumble::Core >(

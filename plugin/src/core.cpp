@@ -1,4 +1,5 @@
 #include "core.h"
+#include "messages.h"
 
 #include "discovery.h"
 
@@ -142,7 +143,7 @@ void Core::handle(const Event &event) {
 // Meldungen an api_.log: ohne „Ruumble:“ davor, das setzt Mumble selbst.
 void Core::sendHello() {
 	if (!transportOpen_ || !session_ || certHash_.empty()) {
-		if (session_ && certHash_.empty()) api_.log("kein Client-Zertifikat, Anmeldung beim Dienst nicht möglich");
+		if (session_ && certHash_.empty()) api_.log(text::noCertificate(settings_.locale));
 		return;
 	}
 	json hello{ { "v", V },
@@ -152,6 +153,7 @@ void Core::sendHello() {
 				{ "pluginVersion", settings_.pluginVersion },
 				{ "paired", isPaired_(bridgeUrl_) } };
 	if (!settings_.mumbleVersion.empty()) hello["mumbleVersion"] = settings_.mumbleVersion;
+	hello["locale"] = localeName(settings_.locale);
 	transport_.send(hello.dump());
 }
 
@@ -165,10 +167,10 @@ void Core::handleMessage(const std::string &text) {
 			openUrl_(msg["pairUrl"].get< std::string >());
 			markPaired_(bridgeUrl_);
 		}
-		api_.log("mit dem Dienst verbunden");
+		api_.log(text::connected(settings_.locale));
 	} else if (type == "reject") {
 		helloAcked_ = false;
-		api_.log("vom Dienst abgelehnt (" + msg.value("reason", std::string("?")) + ")");
+		api_.log(text::rejected(settings_.locale, msg.value("reason", std::string("?"))));
 	} else if (type == "notify" && helloAcked_) {
 		// Hinweis ins Mumble-Protokoll (Pinnwand, AP11.4); Mumble maskiert HTML und setzt „Ruumble:“ davor
 		const std::string note = msg.value("text", "");
@@ -216,8 +218,7 @@ void Core::resolveBridge(Clock::time_point now) {
 			// noch nicht geladen, leer oder ohne Zeile: später erneut prüfen (Beschreibung kann sich ändern)
 			const bool pending = d.status == Description::Status::Pending;
 			if (pending && !hintShown_) {
-				api_.log("Fahre einmal mit der Maus über den obersten Kanal „" + api_.rootName()
-						 + "“, damit die Ruumble-Adresse aus seiner Beschreibung geladen wird.");
+				api_.log(text::hoverRoot(settings_.locale, api_.rootName()));
 				hintShown_ = true;
 			}
 			discoveryAt_ = now + (pending ? settings_.discoveryRetry : settings_.discoveryRetry * 10);
