@@ -63,9 +63,9 @@
   /* Anwesenheit (AP10): nur die Deckkraft, damit Ring und Abzeichen gut lesbar bleiben */
   .av.quiet { opacity: 0.7; }
   .av.away { opacity: 0.4; }
-  /* eigener Nutzer: das einzige gelbe Element (SPEC 4) */
+  /* eigener Nutzer: das einzige gelbe Element */
   .av.me { background: var(--color-navy); box-shadow: 0 0 0 3px var(--color-accent); }
-  /* Sprechanzeige: pulsierender Ring in Mittelblau (PLANUNG 2.4) */
+  /* Sprechanzeige: pulsierender Ring in Mittelblau (docs/internal/charter.md) */
   .av.talking::after {
     content: ""; position: absolute; inset: -7px; border-radius: 50%;
     border: 3px solid var(--color-sky); animation: pulse 1.2s var(--ease-out) infinite;

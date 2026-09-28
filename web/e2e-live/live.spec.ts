@@ -162,7 +162,8 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await benBoard.getByRole("button", { name: "Senden" }).click();
     const image = annaBoard.getByRole("article", { name: "Beitrag von Ben" }).locator("img");
     await expect(image).toBeVisible({ timeout: 5000 });
-    expect(await image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(40);
+    // sichtbar heißt noch nicht geladen: auf das fertige Bild warten
+    await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.naturalWidth), { timeout: 5000 }).toBe(40);
     await expect.poll(() => mumbleLog("Anna"), { timeout: 5000 }).toContain("ruumble-log: Ben hat ein Bild an die Pinnwand geheftet.");
     // aufräumen und Rechte: Ben löscht sein Bild, verlässt den Raum und kommt dann nicht mehr an Annas Beitrag (403)
     const posts = (await (await page.request.get("/api/board")).json()).posts as { id: string; authorName: string }[];
@@ -192,7 +193,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     try {
       const img = page.getByRole("region", { name: "Eingang" }).locator("img");
       await expect(img).toBeVisible({ timeout: 20_000 }); // Poll 1 s + Avatar-Abruf
-      expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(64);
+      await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth), { timeout: 5000 }).toBe(64);
       const res = await page.request.get((await img.getAttribute("src")) as string);
       expect(res.headers()["content-type"]).toBe("image/png");
       // ohne Kopplung kein Bild

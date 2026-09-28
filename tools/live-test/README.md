@@ -1,16 +1,16 @@
-# Werkzeuge für die Live-Tests
+# Live-test tools
 
-Hervorgegangen aus den Machbarkeitstests S1 und S2 (`docs/analyse/spike-s1.md`, `spike-s2.md`). Genutzt von `web/e2e-live` und `deploy/local`.
+These grew out of the feasibility studies S1 and S2 ([docs/internal/feasibility-studies.md](../../docs/internal/feasibility-studies.md)). Used by `web/e2e-live` and `deploy/local`.
 
-- `src/setup.cjs`: legt im lokalen Mumble (`deploy/local`) Kanäle, Rechte und die Root-Beschreibung an. Das ist Testvorbereitung und nutzt deshalb das Write-Secret, das Ruumble selbst nie bekommt.
-- `src/bot.cjs`: minimaler Mumble-Client in Node (Protokoll per protobuf), z. B. für einen registrierten Nutzer mit Avatar.
-- `clients/Dockerfile.<distro>`: headless Mumble-Clients (Ubuntu, Debian, Fedora) mit Xvfb und PulseAudio. `deploy/local/run-client.sh` startet sie mit dem Ruumble-Plugin.
+- `src/setup.cjs`: creates channels, permissions and the root channel description in the local Mumble (`deploy/local`). This is test preparation and therefore uses the write secret, which Ruumble itself never gets.
+- `src/bot.cjs`: minimal Mumble client in Node (protocol via protobuf), for example for a registered user with an avatar.
+- `clients/Dockerfile.<distro>`: headless Mumble clients (Ubuntu, Debian, Fedora) with Xvfb and PulseAudio. `deploy/local/run-client.sh` starts them with the Ruumble plugin (`CLIENT_LANG` sets the client's language, default `de_DE.UTF-8`).
 
-Einmalig vorbereiten:
+One-time preparation:
 
 ```sh
-cd tools/live-test && pnpm install && pnpm gen      # Ice-Stubs und Mumble.proto nach gen/
+cd tools/live-test && pnpm install && pnpm gen      # Ice stubs and Mumble.proto into gen/
 for d in ubuntu debian fedora; do docker build -t ruumble-client-$d -f clients/Dockerfile.$d clients; done
 ```
 
-Dann wie in `web/playwright.live.config.ts` beschrieben: lokalen Stack starten, `node src/setup.cjs`, Live-Tests laufen lassen.
+Then, as described in `web/playwright.live.config.ts`: start the local stack, run `node src/setup.cjs`, run the live tests. See also [docs/development.md](../../docs/development.md#live-tests).

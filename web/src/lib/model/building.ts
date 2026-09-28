@@ -1,12 +1,12 @@
 /**
- * building-model: leitet aus einem Mumble-Snapshot das Gebäude ab (PLANUNG Abschnitt 2, ADR-0007).
+ * building-model: leitet aus einem Mumble-Snapshot das Gebäude ab (Gebäuderegeln in docs/internal/charter.md, ADR-0007).
  * Reine Funktionen ohne Svelte und ohne DOM. Jede Änderung am Snapshot ergibt ein neues Gebäude,
  * gespeichert wird nichts.
  */
 import type { Channel, Snapshot, User } from "@ruumble/protocol";
 import { t } from "../i18n/index.svelte.ts";
 
-/** Mehr Räume passen nicht sinnvoll auf eine Etage (PLANUNG 2.3). */
+/** Mehr Räume passen nicht sinnvoll auf eine Etage (docs/internal/charter.md). */
 export const MAX_ROOMS = 8;
 
 /** Ab so vielen Minuten ohne Sprechen gilt jemand als still (E30). Ice idlesecs zählt nur Sprechen. */
@@ -102,7 +102,7 @@ export function sortSiblings<T extends Pick<Channel, "position" | "name">>(chann
 }
 
 /**
- * Sichtbare Kanäle: Verlinkte Kanäle verschwinden samt allen Unterkanälen (PLANUNG 2.4, O2, O3).
+ * Sichtbare Kanäle: Verlinkte Kanäle verschwinden samt allen Unterkanälen (docs/internal/charter.md, O2, O3).
  * Der Root-Kanal ist immer sichtbar.
  */
 export function visibleChannels(channels: readonly Channel[]): Channel[] {
@@ -117,7 +117,7 @@ export function visibleChannels(channels: readonly Channel[]): Channel[] {
 }
 
 /**
- * Breite nach Rang in der Mumble-Reihenfolge (SPEC 2): Raum 1 und 2 sind groß,
+ * Breite nach Rang in der Mumble-Reihenfolge: Raum 1 und 2 sind groß,
  * danach werden die Räume schrittweise kleiner (1,1 bis 0,85).
  */
 export function roomGrow(index: number): number {
@@ -127,7 +127,7 @@ export function roomGrow(index: number): number {
 
 /**
  * Oben stehen die großen Räume, deshalb bekommt die untere Reihe bei ungerader Anzahl
- * einen Raum mehr (SPEC 2). Ein einzelner Raum steht oben.
+ * einen Raum mehr. Ein einzelner Raum steht oben.
  */
 export function splitRows<T>(rooms: readonly T[]): { top: T[]; bottom: T[] } {
   const top = Math.max(Math.min(rooms.length, 1), Math.floor(rooms.length / 2));
@@ -150,7 +150,7 @@ export function countText(n: number): string {
 }
 
 export function isMutedRoomName(name: string): boolean {
-  return /\(stumm\)/i.test(name);
+  return /\((stumm|muted)\)/i.test(name);
 }
 
 export function presenceOf(u: Pick<User, "selfDeaf" | "idleMinutes">): Presence {
