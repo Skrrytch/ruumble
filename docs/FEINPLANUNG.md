@@ -480,6 +480,13 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 3. **Dateien:** Name, Größe, Typ-Symbol, Download
 4. **Tests:** Upload-Grenzen, Bildgrößen, E2E (Einfügen, Ziehen, Vollbild)
 
+**✔ Erledigt am 28.09.2026** (Branch `etagen-layout`, Ruumble 0.5.0):
+- Adapter: `board.upload` (live per XMLHttpRequest wegen des Fortschritts, Mock im Speicher mit Beispielbild und -datei) und `board.fileUrl`. Die Oberfläche schickt immer `application/octet-stream` und den Typ in `X-File-Type`, weil Fastify JSON und Text sonst selbst auswertet.
+- Eingabe: ein Anhang pro Beitrag. Er wird sofort hochgeladen (Vorschau, Fortschritt, Entfernen), angeheftet wird erst beim Senden, der Text ist dann die Beschreibung. Wege: Büroklammer, Strg+V, Ablegen auf der Pinnwand („Loslassen zum Anheften“). Eingefügte Bilder heißen `bild-JJJJ-MM-TT-hhmm.png`.
+- Karten: Bildvorschau (höchstens 200 px hoch, Klick → Vollbild), Dateien mit Symbol nach Art, Name, Größe und Download. Im Popup lässt sich die Beschreibung bearbeiten.
+- Vollbild (`Lightbox.svelte`): Zoom 100–800 % per Mausrad (um den Zeiger), Tasten `+`/`-`/`0`, zwei Finger, Doppelklick; Verschieben per Ziehen; Download; Esc schließt.
+- Tests: Hilfsfunktionen (Größe, Dateiart, Name), Dienst (JSON-Upload als Rohdaten), 5 E2E-Tests (Büroklammer, Einfügen mit Vollbild, Ziehen, zu groß, Beschreibung).
+
 ### AP11.4 – Pinnwand im Grundriss, Hinweis in Mumble, Betrieb
 1. **Grafik im Raum: Variante B mit zwei Zetteln** (Entscheidung 28.09.2026), rechtsbündig oben, feste Größe, ohne Mengenangabe. Sie erscheint nur im eigenen Raum, dort immer gleich kräftig und ohne Kasten, als Schalter. Fremde Räume zeigen keine Zettel, und der Snapshot verrät nicht mehr, wo etwas hängt (`boards` entfernt, Änderung 28.09.2026). **Ein Klick darauf blendet die Seitenleiste ein oder aus, zu Beginn ist sie ausgeblendet** (Entscheidung 28.09.2026).
 2. **Plugin:** Befehl `notify{text}` → `log`. Der Dienst schickt ihn beim Anheften an die Anwesenden außer dem Autor. Die Meldung ist kurz und nennt den Typ, z. B. „Ben hat Code an die Pinnwand geheftet“ (Text, Code, ein Bild, eine Datei; Wunsch 28.09.2026).
@@ -487,6 +494,12 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 4. **Betrieb:** Grenzwerte und Sicherung in `deploy/homeserver`, Füllstand in `/healthz`, Bereinigung der Daten beim Löschen
 
 **Fertig, wenn:** Alle vier Stufen im Mock und im Live-Test grün sind und die Pinnwand auf dem Homeserver läuft.
+
+**✔ Erledigt am 28.09.2026** (Branch `etagen-layout`, Ruumble 0.6.0, Plugin 0.3.0):
+- Protokoll: `notify{text}` vom Dienst an das Plugin (höchstens 300 Zeichen). Das Plugin schreibt den Text mit `log` ins Mumble-Protokoll, erst nach `welcome`. Mumble maskiert HTML und setzt „Ruumble:“ davor, Links sind dort also nicht möglich.
+- Dienst: `notifyRoom` (`bridge/src/board/notify.ts`) schickt beim Anheften „<Name> hat einen Text / Code / ein Bild / eine Datei an die Pinnwand geheftet.“ an die Plugins der übrigen Anwesenden, nicht an den Autor.
+- Live-Test mit zwei echten Clients: Anna heftet Code an, Ben sieht ihn ohne Neuladen und hat den Hinweis im Mumble-Protokoll, Anna nicht. Ben lädt ein echtes PNG hoch (XHR, Bytes-Prüfung), Anna bekommt den Hinweis. Nach dem Verlassen des Raums liefern Löschen und Bearbeiten `403`. Das Plugin spiegelt sein Protokoll dafür mit `RUUMBLE_LOG_STDERR=1` auf stderr (nur im Test-Client gesetzt).
+- Betrieb: Ablage, Grenzen, Füllstand und Sicherung in `deploy/homeserver/README.md`.
 
 ---
 

@@ -23,6 +23,7 @@ import fastifyWebsocket from "@fastify/websocket";
 import Fastify from "fastify";
 import type { WebSocket } from "ws";
 import { AvatarCache } from "./avatars.ts";
+import { notifyRoom } from "./board/notify.ts";
 import { boardRoutes } from "./board/routes.ts";
 import { BoardStore } from "./board/store.ts";
 import { Hub, type AddressCheck } from "./hub.ts";
@@ -198,6 +199,8 @@ await app.register(boardRoutes, {
   hub,
   source,
   certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)),
+  // Hinweis im Mumble-Protokoll der übrigen Anwesenden (AP11.4)
+  onNewPost: (post, viewer) => void notifyRoom(hub, post, viewer),
 });
 const cleanupTimer = setInterval(() => {
   const removed = store.cleanup();

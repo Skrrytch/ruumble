@@ -99,7 +99,9 @@ export const BridgeWelcome = z.object({ v, type: z.literal("welcome"), pairUrl: 
 export const BridgeReject = z.object({ v, type: z.literal("reject"), reason: RejectReason });
 export const BridgeCommand = z.object({ v, type: z.literal("command"), id: commandId, body: CommandBody });
 
-export const BridgeToPlugin = z.discriminatedUnion("type", [BridgeWelcome, BridgeReject, BridgeCommand]);
+/** Kurzer Hinweis für das Mumble-Protokoll (Pinnwand, AP11.4). Reiner Text, Mumble maskiert HTML selbst. */
+export const BridgeNotify = z.object({ v, type: z.literal("notify"), text: z.string().min(1).max(300) });
+export const BridgeToPlugin = z.discriminatedUnion("type", [BridgeWelcome, BridgeReject, BridgeCommand, BridgeNotify]);
 export type BridgeToPlugin = z.infer<typeof BridgeToPlugin>;
 
 // ---------------------------------------------------------------- Oberfläche → Dienst
@@ -148,6 +150,10 @@ export const Attachment = z.object({
   height: z.number().int().min(1).optional(),
 });
 export type Attachment = z.infer<typeof Attachment>;
+
+/** Antwort auf POST /api/board/uploads: `image` = als Bild erkannt (an den Bytes, nie SVG) */
+export const Uploaded = Attachment.extend({ image: z.boolean() });
+export type Uploaded = z.infer<typeof Uploaded>;
 
 export const Post = z.object({
   id: z.string().min(1),

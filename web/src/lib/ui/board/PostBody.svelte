@@ -1,11 +1,14 @@
 <script lang="ts">
   import type { Post } from "@ruumble/protocol";
   import { renderMarkdown } from "../../board/render.ts";
+  import AttachmentView from "./AttachmentView.svelte";
   import CodeBlock from "./CodeBlock.svelte";
 
   /** `numbers`: Zeilennummern bei Code (nur im Popup, nicht in der Vorschau auf der Karte) */
-  let { post, numbers = false }: { post: Post; numbers?: boolean } = $props();
-  const html = $derived(post.kind === "text" ? renderMarkdown(post.text) : "");
+  /** `large`: Bild größer (im Popup) */
+  let { post, numbers = false, large = false }: { post: Post; numbers?: boolean; large?: boolean } = $props();
+  // Bilder und Dateien: Text ist die Bildunterschrift, ebenfalls Markdown
+  const html = $derived(post.kind !== "code" && post.text.trim() ? renderMarkdown(post.text) : "");
 </script>
 
 {#if post.kind === "code"}
@@ -13,10 +16,14 @@
 {:else if post.kind === "text"}
   <!-- von markdown-it (ohne HTML) erzeugt und mit DOMPurify bereinigt (render.ts) -->
   <div class="md">{@html html}</div>
+{:else if post.attachment}
+  <AttachmentView {post} {large} />
+  {#if html}<div class="md caption">{@html html}</div>{/if}
 {/if}
 
 <style>
   .md { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+  .caption { margin-top: 8px; }
   .md :global(p) { margin: 0 0 6px; }
   .md :global(h1), .md :global(h2), .md :global(h3) { font-size: 15px; margin: 4px 0 6px; }
   .md :global(ul), .md :global(ol) { margin: 0 0 6px; padding-left: 20px; }

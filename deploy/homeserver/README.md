@@ -26,6 +26,20 @@ Vorlage: [`mumble.docker-compose.yml`](mumble.docker-compose.yml)
 - Das Image enthält das Plugin (gebaut auf Debian 12, glibc 2.36). Es steht unter `http://<LAN-IP>:8080/download` bereit, und die Oberfläche verlinkt es auf ihren Hinweisseiten.
 - **Root-Beschreibung kurz halten** (unter 128 Zeichen, gemessen am gespeicherten HTML). Mumbles Editor fügt viel Formatierung ein, z. B. wurden aus drei Zeilen 398 Zeichen. Gesetzt wurde sie deshalb einmalig per Ice mit dem Write-Secret in einem kurzlebigen Hilfscontainer, nicht über Ruumble. Der alte Text liegt in `<backup>/root-description-before.html`.
 
+## Pinnwand (ab 0.5)
+
+- **Ablage:** im Volume `ruumble-data`, also `/data/board.sqlite` (SQLite im WAL-Modus) und die Anhänge unter `/data/board/<xx>/<sha256>`. Gleiche Dateien liegen nur einmal dort.
+- **Grenzen** (ADR-0011): Aufbewahrung 30 Tage (`RETENTION_DAYS`), Kontingent 2 GB (`BOARD_QUOTA_MB`), einzelne Dateien bis 10 MB. Ist das Kontingent voll, löscht der Dienst die ältesten Beiträge mit Anhang. Beiträge gelöschter Kanäle bleiben 7 Tage erhalten. Aufgeräumt wird stündlich.
+- **Füllstand:** `curl http://<LAN-IP>:8080/healthz` → `"board":{"usedMB":…,"quotaMB":2048}`
+- **Sicherung im laufenden Betrieb** (SQLite-Backup-API, danach die Anhänge):
+  ```sh
+  docker exec ruumble node dist/main.mjs backup /data/backup
+  docker cp ruumble:/data/backup ~/server/backups/ruumble/board-$(date +%Y%m%d)
+  docker exec ruumble rm -rf /data/backup
+  ```
+  Vor jedem Update sichert der Ablauf zusätzlich das ganze Volume als `tgz` nach `~/server/backups/ruumble/`.
+- **Hinweis in Mumble:** Heftet jemand etwas an, sehen die anderen Anwesenden im Mumble-Protokoll z. B. „Ruumble: Ben hat Code an die Pinnwand geheftet.“ Das braucht Plugin **0.3.0** oder neuer. Ältere Plugins ignorieren den Hinweis, alles andere funktioniert weiter.
+
 ## Plugin
 
 Es gibt **ein** Plugin für alle Server (ADR-0010). Die Adresse des Dienstes steht in der Beschreibung des obersten Kanals, als eigene Zeile, die auf `ruumble: <adresse>` endet:

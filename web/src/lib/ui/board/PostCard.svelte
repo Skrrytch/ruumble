@@ -3,12 +3,14 @@
   import type { Post } from "@ruumble/protocol";
   import { KIND_LABEL, isLong, relativeTime } from "../../board/model.ts";
   import { initials } from "../../model/building.ts";
+  import { getFileUrl } from "../../board/context.ts";
   import PostBody from "./PostBody.svelte";
 
   let { post, now, onopen }: { post: Post; now: number; onopen: (post: Post) => void } = $props();
 
+  const fileUrl = getFileUrl();
   let copied = $state(false);
-  const long = $derived(isLong(post.text));
+  const long = $derived(!post.attachment && isLong(post.text));
 
   async function copy() {
     await navigator.clipboard?.writeText(post.text).catch(() => {});
@@ -35,7 +37,13 @@
   {/if}
   <footer>
     <button type="button" class="link" onclick={() => onopen(post)}><Maximize2 size={13} /> Öffnen · bearbeiten</button>
-    <button type="button" class="link strong" onclick={copy}>{copied ? "Kopiert" : "Kopieren"}</button>
+    {#if post.kind === "file"}
+      <span></span>
+    {:else if post.attachment}
+      <a class="link strong" href={fileUrl(post.attachment, true)} download={post.attachment.name || "datei"}>Herunterladen</a>
+    {:else}
+      <button type="button" class="link strong" onclick={copy}>{copied ? "Kopiert" : "Kopieren"}</button>
+    {/if}
   </footer>
 </article>
 
@@ -51,7 +59,7 @@
   .body.clamped { max-height: calc(8 * 1.5em); overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent); mask-image: linear-gradient(to bottom, #000 70%, transparent); }
   .edited { font-size: 11px; color: var(--color-blue-700); }
   footer { display: flex; justify-content: space-between; }
-  .link { border: 0; background: none; padding: 4px 0; min-height: 28px; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--color-blue-500); cursor: pointer; }
+  .link { text-decoration: none; border: 0; background: none; padding: 4px 0; min-height: 28px; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--color-blue-500); cursor: pointer; }
   .link.strong { font-weight: 700; }
   .link:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
 </style>

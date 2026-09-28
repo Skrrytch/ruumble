@@ -109,7 +109,8 @@
     position: relative; width: 300px; flex-shrink: 0; padding: 18px; background: var(--color-surface);
     display: flex; flex-direction: column; gap: 14px; min-height: 0;
   }
-  .opening { position: absolute; right: calc(-1 * var(--wall)); top: 276px; width: var(--wall); height: 110px; background: var(--color-white); }
+  /* Öffnung zum Flur: Der Flur (110 px) liegt mittig zwischen zwei gleich hohen Raumreihen */
+  .opening { position: absolute; right: calc(-1 * var(--wall)); top: calc(50% - 55px); width: var(--wall); height: 110px; background: var(--color-white); }
   .sign-title { font-size: 20px; font-weight: 700; }
   .sign-sub { font-size: 13px; color: var(--color-blue-700); }
 

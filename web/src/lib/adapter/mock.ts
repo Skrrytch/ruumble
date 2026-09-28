@@ -7,7 +7,7 @@
  * - Stumm/Taub folgen der Semantik der Mumble-Buttons (nur hier nachgebildet, die Oberfläche selbst tut das nicht).
  * - Sprechereignisse gibt es nur für Nutzer im eigenen Raum und nicht, wenn man selbst taub ist.
  */
-import type { CommandBody, CommandResult, NewPost, Post, PostUpdate, Snapshot, TalkingState } from "@ruumble/protocol";
+import { BOARD_LIMITS, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
 import leerstand from "@ruumble/protocol/fixtures/leerstand.json";
 import musterhaus from "@ruumble/protocol/fixtures/musterhaus.json";
 import nichtGekoppelt from "@ruumble/protocol/fixtures/nicht-gekoppelt.json";
@@ -16,8 +16,42 @@ import type { AdapterEvents, BoardApi, BoardResult, MumbleAdapter, PluginStatus 
 
 const MINUTE = 60_000;
 
+/** Anhang im Mock: Inhalt im Speicher, Adresse als Blob- oder Data-URL */
+interface MockFile { attachment: Omit<Uploaded, "name">; url: string }
+
+const hexId = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
+
+/** Beispielbild (Whiteboard-Skizze), per Canvas gezeichnet; ohne Canvas (Unit-Tests) keins */
+function sampleImage(): MockFile | null {
+  try {
+    const c = document.createElement("canvas");
+    c.width = 960;
+    c.height = 600;
+    const g = c.getContext("2d");
+    if (!g) return null;
+    g.fillStyle = "#ffffff";
+    g.fillRect(0, 0, 960, 600);
+    g.strokeStyle = "#003869";
+    g.lineWidth = 6;
+    g.strokeRect(60, 60, 360, 200);
+    g.strokeRect(540, 60, 360, 200);
+    g.strokeRect(300, 360, 360, 180);
+    g.beginPath();
+    g.moveTo(420, 160); g.lineTo(540, 160); g.moveTo(240, 260); g.lineTo(400, 360); g.moveTo(720, 260); g.lineTo(560, 360);
+    g.stroke();
+    g.fillStyle = "#003869";
+    g.font = "bold 40px sans-serif";
+    g.fillText("Browser", 160, 175); g.fillText("Plugin", 660, 175); g.fillText("Dienst", 420, 465);
+    const url = c.toDataURL("image/png");
+    if (!url.startsWith("data:image/png")) return null;
+    return { attachment: { id: hexId(), mime: "image/png", size: Math.round((url.length * 3) / 4), width: 960, height: 600, image: true }, url };
+  } catch {
+    return null;
+  }
+}
+
 /** Beispielbeiträge für den Mock (Raum-ID → Beiträge, neueste zuerst) */
-function samplePosts(now: number): Map<number, Post[]> {
+function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Post[]> {
   const post = (p: Partial<Post> & Pick<Post, "id" | "channelId" | "kind" | "text" | "authorName">): Post => ({
     mine: false, canDelete: false, createdAt: now, updatedAt: now, ...p,
   });
@@ -48,8 +82,19 @@ function samplePosts(now: number): Map<number, Post[]> {
     "3. Punkt drei",
     "4. Punkt vier",
   ].join("\n");
+  const image = sampleImage();
+  if (image) files.set(image.attachment.id, image);
+  const protocol = new Blob(["Protokoll der Besprechung\n\n- Pinnwand: Bilder und Dateien\n"], { type: "text/plain" });
+  const file: MockFile = { attachment: { id: hexId(), mime: "text/plain", size: protocol.size, image: false }, url: "" };
+  files.set(file.attachment.id, file);
+  const attachment = (f: MockFile, name: string): Attachment => {
+    const { image: _image, ...a } = f.attachment;
+    return { ...a, name };
+  };
   return new Map([
     [3, [
+      ...(image ? [post({ id: "m4", channelId: 3, kind: "image", authorName: "Clara", createdAt: now - 3 * MINUTE, updatedAt: now - 3 * MINUTE, text: "Skizze vom Whiteboard", attachment: attachment(image, "whiteboard.png") })] : []),
+      post({ id: "m5", channelId: 3, kind: "file", authorName: "Ben", createdAt: now - 8 * MINUTE, updatedAt: now - 8 * MINUTE, text: "", attachment: attachment(file, "protokoll.txt") }),
       post({ id: "m1", channelId: 3, kind: "code", language: "typescript", authorName: "Ben", createdAt: now - 12 * MINUTE, updatedAt: now - 12 * MINUTE, text: code }),
       post({ id: "m2", channelId: 3, kind: "text", authorName: "Anna", mine: true, canDelete: true, createdAt: now - 60 * MINUTE, updatedAt: now - 30 * MINUTE, updatedByName: "Ben", text: notes }),
     ]],
@@ -86,7 +131,8 @@ export class MockAdapter implements MumbleAdapter {
   private talkTimer: ReturnType<typeof setInterval> | null = null;
   private talkingNow = new Set<number>();
   private readonly opts: Required<MockOptions>;
-  private posts = samplePosts(Date.now());
+  private files = new Map<string, MockFile>();
+  private posts = samplePosts(Date.now(), this.files);
   private nextPostId = 1;
   readonly board: BoardApi = {
     load: async () => this.boardRoom((channelId) => ({ channelId, channelName: this.channelName(channelId), posts: this.posts.get(channelId) ?? [] })),
@@ -94,9 +140,14 @@ export class MockAdapter implements MumbleAdapter {
       this.boardRoom((channelId) => {
         const me = this.me()!;
         const now = Date.now();
+        const file = input.attachmentId ? this.files.get(input.attachmentId) : undefined;
+        if ((input.kind === "image" || input.kind === "file") && !file) return "invalid";
+        if (input.kind === "image" && !file!.attachment.image) return "bad-type";
+        const { image: _image, ...stored } = file?.attachment ?? { image: false };
         const post: Post = {
           id: `mock-${this.nextPostId++}`, channelId, kind: input.kind, text: input.text,
           ...(input.language ? { language: input.language } : {}),
+          ...(file ? { attachment: { ...(stored as Omit<Attachment, "name">), name: input.attachmentName || "datei" } } : {}),
           authorName: me.name, mine: true, canDelete: true, createdAt: now, updatedAt: now,
         };
         this.posts.set(channelId, [post, ...(this.posts.get(channelId) ?? [])]);
@@ -123,6 +174,28 @@ export class MockAdapter implements MumbleAdapter {
         this.boardChanged(channelId);
         return true as const;
       }),
+    upload: async (file: Blob, _name: string, onProgress?: (fraction: number) => void) => {
+      const room = this.boardRoom(() => true as const);
+      if (!room.ok) return room;
+      if (file.size > BOARD_LIMITS.fileBytes) return { ok: false, error: "too-large" };
+      // Fortschritt sichtbar machen, wie bei einer echten Übertragung
+      for (const f of [0.25, 0.5, 0.75, 1]) {
+        await new Promise((r) => setTimeout(r, 40));
+        onProgress?.(f);
+      }
+      // wie der Dienst: SVG ist nie ein Bild, sonst zählt der Typ (der Dienst prüft die Bytes)
+      const image = /^image\/(png|jpeg|gif|webp)$/.test(file.type);
+      const dims = image ? await createImageBitmap(file).then((b) => ({ width: b.width, height: b.height })).catch(() => null) : null;
+      const attachment = { id: hexId(), mime: image ? file.type : file.type && !file.type.startsWith("image/") ? file.type : "application/octet-stream", size: file.size, ...(dims ?? {}), image: image && !!dims };
+      this.files.set(attachment.id, { attachment, url: URL.createObjectURL(file) });
+      return { ok: true, value: { ...attachment, name: _name } };
+    },
+    fileUrl: (a: Attachment) => {
+      const f = this.files.get(a.id);
+      if (!f) return "";
+      if (!f.url) f.url = URL.createObjectURL(new Blob(["Protokoll der Besprechung\n"], { type: a.mime }));
+      return f.url;
+    },
   };
 
   constructor(fixture: FixtureName | Snapshot = "musterhaus", opts: MockOptions = {}) {
@@ -185,7 +258,7 @@ export class MockAdapter implements MumbleAdapter {
 
   setFixture(name: FixtureName): void {
     this.state = clone(FIXTURES[name]!);
-    this.posts = samplePosts(Date.now());
+    this.posts = samplePosts(Date.now(), this.files);
     this.unmuteOnUndeaf = false;
     this.setPlugin(this.state.self ? "connected" : "disconnected");
     this.emit();
@@ -234,15 +307,15 @@ export class MockAdapter implements MumbleAdapter {
   }
 
   /** wie der Dienst: nur im eigenen Raum der 2. Ebene, nicht temporär (ADR-0011) */
-  private boardRoom<T>(fn: (channelId: number) => T | null | "forbidden"): BoardResult<T> {
+  private boardRoom<T>(fn: (channelId: number) => T | null | "forbidden" | "invalid" | "bad-type"): BoardResult<T> {
     const me = this.me();
     if (this.plugin === "disconnected" || !me) return { ok: false, error: "not-paired" };
     const c = this.state.channels.find((x) => x.id === me.channel);
     const floor = c && c.parent !== null ? this.state.channels.find((x) => x.id === c.parent) : undefined;
     if (!c || c.temporary || !floor || floor.parent !== 0) return { ok: false, error: "no-board-here" };
     const value = fn(c.id);
-    if (value === "forbidden") return { ok: false, error: "forbidden" };
-    return value === null ? { ok: false, error: "not-found" } : { ok: true, value };
+    if (value === "forbidden" || value === "invalid" || value === "bad-type") return { ok: false, error: value as "forbidden" | "invalid" | "bad-type" };
+    return value === null ? { ok: false, error: "not-found" } : { ok: true, value: value as T };
   }
 
   private boardChanged(channelId: number): void {

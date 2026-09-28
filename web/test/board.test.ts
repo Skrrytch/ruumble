@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Post } from "@ruumble/protocol";
-import { countLabel, filterPosts, isLong, looksLikeCode, relativeTime } from "../src/lib/board/model.ts";
+import { countLabel, fileKind, filterPosts, formatSize, isLong, looksLikeCode, pastedName, relativeTime } from "../src/lib/board/model.ts";
 
 const post = (kind: Post["kind"], id: string = kind): Post => ({ id, channelId: 3, kind, text: "x", authorName: "A", mine: false, canDelete: false, createdAt: 0, updatedAt: 0 });
 
@@ -34,5 +34,30 @@ describe("Pinnwand-Modell", () => {
     expect(isLong("a\n".repeat(9))).toBe(true);
     expect(isLong("kurz")).toBe(false);
     expect(isLong("x".repeat(700))).toBe(true);
+  });
+});
+
+describe("Anhänge (AP11.3)", () => {
+  it("Größen lesbar", () => {
+    expect([812, 34 * 1024, 1.25 * 1024 * 1024].map(formatSize)).toEqual(["812 B", "34 KB", "1,3 MB"]);
+  });
+
+  it("Dateiart nach Typ und Endung", () => {
+    expect(fileKind("application/pdf")).toBe("pdf");
+    expect(fileKind("application/octet-stream", "bericht.PDF")).toBe("pdf");
+    expect(fileKind("application/zip")).toBe("archive");
+    expect(fileKind("application/octet-stream", "log.tgz")).toBe("archive");
+    expect(fileKind("text/csv")).toBe("text");
+    expect(fileKind("application/json")).toBe("text");
+    expect(fileKind("audio/ogg")).toBe("audio");
+    expect(fileKind("video/mp4")).toBe("video");
+    expect(fileKind("application/octet-stream", "setup.exe")).toBe("other");
+  });
+
+  it("eingefügte Bilder bekommen einen sprechenden Namen", () => {
+    const at = new Date(2026, 8, 28, 9, 5);
+    expect(pastedName({ name: "image.png", type: "image/png" }, at)).toBe("bild-2026-09-28-0905.png");
+    expect(pastedName({ name: "", type: "image/jpeg" }, at)).toBe("bild-2026-09-28-0905.jpg");
+    expect(pastedName({ name: "urlaub.jpg", type: "image/jpeg" }, at)).toBe("urlaub.jpg");
   });
 });

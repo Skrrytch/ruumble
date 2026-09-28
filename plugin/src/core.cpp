@@ -168,6 +168,10 @@ void Core::handleMessage(const std::string &text) {
 	} else if (type == "reject") {
 		helloAcked_ = false;
 		api_.log("vom Dienst abgelehnt (" + msg.value("reason", std::string("?")) + ")");
+	} else if (type == "notify" && helloAcked_) {
+		// Hinweis ins Mumble-Protokoll (Pinnwand, AP11.4); Mumble maskiert HTML und setzt „Ruumble:“ davor
+		const std::string text = msg.value("text", "");
+		if (!text.empty()) api_.log(text.substr(0, 300));
 	} else if (type == "command" && helloAcked_) {
 		const json body = msg.value("body", json::object());
 		Command c;

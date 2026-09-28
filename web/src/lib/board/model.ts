@@ -60,3 +60,34 @@ export const PREVIEW_LINES = 8;
 export function isLong(text: string): boolean {
   return text.split(/\r?\n/).length > PREVIEW_LINES || text.length > PREVIEW_LINES * 80;
 }
+
+// ---------------------------------------------------------------- Anhänge (AP11.3)
+
+/** „812 B“, „34 KB“, „1,2 MB“ */
+export function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toLocaleString("de-DE", { maximumFractionDigits: 1 })} MB`;
+}
+
+export type FileKind = "image" | "pdf" | "text" | "archive" | "audio" | "video" | "other";
+
+/** Grobe Art einer Datei für das Symbol, nach Typ und Endung */
+export function fileKind(mime: string, name = ""): FileKind {
+  const ext = name.toLowerCase().split(".").pop() ?? "";
+  if (mime.startsWith("image/")) return "image";
+  if (mime === "application/pdf" || ext === "pdf") return "pdf";
+  if (mime.startsWith("audio/")) return "audio";
+  if (mime.startsWith("video/")) return "video";
+  if (/zip|tar|gzip|7z|rar|compressed/.test(mime) || ["zip", "tar", "gz", "tgz", "7z", "rar"].includes(ext)) return "archive";
+  if (mime.startsWith("text/") || /json|xml|yaml|csv/.test(mime) || ["txt", "md", "csv", "json", "log", "yml", "yaml"].includes(ext)) return "text";
+  return "other";
+}
+
+/** Name für eingefügte Bilder ohne sinnvollen Dateinamen (Zwischenablage liefert oft „image.png“) */
+export function pastedName(file: { name: string; type: string }, now = new Date()): string {
+  if (file.name && file.name !== "image.png" && file.name !== "blob") return file.name;
+  const ext = file.type.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `bild-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.${ext}`;
+}

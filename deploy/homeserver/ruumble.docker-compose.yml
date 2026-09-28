@@ -2,7 +2,7 @@
 # Liest Mumble per Ice nur lesend. Erreichbar nur im Heimnetz (an die LAN-Adresse gebunden).
 services:
     ruumble:
-        image: ruumble:0.2.0
+        image: ruumble:0.6.0
         container_name: ruumble
         restart: unless-stopped
         deploy:

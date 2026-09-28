@@ -2,8 +2,8 @@
  * Zustand der Oberfläche: hält den letzten Snapshot, leitet das Gebäude ab und führt Befehle aus.
  * Kein optimistisches Umschalten: Der eigene Kanal ändert sich erst mit dem nächsten Snapshot (ADR-0003).
  */
-import type { BoardView, CommandResult, PostKind, Snapshot, TalkingState } from "@ruumble/protocol";
-import type { BoardErrorCode, ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
+import type { Attachment, BoardView, CommandResult, PostKind, Snapshot, TalkingState, Uploaded } from "@ruumble/protocol";
+import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
 import type { BoardFilter } from "./board/model.ts";
 import { buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
 
@@ -16,7 +16,7 @@ const BOARD_ERRORS: Record<BoardErrorCode, string> = {
   "not-found": "Der Beitrag existiert nicht mehr.",
   forbidden: "Das darfst du nicht.",
   "too-large": "Die Datei ist zu groß (höchstens 10 MB).",
-  "bad-type": "Dieser Dateityp geht hier nicht.",
+  "bad-type": "Das ist kein Bild, das Ruumble anzeigen kann (PNG, JPEG, GIF, WebP).",
   invalid: "Der Beitrag ist leer oder ungültig.",
   "rate-limited": "Zu viele Beiträge in kurzer Zeit – bitte kurz warten.",
   offline: "Keine Verbindung zum Ruumble-Dienst.",
@@ -144,6 +144,27 @@ export class RuumbleState {
     if (!r.ok) return this.boardFailed(r.error);
     await this.loadBoard();
     return true;
+  }
+
+  /** Anhang hochladen; die Eingabe zeigt den Fortschritt und heftet ihn danach mit `pinAttachment` an */
+  upload(file: Blob, name: string, onProgress?: (fraction: number) => void): Promise<BoardResult<Uploaded>> {
+    return this.adapter.board.upload(file, name, onProgress);
+  }
+
+  async pinAttachment(attachment: Uploaded, caption: string): Promise<boolean> {
+    const r = await this.adapter.board.create({ kind: attachment.image ? "image" : "file", text: caption, attachmentId: attachment.id, attachmentName: attachment.name });
+    if (!r.ok) return this.boardFailed(r.error);
+    await this.loadBoard();
+    return true;
+  }
+
+  fileUrl(attachment: Attachment, download = false): string {
+    return this.adapter.board.fileUrl(attachment, download);
+  }
+
+  /** Klartext zu einem Fehler der Pinnwand (für Hinweise direkt an der Eingabe) */
+  boardErrorText(error: BoardErrorCode): string {
+    return BOARD_ERRORS[error];
   }
 
   async editPost(id: string, text: string, language?: string): Promise<boolean> {
