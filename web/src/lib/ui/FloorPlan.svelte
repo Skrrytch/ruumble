@@ -8,12 +8,16 @@
     pendingChannel,
     talking,
     onjoin,
+    boardOpen = false,
+    ontoggleboard,
   }: {
     floor: Floor;
     readonly?: boolean;
     pendingChannel: number | null;
     talking: Record<number, boolean>;
     onjoin: (channelId: number) => void;
+    boardOpen?: boolean;
+    ontoggleboard?: () => void;
   } = $props();
 
   const rows = $derived(splitRows(floor.rooms));
@@ -40,7 +44,7 @@
   {:else}
     <div class="row top">
       {#each rows.top as room (room.channelId)}
-        <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} />
+        <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {ontoggleboard} />
       {/each}
     </div>
     <SpaceButton
@@ -55,7 +59,7 @@
     />
     <div class="row bottom">
       {#each rows.bottom as room (room.channelId)}
-        <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} />
+        <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {ontoggleboard} />
       {/each}
     </div>
   {/if}

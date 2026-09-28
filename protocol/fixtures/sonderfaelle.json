@@ -288,6 +288,30 @@
       "position": 6,
       "links": [],
       "temporary": true
+    },
+    {
+      "id": 40,
+      "parent": 0,
+      "name": "STUDIO",
+      "position": 7,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 41,
+      "parent": 40,
+      "name": "Studio A",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 42,
+      "parent": 40,
+      "name": "Studio B",
+      "position": 1,
+      "links": [],
+      "temporary": false
     }
   ],
   "users": [
@@ -480,6 +504,9 @@
     ]
   },
   "canEnter": {
-    "14": false
+    "14": false,
+    "40": true,
+    "41": true,
+    "42": true
   }
 }

@@ -2,11 +2,25 @@
  * Zustand der Oberfläche: hält den letzten Snapshot, leitet das Gebäude ab und führt Befehle aus.
  * Kein optimistisches Umschalten: Der eigene Kanal ändert sich erst mit dem nächsten Snapshot (ADR-0003).
  */
-import type { CommandResult, Snapshot, TalkingState } from "@ruumble/protocol";
-import type { ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
+import type { BoardView, CommandResult, PostKind, Snapshot, TalkingState } from "@ruumble/protocol";
+import type { BoardErrorCode, ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
+import type { BoardFilter } from "./board/model.ts";
 import { buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
 
-export type Notice = { kind: "join-failed" | "offline"; text: string };
+export type Notice = { kind: "join-failed" | "offline" | "board"; text: string };
+
+const BOARD_ERRORS: Record<BoardErrorCode, string> = {
+  "not-paired": "Mumble ist nicht verbunden.",
+  "not-in-room": "Du bist nicht mehr in diesem Raum.",
+  "no-board-here": "Pinnwände gibt es nur in Räumen.",
+  "not-found": "Der Beitrag existiert nicht mehr.",
+  forbidden: "Das darfst du nicht.",
+  "too-large": "Die Datei ist zu groß (höchstens 10 MB).",
+  "bad-type": "Dieser Dateityp geht hier nicht.",
+  invalid: "Der Beitrag ist leer oder ungültig.",
+  "rate-limited": "Zu viele Beiträge in kurzer Zeit – bitte kurz warten.",
+  offline: "Keine Verbindung zum Ruumble-Dienst.",
+};
 
 export class RuumbleState {
   snapshot = $state<Snapshot | null>(null);
@@ -19,6 +33,13 @@ export class RuumbleState {
   /** laufender Kanalwechsel (Übergangszustand) */
   pendingChannel = $state<number | null>(null);
   notice = $state<Notice | null>(null);
+  /** Seitenleiste der Pinnwand: zu Beginn ausgeblendet, Schalter ist die Grafik im eigenen Raum (ADR-0011) */
+  boardOpen = $state(false);
+  board = $state<BoardView | null>(null);
+  boardError = $state<BoardErrorCode | null>(null);
+  boardFilter = $state<BoardFilter>("all");
+  private boardChannel: number | null = null;
+
   /** angezeigte Etage; `null` = eigene bzw. erste darstellbare */
   private viewFloorId = $state<number | null>(null);
 
@@ -54,6 +75,9 @@ export class RuumbleState {
         this.connection = "connected";
       },
       connection: (state) => (this.connection = state),
+      board: (channelId) => {
+        if (this.boardOpen && this.me?.channel === channelId) void this.loadBoard();
+      },
     });
   }
 
@@ -91,6 +115,56 @@ export class RuumbleState {
     this.report(await this.adapter.command({ cmd: "deaf", on: !me.selfDeaf }));
   }
 
+  // ---------------------------------------------------------------- Pinnwand
+
+  toggleBoard(): void {
+    this.boardOpen = !this.boardOpen;
+    if (this.boardOpen) void this.loadBoard();
+  }
+
+  closeBoard(): void {
+    this.boardOpen = false;
+  }
+
+  async loadBoard(): Promise<void> {
+    this.boardChannel = this.me?.channel ?? null;
+    const r = await this.adapter.board.load();
+    if (r.ok) {
+      this.board = r.value;
+      this.boardError = null;
+    } else {
+      this.board = null;
+      this.boardError = r.error;
+    }
+  }
+
+  /** Beitrag anheften; `true` bei Erfolg (die Eingabe wird dann geleert) */
+  async pin(kind: PostKind, text: string, language?: string): Promise<boolean> {
+    const r = await this.adapter.board.create({ kind, text, ...(language ? { language } : {}) });
+    if (!r.ok) return this.boardFailed(r.error);
+    await this.loadBoard();
+    return true;
+  }
+
+  async editPost(id: string, text: string, language?: string): Promise<boolean> {
+    const r = await this.adapter.board.update(id, { text, ...(language ? { language } : {}) });
+    if (!r.ok) return this.boardFailed(r.error);
+    await this.loadBoard();
+    return true;
+  }
+
+  async deletePost(id: string): Promise<boolean> {
+    const r = await this.adapter.board.remove(id);
+    if (!r.ok) return this.boardFailed(r.error);
+    await this.loadBoard();
+    return true;
+  }
+
+  private boardFailed(error: BoardErrorCode): false {
+    this.setNotice({ kind: "board", text: BOARD_ERRORS[error] });
+    return false;
+  }
+
   dismissNotice(): void {
     this.notice = null;
   }
@@ -113,6 +187,9 @@ export class RuumbleState {
 
   private onSnapshot(s: Snapshot): void {
     this.snapshot = s;
+    // Raum gewechselt: Die Seitenleiste zeigt immer die Pinnwand des aktuellen Raums
+    const channel = s.users.find((u) => u.session === s.self?.session)?.channel ?? null;
+    if (this.boardOpen && channel !== this.boardChannel) void this.loadBoard();
     // Den Sprechzustand meldet der eigene Client (nur für Hörbares, ADR-0005) und beendet ihn selbst mit
     // „passive“. Nicht am Snapshot filtern: Der Client hört neue Nutzer früher, als das Polling sie zeigt.
     // Entfernt wird nur, wer den Server verlassen hat, und alles bei eigenem Taub.

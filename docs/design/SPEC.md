@@ -27,7 +27,7 @@ Sonderfälle:
 
 Feste Referenzgröße 1440 × 900 px (Desktop). Aufbau von oben nach unten:
 
-1. **Kopfzeile**: Kicker mit Geschossbezeichnung (15 px, Blau 500), H1 Etagenname (40 px, Bold, −0,02 em), Zusammenfassung „N Personen auf dieser Etage · M Räume“. Rechts: Hinweis „Klick auf einen Raum wechselt den Kanal. / Etagenwechsel über den Aufzug · N online“.
+1. **Kopfzeile** (kompakt, Änderung 28.09.2026): links nur der Etagenname (22 px, Bold), die Etage ist ja im Aufzug markiert. Rechts zwei Plaketten (Blau 100): Personen-Symbol mit der Zahl auf dieser Etage und „N online“ mit Punkt. Keine Geschossbezeichnung, keine Raumzahl, keine Bedienhinweise. Der Grundriss füllt die restliche Höhe.
 2. **Grundriss** (Höhe 670 px): Hintergrund Dunkelblau mit 4 px Padding und 4 px Gap. Die Lücken bilden die **Wände**.
    - **Aufzugskern** links, 300 px breit, Hintergrund Grau (`--color-surface`). Hat eine 110 px hohe Öffnung zum Flur (auf Flurhöhe, `top: 276px`).
    - **Etagenfläche** rechts: obere Raumreihe (272 px), Flur (110 px), untere Raumreihe (272 px).
@@ -35,7 +35,9 @@ Feste Referenzgröße 1440 × 900 px (Desktop). Aufbau von oben nach unten:
 ### Raumaufteilung (dynamisch)
 
 - Räume der Etage (ohne Etagenkanal) werden geteilt: `top = rooms[0 .. ceil(n/2)]`, `bottom = Rest`.
-- Breite je Raum: `flex-grow` = 0,85 + (Summe der Zeichencodes des Namens mod 5) × 0,1, `flex-basis: 0`. Das ist deterministisch: Ein Raum behält immer dieselbe Breite. So wirken die Räume unregelmäßig wie in einem echten Gebäude.
+- Breite je Raum nach seinem Rang in der Mumble-Reihenfolge (E31): Raum 1 und 2 `flex-grow` 1,3, danach schrittweise kleiner (1,1; 1,05; … bis 0,85). Die großen Räume stehen so immer oben links.
+- Aufteilung: oben `⌊n/2⌋` Räume (mindestens 1), der Rest unten. Die untere Reihe hat bei ungerader Anzahl also einen Raum mehr.
+- Etagen mit 1–2 Räumen: Ist die Pinnwand offen, teilen sich Grundriss und Pinnwand die Breite.
 - Jeder Raum hat eine **Tür** zum Flur: eine 48 px breite Lücke in der Wand (weißes 4 px-Element über der Wandfuge), 28 px vom linken Raumrand, plus Türbogen (Viertelkreis, 1,5 px, Blau 300). Die obere Reihe hat die Tür unten, die untere Reihe oben (gespiegelt). Die untere Reihe hat `padding-top: 56px`, damit der Bogen den Text nicht überdeckt.
 - Flur: Hintergrundraster (Punkte `#E3E3E3`, Radius 2 px, Abstand 10 px auf Weiß).
 

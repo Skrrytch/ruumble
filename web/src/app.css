@@ -15,3 +15,12 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Syntax-Hervorhebung (highlight.js), nur mit Farben aus den Tokens */
+.hljs { color: var(--color-navy); }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-doctag { color: var(--color-blue-700); font-weight: 700; }
+.hljs-string, .hljs-attr, .hljs-template-tag, .hljs-regexp, .hljs-addition { color: var(--color-blue-500); }
+.hljs-comment, .hljs-quote, .hljs-meta { color: var(--color-blue-300); font-style: italic; }
+.hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet { color: var(--color-navy-light); }
+.hljs-title, .hljs-section, .hljs-name, .hljs-type { color: var(--color-navy); font-weight: 700; }
+.hljs-deletion { color: var(--color-alert); }

@@ -16,7 +16,7 @@ Grundlage ist die Analyse der Mumble-Schnittstellen ([analyse/mumble-schnittstel
 
 | #     | Idee                                                         | Nutzen                                                    | Eigener Speicher?              | Aufwand | Status                        |
 | ----- | ------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------ | ------- | ----------------------------- |
-| **A** | Pinnwand je Raum: Text, Code, Bilder, Dateien                | lange Texte, Quellcode, Bilder in voller Größe            | **ja, erstmals**               | L       | Entscheidung offen (ADR-0011) |
+| **A** | Pinnwand je Raum: Text, Code, Bilder, Dateien                | lange Texte, Quellcode, Bilder in voller Größe            | **ja, erstmals**               | L       | **geplant (AP11, ADR-0011)** |
 | **B** | Status-Zeile („Im Termin bis 14 Uhr“)                        | Ansprechbarkeit sichtbar, auch in normalen Mumble-Clients | nein (Mumble-Kommentar)        | S       | Entscheidung offen            |
 | **C** | Anklopfen                                                    | höflich statt hineinplatzen                               | nein (flüchtig)                | M       | Entscheidung offen            |
 | **D** | Echte Avatare                                                | schnelleres Wiedererkennen                                | nein (Zwischenspeicher im RAM) | S       | **geplant (AP9)**             |
@@ -26,7 +26,9 @@ Grundlage ist die Analyse der Mumble-Schnittstellen ([analyse/mumble-schnittstel
 
 ---
 
-## A – Pinnwand je Raum
+## A – Pinnwand je Raum → geplant als AP11
+
+> **Entschieden (ADR-0011):** nur in Räumen, Lesen und Schreiben für Anwesende, **Bearbeiten für alle Anwesenden**, Löschen durch Autor und Admins, 30 Tage, **alles bis 10 MB**, bei vollem Speicher die ältesten zuerst löschen, **kein Zähler**, sondern eine Pinnwand-Grafik im Raum. Wo die Tabelle unten abweicht, gilt ADR-0011.
 
 **Idee:** Jeder Raum (und jeder Flur) bekommt eine Pinnwand als Seitenleiste neben dem Grundriss. Dort lassen sich posten:
 

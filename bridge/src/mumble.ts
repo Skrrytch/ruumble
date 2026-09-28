@@ -24,6 +24,8 @@ export interface MumbleSource {
   serverInfo(): Promise<ServerInfo>;
   listeners(channelIds: number[]): Promise<Record<string, number[]>>;
   canEnter(session: number, channelIds: number[]): Promise<Record<string, boolean>>;
+  /** Schreibrecht (PermissionWrite) auf einen Kanal, z. B. zum Löschen fremder Pinnwand-Beiträge (ADR-0011) */
+  canWrite(session: number, channelId: number): Promise<boolean>;
   /** SHA1 hex von certs[0], `null` ohne Zertifikat oder bei unbekannter Session */
   certHash(session: number): Promise<string | null>;
   /** Avatarbild eines registrierten Nutzers (Ice getTexture), `null` ohne Bild (AP9) */
@@ -57,6 +59,7 @@ export class IceMumbleSource implements MumbleSource {
   private readonly meta: any;
   private readonly server: any;
   private readonly permissionEnter: number;
+  private readonly permissionWrite: number = 0x01; // MumbleServer.ice: PermissionWrite
 
   private constructor(communicator: { destroy(): Promise<void> }, meta: any, server: any, permissionEnter: number) {
     this.communicator = communicator;
@@ -150,6 +153,10 @@ export class IceMumbleSource implements MumbleSource {
       if (!perms[i]) result[String(id)] = false; // fehlt ein Kanal, gilt true (Protokoll)
     });
     return result;
+  }
+
+  async canWrite(session: number, channelId: number): Promise<boolean> {
+    return this.server.hasPermission(session, channelId, this.permissionWrite).catch(() => false);
   }
 
   async certHash(session: number): Promise<string | null> {
