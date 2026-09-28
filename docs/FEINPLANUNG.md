@@ -281,6 +281,8 @@ Ursprünglicher Plan:
   - ungekoppelt
   - Mumble beendet
 - Mit `ADDRESS_CHECK=enforce` besteht der Test im Docker-Netz. P7 über Proxy/VPN steht noch aus (Homeserver).
+- **Auch gegen den Mumble-Server 1.5.735** (die Version auf dem Homeserver) bestanden, 6 von 6 Läufen. Die auf 1.6.870 festgelegte Ice-Slice funktioniert mit 1.5.735, ein Upgrade des Homeservers ist nicht nötig.
+- Headless-Clients senden den Sinuston in Schüben (ca. 250 ms „talking“ alle 2 s). Der Test prüft deshalb eng getaktet, ob der Ring mindestens einmal erscheint. Bei Fehlern schreibt er alle WebSocket-Nachrichten nach `test-results-live/…/ws-frames.txt`.
 - **Befund:** Die Oberfläche hat den Sprechzustand am Snapshot gefiltert. Der Client hört neue Nutzer aber früher, als das Polling sie zeigt. Jetzt gilt der Zustand so, wie das Plugin ihn meldet (es beendet ihn selbst mit „passive“).
 
 Offen: Homeserver (Nginx Proxy Manager statt Caddy, siehe ADR-0008), Installationsanleitung.
