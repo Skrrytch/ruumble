@@ -83,7 +83,7 @@ Jeder Test ist zeitlich begrenzt auf höchstens 1 Tag. Das Ergebnis ist eine kur
 
 **Abbruchkriterium:** Läuft Ice for JavaScript nicht stabil, wird der Dienst in Python geschrieben (ADR-0006 Fallback).
 
-### S2 – Minimal-Plugin (prüft P4, P5)
+### S2 – Minimal-Plugin (prüft P4, P5) · ✔ bestanden am 28.09.2026 mit Mumble 1.4.287, 1.5.517 und 1.5.735, siehe [analyse/spike-s2.md](analyse/spike-s2.md)
 1. Eigenes CMake unter `spikes/plugin` mit dem Include-Pfad `third_party/mumble/plugins` und API 1.0.x.
 2. `mumble_init` startet einen Thread. `onServerSynchronized` loggt Session und Hash, `onUserTalkingStateChanged` loggt die Ereignisse.
 3. Der Thread ruft nach 5 s `requestUserMove` sowie `requestLocalUserMute/Deaf` auf. Geprüft werden Timeout-Verhalten, Bestätigung per `onChannelEntered` und Ablehnung (Kanal ohne Enter-Recht).
@@ -169,7 +169,7 @@ Reine Funktionen ohne Svelte und ohne DOM. Die Testabdeckung liegt bei mindesten
    - Token prüfen und zum Plugin mit demselben Hash zuordnen
    - `snapshot` gebündelt über 100 ms verschicken
    - `talking` nur an die eigenen Oberflächen weiterleiten (ADR-0005)
-   - Befehle prüfen: Kanal existiert, `canEnter`, Rate-Limit von 2 pro Sekunde
+   - Befehle prüfen: Kanal existiert, `canEnter`, Rate-Limit von **1 pro Sekunde** (S2: Mumble-Standard `messagelimit=1`)
 7. **HTTP:** Statische Oberfläche, `/download` (Plugin-Bundle), `/healthz`
 8. **Konfiguration** per Umgebungsvariablen: `ICE_HOST`, `ICE_PORT`, `ICE_SECRET_READ`, optional `SERVER_ID` (Standard: erster Server aus `getBootedServers`), `PUBLIC_URL`, `TRUST_PROXY`
 9. **Tests:** Unit-Tests für Differenzbildung, Prüfung und Weiterleitung. Integrationstest gegen einen Mumble-Server im Container.
@@ -200,9 +200,11 @@ Reine Funktionen ohne Svelte und ohne DOM. Die Testabdeckung liegt bei mindesten
 5. Kopplung: `pairUrl` einmalig mit `xdg-open` öffnen und das Flag `paired` in `~/.config/ruumble/plugin.json` setzen.
 6. `mumble_shutdown`: Stop-Flag setzen, schließen, `join`. Dauert höchstens 1 s.
 7. Bundle `ruumble-<version>.mumble_plugin` mit `manifest.xml` (`os="linux" arch="x64"`)
+   - Gebaut wird im **ältesten unterstützten Distributions-Container**, wegen der glibc-Version. libstdc++ wird statisch eingebunden (S2).
 8. Tests:
    - Unit-Tests für Queue, Executor und Config gegen einen API-Stub. Das ist ein eigenes Fake-Struct, Mumble wird dafür nicht gebraucht.
-   - Manueller Testplan mit einem echten Client
+   - Automatische Tests mit echten Clients: die Container aus S2 (Ubuntu, Debian, Fedora, headless, Sinus-Mikrofon), geprüft per Ice
+   - Ergänzend ein manueller Testplan für den Desktop
 
 **Fertig, wenn:** Das Plugin übersteht 100 Mal Aktivieren und Deaktivieren sowie Trennen und Neuverbinden ohne Hänger, und alle Befehle funktionieren gegen einen echten Server.
 

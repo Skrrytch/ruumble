@@ -153,8 +153,8 @@ Bei der erwarteten Größe (unter 100 Nutzer, unter 50 Kanäle) ergibt das Polli
 | P1 | Ist das Docker-Image `mumblevoip/mumble-server` mit Ice gebaut? Wie wird `ice=` konfiguriert (Umgebungsvariable oder INI)? | S1 · ✔ S1: Ice 3.7, Konfiguration über `MUMBLE_CONFIG_*` |
 | P2 | Funktioniert Ice for JavaScript 3.7 (`ice` von npm, `slice2js`) unter aktuellem Node LTS? | S1 · ✔ S1: funktioniert. Achtung: Die CLI von `slice2js` 3.7.110 ist kaputt, deshalb `compile()` nutzen. |
 | P3 | Aufwand für Polling im Main-Thread des Servers | S1 · ✔ S1: nicht messbar (< 0,1 % CPU, Ice-Aufrufe p95 < 3 ms) |
-| P4 | Lädt das Plugin mit API 1.0.x im Mumble-Client von Ubuntu, Debian und Fedora? | S2 |
-| P5 | Verhalten von Befehlen aus dem Netzwerk-Thread (Timeout nach 800 ms), Bestätigung per `onChannelEntered` | S2 |
-| P6 | Stimmt der SHA1 von `getCertificateList()[0]` mit `getUserHash` überein? | S3 · Serverseite ✔ S1 (SHA1 von `certs[0]` = Hash des Client-Zertifikats), Plugin-Seite offen |
+| P4 | Lädt das Plugin mit API 1.0.x im Mumble-Client von Ubuntu, Debian und Fedora? | S2 · ✔ S2: 1.4.287 (Fedora 44), 1.5.517 (Ubuntu 24.04), 1.5.735 (Debian 13) |
+| P5 | Verhalten von Befehlen aus dem Netzwerk-Thread (Timeout nach 800 ms), Bestätigung per `onChannelEntered` | S2 · ✔ S2: Bestätigung per `onChannelEntered` nach 10–25 ms. Timeout nicht provoziert (API-Aufrufe 0–4 ms). Neu: Rate-Limit verwirft Wechsel still |
+| P6 | Stimmt der SHA1 von `getCertificateList()[0]` mit `getUserHash` überein? | S3 · ✔ S1 + S2: `getUserHash` = SHA1 Client-Zertifikat = SHA1 `getCertificateList[0]` |
 | P7 | Stimmen die `User.address` aus Ice und die Quell-IP der Plugin-Verbindung überein, wenn ein Reverse-Proxy und VPN dazwischen liegen? | S3 |
 | P8 | Gibt es das Server-Image passend zu v1.6.870 (Tag-Schema von `mumblevoip/mumble-server`)? | S1 · ✔ S1: `mumblevoip/mumble-server:v1.6.870` (`latest` kann 1.5.x sein!) |

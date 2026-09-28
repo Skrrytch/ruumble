@@ -14,6 +14,6 @@ Status: angenommen für Svelte und Node.js, vorgeschlagen für den Rest (28.09.2
 | Workspace | pnpm-Workspace im Repo-Root (`web`, `bridge`, `protocol`), **pnpm 11** über corepack | Gemeinsame Abhängigkeiten, ein Befehl für den Build. pnpm 12 läuft nicht mit dem corepack 0.32 aus Node 22. |
 
 ## Konsequenzen
-- **Lizenz:** `ice` und `slice2js` stehen unter GPL-2.0 (ZeroC, alternativ kommerziell). Der Ruumble-Code bleibt BSD-3, und BSD-3 ist mit der GPL verträglich. **Ein verteiltes Paket des Dienstes (z. B. ein Docker-Image) unterliegt als Gesamtwerk aber der GPL-2.0.** Für Oberfläche und Plugin gilt das nicht, weil sie Ice nicht nutzen. Siehe O13.
+- **Lizenz:** `ice` und `slice2js` stehen unter GPL-2.0 (ZeroC, alternativ kommerziell). Der Ruumble-Code bleibt BSD-3, und BSD-3 ist mit der GPL verträglich. **Ein verteiltes Paket des Dienstes (z. B. ein Docker-Image) unterliegt als Gesamtwerk aber der GPL-2.0.** Für Oberfläche und Plugin gilt das nicht, weil sie Ice nicht nutzen. **Vom Auftraggeber akzeptiert (E26, 28.09.2026).**
 - Für Oberfläche, Dienst und Typen gibt es eine gemeinsame Sprache. C++ kommt nur im Plugin vor, und das bleibt klein.
 - Für Ice for JavaScript gibt es vergleichsweise wenige Nutzer. Das Risiko wird mit Machbarkeitstest S1 früh geprüft.
