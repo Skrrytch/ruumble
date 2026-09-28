@@ -209,6 +209,7 @@ Die Verzeichnisse `protocol/` bis `deploy/` entstehen in den Arbeitspaketen der 
 | E28 | Server-Mute (O6) | dunkles Abzeichen mit Mikrofon-aus. Self-Mute hell mit Mikrofon-aus, Self-Deaf hell mit Kopfhörer-aus. Jedes Abzeichen hat einen Tooltip. |
 | E29 | Einstellungen (O7) | Knopf sichtbar, aber deaktiviert („noch ohne Funktion“) |
 | E30 | Schwellen Anwesenheit (O14) | still = 15 Min. ohne Sprechen, abwesend = selbst taub + 5 Min. still (AP10) |
+| E31 | Raumgrößen und Reihen | Reihenfolge weiter über das Feld **Position** in Mumble (keine eigene Markierung). Raum 1 und 2 sind groß, danach kleiner; oben ⌊n/2⌋ Räume, bei 1–2 Räumen wird die offene Pinnwand breiter |
 | E26 | GPL durch Ice (O13) | akzeptiert: Der Code bleibt BSD-3, ein veröffentlichtes Image des Dienstes wird als GPL-2.0-Gesamtwerk gekennzeichnet (ADR-0006). |
 | E25 | Deployment | Homeserver des Auftraggebers (bestehendes Docker-Setup mit Mumble), Tests lokal (ADR-0008) |
 

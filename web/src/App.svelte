@@ -1,7 +1,7 @@
 <script lang="ts">
   import Unplug from "@lucide/svelte/icons/unplug";
   import type { MockAdapter } from "./lib/adapter/mock.ts";
-  import { countText } from "./lib/model/building.ts";
+  import { FEW_ROOMS, countText } from "./lib/model/building.ts";
   import type { RuumbleState } from "./lib/state.svelte.ts";
   import Core from "./lib/ui/Core.svelte";
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
@@ -13,6 +13,10 @@
 
   const building = $derived(app.building);
   const floor = $derived(app.floor);
+  // wenige Räume: die offene Pinnwand bekommt mehr Breite
+  const fewRooms = $derived(
+    app.boardOpen && !app.readonly && !!floor && !floor.lock && floor.rooms.length > 0 && floor.rooms.length <= FEW_ROOMS,
+  );
   const summary = $derived.by(() => {
     if (!floor) return "";
     if (floor.lock) return "Diese Etage ist hier nicht darstellbar";
@@ -55,7 +59,7 @@
       </div>
     </header>
 
-    <div class="plan">
+    <div class="plan" class:few={fewRooms}>
       <Core {app} {building} {floor} />
       {#if floor}
         <!-- auch bei Leerstand: Steht der eigene Nutzer auf einer gesperrten Etage, erscheint dort deren Hinweis -->
@@ -102,6 +106,9 @@
   .hidden-note { font-weight: 700; }
   .preview-note { font-size: 13px; font-weight: 700; color: var(--color-blue-500); }
   .hint { font-size: 13px; text-align: right; line-height: 1.5; color: var(--color-blue-700); }
+
+  /* Etage mit 1–2 Räumen: Grundriss und Pinnwand teilen sich die Breite (SPEC 2) */
+  .plan.few :global(.floorplan), .plan.few :global(.board) { flex: 1 1 0; width: auto; min-width: 340px; }
 
   /* Grundriss: Wände = 4 px Dunkelblau als Abstand (SPEC 2) */
   .plan {

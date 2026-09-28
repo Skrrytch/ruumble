@@ -46,8 +46,12 @@ test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ 
     if (!box) { deviations.push(`${key}: fehlt`); continue; }
     // Etagentasten sind bewusst kompakter als im Prototyp (Platz für mehr Etagen und den Eingang):
     // bei ihnen nur x und Breite, beim Aufzug-Panel alles außer der Höhe
+    // Raumbreiten folgen seit dem Etagen-Layout der Mumble-Reihenfolge (Raum 1 und 2 groß), nicht mehr dem Namen
+    // wie im Prototyp: bei Räumen deshalb nur Zeile (y) und Höhe
     const keys = key.startsWith("floor-")
       ? (["x", "width"] as const)
+      : key.startsWith("room-") && key !== "room-2"
+        ? (["y", "height"] as const)
       : key === "elevator"
         ? (["x", "y", "width"] as const)
         : (["x", "y", "width", "height"] as const);
