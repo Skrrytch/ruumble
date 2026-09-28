@@ -13,7 +13,7 @@ const runClient = (distro: string, name: string, bridgeUrl = "http://ruumble:808
   execFileSync(`${root}deploy/local/run-client.sh`, [distro, name], { env: { ...process.env, BRIDGE_URL: bridgeUrl } });
 /** Root-Beschreibung setzen (Testvorbereitung mit Write-Secret); `long`: über 128 Zeichen → Mumble schickt nur einen Hash */
 const setRootDescription = (long: boolean) =>
-  execFileSync("node", ["src/setup.cjs"], { cwd: `${root}spikes/s1-ice`, env: { ...process.env, RUUMBLE_DESC_PAD: long ? "1" : "" } });
+  execFileSync("node", ["src/setup.cjs"], { cwd: `${root}tools/live-test`, env: { ...process.env, RUUMBLE_DESC_PAD: long ? "1" : "" } });
 const stopClient = (name: string) => execFileSync("docker", ["rm", "-f", `ruumble-client-${name}`]);
 
 /** Mumble-Protokoll eines Test-Clients (das Plugin spiegelt es mit RUUMBLE_LOG_STDERR auf stderr) */
@@ -85,7 +85,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await expect(toggle).toBeVisible();
     await toggle.click();
     const board = page.getByRole("complementary", { name: "Pinnwand" });
-    await expect(board.getByRole("heading", { name: "Büro von Anna" })).toBeVisible();
+    await expect(board.getByRole("heading", { name: "Pinnwand" })).toBeVisible();
     await board.getByRole("textbox", { name: "Neuer Beitrag" }).fill("Live **Test**");
     await board.getByRole("button", { name: "Senden" }).click();
     await expect(board.getByRole("article").first().locator("strong", { hasText: "Test" })).toBeVisible();
@@ -146,7 +146,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await benPage.getByRole("button", { name: "Pinnwand einblenden" }).click();
     const annaBoard = page.getByRole("complementary", { name: "Pinnwand" });
     const benBoard = benPage.getByRole("complementary", { name: "Pinnwand" });
-    await expect(benBoard.getByRole("heading", { name: "Büro von Anna" })).toBeVisible();
+    await expect(benBoard.getByRole("heading", { name: "Pinnwand" })).toBeVisible();
     // Anna heftet Code an: Ben sieht ihn ohne Neuladen, sein Mumble meldet es, Annas nicht
     await annaBoard.getByRole("button", { name: "Als Code anheften" }).click();
     await annaBoard.getByRole("textbox", { name: "Neuer Beitrag" }).fill("const live = true;\nconsole.log(live);");

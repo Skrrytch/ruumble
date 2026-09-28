@@ -1,5 +1,7 @@
 # Machbarkeitstest S2: Minimal-Plugin im echten Mumble-Client
 
+> Der Spike-Code wurde nach Abschluss entfernt (Git-Historie). Weiter genutzt werden nur Setup-Skript, Test-Bot und Client-Images, heute unter `tools/live-test/`.
+
 Datum: 28.09.2026 · Code: `spikes/s2-plugin/` · Ergebnis: **bestanden** mit Mumble 1.4.287 (Fedora 44), 1.5.517 (Ubuntu 24.04) und 1.5.735 (Debian 13).
 
 ## Aufbau

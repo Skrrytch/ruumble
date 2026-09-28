@@ -33,8 +33,6 @@ export interface HubOptions {
   addressCheck: AddressCheck;
   /** Vorschau: Oberflächen ohne Kopplung sehen das Gebäude nur lesend */
   preview: boolean;
-  /** Missbrauchsschutz je Nutzer; die Mumble-Grenzen behandelt das Plugin (ADR-0003) */
-  maxCommandsPerSecond?: number;
   log?: (msg: string, extra?: Record<string, unknown>) => void;
   onSessionsChanged?: (sessions: number[]) => void;
   /** sofort neu abfragen, z. B. wenn ein Plugin eine Session meldet, die das Polling noch nicht kennt */
@@ -55,8 +53,10 @@ interface PluginEntry {
   conn: Conn<BridgeToPlugin>;
   certHash: string;
   session: number;
-  name: string;
 }
+
+/** Missbrauchsschutz je Nutzer; die Mumble-Grenzen behandelt das Plugin (ADR-0003) */
+const MAX_COMMANDS_PER_SECOND = 5;
 
 interface UiEntry {
   conn: Conn<BridgeToUi>;
@@ -82,7 +82,7 @@ export class Hub {
 
   setState(state: ServerState): void {
     this.state = state;
-    for (const ui of this.uis) this.sendSnapshot(ui);
+    this.rebroadcast();
   }
 
   /** Snapshots erneut senden, z. B. nach einem neuen Avatarbild */
@@ -153,7 +153,7 @@ export class Hub {
           const previous = this.plugins.get(msg.certHash);
           if (previous && previous.conn !== conn) previous.conn.close(4001, "replaced");
           if (entry && entry.certHash !== msg.certHash) this.removePlugin(entry);
-          entry = { conn, certHash: msg.certHash, session: msg.session, name };
+          entry = { conn, certHash: msg.certHash, session: msg.session };
           this.plugins.set(msg.certHash, entry);
           const pairUrl = msg.paired ? undefined : `${this.opts.publicUrl}/pair?code=${this.opts.pairing.createCode(msg.certHash, name)}`;
           conn.send(pairUrl ? { v, type: "welcome", pairUrl } : { v, type: "welcome" });
@@ -182,7 +182,7 @@ export class Hub {
             if (u && (u.selfMute !== msg.selfMute || u.selfDeaf !== msg.selfDeaf)) {
               u.selfMute = msg.selfMute;
               u.selfDeaf = msg.selfDeaf;
-              for (const ui of this.uis) this.sendSnapshot(ui);
+              this.rebroadcast();
             }
             break;
           }
@@ -269,7 +269,7 @@ export class Hub {
     if (!plugin) return reply("offline");
     const now = Date.now();
     ui.commandTimes = ui.commandTimes.filter((t) => now - t < 1000);
-    if (ui.commandTimes.length >= (this.opts.maxCommandsPerSecond ?? 5)) return reply("rejected");
+    if (ui.commandTimes.length >= MAX_COMMANDS_PER_SECOND) return reply("rejected");
     ui.commandTimes.push(now);
     if (body.cmd === "join") {
       const exists = this.state?.channels.some((c) => c.id === body.channel);
@@ -319,7 +319,7 @@ export class Hub {
   }
 }
 
-/** IPv4-in-IPv6 und Portangaben angleichen */
+/** IPv4-in-IPv6 angleichen (::ffff:1.2.3.4 → 1.2.3.4); Ports kommen in beiden Quellen nicht vor */
 function normalize(address: string): string {
   return address.replace(/^::ffff:/, "").trim().toLowerCase();
 }

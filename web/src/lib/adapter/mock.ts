@@ -7,7 +7,7 @@
  * - Stumm/Taub folgen der Semantik der Mumble-Buttons (nur hier nachgebildet, die Oberfläche selbst tut das nicht).
  * - Sprechereignisse gibt es nur für Nutzer im eigenen Raum und nicht, wenn man selbst taub ist.
  */
-import { BOARD_LIMITS, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
 import leerstand from "@ruumble/protocol/fixtures/leerstand.json";
 import musterhaus from "@ruumble/protocol/fixtures/musterhaus.json";
 import nichtGekoppelt from "@ruumble/protocol/fixtures/nicht-gekoppelt.json";
@@ -17,7 +17,7 @@ import type { AdapterEvents, BoardApi, BoardResult, MumbleAdapter, PluginStatus 
 const MINUTE = 60_000;
 
 /** Anhang im Mock: Inhalt im Speicher, Adresse als Blob- oder Data-URL */
-interface MockFile { attachment: Omit<Uploaded, "name">; url: string }
+interface MockFile { attachment: Omit<Uploaded, "name">; blob?: Blob; url: string }
 
 const hexId = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
 
@@ -85,7 +85,7 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
   const image = sampleImage();
   if (image) files.set(image.attachment.id, image);
   const protocol = new Blob(["Protokoll der Besprechung\n\n- Pinnwand: Bilder und Dateien\n"], { type: "text/plain" });
-  const file: MockFile = { attachment: { id: hexId(), mime: "text/plain", size: protocol.size, image: false }, url: "" };
+  const file: MockFile = { attachment: { id: hexId(), mime: "text/plain", size: protocol.size, image: false }, blob: protocol, url: "" };
   files.set(file.attachment.id, file);
   const attachment = (f: MockFile, name: string): Attachment => {
     const { image: _image, ...a } = f.attachment;
@@ -159,7 +159,9 @@ export class MockAdapter implements MumbleAdapter {
         const list = this.posts.get(channelId) ?? [];
         const i = list.findIndex((p) => p.id === id);
         if (i < 0) return null;
-        const updated: Post = { ...list[i]!, text: change.text, ...(change.language ? { language: change.language } : {}), updatedAt: Date.now(), updatedByName: this.me()!.name };
+        // wie der Dienst: ohne Sprache wird sie zurückgesetzt („automatisch“)
+        const { language: _old, ...rest } = list[i]!;
+        const updated: Post = { ...rest, text: change.text, ...(change.language ? { language: change.language } : {}), updatedAt: Date.now(), updatedByName: this.me()!.name };
         list[i] = updated;
         this.boardChanged(channelId);
         return updated;
@@ -184,7 +186,7 @@ export class MockAdapter implements MumbleAdapter {
         onProgress?.(f);
       }
       // wie der Dienst: SVG ist nie ein Bild, sonst zählt der Typ (der Dienst prüft die Bytes)
-      const image = /^image\/(png|jpeg|gif|webp)$/.test(file.type);
+      const image = (BOARD_IMAGE_TYPES as readonly string[]).includes(file.type);
       const dims = image ? await createImageBitmap(file).then((b) => ({ width: b.width, height: b.height })).catch(() => null) : null;
       const attachment = { id: hexId(), mime: image ? file.type : file.type && !file.type.startsWith("image/") ? file.type : "application/octet-stream", size: file.size, ...(dims ?? {}), image: image && !!dims };
       this.files.set(attachment.id, { attachment, url: URL.createObjectURL(file) });
@@ -193,7 +195,7 @@ export class MockAdapter implements MumbleAdapter {
     fileUrl: (a: Attachment) => {
       const f = this.files.get(a.id);
       if (!f) return "";
-      if (!f.url) f.url = URL.createObjectURL(new Blob(["Protokoll der Besprechung\n"], { type: a.mime }));
+      if (!f.url && f.blob) f.url = URL.createObjectURL(f.blob); // Blob-URL erst bei Bedarf
       return f.url;
     },
   };
@@ -258,6 +260,8 @@ export class MockAdapter implements MumbleAdapter {
 
   setFixture(name: FixtureName): void {
     this.state = clone(FIXTURES[name]!);
+    for (const f of this.files.values()) if (f.url.startsWith("blob:")) URL.revokeObjectURL(f.url);
+    this.files.clear();
     this.posts = samplePosts(Date.now(), this.files);
     this.unmuteOnUndeaf = false;
     this.setPlugin(this.state.self ? "connected" : "disconnected");

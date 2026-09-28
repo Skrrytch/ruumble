@@ -1,6 +1,6 @@
 <script lang="ts">
   // Pinnwand-Grafik im Raum (ADR-0011, Variante B): zwei Zettel mit Nadeln, rechtsbündig.
-  // Sie zeigt nie die Menge an; im eigenen Raum ist sie immer da und dient nur als Schalter.
+  // Nur im eigenen Raum, als Schalter für die Seitenleiste; sie zeigt nie an, ob oder wie viel dort hängt.
 </script>
 
 <svg class="notes" width="56" height="38" viewBox="0 0 44 30" aria-hidden="true">

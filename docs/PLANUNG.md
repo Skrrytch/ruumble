@@ -65,10 +65,10 @@ Für gesperrte Etagen gilt:
 
 ## 3. Oberfläche (Kurzfassung, Details in SPEC.md)
 
-- Die Kopfzeile zeigt das Geschoss, den Etagennamen und die Belegung.
+- Die Kopfzeile ist kompakt: links der Etagenname, rechts die Zahl der Personen auf der Etage und „N online“ (die Etage selbst ist im Aufzug markiert).
 - Der **Grundriss** besteht aus dem Aufzugskern links (Gebäudeschild, Aufzug mit einer Taste je Etage, Eingang, Benutzermenü) und der Etagenfläche rechts. Dort liegen die obere Raumreihe, der Flur und die untere Raumreihe. Die Wände entstehen aus 4 px Abstand, jede Tür hat einen Türbogen.
 - Das **Gebäudeschild** zeigt nur den Servernamen. Das Label „primary“ entfällt.
-- Die Raumbreiten werden deterministisch aus dem Namen berechnet, damit das Gebäude unregelmäßig wirkt, aber stabil bleibt. Mit höchstens 8 Räumen liegen höchstens 4 in einer Reihe.
+- Die Raumbreiten folgen der Mumble-Reihenfolge (E31): Raum 1 und 2 sind groß, danach werden die Räume kleiner. Oben stehen ⌊n/2⌋ Räume (mindestens einer), der Rest unten; mit höchstens 8 Räumen also höchstens 4 in einer Reihe.
 - Der eigene Raum hat einen hellblauen Hintergrund, der eigene Avatar einen gelben Ring. Das ist das einzige gelbe Element.
 - Interaktion: Klick auf einen Raum wechselt den Kanal. Klick auf eine Etage wechselt nur die Ansicht. Außerdem gibt es Stumm, Taub und „Zu meiner Etage“.
 - **Einstellungen:** vorerst ohne Funktion (siehe Frage O7).

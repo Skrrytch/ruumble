@@ -12,7 +12,6 @@ import {
   homeFloor,
   initials,
   isMutedRoomName,
-  isVacant,
   roomGrow,
   sortSiblings,
   splitRows,
@@ -109,7 +108,6 @@ describe("Musterhaus (Normalfall)", () => {
     expect(anna.users).toMatchObject([{ name: "Anna", initials: "An", isSelf: true }]);
     expect(b.floors.map((f) => f.isSelf)).toEqual([false, true, false]);
     expect(homeFloor(b)?.name).toBe("ENTWICKLUNG");
-    expect(isVacant(b)).toBe(false);
   });
 
   it("Nutzer im Raum alphabetisch, „(stumm)“-Raum markiert", () => {
@@ -197,10 +195,9 @@ describe("Wo ist der eigene Nutzer?", () => {
 describe("Leerstand und Live-Änderungen", () => {
   it("keine darstellbare Etage → Leerstand", () => {
     const b = buildBuilding(fixture("leerstand"));
-    expect(isVacant(b)).toBe(true);
     expect(homeFloor(b)).toBeNull();
     expect(b.self).toEqual({ kind: "entrance" });
-    expect(isVacant(buildBuilding(snapshot([ch(0, null, "R")])))).toBe(true);
+    expect(homeFloor(buildBuilding(snapshot([ch(0, null, "R")])))).toBeNull();
   });
 
   it("Unterkanal angelegt → Etage gesperrt, wieder entfernt → frei", () => {

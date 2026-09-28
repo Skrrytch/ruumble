@@ -4,7 +4,8 @@
 
   // Nur mit ?debug: spielt alle Fälle aus PLANUNG Abschnitt 2 gegen den Mock durch.
   let { mock, app }: { mock: MockAdapter; app: RuumbleState } = $props();
-  let fixture = $state<FixtureName>((new URLSearchParams(location.search).get("fixture") as FixtureName) ?? "musterhaus");
+  const requested = new URLSearchParams(location.search).get("fixture") ?? "";
+  let fixture = $state<FixtureName>((requested in FIXTURES ? requested : "musterhaus") as FixtureName);
   let open = $state(true);
 </script>
 

@@ -79,7 +79,7 @@ export const PluginHello = z.object({
   /** SHA1 hex des Client-Zertifikats (getUserHash), stabiler Schlüssel der Kopplung (ADR-0004) */
   certHash: z.string().regex(/^[0-9a-f]{40}$/),
   pluginVersion: z.string(),
-  /** Das Plugin hat bereits eine gekoppelte Oberfläche (Flag in plugin.json). */
+  /** Das Plugin hat für diesen Dienst schon einmal gekoppelt (`pairedWith` in plugin.json, ADR-0010) */
   paired: z.boolean(),
 });
 
@@ -93,7 +93,7 @@ export type PluginToBridge = z.infer<typeof PluginToBridge>;
 
 // ---------------------------------------------------------------- Dienst → Plugin
 
-export const RejectReason = z.enum(["unknown-session", "hash-mismatch", "address-mismatch", "no-certificate", "unsupported-version"]);
+export const RejectReason = z.enum(["unknown-session", "hash-mismatch", "address-mismatch", "no-certificate"]);
 
 export const BridgeWelcome = z.object({ v, type: z.literal("welcome"), pairUrl: z.url().optional() });
 export const BridgeReject = z.object({ v, type: z.literal("reject"), reason: RejectReason });
@@ -136,6 +136,9 @@ export type Snapshot = z.infer<typeof Snapshot>;
 
 /** Grenzen der Pinnwand (ADR-0011) */
 export const BOARD_LIMITS = { fileBytes: 10 * 1024 * 1024, textChars: 100_000 } as const;
+
+/** Bildtypen, die die Pinnwand als Bild zeigt (der Dienst erkennt sie an den Bytes); SVG nie (ADR-0011) */
+export const BOARD_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"] as const;
 
 export const PostKind = z.enum(["text", "code", "image", "file"]);
 export type PostKind = z.infer<typeof PostKind>;

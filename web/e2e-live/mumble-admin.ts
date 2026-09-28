@@ -67,9 +67,9 @@ export async function unregisterUser(name: string): Promise<void> {
 // impl_Server_getTexture werfen InvalidUserException gerade dann, wenn der Nutzer registriert ist (Bedingung vertauscht,
 // in 1.5.735 noch korrekt: isUserId). Den Avatar setzt im Test deshalb ein Client selbst.
 
-/** Test-Bot aus spikes/s1-ice (Mumble-Protokoll in Node), z. B. um als registrierter Nutzer einen Avatar zu setzen */
+/** Test-Bot aus tools/live-test (Mumble-Protokoll in Node), z. B. um als registrierter Nutzer einen Avatar zu setzen */
 export function loadBot(): { Bot: new (name: string) => any } {
-  return createRequire(new URL("../../spikes/s1-ice/package.json", import.meta.url))("./src/bot.cjs");
+  return createRequire(new URL("../../tools/live-test/package.json", import.meta.url))("./src/bot.cjs");
 }
 
 /** trennt eine Session; der Mumble-Client verbindet sich von selbst neu (und ist dann registriert) */
