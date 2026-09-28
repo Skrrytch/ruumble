@@ -193,6 +193,17 @@ Ursprünglicher Plan:
 
 ## AP5 – Ruumble-Dienst (`bridge`)
 
+**✔ Erledigt am 28.09.2026** (Branch `ap5-bridge`, zusammen mit AP6 und dem lokalen Live-Test):
+- Node.js mit TypeScript, fastify und Ice for JavaScript. Die Stubs kommen zur Build-Zeit aus `third_party`. Für den Container wird mit esbuild gebündelt, weil Node TypeScript in `node_modules` nicht ausführt.
+- Poller nach ADR-0002, Vermittlung, Kopplung per Einmal-Link und Geräte-Token (SHA-256 in `data/tokens.json`), Plausibilitätsprüfung (`ADDRESS_CHECK=off|warn|enforce`)
+- Vorschau (`PREVIEW=true`): Das Gebäude ist ohne Kopplung nur lesbar, für den Einstieg auf dem Homeserver.
+- Missbrauchsschutz: 5 Befehle pro Sekunde und Nutzer. Die Grenzen von Mumble behandelt das Plugin nach ADR-0003. 1/s im Dienst würde „der letzte Klick gewinnt“ verhindern.
+- IP-Adressen verlassen den Dienst nie.
+- 22 Unit-Tests mit gefälschter Ice-Quelle. `deploy/Dockerfile` (252 MB, GPL-2.0-Gesamtwerk nach E26).
+- **Befund aus dem Live-Test:** Das Plugin meldet sich direkt nach dem Sync an, oft bevor das Polling die Session sieht. Der Dienst fragt jetzt vor einer Ablehnung (`unknown-session`) sofort neu ab.
+
+Ursprünglicher Plan:
+
 1. **Ice-Client:** Stubs zur Build-Zeit aus `../third_party/mumble/src/murmur/MumbleServer.ice` erzeugen. Proxy direkt auf `s/<id>:tcp -h <host> -p <port>` setzen, Read-Secret im Context mitgeben.
 2. **Poller** nach ADR-0002: Differenz zum vorigen Stand bilden, Neustart über `getUptime` erkennen, Fehler mit Backoff behandeln, `InvalidSessionException` tolerieren.
 3. **State-Store:** Rohdaten plus `canEnter` je gekoppeltem Nutzer
@@ -218,6 +229,13 @@ Ursprünglicher Plan:
 ---
 
 ## AP6 – Ruumble-Plugin (`plugin`)
+
+**✔ Erledigt am 28.09.2026** (Branch `ap5-bridge`):
+- `Core` ohne Mumble-Abhängigkeit (Warteschlange, Befehle nach ADR-0003, Protokoll), `plugin.cpp` als einzige Datei mit `MumblePlugin.h`, WebSocket mit TLS über IXWebSocket, `~/.config/ruumble/plugin.json`, `xdg-open` ohne Shell-Interpolation
+- 11 Unit-Tests (doctest, 56 Prüfungen). Das Bundle `ruumble-<version>.mumble_plugin` wird gebaut, die CI baut und testet es (Job `plugin`).
+- **Befund aus dem Live-Test:** IXWebSocket verbindet sich nach einer Verbindung, die zuvor erfolgreich stand, ohne Wartezeit neu. Bei einem `reject` entstand eine enge Schleife (79 Versuche in 240 ms). Das Plugin wartet jetzt nach kurzlebigen Verbindungen 2 s bis 60 s, und das Warten lässt sich beim Beenden unterbrechen.
+
+Ursprünglicher Plan:
 
 1. CMake-Projekt:
    - Include-Pfad `../third_party/mumble/plugins`
@@ -250,6 +268,24 @@ Ursprünglicher Plan:
 ---
 
 ## AP7 – Integration und Docker Compose (`deploy`)
+
+**Lokaler Live-Test ✔ am 28.09.2026:**
+- Aufbau: `deploy/local/`, echter Server v1.6.870, Dienst im Container, headless Mumble-Clients mit dem echten Plugin
+- `web/e2e-live/`: 8 Prüfungen, bestanden mit Fedora 1.4.287, Ubuntu 1.5.517 und Debian 1.5.735
+  - Kopplung
+  - Kanalwechsel
+  - Sprechen
+  - Stumm/Taub
+  - Zutrittsrecht
+  - zweiter Client
+  - ungekoppelt
+  - Mumble beendet
+- Mit `ADDRESS_CHECK=enforce` besteht der Test im Docker-Netz. P7 über Proxy/VPN steht noch aus (Homeserver).
+- **Befund:** Die Oberfläche hat den Sprechzustand am Snapshot gefiltert. Der Client hört neue Nutzer aber früher, als das Polling sie zeigt. Jetzt gilt der Zustand so, wie das Plugin ihn meldet (es beendet ihn selbst mit „passive“).
+
+Offen: Homeserver (Nginx Proxy Manager statt Caddy, siehe ADR-0008), Installationsanleitung.
+
+Ursprünglicher Plan:
 
 1. `LiveAdapter` in der Oberfläche (WebSocket, Reconnect, Status)
 2. `docker-compose.yml`:

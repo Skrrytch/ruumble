@@ -1,0 +1,40 @@
+# Ruumble-Dienst mit Oberfläche (ADR-0008). Build-Kontext: Repository-Root.
+#   docker build -f deploy/Dockerfile -t ruumble .
+#
+# Lizenz: Der Dienst nutzt Ice for JavaScript (GPL-2.0). Das Image ist als Gesamtwerk GPL-2.0 (E26);
+# der Ruumble-Quellcode selbst steht unter BSD-3-Clause.
+
+FROM node:22-bookworm-slim AS build
+WORKDIR /src
+RUN corepack enable
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY protocol/package.json protocol/
+COPY web/package.json web/
+COPY bridge/package.json bridge/
+RUN pnpm install --frozen-lockfile
+COPY third_party third_party
+COPY docs/design docs/design
+COPY protocol protocol
+COPY web web
+COPY bridge bridge
+RUN pnpm -F @ruumble/web build && pnpm -F @ruumble/bridge build
+# nur die Laufzeitabhängigkeiten des Dienstes (fastify, ice)
+RUN pnpm -F @ruumble/bridge deploy --prod --legacy /out
+
+FROM node:22-bookworm-slim
+LABEL org.opencontainers.image.title="Ruumble" \
+      org.opencontainers.image.description="Mumble-Server als Bürogebäude" \
+      org.opencontainers.image.source="https://github.com/Skrrytch/ruumble" \
+      org.opencontainers.image.licenses="GPL-2.0-only AND BSD-3-Clause"
+ENV NODE_ENV=production WEB_DIST=/app/web DATA_DIR=/data PORT=8080
+WORKDIR /app
+COPY --from=build /out/node_modules node_modules
+COPY --from=build /src/bridge/dist dist
+COPY --from=build /src/bridge/gen gen
+COPY --from=build /src/web/dist web
+RUN mkdir -p /data && chown node:node /data
+USER node
+VOLUME /data
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s CMD node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "dist/main.mjs"]
