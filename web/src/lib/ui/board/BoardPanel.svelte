@@ -7,8 +7,11 @@
   import Composer from "./Composer.svelte";
   import PostCard from "./PostCard.svelte";
   import PostDialog from "./PostDialog.svelte";
+  import { setFileUrl } from "../../board/context.ts";
 
   let { app }: { app: RuumbleState } = $props();
+
+  setFileUrl((a, download) => app.fileUrl(a, download));
 
   let openId = $state<string | null>(null);
   let now = $state(Date.now());
@@ -20,9 +23,35 @@
   const board = $derived(app.board);
   const posts = $derived(board ? filterPosts(board.posts, app.boardFilter) : []);
   const openPost = $derived<Post | null>(board?.posts.find((p) => p.id === openId) ?? null);
+
+  // Dateien auf die Pinnwand ziehen (AP11.3); der Zähler hält die Markierung über Kindelementen stabil
+  let composer = $state<{ attach: (file: File) => Promise<void> } | null>(null);
+  let dragDepth = $state(0);
+  const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes("Files");
+  function ondragenter(e: DragEvent) {
+    if (!board || !hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+  }
+  function ondragover(e: DragEvent) {
+    if (!board || !hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer!.dropEffect = "copy";
+  }
+  function ondragleave() {
+    dragDepth = Math.max(0, dragDepth - 1);
+  }
+  function ondrop(e: DragEvent) {
+    dragDepth = 0;
+    const file = e.dataTransfer?.files?.[0];
+    if (!board || !file) return;
+    e.preventDefault();
+    void composer?.attach(file);
+  }
 </script>
 
-<aside id="board-panel" class="board" aria-label="Pinnwand">
+<aside id="board-panel" class="board" aria-label="Pinnwand" {ondragenter} {ondragover} {ondragleave} {ondrop}>
+  {#if dragDepth > 0}<div class="drop" aria-hidden="true">Loslassen zum Anheften</div>{/if}
   <header>
     <div>
       <div class="kicker"><StickyNote size={14} /> Pinnwand</div>
@@ -53,7 +82,13 @@
         <p class="empty">{board.posts.length ? "Nichts in diesem Filter." : "Noch hängt hier nichts. Heft den ersten Zettel an!"}</p>
       {/each}
     </div>
-    <Composer onpin={(kind, text, language) => app.pin(kind, text, language)} />
+    <Composer
+      bind:this={composer}
+      onpin={(kind, text, language) => app.pin(kind, text, language)}
+      onupload={(file, name, progress) => app.upload(file, name, progress)}
+      onattach={(attachment, caption) => app.pinAttachment(attachment, caption)}
+      errorText={(e) => app.boardErrorText(e)}
+    />
   {/if}
 </aside>
 
@@ -68,7 +103,7 @@
 
 <style>
   /* leicht blau getönt, damit sich die Pinnwand vom Grundriss abhebt (ohne das Punktraster des Flurs) */
-  .board { --board-bg: color-mix(in srgb, var(--color-blue-100) 45%, var(--color-white)); width: 340px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--board-bg); min-height: 0; }
+  .board { --board-bg: color-mix(in srgb, var(--color-blue-100) 45%, var(--color-white)); position: relative; width: 340px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--board-bg); min-height: 0; }
   header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 16px 16px 12px; border-bottom: 1px solid var(--color-blue-300); }
   .kicker { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-blue-500); }
   h2 { margin: 2px 0 0; font-size: 20px; }
@@ -79,5 +114,10 @@
   .filters button { min-height: 32px; padding: 0 10px; border: 1px solid var(--color-blue-300); border-radius: 999px; background: var(--color-white); color: var(--color-navy); font-size: 13px; cursor: pointer; }
   .filters button[aria-pressed="true"] { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); }
   .list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 16px; min-height: 0; }
+  .drop {
+    position: absolute; inset: 8px; z-index: 2; display: flex; align-items: center; justify-content: center; pointer-events: none;
+    border: 2px dashed var(--color-blue-500); border-radius: var(--radius-md); background: rgb(255 255 255 / 0.85);
+    font-weight: 700; color: var(--color-navy);
+  }
   .empty { margin: 16px; font-size: 14px; color: var(--color-blue-700); }
 </style>

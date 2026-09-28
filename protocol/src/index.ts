@@ -149,6 +149,10 @@ export const Attachment = z.object({
 });
 export type Attachment = z.infer<typeof Attachment>;
 
+/** Antwort auf POST /api/board/uploads: `image` = als Bild erkannt (an den Bytes, nie SVG) */
+export const Uploaded = Attachment.extend({ image: z.boolean() });
+export type Uploaded = z.infer<typeof Uploaded>;
+
 export const Post = z.object({
   id: z.string().min(1),
   channelId,

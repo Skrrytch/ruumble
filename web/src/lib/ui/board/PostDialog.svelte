@@ -23,7 +23,8 @@
   let language = $state("");
   let busy = $state(false);
   let copied = $state(false);
-  const editable = $derived(post.kind === "text" || post.kind === "code");
+  // Bilder und Dateien: bearbeitet wird die Bildunterschrift, sie darf leer sein
+  const hasAttachment = $derived(post.kind === "image" || post.kind === "file");
 
   $effect(() => {
     dialog.showModal();
@@ -68,9 +69,9 @@
           <select bind:value={language}><option value="">automatisch</option>{#each CODE_LANGUAGES as l (l)}<option value={l}>{l}</option>{/each}</select>
         </label>
       {/if}
-      <textarea bind:value={draft} class:mono={post.kind === "code"} aria-label="Beitrag bearbeiten" spellcheck={post.kind !== "code"}></textarea>
+      <textarea bind:value={draft} class:mono={post.kind === "code"} class:short={hasAttachment} aria-label={hasAttachment ? "Bildunterschrift bearbeiten" : "Beitrag bearbeiten"} placeholder={hasAttachment ? "Beschreibung (optional)" : ""} spellcheck={post.kind !== "code"}></textarea>
     {:else}
-      <PostBody {post} numbers />
+      <PostBody {post} numbers large />
     {/if}
   </div>
   {#if post.updatedByName}<p class="edited">zuletzt bearbeitet von {post.updatedByName}</p>{/if}
@@ -79,10 +80,10 @@
     <span class="spacer"></span>
     {#if editing}
       <button type="button" disabled={busy} onclick={() => (editing = false)}>Abbrechen</button>
-      <button type="button" class="primary" disabled={busy || !draft.trim()} onclick={save}>Speichern</button>
+      <button type="button" class="primary" disabled={busy || (!hasAttachment && !draft.trim())} onclick={save}>Speichern</button>
     {:else}
-      <button type="button" onclick={copy}>{copied ? "Kopiert" : "Kopieren"}</button>
-      {#if editable}<button type="button" class="primary" onclick={startEdit}>Bearbeiten</button>{/if}
+      {#if post.text.trim()}<button type="button" onclick={copy}>{copied ? "Kopiert" : "Kopieren"}</button>{/if}
+      <button type="button" class="primary" onclick={startEdit}>{hasAttachment ? "Beschreibung bearbeiten" : "Bearbeiten"}</button>
     {/if}
   </footer>
 </dialog>
@@ -96,6 +97,7 @@
   .content { padding: 16px; overflow: auto; flex: 1; }
   .spacer { flex: 1; }
   textarea { width: 100%; min-height: 50vh; font: inherit; font-size: 14px; padding: 10px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); resize: vertical; }
+  textarea.short { min-height: 96px; }
   textarea.mono { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; }
   .lang { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 8px; }
   .edited { margin: 0 16px 8px; font-size: 12px; color: var(--color-blue-700); }

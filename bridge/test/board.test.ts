@@ -214,6 +214,13 @@ describe("REST /api/board", () => {
     expect((await app.inject({ url: `/api/board/files/${imgPost.json().attachment.id}`, headers: as("anna") })).headers["content-disposition"]).toMatch(/^inline;/);
   });
 
+  it("Upload: JSON und Text kommen als Rohdaten an, der Typ steht in X-File-Type", async () => {
+    const { app, as } = await setup();
+    const json = await app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream", "x-file-type": "application/json", "x-file-name": "daten.json" }, payload: Buffer.from('{"a":1}') });
+    expect(json.statusCode).toBe(201);
+    expect(json.json()).toMatchObject({ mime: "application/json", size: 7, name: "daten.json", image: false });
+  });
+
   it("ungültige Eingaben, Rate-Limit", async () => {
     const { app, as } = await setup();
     expect((await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "  " } })).statusCode).toBe(400);

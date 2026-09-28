@@ -3,7 +3,7 @@
  *
  *   GET    /api/board                 Pinnwand des aktuellen Raums
  *   POST   /api/board/posts           Text/Code oder Bild/Datei (mit attachmentId)
- *   POST   /api/board/uploads         Rohdaten bis 10 MB, Header X-File-Name (URI-kodiert), Content-Type
+ *   POST   /api/board/uploads         Rohdaten bis 10 MB, Header X-File-Name (URI-kodiert), X-File-Type (sonst Content-Type)
  *   PATCH  /api/board/posts/:id       bearbeiten (alle Anwesenden)
  *   DELETE /api/board/posts/:id       löschen (Autor oder Mumble-Admin)
  *   GET    /api/board/files/:id       Anhang (Bilder inline, alles andere als Download)
@@ -117,7 +117,9 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     if (!(bytes instanceof Buffer) || bytes.length === 0) return fail(reply, "invalid");
     // Bildtyp immer an den Bytes prüfen; SVG und alles andere gilt als Datei (nie inline, ADR-0011)
     const imageMime = detectImage(bytes);
-    const declared = String(req.headers["content-type"] ?? "application/octet-stream").split(";")[0]!.trim().toLowerCase();
+    // Die Oberfläche schickt immer application/octet-stream (sonst greifen Fastifys JSON- und Text-Parser)
+    // und den eigentlichen Typ in X-File-Type
+    const declared = String(req.headers["x-file-type"] || req.headers["content-type"] || "application/octet-stream").split(";")[0]!.trim().toLowerCase();
     const mime = imageMime ?? (/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/.test(declared) && !declared.startsWith("image/") ? declared : "application/octet-stream");
     const dims = imageMime ? imageSize(bytes, imageMime) : null;
     const att = o.store.putFile(bytes, mime, dims ?? undefined);
