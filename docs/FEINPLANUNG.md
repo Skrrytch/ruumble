@@ -463,7 +463,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 6. **Eingabe:**
    - Textfeld „Etwas an die Pinnwand heften …“ mit Markdown
    - Code-Modus `<>`: Wird mehrzeiliger Text eingefügt, der nach Code aussieht, schlägt Ruumble „als Code anheften?“ vor.
-   - Senden per Icon (Papierflieger) oder Strg+Enter („Strg+Enter sendet“). Die Seitenleiste ist leicht blau getönt, ohne das Punktraster des Flurs (Änderung 28.09.2026).
+   - Senden per Icon (Papierflieger) oder Strg+Enter (Hinweis nur im Tooltip). Die Seitenleiste ist leicht blau getönt, ohne das Punktraster des Flurs (Änderung 28.09.2026).
 7. **Layout:** Die Seitenleiste ist etwa 340 px breit, der Grundriss wird schmaler. Der Layoutvergleich mit dem Prototyp läuft mit eingeklappter Pinnwand.
 8. **Tests:** Modell (Kürzen, Code-Erkennung), XSS-Fälle im Renderer (`<script>`, `javascript:`-Links, `onerror`), E2E im Mock (anheften, bearbeiten, löschen, filtern, einklappen, Popup)
 
