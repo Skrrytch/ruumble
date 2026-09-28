@@ -9,6 +9,7 @@
   --color-white: #ffffff;
   --color-navy-light: #0f4b8c;
   --color-alert: #c62828;      /* NUR: Aufnahme-Hinweis (AP10) */
+  --color-cork: #e4cfa4;       /* Vorschlag: Korkbrett der Pinnwand (Variante A) */
 
   /* Blautöne */
   --color-blue-700: #00508c;   /* Sekundärtext (Kontrast ≥ 4,5:1 auf Weiß) */
