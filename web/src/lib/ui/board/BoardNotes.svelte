@@ -1,10 +1,9 @@
 <script lang="ts">
-  // Pinnwand-Grafik im Raum (ADR-0011, Variante B): zwei Zettel mit Nadeln, rechtsbündig, ohne Mengenangabe.
-  // `empty`: blass und gestrichelt (nur im eigenen Raum, damit man den ersten Beitrag anheften kann).
-  let { empty = false }: { empty?: boolean } = $props();
+  // Pinnwand-Grafik im Raum (ADR-0011, Variante B): zwei Zettel mit Nadeln, rechtsbündig.
+  // Sie zeigt nie die Menge an; im eigenen Raum ist sie immer da und dient nur als Schalter.
 </script>
 
-<svg class="notes" class:empty width="44" height="30" viewBox="0 0 44 30" aria-hidden="true">
+<svg class="notes" width="56" height="38" viewBox="0 0 44 30" aria-hidden="true">
   <g transform="rotate(-7 12 15)">
     <rect x="3" y="4" width="18" height="22" class="paper" />
     <line x1="7" y1="13" x2="17" y2="13" class="line" /><line x1="7" y1="17" x2="15" y2="17" class="line" /><line x1="7" y1="21" x2="13" y2="21" class="line" />
@@ -18,13 +17,10 @@
 </svg>
 
 <style>
-  .notes { display: block; }
-  .paper { fill: var(--color-white); stroke: var(--color-blue-300); stroke-width: 1; }
-  .line { stroke: var(--color-blue-300); stroke-width: 1; }
-  .pin { stroke: var(--color-navy); stroke-width: 0.6; }
+  .notes { display: block; overflow: visible; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.18)); }
+  .paper { fill: var(--color-white); stroke: var(--color-blue-500); stroke-width: 1; }
+  .line { stroke: var(--color-blue-500); stroke-width: 1.1; stroke-linecap: round; }
+  .pin { stroke: var(--color-navy); stroke-width: 0.7; }
   .pin.a { fill: var(--color-sky); }
   .pin.b { fill: var(--color-accent); }
-  .empty { opacity: 0.55; }
-  .empty .paper { stroke-dasharray: 3 2; fill: transparent; }
-  .empty .line, .empty .pin { display: none; }
 </style>

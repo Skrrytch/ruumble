@@ -481,7 +481,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 4. **Tests:** Upload-Grenzen, Bildgrößen, E2E (Einfügen, Ziehen, Vollbild)
 
 ### AP11.4 – Pinnwand im Grundriss, Hinweis in Mumble, Betrieb
-1. **Grafik im Raum: Variante B mit zwei Zetteln** (Entscheidung 28.09.2026), rechtsbündig oben, feste Größe, ohne Mengenangabe. Sie erscheint nur, wenn im Raum etwas hängt. Im eigenen Raum ist sie immer sichtbar, ohne Beiträge blass und gestrichelt. **Ein Klick darauf blendet die Seitenleiste ein oder aus, zu Beginn ist sie ausgeblendet** (Entscheidung 28.09.2026).
+1. **Grafik im Raum: Variante B mit zwei Zetteln** (Entscheidung 28.09.2026), rechtsbündig oben, feste Größe, ohne Mengenangabe. Sie erscheint nur, wenn im Raum etwas hängt. Im eigenen Raum ist sie immer gleich kräftig sichtbar und ohne Kasten, sie ist dort nur der Schalter. **Ein Klick darauf blendet die Seitenleiste ein oder aus, zu Beginn ist sie ausgeblendet** (Entscheidung 28.09.2026).
 2. **Plugin:** Befehl `notify{text}` → `log`. Der Dienst schickt ihn beim Anheften an die Anwesenden außer dem Autor.
 3. **Live-Test:** Zwei Clients im selben Raum, einer heftet an, der andere sieht den Beitrag sofort. Das Mumble-Protokoll zeigt den Hinweis, ein dritter Nutzer außerhalb des Raums bekommt `403`.
 4. **Betrieb:** Grenzwerte und Sicherung in `deploy/homeserver`, Füllstand in `/healthz`, Bereinigung der Daten beim Löschen
