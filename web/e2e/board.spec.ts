@@ -88,3 +88,16 @@ test.describe("Pinnwand (AP11.2)", () => {
     await expect(page.getByText("Pinnwände gibt es nur in Räumen.")).toBeVisible();
   });
 });
+
+test("Etage mit 2 Räumen: je ein Raum oben und unten, die offene Pinnwand wird breiter", async ({ page }) => {
+  await page.goto("/?fixture=sonderfaelle&talking=0");
+  await page.getByRole("button", { name: /STUDIO/ }).click();
+  await page.getByRole("button", { name: "Studio A betreten" }).click();
+  const a = page.locator('.room[data-channel="41"]');
+  const b = page.locator('.room[data-channel="42"]');
+  expect((await b.boundingBox())!.y).toBeGreaterThan((await a.boundingBox())!.y + 200);
+  await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
+  const board = page.getByRole("complementary", { name: "Pinnwand" });
+  await expect(board).toBeVisible();
+  expect((await board.boundingBox())!.width).toBeGreaterThan(450);
+});

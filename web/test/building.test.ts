@@ -40,17 +40,17 @@ describe("Einzelregeln", () => {
     expect(sorted.map((c) => c.name)).toEqual(["Oben", "Österreich", "alpha", "Zeta"]);
   });
 
-  it("roomGrow ist deterministisch und liegt zwischen 0,85 und 1,25", () => {
-    expect(roomGrow("Büro von Anna")).toBe(roomGrow("Büro von Anna"));
-    for (const n of ["", "a", "Teeküche", "🙂 Raum", "X".repeat(99)]) {
-      expect(roomGrow(n)).toBeGreaterThanOrEqual(0.85);
-      expect(roomGrow(n)).toBeLessThanOrEqual(1.25);
-    }
+  it("roomGrow: Raum 1 und 2 groß, danach schrittweise kleiner", () => {
+    expect([0, 1, 2, 3, 4, 5, 6, 7].map(roomGrow)).toEqual([1.3, 1.3, 1.1, 1.05, 1, 0.95, 0.9, 0.85]);
+    expect(roomGrow(20)).toBe(0.85);
   });
 
-  it("splitRows: obere Reihe bekommt bei ungerader Anzahl einen Raum mehr", () => {
-    expect(splitRows([1, 2, 3, 4, 5])).toEqual({ top: [1, 2, 3], bottom: [4, 5] });
+
+  it("splitRows: untere Reihe bekommt bei ungerader Anzahl einen Raum mehr", () => {
+    expect(splitRows([1, 2, 3, 4, 5])).toEqual({ top: [1, 2], bottom: [3, 4, 5] });
+    expect(splitRows([1, 2, 3])).toEqual({ top: [1], bottom: [2, 3] });
     expect(splitRows([1, 2])).toEqual({ top: [1], bottom: [2] });
+    expect(splitRows([1])).toEqual({ top: [1], bottom: [] });
     expect(splitRows([])).toEqual({ top: [], bottom: [] });
   });
 
@@ -126,7 +126,7 @@ describe("Sonderfälle", () => {
   it("verlinkte Etagen verschwinden ganz, Nummerierung ohne Lücke (O2)", () => {
     expect(floor("EXTERN")).toBeUndefined();
     expect(floor("PARTNER")).toBeUndefined();
-    expect(b.floors.map((f) => f.badge)).toEqual(["EG", "1", "2", "3", "4"]);
+    expect(b.floors.map((f) => f.badge)).toEqual(["EG", "1", "2", "3", "4", "5"]);
   });
 
   it("verlinkte Räume verschwinden, die übrigen bleiben", () => {
