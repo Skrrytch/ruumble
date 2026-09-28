@@ -5,6 +5,7 @@
   import { countText, type Room, type Space } from "../model/building.ts";
   import Avatar from "./Avatar.svelte";
   import BoardNotes from "./board/BoardNotes.svelte";
+  import { t } from "../i18n/index.svelte.ts";
 
   let {
     space,
@@ -41,10 +42,11 @@
   // Pinnwand-Grafik nur im eigenen Raum, als Schalter für die Seitenleiste
   const boardToggle = $derived(!!room && space.isSelf && !readonly && !!ontoggleboard);
   const disabled = $derived((space.locked && !space.isSelf) || readonly);
-  const ariaLabel = $derived(
-    `${variant === "corridor" ? `Flur ${space.name}` : space.name}` +
-      (space.isSelf ? " – du bist hier" : readonly ? "" : disabled ? " – kein Zutritt" : pending ? " – wird betreten" : " betreten"),
-  );
+  const ariaLabel = $derived.by(() => {
+    const s = t().space;
+    const name = variant === "corridor" ? s.corridorName(space.name) : space.name;
+    return name + (space.isSelf ? s.here : readonly ? "" : disabled ? s.noAccess : pending ? s.entering : s.enter);
+  });
 
   function click() {
     if (space.isSelf || disabled || pending) return;
@@ -80,16 +82,16 @@
   <span class="label">
     <span class="title">
       {title}
-      {#if room?.muted}<span class="icon" title="Stummer Raum"><VolumeX size={18} /></span>{/if}
+      {#if room?.muted}<span class="icon" title={t().space.mutedRoom}><VolumeX size={18} /></span>{/if}
       {#if space.listeners.length > 0}
-        <span class="icon" title={space.listeners.length === 1 ? "1 Person hört mit" : `${space.listeners.length} Personen hören mit`}>
+        <span class="icon" title={t().people.listening(space.listeners.length)}>
           <Ear size={18} />
         </span>
       {/if}
-      {#if space.locked && !space.isSelf}<span class="icon" title="Kein Zutritt"><Lock size={16} /></span>{/if}
-      {#if space.recording}<span class="rec" title="Hier wird aufgezeichnet">● Aufnahme</span>{/if}
+      {#if space.locked && !space.isSelf}<span class="icon" title={t().space.noAccessTitle}><Lock size={16} /></span>{/if}
+      {#if space.recording}<span class="rec" title={t().space.recording}>{t().space.recordingBadge}</span>{/if}
     </span>
-    <span class="count">{pending ? "wird betreten …" : (subtitle ?? countText(space.users.length))}</span>
+    <span class="count">{pending ? t().space.enteringText : (subtitle ?? countText(space.users.length))}</span>
   </span>
   {#if space.users.length > 0}
     <span class="people">
@@ -103,8 +105,8 @@
   <button
     type="button"
     class="notes toggle"
-    aria-label={boardOpen ? "Pinnwand ausblenden" : "Pinnwand einblenden"}
-    title={boardOpen ? "Pinnwand ausblenden" : "Pinnwand einblenden"}
+    aria-label={boardOpen ? t().board.hide : t().board.show}
+    title={boardOpen ? t().board.hide : t().board.show}
     aria-expanded={boardOpen}
     aria-controls="board-panel"
     onclick={ontoggleboard}

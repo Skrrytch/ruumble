@@ -6,7 +6,8 @@
   import Lock from "@lucide/svelte/icons/lock";
   import Mic from "@lucide/svelte/icons/mic";
   import MicOff from "@lucide/svelte/icons/mic-off";
-  import Settings from "@lucide/svelte/icons/settings";
+  import Languages from "@lucide/svelte/icons/languages";
+  import { locale, setLocale, t } from "../i18n/index.svelte.ts";
   import { countText, initials, type Building, type Floor } from "../model/building.ts";
   import type { RuumbleState } from "../state.svelte.ts";
   import Avatar from "./Avatar.svelte";
@@ -19,13 +20,14 @@
   const myPlace = $derived.by(() => {
     const self = building.self;
     if (!self || !me) return "";
-    if (self.kind === "entrance") return "Eingang";
-    if (self.kind === "hidden") return "nicht darstellbarer Bereich";
+    if (self.kind === "entrance") return t().common.entrance;
+    if (self.kind === "hidden") return t().core.hiddenPlace;
     const name = app.snapshot?.channels.find((c) => c.id === me.channel)?.name ?? "";
-    const place = self.kind === "corridor" ? "Flur" : name;
-    return myFloor ? `${place} · Etage ${myFloor.badge}` : place;
+    const place = self.kind === "corridor" ? t().common.corridor : name;
+    return myFloor ? `${place} · ${t().floors.floor(myFloor.badge)}` : place;
   });
-  const lockHint = { "too-deep": "Kanalstruktur zu tief", "too-many-rooms": "Zu viele Räume" };
+  const lockHint = $derived(t().core.lockReason);
+  const other = $derived(locale() === "de" ? "en" : "de");
   const muted = $derived(me ? me.selfMute || me.selfDeaf : false);
   const myAvatar = $derived(me ? app.avatarOf(me.name) : null);
   let avatarBroken = $state<string | null>(null); // URL, die nicht geladen werden konnte → Initialen
@@ -36,13 +38,13 @@
   <span class="opening" aria-hidden="true"></span>
   <div>
     <div class="sign-title">{building.name}</div>
-    <div class="sign-sub">Mumble-Server</div>
+    <div class="sign-sub">{t().core.mumbleServer}</div>
   </div>
 
-  <nav class="elevator" aria-label="Aufzug – Etagen">
+  <nav class="elevator" aria-label={t().core.elevatorLabel}>
     <div class="elevator-head">
-      <span class="t"><span class="elevator-icon"><ArrowDownUp size={20} /></span>Aufzug</span>
-      {#if floor}<span class="cur">Etage {floor.badge}</span>{/if}
+      <span class="t"><span class="elevator-icon"><ArrowDownUp size={20} /></span>{t().core.elevator}</span>
+      {#if floor}<span class="cur">{t().floors.floor(floor.badge)}</span>{/if}
     </div>
     {#each reversed as f (f.channelId)}
       {@const active = f.channelId === floor?.channelId}
@@ -55,7 +57,7 @@
         class:blocked
         aria-current={active ? "page" : undefined}
         aria-disabled={blocked || undefined}
-        aria-label="{f.level}: {f.name}{f.lock ? ` – gesperrt: ${lockHint[f.lock]}` : ''}"
+        aria-label={t().core.floorButton(f.level, f.name, f.lock ? lockHint[f.lock] : null)}
         title={f.lock ? lockHint[f.lock] : undefined}
         onclick={() => app.showFloor(f)}
       >
@@ -63,7 +65,7 @@
         <span>
           <span class="name">{f.name}</span>
           <span class="sub">
-            {#if f.lock}<Lock size={11} /> gesperrt · {/if}{f.population} online
+            {#if f.lock}<Lock size={11} /> {`${t().core.lockedShort} · `}{/if}{t().header.online(f.population)}
           </span>
         </span>
       </button>
@@ -71,8 +73,8 @@
   </nav>
 
   {#if building.entrance.length > 0}
-    <section class="entrance" aria-label="Eingang">
-      <div class="entrance-head">Eingang · {countText(building.entrance.length)}</div>
+    <section class="entrance" aria-label={t().common.entrance}>
+      <div class="entrance-head">{t().common.entrance} · {countText(building.entrance.length)}</div>
       <div class="entrance-people">
         {#each building.entrance as user (user.session)}
           <Avatar {user} talking={app.talking[user.session] ?? false} showName={false} />
@@ -90,21 +92,22 @@
         <span><span class="n">{me.name}</span><span class="l">{myPlace}</span></span>
       </div>
     {/if}
-    <div class="tools" role="toolbar" aria-label="Benutzermenü">
-      <button type="button" class="tool" aria-pressed={muted} aria-label="Mikrofon stummschalten" title="Mikrofon stumm" disabled={!me} onclick={() => app.toggleMute()}>
+    <div class="tools" role="toolbar" aria-label={t().core.userMenu}>
+      <button type="button" class="tool" aria-pressed={muted} aria-label={t().core.mute} title={t().core.mute} disabled={!me} onclick={() => app.toggleMute()}>
         {#if muted}<MicOff size={20} />{:else}<Mic size={20} />{/if}
       </button>
-      <button type="button" class="tool" aria-pressed={deaf} aria-label="Taub schalten" title="Taub" disabled={!me} onclick={() => app.toggleDeaf()}>
+      <button type="button" class="tool" aria-pressed={deaf} aria-label={t().core.deaf} title={t().core.deaf} disabled={!me} onclick={() => app.toggleDeaf()}>
         {#if deaf}<HeadphoneOff size={20} />{:else}<Headphones size={20} />{/if}
       </button>
-      <button type="button" class="tool" aria-label="Zu meiner Etage" title="Zu meiner Etage" disabled={!myFloor} onclick={() => app.goHome()}>
+      <button type="button" class="tool" aria-label={t().core.home} title={t().core.home} disabled={!myFloor} onclick={() => app.goHome()}>
         <LocateFixed size={20} />
       </button>
-      <button type="button" class="tool" aria-label="Einstellungen (noch ohne Funktion)" title="Einstellungen – noch ohne Funktion" aria-disabled="true">
-        <Settings size={20} />
+      <!-- Sprache: Deutsch oder Englisch (Browser-Einstellung), hier umschaltbar und gemerkt -->
+      <button type="button" class="tool lang" aria-label={t().core.switchLanguage(t().core.languageName[other])} title={t().core.switchLanguage(t().core.languageName[other])} onclick={() => setLocale(other)}>
+        <Languages size={16} /><span>{locale().toUpperCase()}</span>
       </button>
     </div>
-    <div class="versions"><span>Server {building.serverVersion}</span><span>Oberfläche {__UI_VERSION__}</span></div>
+    <div class="versions"><span>{t().core.server(building.serverVersion)}</span><span>{t().core.ui(__UI_VERSION__)}</span></div>
   </div>
 </aside>
 
@@ -132,6 +135,7 @@
     border-radius: var(--radius-md); background: transparent; color: var(--color-white); text-align: left; cursor: pointer;
     transition: background var(--dur) var(--ease-out);
   }
+  .tool.lang { gap: 2px; font-size: 11px; font-weight: 700; flex-direction: column; }
   .floor:hover { background: rgb(255 255 255 / 0.08); }
   .floor:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   .floor.active, .floor.active:hover { background: var(--color-white); color: var(--color-navy); }
@@ -170,7 +174,7 @@
   .tool:hover { background: var(--color-blue-100); }
   .tool:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   .tool[aria-pressed="true"] { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); }
-  .tool:disabled, .tool[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
-  .tool:disabled:hover, .tool[aria-disabled="true"]:hover { background: var(--color-white); }
+  .tool:disabled { opacity: 0.5; cursor: not-allowed; }
+  .tool:disabled:hover { background: var(--color-white); }
   .versions { display: flex; justify-content: space-between; font-size: 12px; color: var(--color-blue-700); }
 </style>

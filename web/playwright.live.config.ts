@@ -9,5 +9,6 @@ export default defineConfig({
   timeout: 90_000,
   workers: 1,
   reporter: [["list"]],
-  use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, baseURL: "http://127.0.0.1:8080" },
+  // Tests prüfen die deutschen Texte (Browser-Sprache de-DE); Englisch prüft e2e/i18n.spec.ts
+  use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, baseURL: "http://127.0.0.1:8080", locale: "de-DE" },
 });

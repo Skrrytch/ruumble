@@ -72,6 +72,10 @@ const commandId = z.string().min(1).max(64);
 
 // ---------------------------------------------------------------- Plugin → Dienst
 
+/** Sprachen von Oberfläche und Hinweisen: Deutsch, sonst Englisch */
+export const Locale = z.enum(["de", "en"]);
+export type Locale = z.infer<typeof Locale>;
+
 export const PluginHello = z.object({
   v,
   type: z.literal("hello"),
@@ -83,6 +87,8 @@ export const PluginHello = z.object({
   paired: z.boolean(),
   /** Version des Mumble-Clients (mumble_setMumbleInfo), ab Plugin 0.4; für Betrieb und Kompatibilität */
   mumbleVersion: z.string().max(32).optional(),
+  /** Sprache des Nutzers aus der Systemumgebung (ab Plugin 0.4); fehlt sie, gilt Deutsch (ältere Plugins) */
+  locale: Locale.optional(),
 });
 
 export const PluginResult = z.object({ v, type: z.literal("result"), id: commandId, result: CommandResult });
