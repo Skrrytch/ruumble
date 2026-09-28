@@ -6,3 +6,4 @@ packages:
 # Installationsskripte nur ausdrücklich erlaubt (pnpm 11)
 allowBuilds:
   esbuild: true
+  better-sqlite3: true

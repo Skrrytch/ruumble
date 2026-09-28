@@ -127,8 +127,77 @@ export const Snapshot = z.object({
   listeners: z.record(channelKey, z.array(session)),
   /** Kanal-ID → darf der eigene Nutzer den Kanal betreten (PermissionEnter). Fehlt ein Kanal, gilt `true`. */
   canEnter: z.record(channelKey, z.boolean()),
+  /** Räume, an deren Pinnwand etwas hängt (ohne Räume ohne Zutrittsrecht, ADR-0011) */
+  boards: z.array(channelId),
 });
 export type Snapshot = z.infer<typeof Snapshot>;
+
+// ---------------------------------------------------------------- Pinnwand (ADR-0011, REST unter /api/board)
+
+/** Grenzen der Pinnwand (ADR-0011) */
+export const BOARD_LIMITS = { fileBytes: 10 * 1024 * 1024, textChars: 100_000 } as const;
+
+export const PostKind = z.enum(["text", "code", "image", "file"]);
+export type PostKind = z.infer<typeof PostKind>;
+
+export const Attachment = z.object({
+  /** SHA-256 hex des Inhalts; Abruf unter /api/board/files/<id> */
+  id: z.string().regex(/^[0-9a-f]{64}$/),
+  name: z.string().max(255),
+  mime: z.string(),
+  size: z.number().int().min(0),
+  width: z.number().int().min(1).optional(),
+  height: z.number().int().min(1).optional(),
+});
+export type Attachment = z.infer<typeof Attachment>;
+
+export const Post = z.object({
+  id: z.string().min(1),
+  channelId,
+  kind: PostKind,
+  /** Markdown (text), Quelltext (code) oder Bildunterschrift (image/file) – immer Rohtext, nie HTML */
+  text: z.string().max(BOARD_LIMITS.textChars),
+  /** Sprache des Codes (highlight.js), leer: automatisch erkennen */
+  language: z.string().max(40).optional(),
+  attachment: Attachment.optional(),
+  authorName: z.string(),
+  /** vom eigenen Nutzer verfasst (darf löschen) */
+  mine: z.boolean(),
+  /** darf der eigene Nutzer löschen (Autor oder Mumble-Admin) */
+  canDelete: z.boolean(),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+  updatedByName: z.string().optional(),
+});
+export type Post = z.infer<typeof Post>;
+
+/** GET /api/board: Pinnwand des Raums, in dem der eigene Nutzer gerade ist */
+export const BoardView = z.object({ channelId, channelName: z.string(), posts: z.array(Post) });
+export type BoardView = z.infer<typeof BoardView>;
+
+/** POST /api/board/posts */
+export const NewPost = z.object({
+  kind: PostKind,
+  text: z.string().max(BOARD_LIMITS.textChars),
+  language: z.string().max(40).optional(),
+  /** für image/file: ID eines zuvor hochgeladenen Anhangs (POST /api/board/uploads) */
+  attachmentId: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+  /** Dateiname des Anhangs (für Anzeige und Download) */
+  attachmentName: z.string().max(255).optional(),
+});
+export type NewPost = z.infer<typeof NewPost>;
+
+/** PATCH /api/board/posts/<id> */
+export const PostUpdate = z.object({ text: z.string().max(BOARD_LIMITS.textChars), language: z.string().max(40).optional() });
+export type PostUpdate = z.infer<typeof PostUpdate>;
+
+/** Fehlerantwort der REST-Schnittstelle */
+export const BoardError = z.object({
+  error: z.enum(["not-paired", "not-in-room", "no-board-here", "not-found", "forbidden", "too-large", "bad-type", "invalid", "rate-limited"]),
+});
+
+/** WebSocket: An der Pinnwand dieses Raums hat sich etwas geändert (nur an Anwesende) */
+export const UiBoard = z.object({ v, type: z.literal("board"), channelId });
 
 export const UiTalking = z.object({ v, type: z.literal("talking"), session, state: TalkingState });
 export const UiResult = z.object({ v, type: z.literal("result"), id: commandId, result: CommandResult });
@@ -140,7 +209,7 @@ export const UiStatus = z.object({
   preview: z.boolean().optional(),
 });
 
-export const BridgeToUi = z.discriminatedUnion("type", [Snapshot, UiTalking, UiResult, UiStatus]);
+export const BridgeToUi = z.discriminatedUnion("type", [Snapshot, UiTalking, UiResult, UiStatus, UiBoard]);
 export type BridgeToUi = z.infer<typeof BridgeToUi>;
 
 // ---------------------------------------------------------------- Hilfen

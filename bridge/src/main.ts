@@ -12,6 +12,9 @@
  *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004, P7 offen)
  *   TRUST_PROXY (false)                          true hinter Nginx Proxy Manager
  *   PREVIEW (false)                              true: Gebäude ohne Kopplung nur lesend sichtbar
+ *   RETENTION_DAYS (30), BOARD_QUOTA_MB (2048)    Pinnwand: Aufbewahrung und Kontingent (ADR-0011)
+ *
+ * Sicherung der Pinnwand:  node dist/main.mjs backup <zielverzeichnis>
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
@@ -20,6 +23,8 @@ import fastifyWebsocket from "@fastify/websocket";
 import Fastify from "fastify";
 import type { WebSocket } from "ws";
 import { AvatarCache } from "./avatars.ts";
+import { boardRoutes } from "./board/routes.ts";
+import { BoardStore } from "./board/store.ts";
 import { Hub, type AddressCheck } from "./hub.ts";
 import { IceMumbleSource } from "./mumble.ts";
 import { Pairing } from "./pairing.ts";
@@ -52,6 +57,18 @@ const config = {
   trustProxy: bool("TRUST_PROXY"),
   preview: bool("PREVIEW"),
 };
+
+// Pinnwand-Speicher (ADR-0011)
+const store = new BoardStore(config.dataDir, {
+  retentionDays: Number(env.RETENTION_DAYS ?? 30),
+  quotaBytes: Number(env.BOARD_QUOTA_MB ?? 2048) * 1024 * 1024,
+});
+if (process.argv[2] === "backup") {
+  const target = resolve(process.argv[3] ?? "backup");
+  await store.backup(target);
+  console.log(`Pinnwand gesichert nach ${target}`);
+  process.exit(0);
+}
 
 const app = Fastify({ logger: { level: env.LOG_LEVEL ?? "info" }, trustProxy: config.trustProxy });
 const log = (msg: string, extra?: Record<string, unknown>) => app.log.info(extra ?? {}, msg);
@@ -87,10 +104,12 @@ const hub: Hub = new Hub({
   onSessionsChanged: (sessions) => poller.watchSessions(sessions),
   refresh: () => poller.poll(),
   avatarVersion: (id) => avatars.version(id),
+  boardChannels: () => store.channelsWithPosts(),
 });
 const poller: Poller = new Poller(source, {
   onChange: (state) => {
     avatars.sync(state.users.flatMap((u) => (u.userId === null ? [] : [u.userId])));
+    store.syncChannels(state.channels.map((c) => c.id));
     hub.setState(state);
   },
   onPolled: () => {
@@ -111,6 +130,19 @@ poller.start();
 // ---------------------------------------------------------------- HTTP
 
 await app.register(fastifyWebsocket, { options: { maxPayload: 64 * 1024 } });
+
+// Content-Security-Policy für die Oberfläche (ADR-0011): keine fremden Quellen, keine Inline-Skripte
+app.addHook("onSend", async (_req, reply, payload) => {
+  const type = String(reply.getHeader("content-type") ?? "");
+  if (type.startsWith("text/html")) {
+    reply.header(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+    );
+    reply.header("X-Content-Type-Options", "nosniff");
+  }
+  return payload;
+});
 
 const TOKEN_COOKIE = "ruumble_token";
 const cookieOf = (header: string | undefined, name: string) =>
@@ -162,9 +194,29 @@ app.get<{ Params: { userId: string } }>("/avatar/:userId", async (req, reply) =>
     .send(Buffer.from(avatar.bytes));
 });
 
+await app.register(boardRoutes, {
+  store,
+  hub,
+  source,
+  certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)),
+});
+const cleanupTimer = setInterval(() => {
+  const removed = store.cleanup();
+  if (removed) {
+    log("Pinnwand aufgeräumt", { removed });
+    hub.rebroadcast();
+  }
+}, 60 * 60_000);
+
 app.get("/healthz", async (_req, reply) => {
   const healthy = Date.now() - lastPoll < 10_000;
-  return reply.code(healthy ? 200 : 503).send({ ice: healthy ? "ok" : "stale", lastPoll: lastPoll ? new Date(lastPoll).toISOString() : null, lastError, plugins: hub.pluginCount });
+  return reply.code(healthy ? 200 : 503).send({
+    ice: healthy ? "ok" : "stale",
+    lastPoll: lastPoll ? new Date(lastPoll).toISOString() : null,
+    lastError,
+    plugins: hub.pluginCount,
+    board: { usedMB: Math.round(store.usedBytes() / 1024 / 1024), quotaMB: Number(env.BOARD_QUOTA_MB ?? 2048) },
+  });
 });
 
 if (config.pluginBundle && existsSync(config.pluginBundle)) {
@@ -185,6 +237,8 @@ await app.listen({ port: config.port, host: config.host });
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, async () => {
     poller.stop();
+    clearInterval(cleanupTimer);
+    store.close();
     await app.close();
     await source.close();
     process.exit(0);
