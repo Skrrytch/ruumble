@@ -70,7 +70,7 @@
       {/if}
       <textarea bind:value={draft} class:mono={post.kind === "code"} aria-label="Beitrag bearbeiten" spellcheck={post.kind !== "code"}></textarea>
     {:else}
-      <PostBody {post} />
+      <PostBody {post} numbers />
     {/if}
   </div>
   {#if post.updatedByName}<p class="edited">zuletzt bearbeitet von {post.updatedByName}</p>{/if}
