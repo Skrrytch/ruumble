@@ -3,7 +3,7 @@
  * echten Ruumble-Plugin. Die Oberfläche steuert Annas Mumble-Client; geprüft wird, was der Server zurückmeldet.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 const root = new URL("../../", import.meta.url).pathname;
@@ -17,6 +17,7 @@ async function pairUrl(name: string): Promise<string> {
 }
 
 const distro = process.env.RUUMBLE_CLIENT ?? "ubuntu";
+const frames: string[] = [];
 
 test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   let page: Page;
@@ -24,6 +25,15 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   test.beforeAll(async ({ browser }) => {
     runClient(distro, "Anna");
     page = await browser.newPage();
+    // Diagnose: alle Nachrichten an Annas Oberfläche (außer Snapshots) festhalten
+    page.on("websocket", (ws) => ws.on("framereceived", (f) => {
+      const text = String(f.payload);
+      if (!text.includes('"snapshot"')) frames.push(`${Date.now()} ${text}`);
+    }));
+  });
+
+  test.afterEach(async ({}, info) => {
+    if (info.status !== info.expectedStatus) writeFileSync(info.outputPath("ws-frames.txt"), frames.join("\n"));
   });
 
   test.afterAll(async () => {
@@ -90,7 +100,13 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await expect(benPage.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible({ timeout: 5000 });
     // Annas Oberfläche: Ben sitzt bei ihr und spricht (Annas Client hört ihn)
     await expect(page.getByRole("img", { name: /^Ben/ })).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole("img", { name: "Ben, spricht" })).toBeVisible({ timeout: 10_000 });
+    // Bens headless Client sendet den Sinuston in Schüben (~250 ms „talking“ alle ~2 s), deshalb eng abfragen:
+    // Der Ring muss mindestens einmal erscheinen.
+    await page.waitForFunction(
+      () => [...document.querySelectorAll('[role="img"]')].some((e) => e.getAttribute("aria-label") === "Ben, spricht"),
+      null,
+      { polling: 50, timeout: 10_000 },
+    );
     await ben.close();
   });
 
