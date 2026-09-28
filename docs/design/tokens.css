@@ -22,7 +22,7 @@
   --gradient-elevator: linear-gradient(90deg, #0f4b8c 0%, #003869 25%);
 
   /* Typo */
-  --font-sans: "Inter", Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --font-sans: "Inter Variable", "Inter", Arial, "Helvetica Neue", Helvetica, sans-serif;
 
   /* Maße */
   --wall: 4px;

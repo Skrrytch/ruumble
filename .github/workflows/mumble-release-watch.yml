@@ -1,0 +1,53 @@
+name: Mumble-Release-Watch
+
+# Meldet ein neues Mumble-Release als Issue, samt Diff der beiden Schnittstellendateien.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Neuestes Release mit third_party/mumble/VERSION vergleichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current="$(cat third_party/mumble/VERSION)"
+          latest="$(gh api repos/mumble-voip/mumble/releases/latest --jq .tag_name)"
+          echo "aktuell: $current, neuestes Release: $latest"
+          if [[ "$latest" == "$current" ]]; then exit 0; fi
+
+          title="Mumble $latest verfügbar (Ruumble nutzt $current)"
+          if gh issue list --state open --search "\"$title\" in:title" --json number --jq 'length' | grep -qv '^0$'; then
+            echo "Issue existiert bereits."; exit 0
+          fi
+
+          cp -r third_party/mumble /tmp/before
+          scripts/update-mumble-interfaces.sh "$latest" > /dev/null
+          diff -ru --exclude=VERSION --exclude=SHA256SUMS --exclude=README.md /tmp/before third_party/mumble > /tmp/interfaces.diff || true
+
+          {
+            echo "Es gibt ein neues Mumble-Release: **$latest** (bisher: $current)."
+            echo
+            echo "Übernahme: \`scripts/update-mumble-interfaces.sh $latest\`, danach \`docs/analyse/mumble-schnittstellen.md\` gegen die Änderungen prüfen."
+            echo
+            if [[ -s /tmp/interfaces.diff ]]; then
+              echo "<details><summary>Änderungen an den Schnittstellendateien</summary>"
+              echo
+              echo '```diff'
+              head -c 60000 /tmp/interfaces.diff
+              echo '```'
+              echo "</details>"
+            else
+              echo "Die Schnittstellendateien sind unverändert."
+            fi
+          } > /tmp/body.md
+          gh issue create --title "$title" --body-file /tmp/body.md

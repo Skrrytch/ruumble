@@ -1,0 +1,11 @@
+{
+  "name": "Ruumble",
+  "short_name": "Ruumble",
+  "description": "Der Mumble-Server als Bürogebäude",
+  "lang": "de",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#003869",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

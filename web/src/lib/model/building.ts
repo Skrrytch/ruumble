@@ -1,0 +1,229 @@
+/**
+ * building-model: leitet aus einem Mumble-Snapshot das Gebäude ab (PLANUNG Abschnitt 2, ADR-0007).
+ * Reine Funktionen ohne Svelte und ohne DOM. Jede Änderung am Snapshot ergibt ein neues Gebäude,
+ * gespeichert wird nichts.
+ */
+import type { Channel, Snapshot, User } from "@ruumble/protocol";
+
+/** Mehr Räume passen nicht sinnvoll auf eine Etage (PLANUNG 2.3). */
+export const MAX_ROOMS = 8;
+
+export type LockReason = "too-deep" | "too-many-rooms";
+
+export interface UserView {
+  session: number;
+  name: string;
+  initials: string;
+  isSelf: boolean;
+  /** selbst stumm oder taub geschaltet */
+  selfMuted: boolean;
+  selfDeafened: boolean;
+  /** vom Server stummgeschaltet, taub geschaltet oder unterdrückt (Symbolik: O6) */
+  serverMuted: boolean;
+}
+
+/** Ein betretbarer Bereich: Raum, Flur oder offene Etage. */
+export interface Space {
+  channelId: number;
+  name: string;
+  users: UserView[];
+  isSelf: boolean;
+  /** Der eigene Nutzer darf den Kanal nicht betreten (ADR-0003). */
+  locked: boolean;
+  /** Sessions, die hier mitlauschen */
+  listeners: number[];
+}
+
+export interface Room extends Space {
+  /** Name enthält „(stumm)“ */
+  muted: boolean;
+  /** flex-grow 0,85–1,25, stabil je Name */
+  grow: number;
+}
+
+export interface Floor {
+  channelId: number;
+  name: string;
+  /** 0 = Erdgeschoss */
+  index: number;
+  level: string;
+  badge: string;
+  /** Der Etagenkanal selbst: Flur, bei einer Etage ohne Räume die offene Etage */
+  corridor: Space;
+  rooms: Room[];
+  /** nur ohne Räume: offene Etage */
+  open: boolean;
+  lock: LockReason | null;
+  /** alle Nutzer im sichtbaren Teilbaum der Etage */
+  population: number;
+  isSelf: boolean;
+}
+
+export type SelfLocation =
+  | { kind: "room" | "corridor" | "open-floor"; floorId: number; channelId: number }
+  | { kind: "locked-floor"; floorId: number; channelId: number }
+  | { kind: "entrance" }
+  /** in einem ausgeblendeten (verlinkten) Kanal */
+  | { kind: "hidden"; channelId: number };
+
+export interface Building {
+  name: string;
+  serverVersion: string;
+  floors: Floor[];
+  /** Nutzer im Root-Kanal */
+  entrance: UserView[];
+  /** alle Nutzer auf dem Server, auch in ausgeblendeten Kanälen */
+  online: number;
+  /** `null`, solange kein gekoppeltes Plugin verbunden ist */
+  self: SelfLocation | null;
+}
+
+// ---------------------------------------------------------------- einzelne Regeln
+
+const collator = new Intl.Collator("de");
+
+/** Geschwisterkanäle wie im Mumble-Client: nach `position`, dann nach Name (Analyse 3.3). */
+export function sortSiblings<T extends Pick<Channel, "position" | "name">>(channels: readonly T[]): T[] {
+  return [...channels].sort((a, b) => a.position - b.position || collator.compare(a.name, b.name));
+}
+
+/**
+ * Sichtbare Kanäle: Verlinkte Kanäle verschwinden samt allen Unterkanälen (PLANUNG 2.4, O2, O3).
+ * Der Root-Kanal ist immer sichtbar.
+ */
+export function visibleChannels(channels: readonly Channel[]): Channel[] {
+  const byId = new Map(channels.map((c) => [c.id, c]));
+  const hidden = (c: Channel): boolean => {
+    for (let cur: Channel | undefined = c; cur && cur.parent !== null; cur = byId.get(cur.parent)) {
+      if (cur.links.length > 0) return true;
+    }
+    return false;
+  };
+  return channels.filter((c) => !hidden(c));
+}
+
+/** Deterministische Breitenvariation, damit Büros nicht wie ein starres Raster wirken (SPEC 2). */
+export function roomGrow(name: string): number {
+  let sum = 0;
+  for (const ch of name) sum += ch.codePointAt(0) ?? 0;
+  return Math.round((0.85 + (sum % 5) * 0.1) * 100) / 100;
+}
+
+/** Obere Reihe bekommt bei ungerader Anzahl einen Raum mehr (SPEC 2). */
+export function splitRows<T>(rooms: readonly T[]): { top: T[]; bottom: T[] } {
+  const half = Math.ceil(rooms.length / 2);
+  return { top: rooms.slice(0, half), bottom: rooms.slice(half) };
+}
+
+const segmenter = new Intl.Segmenter("de", { granularity: "grapheme" });
+
+/** Die ersten zwei Zeichen (Grapheme) des Namens, Emojis und Akzente bleiben ganz. */
+export function initials(name: string): string {
+  return [...segmenter.segment(name.trim())].slice(0, 2).map((s) => s.segment).join("");
+}
+
+/** „frei“ / „1 Person“ / „N Personen“ */
+export function countText(n: number): string {
+  return n === 0 ? "frei" : n === 1 ? "1 Person" : `${n} Personen`;
+}
+
+export function isMutedRoomName(name: string): boolean {
+  return /\(stumm\)/i.test(name);
+}
+
+export function floorLabels(index: number): { level: string; badge: string } {
+  return index === 0 ? { level: "Erdgeschoss", badge: "EG" } : { level: `${index}. Obergeschoss`, badge: String(index) };
+}
+
+// ---------------------------------------------------------------- Gebäude
+
+export function buildBuilding(snapshot: Snapshot): Building {
+  const selfSession = snapshot.self?.session ?? null;
+  const visible = visibleChannels(snapshot.channels);
+  const visibleIds = new Set(visible.map((c) => c.id));
+  const children = new Map<number, Channel[]>();
+  for (const c of visible) {
+    if (c.parent === null) continue;
+    children.set(c.parent, [...(children.get(c.parent) ?? []), c]);
+  }
+  const childrenOf = (id: number) => sortSiblings(children.get(id) ?? []);
+
+  const usersIn = new Map<number, User[]>();
+  for (const u of snapshot.users) usersIn.set(u.channel, [...(usersIn.get(u.channel) ?? []), u]);
+  const userView = (u: User): UserView => ({
+    session: u.session,
+    name: u.name,
+    initials: initials(u.name),
+    isSelf: u.session === selfSession,
+    selfMuted: u.selfMute || u.selfDeaf,
+    selfDeafened: u.selfDeaf,
+    serverMuted: u.mute || u.deaf || u.suppress,
+  });
+  const viewsIn = (id: number) =>
+    (usersIn.get(id) ?? []).slice().sort((a, b) => collator.compare(a.name, b.name)).map(userView);
+
+  const selfUser = snapshot.users.find((u) => u.session === selfSession);
+  const space = (c: Channel): Space => ({
+    channelId: c.id,
+    name: c.name,
+    users: viewsIn(c.id),
+    isSelf: selfUser?.channel === c.id,
+    locked: snapshot.canEnter[String(c.id)] === false,
+    listeners: snapshot.listeners[String(c.id)] ?? [],
+  });
+  const subtreePopulation = (id: number): number =>
+    (usersIn.get(id)?.length ?? 0) + childrenOf(id).reduce((n, c) => n + subtreePopulation(c.id), 0);
+  const subtreeIds = (id: number): number[] => [id, ...childrenOf(id).flatMap((c) => subtreeIds(c.id))];
+
+  const floors: Floor[] = childrenOf(0).map((f, index) => {
+    const roomChannels = childrenOf(f.id);
+    const lock: LockReason | null = roomChannels.some((r) => childrenOf(r.id).length > 0)
+      ? "too-deep"
+      : roomChannels.length > MAX_ROOMS
+        ? "too-many-rooms"
+        : null;
+    return {
+      channelId: f.id,
+      name: f.name,
+      index,
+      ...floorLabels(index),
+      corridor: space(f),
+      rooms: roomChannels.map((r) => ({ ...space(r), muted: isMutedRoomName(r.name), grow: roomGrow(r.name) })),
+      open: roomChannels.length === 0,
+      lock,
+      population: subtreePopulation(f.id),
+      isSelf: selfUser !== undefined && subtreeIds(f.id).includes(selfUser.channel),
+    };
+  });
+
+  let self: SelfLocation | null = null;
+  if (selfUser) {
+    const ch = selfUser.channel;
+    const floor = floors.find((f) => f.isSelf);
+    if (ch === 0) self = { kind: "entrance" };
+    else if (!visibleIds.has(ch) || !floor) self = { kind: "hidden", channelId: ch };
+    else if (floor.lock) self = { kind: "locked-floor", floorId: floor.channelId, channelId: ch };
+    else if (floor.channelId === ch) self = { kind: floor.open ? "open-floor" : "corridor", floorId: floor.channelId, channelId: ch };
+    else self = { kind: "room", floorId: floor.channelId, channelId: ch };
+  }
+
+  return {
+    name: snapshot.server.name,
+    serverVersion: snapshot.server.version,
+    floors,
+    entrance: viewsIn(0),
+    online: snapshot.users.length,
+    self,
+  };
+}
+
+/** Welche Etage beim Start bzw. bei „Zu meiner Etage“ angezeigt wird: die eigene, sonst die erste darstellbare. */
+export function homeFloor(building: Building): Floor | null {
+  const own = building.floors.find((f) => f.isSelf);
+  return own ?? building.floors.find((f) => !f.lock) ?? null;
+}
+
+/** Keine einzige darstellbare Etage: Leerstand (PLANUNG 2.3). */
+export function isVacant(building: Building): boolean {
+  return !building.floors.some((f) => !f.lock);
+}

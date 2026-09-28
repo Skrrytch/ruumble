@@ -1,0 +1,203 @@
+{
+  "v": 1,
+  "type": "snapshot",
+  "server": {
+    "name": "Musterhaus",
+    "version": "1.6.870"
+  },
+  "self": null,
+  "channels": [
+    {
+      "id": 0,
+      "parent": null,
+      "name": "Musterhaus",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 1,
+      "parent": 0,
+      "name": "Lobby",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 2,
+      "parent": 0,
+      "name": "ENTWICKLUNG",
+      "position": 1,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 3,
+      "parent": 2,
+      "name": "Büro von Anna",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 4,
+      "parent": 2,
+      "name": "Büro von Ben",
+      "position": 1,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 5,
+      "parent": 2,
+      "name": "Büro von Clara",
+      "position": 2,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 6,
+      "parent": 2,
+      "name": "Büro von David",
+      "position": 3,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 7,
+      "parent": 2,
+      "name": "Büro von Eva",
+      "position": 4,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 8,
+      "parent": 2,
+      "name": "Büro von Felix",
+      "position": 5,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 9,
+      "parent": 0,
+      "name": "VERTRIEB",
+      "position": 2,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 10,
+      "parent": 9,
+      "name": "Abwesend",
+      "position": 0,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 11,
+      "parent": 9,
+      "name": "Fokusraum (stumm)",
+      "position": 1,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 12,
+      "parent": 9,
+      "name": "Teeküche",
+      "position": 2,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 13,
+      "parent": 9,
+      "name": "Raucherecke",
+      "position": 3,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 14,
+      "parent": 9,
+      "name": "Gregors Büro",
+      "position": 4,
+      "links": [],
+      "temporary": false
+    },
+    {
+      "id": 15,
+      "parent": 9,
+      "name": "Projektraum",
+      "position": 5,
+      "links": [],
+      "temporary": false
+    }
+  ],
+  "users": [
+    {
+      "session": 1,
+      "name": "Ben",
+      "channel": 1,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 2,
+      "name": "Felix",
+      "channel": 1,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 3,
+      "name": "Eva",
+      "channel": 1,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 4,
+      "name": "Anna",
+      "channel": 3,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 5,
+      "name": "Gregor",
+      "channel": 12,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    },
+    {
+      "session": 6,
+      "name": "Hanna",
+      "channel": 12,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false
+    }
+  ],
+  "listeners": {},
+  "canEnter": {}
+}

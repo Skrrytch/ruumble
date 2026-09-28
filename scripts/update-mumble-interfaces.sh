@@ -9,7 +9,9 @@ dir="$root/third_party/mumble"
 files=(plugins/MumblePlugin.h src/murmur/MumbleServer.ice LICENSE)
 
 if [[ $# -eq 0 ]]; then
-	cd "$dir" && sha256sum --check --quiet SHA256SUMS && echo "OK: $(cat VERSION)"
+	cd "$dir"
+	sha256sum --check --quiet SHA256SUMS
+	echo "OK: $(cat VERSION)"
 	exit 0
 fi
 

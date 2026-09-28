@@ -1,0 +1,188 @@
+/**
+ * Mock-Adapter: spielt einen Mumble-Server mit den Fixtures aus `protocol/fixtures` nach.
+ *
+ * Das Verhalten entspricht den Befunden der Machbarkeitstests S1/S2:
+ * - Kanalwechsel werden nach kurzer Verzögerung bestätigt, ohne Enter-Recht nach 3 s abgelehnt.
+ * - Von mehreren offenen Wechseln gilt nur der letzte (`superseded`), ein Wechsel in den eigenen Kanal ist sofort `ok`.
+ * - Stumm/Taub folgen der Semantik der Mumble-Buttons (nur hier nachgebildet, die Oberfläche selbst tut das nicht).
+ * - Sprechereignisse gibt es nur für Nutzer im eigenen Raum und nicht, wenn man selbst taub ist.
+ */
+import type { CommandBody, CommandResult, Snapshot, TalkingState } from "@ruumble/protocol";
+import leerstand from "@ruumble/protocol/fixtures/leerstand.json";
+import musterhaus from "@ruumble/protocol/fixtures/musterhaus.json";
+import nichtGekoppelt from "@ruumble/protocol/fixtures/nicht-gekoppelt.json";
+import sonderfaelle from "@ruumble/protocol/fixtures/sonderfaelle.json";
+import type { AdapterEvents, MumbleAdapter, PluginStatus } from "./types.ts";
+
+export const FIXTURES = {
+  musterhaus,
+  sonderfaelle,
+  leerstand,
+  "nicht-gekoppelt": nichtGekoppelt,
+} as unknown as Record<string, Snapshot>;
+export type FixtureName = keyof typeof FIXTURES;
+
+export interface MockOptions {
+  /** Verzögerung bis zur Bestätigung eines Wechsels (S2: 10–25 ms, hier sichtbar länger) */
+  confirmMs?: number;
+  /** Warten auf eine Bestätigung, die nie kommt (ADR-0003) */
+  rejectMs?: number;
+  /** Sprechereignisse simulieren */
+  talking?: boolean;
+}
+
+const clone = <T>(v: T): T => structuredClone(v);
+
+export class MockAdapter implements MumbleAdapter {
+  private events: AdapterEvents | null = null;
+  private state: Snapshot;
+  private plugin: PluginStatus = "connected";
+  private pendingJoin: { resolve: (r: CommandResult) => void; timer: ReturnType<typeof setTimeout> } | null = null;
+  private unmuteOnUndeaf = false;
+  private rejectNext = false;
+  private talkTimer: ReturnType<typeof setInterval> | null = null;
+  private talkingNow = new Set<number>();
+  private readonly opts: Required<MockOptions>;
+
+  constructor(fixture: FixtureName | Snapshot = "musterhaus", opts: MockOptions = {}) {
+    this.opts = { confirmMs: 250, rejectMs: 3000, talking: true, ...opts };
+    this.state = clone(typeof fixture === "string" ? FIXTURES[fixture]! : fixture);
+    if (!this.state.self) this.plugin = "disconnected";
+  }
+
+  start(events: AdapterEvents): void {
+    this.events = events;
+    events.status(this.plugin);
+    this.emit();
+    if (this.opts.talking) this.talkTimer = setInterval(() => this.simulateTalking(), 900);
+  }
+
+  stop(): void {
+    if (this.talkTimer) clearInterval(this.talkTimer);
+    if (this.pendingJoin) clearTimeout(this.pendingJoin.timer);
+    this.events = null;
+  }
+
+  command(body: CommandBody): Promise<CommandResult> {
+    const me = this.me();
+    if (this.plugin === "disconnected" || !me) return Promise.resolve("offline");
+    switch (body.cmd) {
+      case "join":
+        return this.join(body.channel);
+      case "mute":
+        if (body.on) me.selfMute = true;
+        else {
+          me.selfMute = false;
+          me.selfDeaf = false; // Unmute hebt Taub mit auf
+          this.unmuteOnUndeaf = false;
+        }
+        this.emit();
+        return Promise.resolve("ok");
+      case "deaf":
+        if (body.on) {
+          if (!me.selfMute) this.unmuteOnUndeaf = true;
+          me.selfDeaf = true;
+          me.selfMute = true;
+        } else {
+          me.selfDeaf = false;
+          if (this.unmuteOnUndeaf) me.selfMute = false;
+          this.unmuteOnUndeaf = false;
+        }
+        this.emit();
+        return Promise.resolve("ok");
+    }
+  }
+
+  // ---------------------------------------------------------------- Debug-Aktionen
+
+  setFixture(name: FixtureName): void {
+    this.state = clone(FIXTURES[name]!);
+    this.unmuteOnUndeaf = false;
+    this.setPlugin(this.state.self ? "connected" : "disconnected");
+    this.emit();
+  }
+
+  setPlugin(status: PluginStatus): void {
+    this.plugin = status;
+    this.events?.status(status);
+  }
+
+  /** Der nächste Wechsel wird trotz Zutrittsrecht nicht bestätigt (wie beim Rate-Limit, S2). */
+  rejectNextJoin(): void {
+    this.rejectNext = true;
+  }
+
+  /** legt unter einem Kanal einen Unterkanal an (z. B. um eine Etage zu sperren) */
+  addSubchannel(parent: number): void {
+    const id = Math.max(...this.state.channels.map((c) => c.id)) + 1;
+    this.state.channels.push({ id, parent, name: `Neu ${id}`, position: 99, links: [], temporary: true });
+    this.emit();
+  }
+
+  removeTemporaryChannels(): void {
+    const temp = new Set(this.state.channels.filter((c) => c.temporary && c.name.startsWith("Neu ")).map((c) => c.id));
+    this.state.channels = this.state.channels.filter((c) => !temp.has(c.id));
+    for (const u of this.state.users) if (temp.has(u.channel)) u.channel = 0;
+    this.emit();
+  }
+
+  /** verschiebt einen zufälligen fremden Nutzer in einen zufälligen Kanal */
+  moveRandomUser(): void {
+    const others = this.state.users.filter((u) => u.session !== this.state.self?.session);
+    const user = others[Math.floor(Math.random() * others.length)];
+    const target = this.state.channels[Math.floor(Math.random() * this.state.channels.length)];
+    if (user && target) {
+      user.channel = target.id;
+      this.emit();
+    }
+  }
+
+  // ---------------------------------------------------------------- intern
+
+  private me() {
+    return this.state.users.find((u) => u.session === this.state.self?.session);
+  }
+
+  private join(channel: number): Promise<CommandResult> {
+    const me = this.me()!;
+    if (this.pendingJoin) {
+      clearTimeout(this.pendingJoin.timer);
+      this.pendingJoin.resolve("superseded");
+      this.pendingJoin = null;
+    }
+    if (me.channel === channel) return Promise.resolve("ok");
+    const allowed = !this.rejectNext && this.state.canEnter[String(channel)] !== false && this.state.channels.some((c) => c.id === channel);
+    this.rejectNext = false;
+    return new Promise((resolve) => {
+      const timer = setTimeout(
+        () => {
+          this.pendingJoin = null;
+          if (!allowed) return resolve("rejected");
+          me.channel = channel;
+          this.emit();
+          resolve("ok");
+        },
+        allowed ? this.opts.confirmMs : this.opts.rejectMs,
+      );
+      this.pendingJoin = { resolve, timer };
+    });
+  }
+
+  private simulateTalking(): void {
+    const me = this.me();
+    if (!me || me.selfDeaf || this.plugin === "disconnected") return;
+    const audible = this.state.users.filter((u) => u.channel === me.channel && !u.selfMute);
+    for (const u of audible) {
+      if (Math.random() < 0.35) {
+        const talking = !this.talkingNow.has(u.session);
+        if (talking) this.talkingNow.add(u.session);
+        else this.talkingNow.delete(u.session);
+        this.events?.talking(u.session, (talking ? "talking" : "passive") as TalkingState);
+      }
+    }
+  }
+
+  private emit(): void {
+    this.events?.snapshot(clone(this.state));
+  }
+}
