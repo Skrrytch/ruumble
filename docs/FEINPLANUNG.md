@@ -446,10 +446,12 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 7. **Tests:** Speicher (Migration, Aufbewahrung, Kontingent, Verweiszähler), Rechte (anwesend oder nicht, fremder Raum, Flur, temporärer Kanal, Admin), REST (Grenzen, falscher Typ, fehlende Kopplung), Snapshot `boards`
 
 ### AP11.2 – Seitenleiste mit Text und Code (Oberfläche)
+
+> Änderung am 28.09.2026: Die **Pinnwand-Grafik im Raum** (Variante B) kommt schon in AP11.2, weil sie der Schalter für die Seitenleiste ist. Ein vorläufiger Knopf entfällt. In AP11.4 bleiben der Hinweis in Mumble, der Live-Test und der Betrieb.
 1. **Adapter:** Methoden für die Pinnwand (laden, anheften, bearbeiten, löschen). Der Mock hält die Beiträge im Speicher und liefert Beispielbeiträge in den Fixtures.
 2. **Seitenleiste** `Board.svelte`:
    - Rechts im Grundriss als eigener „Raum“ mit Wand, wie im Entwurf.
-   - Kopf mit „Pinnwand“, Raumname und „N Beiträge · sichtbar für alle im Raum“, dazu Ausblenden per `›`. Zu Beginn ist sie **ausgeblendet**, eingeblendet wird sie über die Pinnwand-Grafik im eigenen Raum (AP11.4). Bis dahin dient in AP11.2 ein vorläufiger Schalter im Kopf.
+   - Kopf mit „Pinnwand“, Raumname und „N Beiträge · sichtbar für alle im Raum“, dazu Ausblenden per `›`. Zu Beginn ist sie **ausgeblendet**, eingeblendet wird sie über die Pinnwand-Grafik im eigenen Raum.
    - Filter: Alle, Text, Code, Bilder, Dateien.
    - Außerhalb eines Raums (Eingang, Flur, gesperrte Etage) steht der Hinweis „Pinnwände gibt es nur in Räumen“.
 3. **Karten:**
@@ -464,6 +466,13 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
    - Strg+Enter heftet an.
 7. **Layout:** Die Seitenleiste ist etwa 340 px breit, der Grundriss wird schmaler. Der Layoutvergleich mit dem Prototyp läuft mit eingeklappter Pinnwand.
 8. **Tests:** Modell (Kürzen, Code-Erkennung), XSS-Fälle im Renderer (`<script>`, `javascript:`-Links, `onerror`), E2E im Mock (anheften, bearbeiten, löschen, filtern, einklappen, Popup)
+
+**✔ Erledigt am 28.09.2026** (Branch `ap11-pinnwand`):
+- Adapter `board` (live per `fetch`, Mock im Speicher mit Beispielbeiträgen), Zustand in `state.svelte.ts`; die Pinnwand wird bei Kanalwechsel und bei `board`-Ereignissen neu geladen.
+- Komponenten unter `web/src/lib/ui/board/`: `BoardPanel` (340 px, `id="board-panel"`), `PostCard`, `PostBody`, `CodeBlock`, `PostDialog` (natives `<dialog>`), `Composer`, `BoardNotes` (Variante B).
+- Pinnwand-Grafik: im eigenen Raum ein Schalter (`aria-expanded`, `aria-controls`), in fremden Räumen nur ein Hinweis, wenn etwas hängt. Die Raumtaste steckt dafür in einer Hülle `.wrap`, deren Basis das Raum-Padding nachbildet, damit der Layoutvergleich unverändert passt.
+- Spracherkennung: eigene Heuristik vor highlight.js, weil dessen Automatik Python oft als CSS einordnete; CSS, Markdown und INI sind von der Automatik ausgenommen.
+- Tests: 21 Unit-Tests (Modell, Renderer mit XSS-Fällen in jsdom), 7 E2E-Tests im Mock (`web/e2e/board.spec.ts`).
 
 ### AP11.3 – Bilder und Dateien
 1. **Einfügen** aus der Zwischenablage und **Hineinziehen**, Büroklammer für Dateien, Fortschritt beim Hochladen, verständliche Fehler (zu groß, falscher Typ, Kontingent)

@@ -7,6 +7,7 @@
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
   import FloorPlan from "./lib/ui/FloorPlan.svelte";
   import PluginHelp from "./lib/ui/PluginHelp.svelte";
+  import BoardPanel from "./lib/ui/board/BoardPanel.svelte";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
 
@@ -50,7 +51,7 @@
         </div>
       </div>
       <div class="hint">
-        {#if app.readonly}Kanalwechsel nur mit dem Ruumble-Plugin.{:else}Klick auf einen Raum wechselt den Kanal.{/if}<br />Etagenwechsel über den Aufzug · {building.online} online
+        {#if app.readonly}Kanalwechsel nur mit dem Ruumble-Plugin.{:else}Klick auf einen Raum wechselt den Kanal.<br />Die Pinnwand zeigt, was im aktuellen Raum hängt.{/if}<br />Etagenwechsel über den Aufzug · {building.online} online
       </div>
     </header>
 
@@ -58,13 +59,22 @@
       <Core {app} {building} {floor} />
       {#if floor}
         <!-- auch bei Leerstand: Steht der eigene Nutzer auf einer gesperrten Etage, erscheint dort deren Hinweis -->
-        <FloorPlan {floor} readonly={app.readonly} pendingChannel={app.pendingChannel} talking={app.talking} onjoin={(id) => app.join(id)} />
+        <FloorPlan
+          {floor}
+          readonly={app.readonly}
+          pendingChannel={app.pendingChannel}
+          talking={app.talking}
+          onjoin={(id) => app.join(id)}
+          boardOpen={app.boardOpen}
+          ontoggleboard={() => app.toggleBoard()}
+        />
       {:else}
         <div class="vacancy" role="status">
           <strong>Leerstand</strong>
           <span>Keine Etage dieses Gebäudes lässt sich darstellen: Jede Etage ist tiefer als zwei Ebenen oder hat mehr als 8 Räume. Nutze die klassische Ansicht in Mumble.</span>
         </div>
       {/if}
+      {#if app.boardOpen && !app.readonly}<BoardPanel {app} />{/if}
     </div>
   {/if}
 
