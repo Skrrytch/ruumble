@@ -59,6 +59,8 @@ public:
 
 struct Settings {
 	std::string pluginVersion = "0.0.0";
+	/** Version des Mumble-Clients aus mumble_setMumbleInfo, leer wenn unbekannt */
+	std::string mumbleVersion;
 	bool autoOpen             = true;
 	/** feste Adresse aus plugin.json; ohne sie gilt die Root-Beschreibung (ADR-0010) */
 	std::optional< std::string > bridgeUrl;
