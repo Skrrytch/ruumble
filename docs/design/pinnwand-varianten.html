@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruumble – Pinnwand im Raum: Varianten</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px; font-family: var(--font-sans); color: var(--color-navy); background: var(--color-white); }
+  h1 { margin: 0 0 4px; font-size: 28px; }
+  p.lead { margin: 0 0 28px; color: var(--color-blue-700); font-size: 15px; max-width: 900px; }
+  section { margin-bottom: 40px; }
+  h2 { margin: 0 0 4px; font-size: 20px; }
+  p.desc { margin: 0 0 12px; font-size: 14px; color: var(--color-blue-700); max-width: 900px; }
+  .plan { display: flex; gap: var(--wall); padding: var(--wall); background: var(--color-navy); width: 1060px; }
+  .room { position: relative; flex: 1; height: 200px; background: var(--color-white); padding: 18px 20px; }
+  .room.mine { background: var(--color-blue-100); }
+  .room .t { font-weight: 700; font-size: 16px; }
+  .room .c { font-size: 13px; color: var(--color-blue-700); margin-top: 4px; }
+  .room .n { position: absolute; left: 20px; bottom: 14px; font-size: 12px; color: var(--color-blue-500); }
+  .deco { position: absolute; right: 14px; top: 14px; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<h1>Pinnwand im Raum: drei Varianten</h1>
+<p class="lead">Jede Zeile zeigt denselben Ausschnitt: Räume mit 0, 1, 3 und 12 Beiträgen, rechts der eigene Raum (hellblau) mit 2 Beiträgen.
+Die Grafik ersetzt den Zähler. Sie deutet die Menge nur an (1, 2 oder 3 und mehr Zettel), exakte Zahlen stehen in der Seitenleiste.
+Leere Räume zeigen nichts, außer der eigene Raum: Dort lädt eine leere Wand zum Anheften ein.</p>
+
+<!-- Variante A: Korkbrett an der Wand -->
+<section>
+  <h2>A · Korkbrett an der Wand</h2>
+  <p class="desc">Ein kleines Brett mit Rahmen hängt oben rechts an der Wand. Zettel in Weiß und Hellblau sind mit einer Nadel befestigt.
+  Neues Token <code>--color-cork</code> (warmes Beige), sonst nur Farben aus den Tokens. Am deutlichsten als „Pinnwand“ zu erkennen.</p>
+  <div class="plan" id="a"></div>
+</section>
+
+<!-- Variante B: Zettel an der Wand (ohne Brett) -->
+<section>
+  <h2>B · Zettel direkt an der Wand</h2>
+  <p class="desc">Ohne Brett, nur leicht schräge Zettel mit farbigen Nadeln, wie an eine Bürowand geheftet.
+  Sehr leicht, passt am besten zum reduzierten Grundriss. Nur Farben aus den Tokens.</p>
+  <div class="plan" id="b"></div>
+</section>
+
+<!-- Variante C: Whiteboard / Tafel -->
+<section>
+  <h2>C · Tafel mit Magneten</h2>
+  <p class="desc">Eine schlanke Tafel in Dunkelblau mit Rahmen, darauf kleine Karten mit runden Magneten.
+  Wirkt „technischer“ und ruhiger, lehnt sich an das Aufzug-Panel an. Nur Farben aus den Tokens.</p>
+  <div class="plan" id="c"></div>
+</section>
+
+<script>
+const rooms = [
+  { t: "Büro von Anna", n: 0 }, { t: "Büro von Ben", n: 1 }, { t: "Büro von Clara", n: 3 },
+  { t: "Teeküche", n: 12 }, { t: "Büro von Eva", n: 2, mine: true },
+];
+const notes = (n) => Math.min(n, 3);
+const tokens = getComputedStyle(document.documentElement);
+const C = (v) => tokens.getPropertyValue(v).trim();
+
+function variantA(n, mine) {
+  if (n === 0 && !mine) return "";
+  const k = notes(n), paper = [C("--color-white"), C("--color-blue-100"), C("--color-white")];
+  const slips = Array.from({ length: k }, (_, i) => {
+    const x = 8 + i * 15, y = 8 + (i % 2) * 5, r = [-6, 4, -2][i];
+    return `<g transform="rotate(${r} ${x + 9} ${y + 10})"><rect x="${x}" y="${y}" width="18" height="20" fill="${paper[i]}" stroke="${C("--color-blue-300")}" stroke-width=".8"/>
+      <line x1="${x + 4}" y1="${y + 9}" x2="${x + 14}" y2="${y + 9}" stroke="${C("--color-blue-300")}"/><line x1="${x + 4}" y1="${y + 13}" x2="${x + 12}" y2="${y + 13}" stroke="${C("--color-blue-300")}"/>
+      <circle cx="${x + 9}" cy="${y + 3}" r="2.4" fill="${C("--color-sky")}"/></g>`;
+  }).join("");
+  return `<svg width="64" height="44" viewBox="0 0 64 44" aria-hidden="true">
+    <rect x="1" y="1" width="62" height="42" rx="3" fill="${C("--color-cork") || "#e4cfa4"}" stroke="${C("--color-navy")}" stroke-width="2"/>
+    ${slips || `<text x="32" y="27" text-anchor="middle" font-size="9" fill="${C("--color-blue-700")}">leer</text>`}</svg>`;
+}
+
+function variantB(n, mine) {
+  const k = notes(n);
+  if (k === 0) return mine ? `<svg width="60" height="40" viewBox="0 0 60 40" aria-hidden="true"><rect x="20" y="8" width="20" height="22" fill="none" stroke="${C("--color-blue-300")}" stroke-dasharray="3 2"/><path d="M30 14v10M25 19h10" stroke="${C("--color-blue-300")}"/></svg>` : "";
+  const pins = [C("--color-sky"), C("--color-accent"), C("--color-blue-500")];
+  const slips = Array.from({ length: k }, (_, i) => {
+    const x = 4 + i * 17, y = 6 + [0, 4, 1][i], r = [-8, 5, -3][i];
+    return `<g transform="rotate(${r} ${x + 10} ${y + 12})"><rect x="${x}" y="${y}" width="20" height="24" fill="${C("--color-white")}" stroke="${C("--color-blue-300")}"/>
+      <line x1="${x + 4}" y1="${y + 10}" x2="${x + 16}" y2="${y + 10}" stroke="${C("--color-blue-300")}"/><line x1="${x + 4}" y1="${y + 15}" x2="${x + 14}" y2="${y + 15}" stroke="${C("--color-blue-300")}"/><line x1="${x + 4}" y1="${y + 20}" x2="${x + 12}" y2="${y + 20}" stroke="${C("--color-blue-300")}"/>
+      <circle cx="${x + 10}" cy="${y + 3}" r="3" fill="${pins[i]}" stroke="${C("--color-navy")}" stroke-width=".6"/></g>`;
+  }).join("");
+  return `<svg width="60" height="40" viewBox="0 0 60 40" aria-hidden="true">${slips}</svg>`;
+}
+
+function variantC(n, mine) {
+  if (n === 0 && !mine) return "";
+  const k = notes(n);
+  const cards = Array.from({ length: k }, (_, i) => {
+    const x = 7 + i * 16;
+    return `<rect x="${x}" y="11" width="13" height="16" rx="1.5" fill="${[C("--color-white"), C("--color-blue-100"), C("--color-blue-300")][i]}"/>
+      <circle cx="${x + 6.5}" cy="11" r="2.2" fill="${C("--color-sky")}"/>`;
+  }).join("");
+  return `<svg width="62" height="40" viewBox="0 0 62 40" aria-hidden="true">
+    <rect x="1" y="3" width="60" height="32" rx="3" fill="${C("--color-navy")}" stroke="${C("--color-navy-light")}" stroke-width="2"/>
+    ${cards}<rect x="20" y="35" width="22" height="3" rx="1.5" fill="${C("--color-blue-300")}"/></svg>`;
+}
+
+for (const [id, fn] of [["a", variantA], ["b", variantB], ["c", variantC]]) {
+  document.getElementById(id).innerHTML = rooms.map((r) => `
+    <div class="room ${r.mine ? "mine" : ""}">
+      <div class="t">${r.t}</div><div class="c">${r.mine ? "1 Person" : "frei"}</div>
+      <div class="deco">${fn(r.n, r.mine)}</div>
+      <div class="n">${r.n === 0 ? "keine Beiträge" : r.n + " Beitr" + (r.n === 1 ? "ag" : "äge")}</div>
+    </div>`).join("");
+}
+</script>
+</body>
+</html>

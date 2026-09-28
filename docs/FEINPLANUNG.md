@@ -42,6 +42,7 @@ Die UI-Stränge AP2 bis AP4 hängen nicht von Mumble ab und können **parallel**
 | AP8 | Dokumentation und Rollout | S | AP7 |
 | AP9 | Echte Avatare (Idee D) | S | AP7 |
 | AP10 | Still, abwesend und Aufnahme sichtbar (Idee E) | S | AP7 |
+| AP11 | Pinnwand je Raum (Idee A, ADR-0011) | L | AP7 |
 
 ---
 
@@ -401,6 +402,74 @@ Schritte:
    - Live-Test nur für `idleMinutes` und `recording = false`, weil eine Aufnahme im headless Client die Mumble-Oberfläche bräuchte
 
 **Fertig, wenn:** Stille, abwesende und aufzeichnende Nutzer im Mock und am echten Server richtig erscheinen und alle Tests grün sind.
+
+---
+
+## AP11 – Pinnwand je Raum (Idee A, ADR-0011)
+
+**Ziel:** Jeder Raum hat eine Pinnwand für Text (Markdown), Quellcode, Bilder und Dateien. Rechts neben dem Grundriss steht die Pinnwand **des Raums, in dem man gerade ist** (Entwurf vom 28.09.2026). Im Grundriss zeigt eine kleine Grafik, wo etwas hängt.
+
+Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
+
+### AP11.1 – Speicher und Schnittstelle (Dienst, Protokoll)
+1. **Protokoll** (`protocol`):
+   - `Post`: `id`, `channelId`, `kind: text|code|image|file`, `text`, `language?`, `attachment?`, `authorName`, `mine`, `createdAt`, `updatedAt`, `updatedByName?`
+   - `Attachment`: `id` (Hash), `name`, `mime`, `size`, bei Bildern `width`/`height`
+   - Snapshot: `boards: Record<channelId, 1|2|3>` (Füllstand für die Grafik, nur Räume mit Zutrittsrecht)
+   - WebSocket-Ereignis `board {channelId}`: Die Oberfläche lädt dann neu.
+2. **Speicher** (`bridge/src/board/store.ts`):
+   - `better-sqlite3` im WAL-Modus mit versionierten Migrationen
+   - Tabelle `posts` sowie Anhänge als Dateien nach SHA-256, mit Verweiszähler
+   - Aufräumen stündlich: älter als `RETENTION_DAYS` (30), Kanäle, die seit 7 Tagen gelöscht sind, verwaiste Dateien
+   - Kontingent `BOARD_QUOTA_MB` (2048): älteste Beiträge zuerst löschen
+3. **Rechte** (`bridge/src/board/access.ts`): Aus Geräte-Token, Plugin und Session ergibt sich der Kanal, in dem der Nutzer gerade ist.
+   - Lesen, Schreiben und Bearbeiten nur im **eigenen aktuellen Raum** (2. Ebene, nicht temporär)
+   - Löschen durch den Autor oder mit `hasPermission(…, Write)`
+4. **REST** (alle nur gekoppelt und mit Rechteprüfung):
+   - `GET /api/board`: Pinnwand des aktuellen Raums
+   - `POST /api/board/posts`: Text oder Code
+   - `POST /api/board/uploads`: Bild oder Datei als Rohdaten, bis 10 MB. Name und Typ kommen per Header, der Typ wird an den ersten Bytes geprüft.
+   - `PATCH /api/board/posts/:id`
+   - `DELETE /api/board/posts/:id`
+   - `GET /api/board/files/:id`: Bilder mit `nosniff`, Dateien als `attachment`
+   - Rate-Limit je Nutzer
+5. **Content-Security-Policy** für die ganze Oberfläche: `default-src 'self'`, Bilder aus `self`, `data:` und `blob:`, keine Inline-Skripte.
+6. **Sicherung:** `node dist/main.mjs backup <ziel>` (SQLite-Backup-API, danach die Anhänge)
+7. **Tests:** Speicher (Migration, Aufbewahrung, Kontingent, Verweiszähler), Rechte (anwesend oder nicht, fremder Raum, Flur, temporärer Kanal, Admin), REST (Grenzen, falscher Typ, fehlende Kopplung), Snapshot `boards`
+
+### AP11.2 – Seitenleiste mit Text und Code (Oberfläche)
+1. **Adapter:** Methoden für die Pinnwand (laden, anheften, bearbeiten, löschen). Der Mock hält die Beiträge im Speicher und liefert Beispielbeiträge in den Fixtures.
+2. **Seitenleiste** `Board.svelte`:
+   - Rechts im Grundriss als eigener „Raum“ mit Wand, wie im Entwurf.
+   - Kopf mit „Pinnwand“, Raumname und „N Beiträge · sichtbar für alle im Raum“, dazu Einklappen per `›`. Der Zustand wird im Browser gemerkt.
+   - Filter: Alle, Text, Code, Bilder, Dateien.
+   - Außerhalb eines Raums (Eingang, Flur, gesperrte Etage) steht der Hinweis „Pinnwände gibt es nur in Räumen“.
+3. **Karten:**
+   - Avatar, Name, relative Zeit („Gerade eben“), Typ
+   - Inhalt **gekürzt auf 8 Zeilen**
+   - „Öffnen · bearbeiten“ und „Kopieren“, dazu „zuletzt bearbeitet von …“
+4. **Darstellung:** Markdown mit markdown-it (`html: false`) plus DOMPurify, Code mit highlight.js (Sprache automatisch erkannt oder wählbar), Zeilennummern, Kopieren.
+5. **Popup „Öffnen“:** voller Inhalt, bearbeiten (alle Anwesenden), kopieren, löschen (Autor oder Admin).
+6. **Eingabe:**
+   - Textfeld „Etwas an die Pinnwand heften …“ mit Markdown
+   - Code-Modus `<>`: Wird mehrzeiliger Text eingefügt, der nach Code aussieht, schlägt Ruumble „als Code anheften?“ vor.
+   - Strg+Enter heftet an.
+7. **Layout:** Die Seitenleiste ist etwa 340 px breit, der Grundriss wird schmaler. Der Layoutvergleich mit dem Prototyp läuft mit eingeklappter Pinnwand.
+8. **Tests:** Modell (Kürzen, Code-Erkennung), XSS-Fälle im Renderer (`<script>`, `javascript:`-Links, `onerror`), E2E im Mock (anheften, bearbeiten, löschen, filtern, einklappen, Popup)
+
+### AP11.3 – Bilder und Dateien
+1. **Einfügen** aus der Zwischenablage und **Hineinziehen**, Büroklammer für Dateien, Fortschritt beim Hochladen, verständliche Fehler (zu groß, falscher Typ, Kontingent)
+2. **Bilder:** Vorschau in der Karte, Klick öffnet die **Vollbildansicht** mit Zoom (Mausrad oder Gesten), Verschieben, Download und Schließen mit Esc
+3. **Dateien:** Name, Größe, Typ-Symbol, Download
+4. **Tests:** Upload-Grenzen, Bildgrößen, E2E (Einfügen, Ziehen, Vollbild)
+
+### AP11.4 – Pinnwand im Grundriss, Hinweis in Mumble, Betrieb
+1. **Grafik im Raum** nach der gewählten Variante (A, B oder C). Sie zeigt den Füllstand 1, 2 oder 3 und mehr, der eigene Raum zeigt auch leer eine Einladung. Klick auf die Grafik im eigenen Raum klappt die Seitenleiste auf.
+2. **Plugin:** Befehl `notify{text}` → `log`. Der Dienst schickt ihn beim Anheften an die Anwesenden außer dem Autor.
+3. **Live-Test:** Zwei Clients im selben Raum, einer heftet an, der andere sieht den Beitrag sofort. Das Mumble-Protokoll zeigt den Hinweis, ein dritter Nutzer außerhalb des Raums bekommt `403`.
+4. **Betrieb:** Grenzwerte und Sicherung in `deploy/homeserver`, Füllstand in `/healthz`, Bereinigung der Daten beim Löschen
+
+**Fertig, wenn:** Alle vier Stufen im Mock und im Live-Test grün sind und die Pinnwand auf dem Homeserver läuft.
 
 ---
 
