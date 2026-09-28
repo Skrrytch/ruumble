@@ -3,7 +3,7 @@
  * Kein optimistisches Umschalten: Der eigene Kanal ändert sich erst mit dem nächsten Snapshot (ADR-0003).
  */
 import type { CommandResult, Snapshot, TalkingState } from "@ruumble/protocol";
-import type { MumbleAdapter, PluginStatus } from "./adapter/types.ts";
+import type { ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
 import { buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
 
 export type Notice = { kind: "join-failed" | "offline"; text: string };
@@ -11,6 +11,9 @@ export type Notice = { kind: "join-failed" | "offline"; text: string };
 export class RuumbleState {
   snapshot = $state<Snapshot | null>(null);
   plugin = $state<PluginStatus>("disconnected");
+  /** nur lesend, ohne eigenen Nutzer (Vorschau des Dienstes) */
+  preview = $state(false);
+  connection = $state<ConnectionState>("connected");
   /** Session → spricht gerade (nur was der eigene Client hört) */
   talking = $state<Record<number, boolean>>({});
   /** laufender Kanalwechsel (Übergangszustand) */
@@ -28,6 +31,9 @@ export class RuumbleState {
     return b.floors.find((f) => f.channelId === this.viewFloorId && (!f.lock || f.isSelf)) ?? homeFloor(b);
   });
 
+  /** Ohne eigenen Nutzer ist alles nur lesbar. */
+  readonly = $derived(!this.snapshot?.self);
+
   me = $derived(this.snapshot?.users.find((u) => u.session === this.snapshot?.self?.session) ?? null);
 
   private noticeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -38,7 +44,12 @@ export class RuumbleState {
     this.adapter.start({
       snapshot: (s) => this.onSnapshot(s),
       talking: (session, state) => this.onTalking(session, state),
-      status: (plugin) => (this.plugin = plugin),
+      status: (plugin, preview) => {
+        this.plugin = plugin;
+        this.preview = preview;
+        this.connection = "connected";
+      },
+      connection: (state) => (this.connection = state),
     });
   }
 
@@ -56,7 +67,7 @@ export class RuumbleState {
   }
 
   async join(channelId: number): Promise<void> {
-    if (this.me?.channel === channelId) return;
+    if (this.readonly || this.me?.channel === channelId) return;
     this.pendingChannel = channelId;
     const result = await this.adapter.command({ cmd: "join", channel: channelId });
     if (this.pendingChannel === channelId) this.pendingChannel = null;
@@ -98,11 +109,13 @@ export class RuumbleState {
 
   private onSnapshot(s: Snapshot): void {
     this.snapshot = s;
-    // Sprechanzeige nur für Nutzer im eigenen Raum und nie bei eigenem Taub (ADR-0005)
+    // Den Sprechzustand meldet der eigene Client (nur für Hörbares, ADR-0005) und beendet ihn selbst mit
+    // „passive“. Nicht am Snapshot filtern: Der Client hört neue Nutzer früher, als das Polling sie zeigt.
+    // Entfernt wird nur, wer den Server verlassen hat, und alles bei eigenem Taub.
     const me = s.users.find((u) => u.session === s.self?.session);
-    const audible = new Set(me && !me.selfDeaf ? s.users.filter((u) => u.channel === me.channel).map((u) => u.session) : []);
+    const present = new Set(s.users.map((u) => u.session));
     const next: Record<number, boolean> = {};
-    for (const [session, on] of Object.entries(this.talking)) if (on && audible.has(Number(session))) next[Number(session)] = true;
+    if (!me?.selfDeaf) for (const [session, on] of Object.entries(this.talking)) if (on && present.has(Number(session))) next[Number(session)] = true;
     this.talking = next;
   }
 

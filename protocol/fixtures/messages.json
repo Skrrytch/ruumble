@@ -93,6 +93,12 @@
       "v": 1,
       "type": "status",
       "plugin": "disconnected"
+    },
+    {
+      "v": 1,
+      "type": "status",
+      "plugin": "disconnected",
+      "preview": true
     }
   ],
   "invalid": [

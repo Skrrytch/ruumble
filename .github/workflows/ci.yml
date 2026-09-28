@@ -49,3 +49,17 @@ jobs:
         with:
           name: playwright-ergebnisse
           path: web/test-results
+
+  plugin:
+    name: Plugin bauen und testen (C++)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake g++ libssl-dev
+      - run: cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build plugin/build -j
+      - run: plugin/build/ruumble_tests
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ruumble-plugin
+          path: plugin/build/*.mumble_plugin

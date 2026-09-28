@@ -1,0 +1,39 @@
+# Lokaler Live-Test: echter Mumble-Server + Ruumble-Dienst (+ Test-Clients mit Plugin, siehe run-client.sh).
+# NUR für Tests: feste Test-Secrets, Ice auf 127.0.0.1 veröffentlicht (für setup und Diagnose).
+#   docker compose -f deploy/local/docker-compose.yml up -d --build
+name: ruumble-local
+services:
+  mumble:
+    image: mumblevoip/mumble-server:v1.6.870
+    environment:
+      MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'
+      MUMBLE_CONFIG_ICESECRETREAD: s1-read-secret
+      MUMBLE_CONFIG_ICESECRETWRITE: s1-write-secret-only-for-setup
+      MUMBLE_CONFIG_REGISTERNAME: Musterhaus
+      MUMBLE_CONFIG_AUTOBANATTEMPTS: "0"
+    ports:
+      - "127.0.0.1:64738:64738/tcp"
+      - "127.0.0.1:64738:64738/udp"
+      - "127.0.0.1:6502:6502"
+    volumes:
+      - mumble-data:/data
+
+  ruumble:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile
+    image: ruumble:dev
+    depends_on: [mumble]
+    environment:
+      ICE_HOST: mumble
+      ICE_SECRET_READ: s1-read-secret
+      PUBLIC_URL: http://127.0.0.1:8080
+      ADDRESS_CHECK: enforce
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ruumble-data:/data
+
+volumes:
+  mumble-data:
+  ruumble-data:
