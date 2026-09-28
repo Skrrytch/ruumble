@@ -79,7 +79,7 @@ export const PluginHello = z.object({
   /** SHA1 hex des Client-Zertifikats (getUserHash), stabiler Schlüssel der Kopplung (ADR-0004) */
   certHash: z.string().regex(/^[0-9a-f]{40}$/),
   pluginVersion: z.string(),
-  /** Das Plugin hat bereits eine gekoppelte Oberfläche (Flag in plugin.json). */
+  /** Das Plugin hat für diesen Dienst schon einmal gekoppelt (`pairedWith` in plugin.json, ADR-0010) */
   paired: z.boolean(),
 });
 
@@ -93,7 +93,7 @@ export type PluginToBridge = z.infer<typeof PluginToBridge>;
 
 // ---------------------------------------------------------------- Dienst → Plugin
 
-export const RejectReason = z.enum(["unknown-session", "hash-mismatch", "address-mismatch", "no-certificate", "unsupported-version"]);
+export const RejectReason = z.enum(["unknown-session", "hash-mismatch", "address-mismatch", "no-certificate"]);
 
 export const BridgeWelcome = z.object({ v, type: z.literal("welcome"), pairUrl: z.url().optional() });
 export const BridgeReject = z.object({ v, type: z.literal("reject"), reason: RejectReason });

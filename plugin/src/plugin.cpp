@@ -14,15 +14,6 @@
 #include <cstring>
 #include <memory>
 
-#ifndef RUUMBLE_VERSION
-#	define RUUMBLE_VERSION "0.0.0"
-#endif
-#ifndef RUUMBLE_VERSION_MAJOR
-#	define RUUMBLE_VERSION_MAJOR 0
-#	define RUUMBLE_VERSION_MINOR 0
-#	define RUUMBLE_VERSION_PATCH 0
-#endif
-
 namespace {
 
 MumbleAPI api;

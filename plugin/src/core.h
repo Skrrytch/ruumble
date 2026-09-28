@@ -51,7 +51,7 @@ public:
 class Transport {
 public:
 	virtual ~Transport()                               = default;
-	/** Basis-URL des Dienstes, z. B. http://192.168.1.179:8080 (verbindet mit …/ws/plugin) */
+	/** Basis-URL des Dienstes, z. B. http://ruumble.example:8080 (verbindet mit …/ws/plugin) */
 	virtual void connect(const std::string &baseUrl) = 0;
 	virtual void disconnect()                        = 0;
 	virtual void send(const std::string &json)       = 0;
@@ -131,7 +131,7 @@ private:
 	void handleMessage(const std::string &json);
 	void enqueueCommand(Command command);
 	void step(std::chrono::steady_clock::time_point now);
-	bool execute(const Command &command, std::chrono::steady_clock::time_point now);
+	void execute(const Command &command, std::chrono::steady_clock::time_point now);
 	void sendMove(ActiveJoin &join, std::chrono::steady_clock::time_point now);
 	void reply(const std::string &id, const std::string &result);
 	void sendHello();
