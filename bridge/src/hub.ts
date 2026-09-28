@@ -158,7 +158,7 @@ export class Hub {
           const previous = this.plugins.get(msg.certHash);
           if (previous && previous.conn !== conn) previous.conn.close(4001, "replaced");
           if (entry && entry.certHash !== msg.certHash) this.removePlugin(entry);
-          entry = { conn, certHash: msg.certHash, session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unbekannt", pluginVersion: msg.pluginVersion, locale: msg.locale ?? "de" };
+          entry = { conn, certHash: msg.certHash, session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unknown", pluginVersion: msg.pluginVersion, locale: msg.locale ?? "de" };
           this.plugins.set(msg.certHash, entry);
           const pairUrl = msg.paired ? undefined : `${this.opts.publicUrl}/pair?code=${this.opts.pairing.createCode(msg.certHash, name)}`;
           conn.send(pairUrl ? { v, type: "welcome", pairUrl } : { v, type: "welcome" });
