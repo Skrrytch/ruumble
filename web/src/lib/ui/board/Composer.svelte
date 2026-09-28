@@ -1,5 +1,6 @@
 <script lang="ts">
   import Code from "@lucide/svelte/icons/code";
+  import SendHorizontal from "@lucide/svelte/icons/send-horizontal";
   import type { PostKind } from "@ruumble/protocol";
   import { looksLikeCode } from "../../board/model.ts";
   import { CODE_LANGUAGES } from "../../board/render.ts";
@@ -55,14 +56,14 @@
     {#if codeMode}
       <select bind:value={language} aria-label="Sprache"><option value="">automatisch</option>{#each CODE_LANGUAGES as l (l)}<option value={l}>{l}</option>{/each}</select>
     {:else}
-      <span class="hint">Markdown · Strg+Enter heftet an</span>
+      <span class="hint">Markdown · Strg+Enter sendet</span>
     {/if}
-    <button type="submit" class="pin" disabled={busy || !text.trim()}>Anheften</button>
+    <button type="submit" class="pin" aria-label="Senden" title="Senden (Strg+Enter)" disabled={busy || !text.trim()}><SendHorizontal size={20} /></button>
   </div>
 </form>
 
 <style>
-  .composer { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-top: 1px solid var(--color-blue-100); background: var(--color-white); }
+  .composer { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-top: 1px solid var(--color-blue-300); background: transparent; }
   textarea { width: 100%; min-height: 64px; max-height: 40vh; resize: vertical; padding: 8px 10px; font: inherit; font-size: 14px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); }
   textarea.mono { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; }
   textarea:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
@@ -71,7 +72,7 @@
   .tool[aria-pressed="true"] { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); }
   .hint { font-size: 12px; color: var(--color-blue-700); flex: 1; }
   select { flex: 1; min-height: 36px; font: inherit; font-size: 13px; }
-  .pin { margin-left: auto; min-height: 40px; padding: 0 16px; border: 0; border-radius: var(--radius-md); background: var(--color-navy); color: var(--color-white); font-weight: 700; cursor: pointer; }
+  .pin { margin-left: auto; width: 44px; min-height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: var(--color-navy); color: var(--color-white); font-weight: 700; cursor: pointer; }
   .pin:disabled { opacity: 0.5; cursor: default; }
   .suggest { display: flex; align-items: center; gap: 8px; font-size: 13px; background: var(--color-blue-100); padding: 6px 8px; border-radius: var(--radius-md); }
   .suggest button { min-height: 28px; padding: 0 10px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); cursor: pointer; }

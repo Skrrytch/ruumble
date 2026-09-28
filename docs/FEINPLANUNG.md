@@ -451,7 +451,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 1. **Adapter:** Methoden für die Pinnwand (laden, anheften, bearbeiten, löschen). Der Mock hält die Beiträge im Speicher und liefert Beispielbeiträge in den Fixtures.
 2. **Seitenleiste** `Board.svelte`:
    - Rechts im Grundriss als eigener „Raum“ mit Wand, wie im Entwurf.
-   - Kopf mit „Pinnwand“, Raumname und „N Beiträge · sichtbar für alle im Raum“, dazu Ausblenden per `›`. Zu Beginn ist sie **ausgeblendet**, eingeblendet wird sie über die Pinnwand-Grafik im eigenen Raum.
+   - Kopf mit „Pinnwand“, Raumname und „N Beiträge“, dazu Ausblenden per `›`. Zu Beginn ist sie **ausgeblendet**, eingeblendet wird sie über die Pinnwand-Grafik im eigenen Raum.
    - Filter: Alle, Text, Code, Bilder, Dateien.
    - Außerhalb eines Raums (Eingang, Flur, gesperrte Etage) steht der Hinweis „Pinnwände gibt es nur in Räumen“.
 3. **Karten:**
@@ -463,7 +463,7 @@ Umsetzung in vier Stufen, jede für sich lauffähig und getestet:
 6. **Eingabe:**
    - Textfeld „Etwas an die Pinnwand heften …“ mit Markdown
    - Code-Modus `<>`: Wird mehrzeiliger Text eingefügt, der nach Code aussieht, schlägt Ruumble „als Code anheften?“ vor.
-   - Strg+Enter heftet an.
+   - Senden per Icon (Papierflieger) oder Strg+Enter („Strg+Enter sendet“). Die Seitenleiste ist leicht blau getönt, ohne das Punktraster des Flurs (Änderung 28.09.2026).
 7. **Layout:** Die Seitenleiste ist etwa 340 px breit, der Grundriss wird schmaler. Der Layoutvergleich mit dem Prototyp läuft mit eingeklappter Pinnwand.
 8. **Tests:** Modell (Kürzen, Code-Erkennung), XSS-Fälle im Renderer (`<script>`, `javascript:`-Links, `onerror`), E2E im Mock (anheften, bearbeiten, löschen, filtern, einklappen, Popup)
 
