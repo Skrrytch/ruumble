@@ -196,6 +196,13 @@ export const BoardError = z.object({
   error: z.enum(["not-paired", "not-in-room", "no-board-here", "not-found", "forbidden", "too-large", "bad-type", "invalid", "rate-limited"]),
 });
 
+export type BoardErrorCode = z.infer<typeof BoardError>["error"];
+
+/** Minimaler Schema-Typ, damit Verbraucher zod nicht selbst importieren müssen */
+export interface Parser<T> {
+  safeParse(value: unknown): { success: true; data: T } | { success: false };
+}
+
 /** WebSocket: An der Pinnwand dieses Raums hat sich etwas geändert (nur an Anwesende) */
 export const UiBoard = z.object({ v, type: z.literal("board"), channelId });
 

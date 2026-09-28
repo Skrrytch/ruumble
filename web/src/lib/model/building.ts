@@ -52,6 +52,8 @@ export interface Space {
 export interface Room extends Space {
   /** Name enthält „(stumm)“ */
   muted: boolean;
+  /** An der Pinnwand hängt etwas (ADR-0011) */
+  hasBoard: boolean;
   /** flex-grow 0,85–1,25, stabil je Name */
   grow: number;
 }
@@ -222,7 +224,12 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
       index,
       ...floorLabels(index),
       corridor: space(f),
-      rooms: roomChannels.map((r) => ({ ...space(r), muted: isMutedRoomName(r.name), grow: roomGrow(r.name) })),
+      rooms: roomChannels.map((r) => ({
+        ...space(r),
+        muted: isMutedRoomName(r.name),
+        grow: roomGrow(r.name),
+        hasBoard: !r.temporary && snapshot.boards.includes(r.id),
+      })),
       open: roomChannels.length === 0,
       lock,
       population: subtreePopulation(f.id),

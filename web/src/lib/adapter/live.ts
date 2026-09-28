@@ -2,8 +2,30 @@
  * LiveAdapter: WebSocket zum Ruumble-Dienst (`/ws/ui`, ADR-0007).
  * Verbindet sich bei Abbruch mit wachsendem Abstand neu. Ergebnisse werden den Befehlen über die ID zugeordnet.
  */
-import { BridgeToUi, PROTOCOL_VERSION, parse, type CommandBody, type CommandResult } from "@ruumble/protocol";
-import type { AdapterEvents, MumbleAdapter } from "./types.ts";
+import { BoardView, BridgeToUi, PROTOCOL_VERSION, Post, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, MumbleAdapter } from "./types.ts";
+
+/** REST der Pinnwand; Cookie der Kopplung geht automatisch mit (same-origin) */
+async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit = {}): Promise<BoardResult<T>> {
+  let res: Response;
+  try {
+    res = await fetch(url, { credentials: "same-origin", ...init, headers: { ...(init.body ? { "content-type": "application/json" } : {}), ...init.headers } });
+  } catch {
+    return { ok: false, error: "offline" };
+  }
+  if (res.status === 204) return { ok: true, value: true as T };
+  const body: unknown = await res.json().catch(() => null);
+  if (!res.ok) return { ok: false, error: ((body as { error?: BoardErrorCode } | null)?.error ?? "invalid") };
+  const parsed = schema ? schema.safeParse(body) : { success: true as const, data: body as T };
+  return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: "invalid" };
+}
+
+export const liveBoard: BoardApi = {
+  load: () => call(BoardView, "/api/board"),
+  create: (post) => call(Post, "/api/board/posts", { method: "POST", body: JSON.stringify(post) }),
+  update: (id, change) => call(Post, `/api/board/posts/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(change) }),
+  remove: (id) => call<true>(null, `/api/board/posts/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};
 
 /** Ohne Antwort des Plugins gilt ein Befehl nach dieser Zeit als `timeout` (Plugin: 3 s + Wiederholung). */
 const COMMAND_TIMEOUT_MS = 10_000;
@@ -16,6 +38,7 @@ export class LiveAdapter implements MumbleAdapter {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly pending = new Map<string, { resolve: (r: CommandResult) => void; timer: ReturnType<typeof setTimeout> }>();
   private nextId = 1;
+  readonly board: BoardApi = liveBoard;
 
   constructor(url = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/ui`) {
     this.url = url;
@@ -60,6 +83,8 @@ export class LiveAdapter implements MumbleAdapter {
           return this.events.talking(msg.session, msg.state);
         case "status":
           return this.events.status(msg.plugin, msg.preview ?? false);
+        case "board":
+          return this.events.board(msg.channelId);
         case "result": {
           const p = this.pending.get(msg.id);
           if (p) {
