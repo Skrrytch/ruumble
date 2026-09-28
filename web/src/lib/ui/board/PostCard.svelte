@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { copyText } from "../../board/clipboard.ts";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
   import type { Post } from "@ruumble/protocol";
-  import { KIND_LABEL, isLong, relativeTime } from "../../board/model.ts";
+  import { KIND_LABEL, PREVIEW_LINES, isLong, relativeTime } from "../../board/model.ts";
   import { initials } from "../../model/building.ts";
   import { getFileUrl } from "../../board/context.ts";
   import PostBody from "./PostBody.svelte";
@@ -13,8 +14,7 @@
   const long = $derived(!post.attachment && isLong(post.text));
 
   async function copy() {
-    await navigator.clipboard?.writeText(post.text).catch(() => {});
-    copied = true;
+    copied = await copyText(post.text);
     setTimeout(() => (copied = false), 1500);
   }
 </script>
@@ -29,7 +29,7 @@
     </span>
     <span class="kind">{KIND_LABEL[post.kind]}</span>
   </header>
-  <div class="body" class:clamped={long}>
+  <div class="body" class:clamped={long} style:--lines={PREVIEW_LINES}>
     <PostBody {post} />
   </div>
   {#if post.updatedByName}
@@ -56,7 +56,7 @@
   .who { display: flex; flex-direction: column; line-height: 1.2; font-size: 13px; }
   .when { font-size: 12px; color: var(--color-blue-700); }
   .kind { margin-left: auto; font-size: 12px; color: var(--color-blue-500); }
-  .body.clamped { max-height: calc(8 * 1.5em); overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent); mask-image: linear-gradient(to bottom, #000 70%, transparent); }
+  .body.clamped { max-height: calc(var(--lines) * 1.5em); overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent); mask-image: linear-gradient(to bottom, #000 70%, transparent); }
   .edited { font-size: 11px; color: var(--color-blue-700); }
   footer { display: flex; justify-content: space-between; }
   .link { text-decoration: none; border: 0; background: none; padding: 4px 0; min-height: 28px; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--color-blue-500); cursor: pointer; }

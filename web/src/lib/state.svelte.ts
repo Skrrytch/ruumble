@@ -2,12 +2,12 @@
  * Zustand der Oberfläche: hält den letzten Snapshot, leitet das Gebäude ab und führt Befehle aus.
  * Kein optimistisches Umschalten: Der eigene Kanal ändert sich erst mit dem nächsten Snapshot (ADR-0003).
  */
-import type { Attachment, BoardView, CommandResult, PostKind, Snapshot, TalkingState, Uploaded } from "@ruumble/protocol";
+import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
-import type { BoardFilter } from "./board/model.ts";
+import { formatSize, type BoardFilter } from "./board/model.ts";
 import { buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
 
-export type Notice = { kind: "join-failed" | "offline" | "board"; text: string };
+export type Notice = { text: string };
 
 const BOARD_ERRORS: Record<BoardErrorCode, string> = {
   "not-paired": "Mumble ist nicht verbunden.",
@@ -15,7 +15,7 @@ const BOARD_ERRORS: Record<BoardErrorCode, string> = {
   "no-board-here": "Pinnwände gibt es nur in Räumen.",
   "not-found": "Der Beitrag existiert nicht mehr.",
   forbidden: "Das darfst du nicht.",
-  "too-large": "Die Datei ist zu groß (höchstens 10 MB).",
+  "too-large": `Die Datei ist zu groß (höchstens ${formatSize(BOARD_LIMITS.fileBytes)}).`,
   "bad-type": "Das ist kein Bild, das Ruumble anzeigen kann (PNG, JPEG, GIF, WebP).",
   invalid: "Der Beitrag ist leer oder ungültig.",
   "rate-limited": "Zu viele Beiträge in kurzer Zeit – bitte kurz warten.",
@@ -182,7 +182,7 @@ export class RuumbleState {
   }
 
   private boardFailed(error: BoardErrorCode): false {
-    this.setNotice({ kind: "board", text: BOARD_ERRORS[error] });
+    this.setNotice({ text: BOARD_ERRORS[error] });
     return false;
   }
 
@@ -195,8 +195,8 @@ export class RuumbleState {
     const name = this.snapshot?.channels.find((c) => c.id === channelId)?.name;
     this.setNotice(
       result === "offline"
-        ? { kind: "offline", text: "Mumble ist nicht verbunden." }
-        : { kind: "join-failed", text: name ? `Wechsel nach „${name}“ nicht möglich.` : "Aktion nicht möglich." },
+        ? { text: "Mumble ist nicht verbunden." }
+        : { text: name ? `Wechsel nach „${name}“ nicht möglich.` : "Aktion nicht möglich." },
     );
   }
 

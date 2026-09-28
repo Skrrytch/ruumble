@@ -11,6 +11,9 @@ export default defineConfig({
   server: {
     fs: { allow: [".."] },
     // ?live im Dev-Server: Dienst lokal auf :8080
-    proxy: { "/ws": { target: "ws://127.0.0.1:8080", ws: true }, "/pair": "http://127.0.0.1:8080" },
+    proxy: {
+      "/ws": { target: "ws://127.0.0.1:8080", ws: true },
+      ...Object.fromEntries(["/pair", "/api", "/avatar", "/download"].map((p) => [p, "http://127.0.0.1:8080"])),
+    },
   },
 });

@@ -125,10 +125,9 @@
     flex: 1 1 auto; min-width: 0; width: 100%; transition: background var(--dur) var(--ease-out);
   }
   /* Pinnwand-Grafik rechtsbündig oben (ADR-0011, Variante B) */
-  .notes { position: absolute; top: 12px; right: 12px; }
   /* Schalter ohne Kasten: nur die Zettel, beim Überfahren heben sie sich leicht an */
   .notes.toggle {
-    border: 0; background: transparent; padding: 4px; margin: -4px; border-radius: var(--radius-md);
+    position: absolute; top: 12px; right: 12px; border: 0; background: transparent; padding: 4px; margin: -4px; border-radius: var(--radius-md);
     min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer;
     transition: transform var(--dur) var(--ease-out);
   }

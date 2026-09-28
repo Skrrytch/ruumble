@@ -39,7 +39,7 @@ const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<":
  * Sprache an typischen Merkmalen erkennen. Die Auto-Erkennung von highlight.js ist dafür zu unzuverlässig:
  * Die CSS-Grammatik gewinnt oft sogar bei eindeutigem Python (getestet mit highlight.js 11.12).
  */
-export function guessLanguage(code: string): string | null {
+function guessLanguage(code: string): string | null {
   const t = code.trim();
   if (/^[\[{]/.test(t)) {
     try {
@@ -55,10 +55,11 @@ export function guessLanguage(code: string): string | null {
   if (/^\s*(FROM|RUN|COPY|CMD|ENTRYPOINT|WORKDIR)\s/m.test(t) && /^FROM\s/m.test(t)) return "dockerfile";
   if (/^\s*[$#] \S/m.test(t) || /^#!\/(usr\/)?bin\/(env )?(ba)?sh/.test(t)) return "bash";
   if (/^(diff --git|--- |\+\+\+ |@@ )/m.test(t)) return "diff";
-  if (/\b(interface|type)\s+\w+.*[{=]|:\s*(string|number|boolean)\b/.test(t) && /\b(const|let|function|export|import)\b/.test(t)) return "typescript";
-  if (/\b(function|const|let|var|=>|console\.log|require\(|export default)\b/.test(t)) return "javascript";
+  // Go und Rust vor TypeScript/JavaScript: `let`, `const` und `=>` kommen dort auch vor
   if (/^\s*package\s+\w+/m.test(t) && /\bfunc\s/.test(t)) return "go";
   if (/\bfn\s+\w+\s*\(|\blet\s+mut\b|println!/.test(t)) return "rust";
+  if (/\b(interface|type)\s+\w+.*[{=]|:\s*(string|number|boolean)\b/.test(t) && /\b(const|let|function|export|import)\b/.test(t)) return "typescript";
+  if (/\b(function|const|let|var|=>|console\.log|require\(|export default)\b/.test(t)) return "javascript";
   if (/^\s*(public|private|protected)?\s*(static\s+)?(class|interface|void|record)\b/m.test(t) && /;\s*$/m.test(t)) return "java";
   if (/^\s*[\w-]+:\s+\S/m.test(t) && !/[;{}]/.test(t) && /^\s*-\s|^\s{2,}[\w-]+:/m.test(t)) return "yaml";
   if (/^\s*[.#]?[\w-]+(\s*[,>+~]\s*[.#]?[\w-]+)*\s*\{[^}]*:[^}]*;[^}]*\}/m.test(t)) return "css";

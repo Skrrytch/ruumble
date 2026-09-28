@@ -6,4 +6,8 @@ export type FileUrl = (attachment: Attachment, download?: boolean) => string;
 const KEY = Symbol("ruumble-board-files");
 
 export const setFileUrl = (fn: FileUrl): void => void setContext(KEY, fn);
-export const getFileUrl = (): FileUrl => getContext<FileUrl>(KEY) ?? ((a, download) => `/api/board/files/${a.id}${download ? "?download" : ""}`);
+export function getFileUrl(): FileUrl {
+  const fn = getContext<FileUrl | undefined>(KEY);
+  if (!fn) throw new Error("getFileUrl: nur innerhalb von BoardPanel verfügbar");
+  return fn;
+}
