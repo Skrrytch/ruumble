@@ -3,8 +3,8 @@
   import Check from "@lucide/svelte/icons/check";
   import Copy from "@lucide/svelte/icons/copy";
   import Download from "@lucide/svelte/icons/download";
+  import FaceSlightlySmilingPlus from "@lucide/svelte/icons/face-slightly-smiling-plus";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
-  import Plus from "@lucide/svelte/icons/plus";
   import type { Post, ReactionKind } from "@ruumble/protocol";
   import { PREVIEW_LINES, isLong, relativeTime, summarizeReactions } from "../../board/model.ts";
   import { intlLocale, t } from "../../i18n/index.svelte.ts";
@@ -71,7 +71,7 @@
   <footer>
     <button type="button" class="link" onclick={() => onopen(post)}><Maximize2 size={13} aria-hidden="true" /> {t().board.open}</button>
     <button type="button" class="icon-btn react" aria-expanded={picking} aria-label={t().board.react} title={t().board.react} onclick={() => (picking = !picking)}>
-      <Plus size={16} aria-hidden="true" />
+      <FaceSlightlySmilingPlus size={18} aria-hidden="true" />
     </button>
     <span class="end">
       {#if post.kind === "file"}
