@@ -83,17 +83,17 @@ describe("Einzelregeln", () => {
   });
 });
 
-describe("Musterhaus (Normalfall)", () => {
-  const b = buildBuilding(fixture("musterhaus"));
+describe("Beispielhaus (Normalfall)", () => {
+  const b = buildBuilding(fixture("sample"));
 
   it("Etagen in Mumble-Reihenfolge, EG zuerst", () => {
-    expect(b.floors.map((f) => [f.badge, f.name])).toEqual([["EG", "Lobby"], ["1", "ENTWICKLUNG"], ["2", "VERTRIEB"]]);
+    expect(b.floors.map((f) => [f.badge, f.name])).toEqual([["EG", "Lobby"], ["1", "Development"], ["2", "Support"]]);
     expect(b.floors[1]?.level).toBe("1. Obergeschoss");
   });
 
   it("Räume nach position, Flur = Etagenkanal, Lobby ist offene Etage", () => {
     const dev = b.floors[1]!;
-    expect(dev.rooms.map((r) => r.name)).toEqual(["Büro von Anna", "Büro von Ben", "Büro von Clara", "Büro von David", "Büro von Eva", "Büro von Felix"]);
+    expect(dev.rooms.map((r) => r.name)).toEqual(["Let's talk", "Let's play", "Retrospective", "Ben's office", "Clara's office"]);
     expect(dev.corridor.channelId).toBe(2);
     expect(dev.open).toBe(false);
     expect(b.floors[0]?.open).toBe(true);
@@ -101,67 +101,73 @@ describe("Musterhaus (Normalfall)", () => {
   });
 
   it("Belegung, eigener Raum und eigene Etage", () => {
-    expect(b.online).toBe(6);
-    expect(b.floors.map((f) => f.population)).toEqual([3, 1, 2]);
+    expect(b.online).toBe(8);
+    expect(b.floors.map((f) => f.population)).toEqual([2, 4, 2]);
     expect(b.self).toEqual({ kind: "room", floorId: 2, channelId: 3 });
-    const anna = b.floors[1]!.rooms[0]!;
-    expect(anna.isSelf).toBe(true);
-    expect(anna.users).toMatchObject([{ name: "Anna", initials: "An", isSelf: true }]);
+    const talk = b.floors[1]!.rooms[0]!;
+    expect(talk.isSelf).toBe(true);
+    expect(talk.users).toMatchObject([{ name: "Anna", initials: "An", isSelf: true }, { name: "Clara", isSelf: false }, { name: "David", isSelf: false }]);
+    expect(b.floors[1]!.rooms.filter((r) => r.isSelf)).toHaveLength(1);
     expect(b.floors.map((f) => f.isSelf)).toEqual([false, true, false]);
-    expect(homeFloor(b)?.name).toBe("ENTWICKLUNG");
+    expect(homeFloor(b)?.name).toBe("Development");
   });
 
   it("Nutzer im Raum alphabetisch, „(stumm)“-Raum markiert", () => {
-    const tk = b.floors[2]!.rooms.find((r) => r.name === "Teeküche")!;
-    expect(tk.users.map((u) => u.name)).toEqual(["Gregor", "Hanna"]);
-    expect(b.floors[2]!.rooms.find((r) => r.name === "Fokusraum (stumm)")?.muted).toBe(true);
+    // Eva (session 3) before Felix (session 2): sorted by name, not by session
+    expect(b.floors[0]!.corridor.users.map((u) => u.name)).toEqual(["Eva", "Felix"]);
+    expect(b.floors[2]!.rooms.map((r) => r.users.map((u) => u.name))).toEqual([["Gregor"], [], ["Hanna"], []]);
+    expect(b.floors.flatMap((f) => f.rooms).some((r) => r.muted)).toBe(false);
+    // the sample building has no muted room, the edge cases do
+    const edge = buildBuilding(fixture("edge-cases")).floors.find((f) => f.name === "SALES")!;
+    expect(edge.rooms.find((r) => r.name === "Focus room (muted)")?.muted).toBe(true);
+    expect(edge.rooms.find((r) => r.name === "Away")?.muted).toBe(false);
   });
 });
 
 describe("Sonderfälle", () => {
-  const b = buildBuilding(fixture("sonderfaelle"));
+  const b = buildBuilding(fixture("edge-cases"));
   const floor = (name: string) => b.floors.find((f) => f.name === name);
 
   it("verlinkte Etagen verschwinden ganz, Nummerierung ohne Lücke (O2)", () => {
-    expect(floor("EXTERN")).toBeUndefined();
-    expect(floor("PARTNER")).toBeUndefined();
+    expect(floor("EXTERNAL")).toBeUndefined();
+    expect(floor("PARTNERS")).toBeUndefined();
     expect(b.floors.map((f) => f.badge)).toEqual(["EG", "1", "2", "3", "4", "5"]);
   });
 
   it("verlinkte Räume verschwinden, die übrigen bleiben", () => {
-    expect(floor("VERTRIEB")!.rooms.map((r) => r.name)).toEqual(["Abwesend", "Fokusraum (stumm)", "Gregors Büro", "Projektraum"]);
+    expect(floor("SALES")!.rooms.map((r) => r.name)).toEqual(["Away", "Focus room (muted)", "Gregor's office", "Project room"]);
   });
 
   it("zu tiefe Etage gesperrt, Nutzer der 3. Ebene zählen zur Etage", () => {
-    expect(floor("ARCHIV")).toMatchObject({ lock: "too-deep", population: 1 });
+    expect(floor("ARCHIVE")).toMatchObject({ lock: "too-deep", population: 1 });
   });
 
   it("mehr als 8 Räume sperren die Etage", () => {
-    expect(floor("GROSSRAUM")!.rooms).toHaveLength(MAX_ROOMS + 1);
-    expect(floor("GROSSRAUM")!.lock).toBe("too-many-rooms");
+    expect(floor("OPEN SPACE")!.rooms).toHaveLength(MAX_ROOMS + 1);
+    expect(floor("OPEN SPACE")!.lock).toBe("too-many-rooms");
   });
 
   it("temporäre Kanäle sind normale Räume", () => {
-    expect(floor("ENTWICKLUNG")!.rooms.at(-1)?.name).toBe("Besprechung (temporär)");
+    expect(floor("DEVELOPMENT")!.rooms.at(-1)?.name).toBe("Meeting (temporary)");
   });
 
   it("Eingang, online inklusive ausgeblendeter Kanäle (O4)", () => {
     expect(b.entrance.map((u) => u.name)).toEqual(["Ida", "Jonas"]);
     expect(b.online).toBe(13);
     const onFloors = b.floors.reduce((n, f) => n + f.population, 0);
-    expect(onFloors + b.entrance.length).toBe(13 - 3); // Gregor + Hanna (Teeküche↔Raucherecke) and Lena (Gästebüro) are hidden
+    expect(onFloors + b.entrance.length).toBe(13 - 3); // Gregor + Hanna (Kitchen↔Coffee corner) and Lena (Guest office) are hidden
   });
 
   it("Mitlauschen, Schloss und Nutzerstatus", () => {
-    expect(floor("ENTWICKLUNG")!.rooms.find((r) => r.name === "Büro von Clara")?.listeners).toEqual([3]);
-    expect(floor("VERTRIEB")!.rooms.find((r) => r.name === "Gregors Büro")?.locked).toBe(true);
-    expect(floor("VERTRIEB")!.rooms.find((r) => r.name === "Abwesend")?.locked).toBe(false);
+    expect(floor("DEVELOPMENT")!.rooms.find((r) => r.name === "Clara's office")?.listeners).toEqual([3]);
+    expect(floor("SALES")!.rooms.find((r) => r.name === "Gregor's office")?.locked).toBe(true);
+    expect(floor("SALES")!.rooms.find((r) => r.name === "Away")?.locked).toBe(false);
     const lobby = floor("Lobby")!.corridor.users;
     expect(lobby.find((u) => u.name === "Ben")).toMatchObject({ selfMuted: true, selfDeafened: false, serverMuted: false });
     expect(lobby.find((u) => u.name === "Felix")).toMatchObject({ selfMuted: true, selfDeafened: true });
-    const dev = floor("ENTWICKLUNG")!;
-    expect(dev.rooms.find((r) => r.name === "Besprechung (temporär)")?.users[0]?.serverMuted).toBe(true);
-    expect(dev.rooms.find((r) => r.name === "Büro von Clara")?.users[0]?.serverMuted).toBe(true); // suppress
+    const dev = floor("DEVELOPMENT")!;
+    expect(dev.rooms.find((r) => r.name === "Meeting (temporary)")?.users[0]?.serverMuted).toBe(true);
+    expect(dev.rooms.find((r) => r.name === "Clara's office")?.users[0]?.serverMuted).toBe(true); // suppress
   });
 });
 
@@ -186,7 +192,7 @@ describe("Wo ist der eigene Nutzer?", () => {
   });
 
   it("ohne gekoppeltes Plugin gibt es keinen eigenen Nutzer", () => {
-    const b = buildBuilding(fixture("nicht-gekoppelt"));
+    const b = buildBuilding(fixture("unpaired"));
     expect(b.self).toBeNull();
     expect(b.floors.some((f) => f.isSelf)).toBe(false);
     expect(b.floors.flatMap((f) => f.rooms).some((r) => r.isSelf)).toBe(false);
@@ -195,7 +201,7 @@ describe("Wo ist der eigene Nutzer?", () => {
 
 describe("Leerstand und Live-Änderungen", () => {
   it("keine darstellbare Etage → Leerstand", () => {
-    const b = buildBuilding(fixture("leerstand"));
+    const b = buildBuilding(fixture("vacant"));
     expect(homeFloor(b)).toBeNull();
     expect(b.self).toEqual({ kind: "entrance" });
     expect(homeFloor(buildBuilding(snapshot([ch(0, null, "R")])))).toBeNull();
@@ -204,7 +210,7 @@ describe("Leerstand und Live-Änderungen", () => {
   it("Unterkanal angelegt → Etage gesperrt, wieder entfernt → frei", () => {
     const base = [ch(0, null, "R"), ch(1, 0, "OG"), ch(2, 1, "Raum")];
     expect(buildBuilding(snapshot(base)).floors[0]?.lock).toBeNull();
-    expect(buildBuilding(snapshot([...base, ch(3, 2, "Neu")])).floors[0]?.lock).toBe("too-deep");
+    expect(buildBuilding(snapshot([...base, ch(3, 2, "New")])).floors[0]?.lock).toBe("too-deep");
     expect(buildBuilding(snapshot(base)).floors[0]?.lock).toBeNull();
   });
 
@@ -228,14 +234,14 @@ describe("Leerstand und Live-Änderungen", () => {
 });
 
 describe("Avatare (AP9) und Anwesenheit (AP10)", () => {
-  const b = buildBuilding(fixture("sonderfaelle"));
+  const b = buildBuilding(fixture("edge-cases"));
   const find = (name: string) => b.floors.flatMap((f) => [f.corridor, ...f.rooms]).flatMap((s) => s.users).concat(b.entrance).find((u) => u.name === name)!;
 
   it("Avatar-URL nur für registrierte Nutzer mit Bild, eigene URL-Funktion möglich", () => {
     expect(find("Anna").avatarUrl).toBe("/avatar/1?v=a1b2c3d4e5f60718");
     expect(find("Ben").avatarUrl).toBeNull(); // registered, but without image
     expect(find("Ida").avatarUrl).toBeNull(); // unregistered
-    const custom = buildBuilding(fixture("sonderfaelle"), { avatarUrl: (id, v) => `x:${id}:${v}` });
+    const custom = buildBuilding(fixture("edge-cases"), { avatarUrl: (id, v) => `x:${id}:${v}` });
     expect(custom.floors[1]!.rooms[0]!.users[0]!.avatarUrl).toBe("x:1:a1b2c3d4e5f60718");
   });
 
@@ -254,6 +260,6 @@ describe("Avatare (AP9) und Anwesenheit (AP10)", () => {
     expect(find("Eva").recording).toBe(true);
     const lobby = b.floors.find((f) => f.name === "Lobby")!;
     expect(lobby.corridor.recording).toBe(true);
-    expect(b.floors.find((f) => f.name === "ENTWICKLUNG")!.rooms.some((r) => r.recording)).toBe(false);
+    expect(b.floors.find((f) => f.name === "DEVELOPMENT")!.rooms.some((r) => r.recording)).toBe(false);
   });
 });

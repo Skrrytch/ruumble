@@ -8,10 +8,10 @@
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
 import { BOARD_IMAGE_TYPES, BOARD_LIMITS, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
-import leerstand from "@ruumble/protocol/fixtures/leerstand.json";
-import musterhaus from "@ruumble/protocol/fixtures/musterhaus.json";
-import nichtGekoppelt from "@ruumble/protocol/fixtures/nicht-gekoppelt.json";
-import sonderfaelle from "@ruumble/protocol/fixtures/sonderfaelle.json";
+import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
+import sample from "@ruumble/protocol/fixtures/sample.json";
+import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
+import vacant from "@ruumble/protocol/fixtures/vacant.json";
 import type { AdapterEvents, BoardApi, BoardResult, MumbleAdapter, PluginStatus } from "./types.ts";
 
 const MINUTE = 60_000;
@@ -41,7 +41,7 @@ function sampleImage(): MockFile | null {
     g.stroke();
     g.fillStyle = "#003869";
     g.font = "bold 40px sans-serif";
-    g.fillText("Browser", 160, 175); g.fillText("Plugin", 660, 175); g.fillText("Dienst", 420, 465);
+    g.fillText("Browser", 160, 175); g.fillText("Plugin", 660, 175); g.fillText("Service", 415, 465);
     const url = c.toDataURL("image/png");
     if (!url.startsWith("data:image/png")) return null;
     return { attachment: { id: hexId(), mime: "image/png", size: Math.round((url.length * 3) / 4), width: 960, height: 600, image: true }, url };
@@ -58,34 +58,34 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
   const code = [
     "export function greet(name: string): string {",
     "  if (!name) {",
-    '    throw new Error("Name fehlt");',
+    '    throw new Error("Name is missing");',
     "  }",
-    "  return `Hallo ${name}!`;",
+    "  return `Hello ${name}!`;",
     "}",
     "",
     'console.log(greet("Anna"));',
-    "// weitere Zeilen, damit gekürzt wird",
+    "// a few more lines so the preview gets shortened",
     "const a = 1;",
     "const b = 2;",
   ].join("\n");
   const notes = [
-    "## Sprint-Notizen",
+    "## Sprint notes",
     "",
-    "- Pinnwand in Ruumble **fertig machen**",
-    "- Avatare prüfen",
-    "- Termin mit Clara: *Donnerstag 10 Uhr*",
+    "- **Finish** the Ruumble board",
+    "- Review the avatar handling",
+    "- Sync with Clara: *Thursday 10 am*",
     "",
-    "Details stehen im [Wiki](https://example.org/wiki).",
+    "Details are in the [wiki](https://example.org/wiki).",
     "",
-    "1. Punkt eins",
-    "2. Punkt zwei",
-    "3. Punkt drei",
-    "4. Punkt vier",
+    "1. Fix the flaky e2e test",
+    "2. Bump the dependencies",
+    "3. Update the changelog",
+    "4. Tag the release",
   ].join("\n");
   const image = sampleImage();
   if (image) files.set(image.attachment.id, image);
-  const protocol = new Blob(["Protokoll der Besprechung\n\n- Pinnwand: Bilder und Dateien\n"], { type: "text/plain" });
-  const file: MockFile = { attachment: { id: hexId(), mime: "text/plain", size: protocol.size, image: false }, blob: protocol, url: "" };
+  const log = new Blob(["2026-09-29 09:12:04 INFO  server started on :8443\n2026-09-29 09:12:05 INFO  board: images and files enabled\n"], { type: "text/plain" });
+  const file: MockFile = { attachment: { id: hexId(), mime: "text/plain", size: log.size, image: false }, blob: log, url: "" };
   files.set(file.attachment.id, file);
   const attachment = (f: MockFile, name: string): Attachment => {
     const { image: _image, ...a } = f.attachment;
@@ -93,20 +93,20 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
   };
   return new Map([
     [3, [
-      ...(image ? [post({ id: "m4", channelId: 3, kind: "image", authorName: "Clara", createdAt: now - 3 * MINUTE, updatedAt: now - 3 * MINUTE, text: "Skizze vom Whiteboard", attachment: attachment(image, "whiteboard.png") })] : []),
-      post({ id: "m5", channelId: 3, kind: "file", authorName: "Ben", createdAt: now - 8 * MINUTE, updatedAt: now - 8 * MINUTE, text: "", attachment: attachment(file, "protokoll.txt") }),
+      ...(image ? [post({ id: "m4", channelId: 3, kind: "image", authorName: "Clara", createdAt: now - 3 * MINUTE, updatedAt: now - 3 * MINUTE, text: "Architecture sketch from the whiteboard", attachment: attachment(image, "whiteboard.png") })] : []),
+      post({ id: "m5", channelId: 3, kind: "file", authorName: "Ben", createdAt: now - 8 * MINUTE, updatedAt: now - 8 * MINUTE, text: "", attachment: attachment(file, "server.log") }),
       post({ id: "m1", channelId: 3, kind: "code", language: "typescript", authorName: "Ben", createdAt: now - 12 * MINUTE, updatedAt: now - 12 * MINUTE, text: code }),
       post({ id: "m2", channelId: 3, kind: "text", authorName: "Anna", mine: true, canDelete: true, createdAt: now - 60 * MINUTE, updatedAt: now - 30 * MINUTE, updatedByName: "Ben", text: notes }),
     ]],
-    [5, [post({ id: "m3", channelId: 5, kind: "text", authorName: "Clara", text: "Bin ab 14 Uhr im Kundentermin." })]],
+    [7, [post({ id: "m3", channelId: 7, kind: "text", authorName: "Clara", text: "In a customer call from 2 pm." })]],
   ]);
 }
 
 export const FIXTURES = {
-  musterhaus,
-  sonderfaelle,
-  leerstand,
-  "nicht-gekoppelt": nichtGekoppelt,
+  sample,
+  "edge-cases": edgeCases,
+  vacant,
+  unpaired,
 } as unknown as Record<string, Snapshot>;
 export type FixtureName = keyof typeof FIXTURES;
 
@@ -147,7 +147,7 @@ export class MockAdapter implements MumbleAdapter {
         const post: Post = {
           id: `mock-${this.nextPostId++}`, channelId, kind: input.kind, text: input.text,
           ...(input.language ? { language: input.language } : {}),
-          ...(file ? { attachment: { ...(stored as Omit<Attachment, "name">), name: input.attachmentName || "datei" } } : {}),
+          ...(file ? { attachment: { ...(stored as Omit<Attachment, "name">), name: input.attachmentName || "file" } } : {}),
           authorName: me.name, mine: true, canDelete: true, createdAt: now, updatedAt: now,
         };
         this.posts.set(channelId, [post, ...(this.posts.get(channelId) ?? [])]);
@@ -200,7 +200,7 @@ export class MockAdapter implements MumbleAdapter {
     },
   };
 
-  constructor(fixture: FixtureName | Snapshot = "musterhaus", opts: MockOptions = {}) {
+  constructor(fixture: FixtureName | Snapshot = "sample", opts: MockOptions = {}) {
     this.opts = { confirmMs: 250, rejectMs: 3000, talking: true, ...opts };
     this.state = clone(typeof fixture === "string" ? FIXTURES[fixture]! : fixture);
     if (!this.state.self) this.plugin = "disconnected";
@@ -281,12 +281,12 @@ export class MockAdapter implements MumbleAdapter {
   /** creates a subchannel below a channel (e.g. to lock a floor) */
   addSubchannel(parent: number): void {
     const id = Math.max(...this.state.channels.map((c) => c.id)) + 1;
-    this.state.channels.push({ id, parent, name: `Neu ${id}`, position: 99, links: [], temporary: true });
+    this.state.channels.push({ id, parent, name: `New ${id}`, position: 99, links: [], temporary: true });
     this.emit();
   }
 
   removeTemporaryChannels(): void {
-    const temp = new Set(this.state.channels.filter((c) => c.temporary && c.name.startsWith("Neu ")).map((c) => c.id));
+    const temp = new Set(this.state.channels.filter((c) => c.temporary && c.name.startsWith("New ")).map((c) => c.id));
     this.state.channels = this.state.channels.filter((c) => !temp.has(c.id));
     for (const u of this.state.users) if (temp.has(u.channel)) u.channel = 0;
     this.emit();

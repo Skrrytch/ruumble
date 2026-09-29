@@ -11,6 +11,23 @@ const TOLERANCE = 3;
 
 type Box = { x: number; y: number; width: number; height: number };
 
+/** Building of the prototype (docs/design/prototype/index.html): same IDs, positions and occupancy, names translated */
+const PROTOTYPE_SNAPSHOT = (() => {
+  const ch = (id: number, parent: number | null, name: string, position: number) => ({ id, parent, name, position, links: [], temporary: false });
+  const user = (session: number, name: string, channel: number) => ({
+    session, name, channel, selfMute: false, selfDeaf: false, mute: false, deaf: false, suppress: false,
+    userId: session === 4 ? 1 : null, avatar: null, idleMinutes: 0, recording: false,
+  });
+  const offices = ["Anna", "Ben", "Clara", "David", "Eva", "Felix"].map((n, i) => ch(3 + i, 2, `${n}'s office`, i));
+  const sales = ["Away", "Focus room (muted)", "Kitchen", "Coffee corner", "Gregor's office", "Project room"].map((n, i) => ch(10 + i, 9, n, i));
+  return {
+    v: 1, type: "snapshot", server: { name: "Acme HQ", version: "1.6.870" }, self: { session: 4 },
+    channels: [ch(0, null, "Acme HQ", 0), ch(1, 0, "Lobby", 0), ch(2, 0, "DEVELOPMENT", 1), ...offices, ch(9, 0, "SALES", 2), ...sales],
+    users: [user(1, "Ben", 1), user(2, "Felix", 1), user(3, "Eva", 1), user(4, "Anna", 3), user(5, "Gregor", 12), user(6, "Hanna", 12)],
+    listeners: {}, canEnter: {},
+  };
+})();
+
 async function boxes(page: Page, attr: "data-join" | "data-channel") {
   return page.evaluate((attr) => {
     const plan = document.querySelector(".plan")!.getBoundingClientRect();
@@ -34,8 +51,13 @@ test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ 
   const reference = await boxes(page, "data-join");
   await page.screenshot({ path: info.outputPath("prototyp.png") });
 
-  await page.goto("/?fixture=musterhaus&talking=0");
-  await expect(page.getByRole("heading", { name: "ENTWICKLUNG" })).toBeVisible();
+  // The sample building no longer matches the prototype: the service is simulated and sends its layout
+  await page.routeWebSocket("**/ws/ui", (ws) => {
+    ws.send(JSON.stringify({ v: 1, type: "status", plugin: "connected" }));
+    ws.send(JSON.stringify(PROTOTYPE_SNAPSHOT));
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "DEVELOPMENT" })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   // The title bar is more compact than in the prototype and the floor plan fills the height: shrink the window
   // until the floor plan is as tall as in the prototype, then compare

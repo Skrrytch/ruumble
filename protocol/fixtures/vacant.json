@@ -2,7 +2,7 @@
   "v": 1,
   "type": "snapshot",
   "server": {
-    "name": "Musterhaus",
+    "name": "Acme HQ",
     "version": "1.6.870"
   },
   "self": {
@@ -12,7 +12,7 @@
     {
       "id": 0,
       "parent": null,
-      "name": "Musterhaus",
+      "name": "Acme HQ",
       "position": 0,
       "links": [],
       "temporary": false
@@ -20,7 +20,7 @@
     {
       "id": 16,
       "parent": 0,
-      "name": "ARCHIV",
+      "name": "ARCHIVE",
       "position": 0,
       "links": [],
       "temporary": false
@@ -28,7 +28,7 @@
     {
       "id": 17,
       "parent": 16,
-      "name": "Aktenraum",
+      "name": "File room",
       "position": 0,
       "links": [],
       "temporary": false
@@ -36,7 +36,7 @@
     {
       "id": 18,
       "parent": 17,
-      "name": "Unterkanal",
+      "name": "Subchannel",
       "position": 0,
       "links": [],
       "temporary": false
