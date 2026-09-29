@@ -14,7 +14,10 @@ Locale localeFromEnv(const char *lcAll, const char *lcMessages, const char *lang
 const char *localeName(Locale locale);
 
 namespace text {
+	std::string connecting(Locale l, const std::string &url);
 	std::string connected(Locale l);
+	std::string unreachable(Locale l, const std::string &url, const std::string &reason);
+	std::string connectionLost(Locale l);
 	std::string rejected(Locale l, const std::string &reason);
 	std::string noCertificate(Locale l);
 	std::string hoverRoot(Locale l, const std::string &rootName);

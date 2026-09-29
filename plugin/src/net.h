@@ -27,6 +27,7 @@ public:
 	void onOpen(std::function< void() > f) { onOpen_ = std::move(f); }
 	void onClose(std::function< void() > f) { onClose_ = std::move(f); }
 	void onMessage(std::function< void(std::string) > f) { onMessage_ = std::move(f); }
+	void onError(std::function< void(std::string) > f) { onError_ = std::move(f); }
 
 	void connect(const std::string &baseUrl) override;
 	void disconnect() override;
@@ -44,7 +45,7 @@ private:
 	std::chrono::steady_clock::time_point openedAt_{};
 	std::chrono::milliseconds backoff_{ 0 };
 	std::function< void() > onOpen_, onClose_;
-	std::function< void(std::string) > onMessage_;
+	std::function< void(std::string) > onMessage_, onError_;
 };
 
 } // namespace ruumble

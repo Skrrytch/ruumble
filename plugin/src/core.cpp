@@ -62,6 +62,7 @@ void Core::onChannelEntered(uint32_t user, int32_t channel) { push(Entered{ user
 void Core::onTalking(uint32_t user, int state) { push(Talking{ user, state }); }
 void Core::onTransportOpen() { push(TransportOpen{}); }
 void Core::onTransportClosed() { push(TransportClosed{}); }
+void Core::onTransportError(std::string reason) { push(TransportError{ std::move(reason) }); }
 void Core::onTransportMessage(std::string json) { push(Message{ std::move(json) }); }
 
 bool Core::helloAcknowledged() const {
@@ -126,13 +127,21 @@ void Core::handle(const Event &event) {
 					transport_.send(json{ { "v", V }, { "type", "talking" }, { "session", e.user }, { "state", *name } }.dump());
 			} else if constexpr (std::is_same_v< T, TransportOpen >) {
 				transportOpen_ = true;
+				errorShown_    = false;
 				sendHello();
 			} else if constexpr (std::is_same_v< T, TransportClosed >) {
+				if (helloAcked_) api_.log(text::connectionLost(settings_.locale));
 				transportOpen_ = false;
 				helloAcked_    = false;
 				// results would have no recipient any more; discard pending commands
 				commands_.clear();
 				active_.reset();
+			} else if constexpr (std::is_same_v< T, TransportError >) {
+				// once per failure streak: the transport retries every few seconds
+				if (!bridgeUrl_.empty() && !errorShown_) {
+					api_.log(text::unreachable(settings_.locale, bridgeUrl_, e.reason.substr(0, 300)));
+					errorShown_ = true;
+				}
 			} else if constexpr (std::is_same_v< T, Message >) {
 				handleMessage(e.json);
 			}
@@ -228,7 +237,9 @@ void Core::resolveBridge(Clock::time_point now) {
 	}
 	if (*url != bridgeUrl_) {
 		disconnectBridge();
-		bridgeUrl_ = *url;
+		bridgeUrl_  = *url;
+		errorShown_ = false;
+		api_.log(text::connecting(settings_.locale, bridgeUrl_));
 		transport_.connect(bridgeUrl_); // hello follows with TransportOpen
 	} else {
 		sendHello();

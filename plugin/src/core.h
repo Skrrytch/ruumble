@@ -96,6 +96,8 @@ public:
 	void onTalking(uint32_t user, int state);
 	void onTransportOpen();
 	void onTransportClosed();
+	/** failed connection attempt (DNS, TCP, TLS, HTTP status); the transport retries by itself */
+	void onTransportError(std::string reason);
 	void onTransportMessage(std::string json);
 
 	// for tests
@@ -114,10 +116,13 @@ private:
 	};
 	struct TransportOpen {};
 	struct TransportClosed {};
+	struct TransportError {
+		std::string reason;
+	};
 	struct Message {
 		std::string json;
 	};
-	using Event = std::variant< Synchronized, Disconnected, Entered, Talking, TransportOpen, TransportClosed, Message >;
+	using Event = std::variant< Synchronized, Disconnected, Entered, Talking, TransportOpen, TransportClosed, TransportError, Message >;
 
 	struct Command {
 		std::string id;
@@ -173,6 +178,7 @@ private:
 	std::string bridgeUrl_;         // currently connected base URL
 	std::optional< std::chrono::steady_clock::time_point > discoveryAt_;
 	bool hintShown_ = false;
+	bool errorShown_ = false; // connection error already in the log since the last successful connection
 };
 
 } // namespace ruumble

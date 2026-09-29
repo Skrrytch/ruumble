@@ -56,7 +56,7 @@ The plugin's messages in the Mumble log follow the system language (`LC_ALL`, th
 | "This device is not paired yet." | The browser does not know you yet. Start Mumble with the plugin enabled and connect; the first time, the pairing link opens. |
 | Pair **another browser** or computer | The plugin opens the pairing link only once per server. Remove the address from `pairedWith` in `~/.config/ruumble/plugin.json` and reconnect. |
 | "Mumble is not connected." | Mumble is not running, not connected to the server, or the plugin is not enabled (step 2). |
-| The plugin cannot find the service | Check the Mumble log (lines starting with "Ruumble:"). You can set the address in `~/.config/ruumble/plugin.json` with `"bridgeUrl": "http://…"`. |
+| The plugin cannot find the service | Check the Mumble log (lines starting with "Ruumble:"). It names the address the plugin connects to and, if that fails, the reason (e.g. a certificate that does not match the domain). You can set the address in `~/.config/ruumble/plugin.json` with `"bridgeUrl": "http://…"`. |
 | Clicking a room does nothing | You lack the Mumble permission to enter that channel; Ruumble then shows a notice. |
 | Update the plugin | Download the new file and install it as in step 2 (overwrite the existing one). |
 

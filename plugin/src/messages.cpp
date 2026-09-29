@@ -16,8 +16,20 @@ const char *localeName(Locale locale) {
 }
 
 namespace text {
+	std::string connecting(Locale l, const std::string &url) {
+		return (l == Locale::de ? "verbinde mit dem Dienst " : "connecting to the service ") + url;
+	}
 	std::string connected(Locale l) {
 		return l == Locale::de ? "mit dem Dienst verbunden" : "connected to the service";
+	}
+	std::string unreachable(Locale l, const std::string &url, const std::string &reason) {
+		return (l == Locale::de ? "Dienst " + url + " nicht erreichbar, neuer Versuch läuft: "
+								: "cannot reach the service " + url + ", retrying: ")
+			   + reason;
+	}
+	std::string connectionLost(Locale l) {
+		return l == Locale::de ? "Verbindung zum Dienst unterbrochen, verbinde neu"
+							   : "connection to the service lost, reconnecting";
 	}
 	std::string rejected(Locale l, const std::string &reason) {
 		return (l == Locale::de ? "vom Dienst abgelehnt (" : "rejected by the service (") + reason + ")";

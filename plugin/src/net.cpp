@@ -34,6 +34,9 @@ WebSocketTransport::WebSocketTransport() : ws_(std::make_unique< ix::WebSocket >
 			case ix::WebSocketMessageType::Message:
 				if (!msg->binary && onMessage_) onMessage_(msg->str);
 				break;
+			case ix::WebSocketMessageType::Error:
+				if (onError_) onError_(msg->errorInfo.reason);
+				break;
 			default:
 				break;
 		}

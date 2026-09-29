@@ -342,6 +342,32 @@ TEST_CASE("notify: notice in the Mumble log, only after welcome") {
 	CHECK(std::count_if(f.api.logs.begin(), f.api.logs.end(), [](const std::string &s) { return s.empty(); }) == 0);
 }
 
+TEST_CASE("connection problems in the Mumble log: address, error once per streak, lost connection") {
+	Fixture f;
+	const auto count = [&](const std::string &part) {
+		std::lock_guard< std::mutex > l(f.api.m);
+		return std::count_if(f.api.logs.begin(), f.api.logs.end(), [&](const std::string &s) { return s.find(part) != std::string::npos; });
+	};
+	f.core->onSynchronized();
+	REQUIRE(eventually([&] { return count("connecting to the service http://r.test") == 1; }));
+	f.core->onTransportError("SSL handshake failed");
+	f.core->onTransportError("SSL handshake failed");
+	REQUIRE(eventually([&] { return count("cannot reach the service http://r.test, retrying: SSL handshake failed") == 1; }));
+	std::this_thread::sleep_for(50ms);
+	CHECK(count("cannot reach") == 1);
+	f.core->onTransportOpen();
+	f.core->onTransportMessage(R"({"v":1,"type":"welcome"})");
+	REQUIRE(eventually([&] { return f.core->helloAcknowledged(); }));
+	f.core->onTransportClosed();
+	REQUIRE(eventually([&] { return count("connection to the service lost") == 1; }));
+	// after a successful connection, a new failure is reported again
+	f.core->onTransportError("Connection refused");
+	REQUIRE(eventually([&] { return count("cannot reach") == 2; }));
+	f.core->onTransportClosed(); // closed without welcome: no second "lost"
+	std::this_thread::sleep_for(50ms);
+	CHECK(count("connection to the service lost") == 1);
+}
+
 TEST_CASE("language: German, otherwise English, POSIX order") {
 	CHECK(localeFromEnv(nullptr, nullptr, "de_DE.UTF-8") == Locale::de);
 	CHECK(localeFromEnv("en_US.UTF-8", nullptr, "de_DE.UTF-8") == Locale::en); // LC_ALL wins
@@ -351,6 +377,7 @@ TEST_CASE("language: German, otherwise English, POSIX order") {
 	CHECK(localeFromEnv(nullptr, nullptr, nullptr) == Locale::en);
 	CHECK(text::hoverRoot(Locale::en, "Root").find("“Root”") != std::string::npos);
 	CHECK(text::connected(Locale::de) == "mit dem Dienst verbunden");
+	CHECK(text::unreachable(Locale::de, "https://r.test", "x") == "Dienst https://r.test nicht erreichbar, neuer Versuch läuft: x");
 }
 
 TEST_CASE("talking only after welcome, as text") {

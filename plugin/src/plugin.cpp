@@ -154,6 +154,7 @@ mumble_error_t mumble_init(mumble_plugin_id_t id) {
 	transport->onOpen([] { core->onTransportOpen(); });
 	transport->onClose([] { core->onTransportClosed(); });
 	transport->onMessage([](std::string msg) { core->onTransportMessage(std::move(msg)); });
+	transport->onError([](std::string reason) { core->onTransportError(std::move(reason)); });
 	core->start();
 	// If the plugin is enabled while already connected, no further onServerSynchronized arrives.
 	if (realApi->connected()) core->onSynchronized();
