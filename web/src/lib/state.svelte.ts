@@ -2,7 +2,7 @@
  * State of the web UI: holds the latest snapshot, derives the building and runs commands.
  * No optimistic switching: the own channel only changes with the next snapshot (ADR-0003).
  */
-import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairErrorCode, PluginStatus } from "./adapter/types.ts";
 import { formatSize, type BoardFilter } from "./board/model.ts";
 import { t } from "./i18n/index.svelte.ts";
@@ -203,6 +203,14 @@ export class RuumbleState {
     if (!r.ok) return this.boardFailed(r.error);
     await this.loadBoard();
     return true;
+  }
+
+  /** toggle the own quick reaction (A1); the card shows the service's answer, the others reload */
+  async react(post: Post, kind: ReactionKind): Promise<void> {
+    const on = !post.reactions.some((r) => r.kind === kind && r.mine);
+    const r = await this.adapter.board.react(post.id, kind, on);
+    if (!r.ok) return void this.boardFailed(r.error);
+    if (this.board) this.board = { ...this.board, posts: this.board.posts.map((p) => (p.id === r.value.id ? r.value : p)) };
   }
 
   private boardFailed(error: BoardErrorCode): false {

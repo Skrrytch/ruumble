@@ -6,7 +6,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import Database from "better-sqlite3";
-import type { PostKind } from "@ruumble/protocol";
+import type { PostKind, ReactionKind } from "@ruumble/protocol";
 
 export interface StoredAttachment {
   id: string;
@@ -28,6 +28,14 @@ export interface StoredPost {
   createdAt: number;
   updatedAt: number;
   updatedByName?: string;
+  /** oldest first */
+  reactions: StoredReaction[];
+}
+
+export interface StoredReaction {
+  kind: ReactionKind;
+  authorHash: string;
+  authorName: string;
 }
 
 export interface StoreOptions {
@@ -74,6 +82,15 @@ const MIGRATIONS = [
      created_at INTEGER NOT NULL
    );
    CREATE TABLE removed_channels (channel_id INTEGER PRIMARY KEY, removed_at INTEGER NOT NULL);`,
+  // A1: quick reactions, deleted together with the post
+  `CREATE TABLE reactions (
+     post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+     kind TEXT NOT NULL CHECK (kind IN ('agree','looking','done','broken','unclear')),
+     author_hash TEXT NOT NULL,
+     author_name TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     PRIMARY KEY (post_id, kind, author_hash)
+   );`,
 ];
 
 export class BoardStore {
@@ -108,12 +125,37 @@ export class BoardStore {
   // ---------------------------------------------------------------- Posts
 
   list(channelId: number): StoredPost[] {
-    return (this.db.prepare("SELECT p.*, a.mime, a.size, a.width, a.height FROM posts p LEFT JOIN attachments a ON a.id = p.attachment_id WHERE channel_id = ? ORDER BY p.created_at DESC, p.rowid DESC").all(channelId) as Row[]).map(toPost);
+    const rows = this.db.prepare("SELECT p.*, a.mime, a.size, a.width, a.height FROM posts p LEFT JOIN attachments a ON a.id = p.attachment_id WHERE channel_id = ? ORDER BY p.created_at DESC, p.rowid DESC").all(channelId) as Row[];
+    const reactions = this.reactionsOf("SELECT r.* FROM reactions r JOIN posts p ON p.id = r.post_id WHERE p.channel_id = ? ORDER BY r.created_at, r.rowid", channelId);
+    return rows.map((r) => toPost(r, reactions.get(r.id)));
   }
 
   get(id: string): StoredPost | null {
     const row = this.db.prepare("SELECT p.*, a.mime, a.size, a.width, a.height FROM posts p LEFT JOIN attachments a ON a.id = p.attachment_id WHERE p.id = ?").get(id) as Row | undefined;
-    return row ? toPost(row) : null;
+    return row ? toPost(row, this.reactionsOf("SELECT * FROM reactions WHERE post_id = ? ORDER BY created_at, rowid", id).get(id)) : null;
+  }
+
+  private reactionsOf(sql: string, arg: unknown): Map<string, StoredReaction[]> {
+    const byPost = new Map<string, StoredReaction[]>();
+    for (const r of this.db.prepare(sql).all(arg) as { post_id: string; kind: ReactionKind; author_hash: string; author_name: string }[]) {
+      const list = byPost.get(r.post_id) ?? [];
+      list.push({ kind: r.kind, authorHash: r.author_hash, authorName: r.author_name });
+      byPost.set(r.post_id, list);
+    }
+    return byPost;
+  }
+
+  /** set or take back a reaction (A1); does not count as an edit. `false` if the post does not exist */
+  react(postId: string, kind: ReactionKind, on: boolean, author: { hash: string; name: string }): boolean {
+    if (!this.db.prepare("SELECT 1 FROM posts WHERE id = ?").get(postId)) return false;
+    if (on) {
+      this.db
+        .prepare("INSERT INTO reactions (post_id, kind, author_hash, author_name, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING")
+        .run(postId, kind, author.hash, author.name, this.opts.now());
+    } else {
+      this.db.prepare("DELETE FROM reactions WHERE post_id = ? AND kind = ? AND author_hash = ?").run(postId, kind, author.hash);
+    }
+    return true;
   }
 
   create(input: { channelId: number; kind: PostKind; text: string; language?: string; attachmentId?: string; attachmentName?: string; authorHash: string; authorName: string }): StoredPost {
@@ -269,7 +311,7 @@ interface Row {
   height: number | null;
 }
 
-function toPost(r: Row): StoredPost {
+function toPost(r: Row, reactions: StoredReaction[] = []): StoredPost {
   return {
     id: r.id,
     channelId: r.channel_id,
@@ -284,5 +326,6 @@ function toPost(r: Row): StoredPost {
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     ...(r.updated_by_name ? { updatedByName: r.updated_by_name } : {}),
+    reactions,
   };
 }

@@ -74,7 +74,7 @@
     </div>
     <div class="list">
       {#each posts as post (post.id)}
-        <PostCard {post} {now} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} />
+        <PostCard {post} {now} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} />
       {:else}
         <p class="empty">{board.posts.length ? t().board.emptyFilter : t().board.empty}</p>
       {/each}

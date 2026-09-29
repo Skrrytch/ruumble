@@ -6,11 +6,13 @@
  *   POST   /api/board/uploads         raw data up to 10 MB, headers X-File-Name (URI-encoded), X-File-Type (else Content-Type)
  *   PATCH  /api/board/posts/:id       edit (everyone present)
  *   DELETE /api/board/posts/:id       delete (author or Mumble admin)
+ *   PUT    /api/board/posts/:id/reactions/:kind   set a quick reaction (A1, everyone present)
+ *   DELETE /api/board/posts/:id/reactions/:kind   take it back
  *   GET    /api/board/files/:id       attachment (images inline, everything else as download)
  */
 import { createReadStream } from "node:fs";
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { BOARD_LIMITS, NewPost, PostUpdate, type BoardView, type Post } from "@ruumble/protocol";
+import { BOARD_LIMITS, NewPost, PostUpdate, REACTION_KINDS, ReactionKind, type BoardView, type Post, type Reaction } from "@ruumble/protocol";
 import type { Hub, Viewer } from "../hub.ts";
 import type { MumbleSource } from "../mumble.ts";
 import { detectImage, imageSize, safeFileName } from "./media.ts";
@@ -33,6 +35,14 @@ const STATUS: Record<ErrorCode, number> = {
   "not-paired": 401, "not-in-room": 403, "no-board-here": 404, "not-found": 404, forbidden: 403, "too-large": 413, "bad-type": 415, invalid: 400, "rate-limited": 429,
 };
 const fail = (reply: FastifyReply, error: ErrorCode) => reply.code(STATUS[error]).send({ error });
+
+/** per kind in the fixed order: count, names at the time (oldest first) and whether the viewer is among them */
+export function aggregate(post: StoredPost, viewerHash: string): Reaction[] {
+  return REACTION_KINDS.flatMap((kind) => {
+    const of = post.reactions.filter((r) => r.kind === kind);
+    return of.length ? [{ kind, count: of.length, names: of.map((r) => r.authorName), mine: of.some((r) => r.authorHash === viewerHash) }] : [];
+  });
+}
 
 export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): Promise<void> {
   const writes = new Map<string, number[]>();
@@ -68,6 +78,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
       canDelete: mine || isAdmin,
       createdAt: p.createdAt, updatedAt: p.updatedAt,
       ...(p.updatedByName ? { updatedByName: p.updatedByName } : {}),
+      reactions: aggregate(p, viewer.certHash),
     };
   }
 
@@ -154,6 +165,23 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     o.hub.boardChanged(post.channelId);
     return reply.code(204).send();
   });
+
+  // quick reactions (A1): no Mumble notice and no "edited by"; those present reload the board
+  const reactRoute = (on: boolean) => async (req: { params: { id: string; kind: string }; headers: { cookie?: string } }, reply: FastifyReply) => {
+    const r = room(req.headers.cookie);
+    if ("error" in r) return fail(reply, r.error);
+    const kind = ReactionKind.safeParse(req.params.kind);
+    if (!kind.success) return fail(reply, "invalid");
+    const post = o.store.get(req.params.id);
+    if (!post) return fail(reply, "not-found");
+    if (post.channelId !== r.viewer.channelId) return fail(reply, "not-in-room");
+    if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
+    o.store.react(post.id, kind.data, on, { hash: r.viewer.certHash, name: r.viewer.name });
+    o.hub.boardChanged(post.channelId);
+    return toView(o.store.get(post.id)!, r.viewer, await o.source.canWrite(r.viewer.session, post.channelId));
+  };
+  app.put<{ Params: { id: string; kind: string } }>("/api/board/posts/:id/reactions/:kind", reactRoute(true));
+  app.delete<{ Params: { id: string; kind: string } }>("/api/board/posts/:id/reactions/:kind", reactRoute(false));
 
   app.get<{ Params: { id: string }; Querystring: { download?: string } }>("/api/board/files/:id", async (req, reply) => {
     const r = room(req.headers.cookie);

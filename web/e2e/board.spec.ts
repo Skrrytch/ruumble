@@ -15,6 +15,25 @@ test.describe("Board (AP11.2)", () => {
     await expect(board).toHaveCount(0);
   });
 
+  test("quick reactions: count and names in the tooltip, set and take back (A1)", async ({ page }) => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    const code = page.getByRole("complementary", { name: "Board" }).getByRole("article", { name: "Post by Ben" }).filter({ has: page.locator(".hljs") });
+    const reactions = code.getByRole("group", { name: "Reactions" });
+    const agree = reactions.getByRole("button", { name: "Agreed / fine by me: Clara, Anna" });
+    await expect(agree).toHaveText("2");
+    await expect(agree).toHaveAttribute("aria-pressed", "true");
+    await agree.click(); // Anna takes hers back
+    await expect(reactions.getByRole("button", { name: "Agreed / fine by me: Clara" })).toHaveAttribute("aria-pressed", "false");
+    await reactions.getByRole("button", { name: "React" }).click();
+    await reactions.getByRole("button", { name: "I'm looking at it" }).click();
+    await expect(reactions.getByRole("button", { name: "I'm looking at it: Anna" })).toHaveText("1");
+    await expect(reactions.getByRole("button", { name: "Does not work for me" })).toHaveCount(0); // picker closed again
+    // the order stays fixed: agree, looking, unclear
+    expect(await reactions.locator(".chip").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).toEqual([
+      "Agreed / fine by me: Clara", "I'm looking at it: Anna", "Unclear, let's talk: David",
+    ]);
+  });
+
   test("other rooms show no notes, even when something is pinned there", async ({ page }) => {
     await expect(page.locator('.wrap:has(.room[data-channel="7"]) .notes')).toHaveCount(0); // Clara, with posts
     await expect(page.locator("svg.notes")).toHaveCount(1); // only the toggle in the user's own room

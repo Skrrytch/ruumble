@@ -28,6 +28,7 @@ const liveBoard: BoardApi = {
   create: (post) => call(Post, "/api/board/posts", { method: "POST", body: JSON.stringify(post) }),
   update: (id, change) => call(Post, `/api/board/posts/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(change) }),
   remove: (id) => call<true>(null, `/api/board/posts/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  react: (id, kind, on) => call(Post, `/api/board/posts/${encodeURIComponent(id)}/reactions/${kind}`, { method: on ? "PUT" : "DELETE" }),
   upload,
   fileUrl: (a, download = false) => `/api/board/files/${a.id}${download ? "?download" : ""}`,
 };

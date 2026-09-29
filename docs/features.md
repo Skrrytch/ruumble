@@ -52,6 +52,7 @@ Every room has a board next to the floor plan. It shows the board of the room yo
 - **Images**: paste, drag and drop or paper clip. Preview in the card, full-screen view with zoom, pan and download.
 - **Files** as downloads.
 - Long posts are shortened to 8 lines and open in a dialog to read, edit, copy or delete.
+- **Quick reactions** with a fixed meaning (agreed, looking at it, done, does not work for me, unclear): once per person and kind, with count and names in the tooltip, without a Mumble notice (A1).
 - **Mumble notice**: when someone pins something, the others in the room get a short line in their Mumble log, e.g. "Anna pinned code to the board." (in each recipient's language).
 
 | Rule | Value |
@@ -120,7 +121,8 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 | C – Knocking | idea, decision open |
 | F – More controls | idea, decision open |
 | G – "Door closed" | idea, after B and C |
-| A1–A9 – Board for developers | planned, in this order |
+| A1 – Quick reactions | done (0.10.0) |
+| A2–A9 – Board for developers | planned, in this order |
 | Report the Mumble avatar bug | open (O16) |
 | Address check over proxy and VPN | proxy: needs `ADDRESS_CHECK=warn` with hairpin NAT; VPN not tested (P7) |
 

@@ -133,6 +133,18 @@ export const de = {
     filterLabel: "Beiträge filtern",
     filters: { all: "Alle", text: "Text", code: "Code", image: "Bilder", file: "Dateien" },
     kinds: { text: "Text", code: "Code", image: "Bild", file: "Datei" },
+    /** quick reactions (A1): fixed meaning, shown as tooltip */
+    reactions: {
+      agree: "Einverstanden / passt für mich",
+      looking: "Ich schaue es mir an",
+      done: "Erledigt / funktioniert",
+      broken: "Funktioniert bei mir nicht",
+      unclear: "Unklar, lass uns reden",
+    },
+    react: "Reagieren",
+    reactionsLabel: "Reaktionen",
+    /** tooltip and screen reader: meaning, then who */
+    reactionTitle: (label: string, names: string) => `${label}: ${names}`,
     emptyFilter: "Nichts in diesem Filter.",
     empty: "Noch hängt hier nichts. Heft den ersten Zettel an!",
     postBy: (name: string) => `Beitrag von ${name}`,

@@ -1,15 +1,16 @@
 <script lang="ts">
   import { copyText } from "../../board/clipboard.ts";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
-  import type { Post } from "@ruumble/protocol";
+  import type { Post, ReactionKind } from "@ruumble/protocol";
   import { PREVIEW_LINES, isLong, relativeTime } from "../../board/model.ts";
   import { intlLocale, t } from "../../i18n/index.svelte.ts";
   import { initials } from "../../model/building.ts";
   import { getFileUrl } from "../../board/context.ts";
   import PostBody from "./PostBody.svelte";
+  import Reactions from "./Reactions.svelte";
 
   /** `avatar`: the author's image if they are currently connected and registered; otherwise initials */
-  let { post, now, avatar = null, onopen }: { post: Post; now: number; avatar?: string | null; onopen: (post: Post) => void } = $props();
+  let { post, now, avatar = null, onopen, onreact }: { post: Post; now: number; avatar?: string | null; onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void } = $props();
   let avatarBroken = $state<string | null>(null);
 
   const fileUrl = getFileUrl();
@@ -40,6 +41,7 @@
   {#if post.updatedByName}
     <div class="edited">{t().board.editedBy(post.updatedByName)} · {relativeTime(post.updatedAt, now)}</div>
   {/if}
+  <Reactions reactions={post.reactions} onreact={(kind) => onreact(post, kind)} />
   <footer>
     <button type="button" class="link" onclick={() => onopen(post)}><Maximize2 size={13} /> {t().board.open}</button>
     {#if post.kind === "file"}

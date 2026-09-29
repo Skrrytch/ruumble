@@ -166,6 +166,14 @@ export type Attachment = z.infer<typeof Attachment>;
 export const Uploaded = Attachment.extend({ image: z.boolean() });
 export type Uploaded = z.infer<typeof Uploaded>;
 
+/** Quick reactions with a fixed meaning (A1), in display order */
+export const REACTION_KINDS = ["agree", "looking", "done", "broken", "unclear"] as const;
+export const ReactionKind = z.enum(REACTION_KINDS);
+export type ReactionKind = z.infer<typeof ReactionKind>;
+/** one kind on one post: who reacted (names at the time) and whether the own user is among them */
+export const Reaction = z.object({ kind: ReactionKind, count: z.number().int().min(1), names: z.array(z.string()), mine: z.boolean() });
+export type Reaction = z.infer<typeof Reaction>;
+
 export const Post = z.object({
   id: z.string().min(1),
   channelId,
@@ -183,6 +191,8 @@ export const Post = z.object({
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   updatedByName: z.string().optional(),
+  /** only kinds with at least one reaction, in the order of REACTION_KINDS */
+  reactions: z.array(Reaction),
 });
 export type Post = z.infer<typeof Post>;
 

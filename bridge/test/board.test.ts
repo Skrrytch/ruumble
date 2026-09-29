@@ -114,6 +114,30 @@ describe("BoardStore", () => {
     expect(store.list(3).map((p) => p.id)).toEqual([ids[2], ids[1]]);
   });
 
+  it("reactions: once per kind and person, oldest first, deleted with the post (A1)", () => {
+    let now = 1_000;
+    const { store } = tempStore({ now: () => now });
+    const p = store.create({ channelId: 3, kind: "text", text: "x", authorHash: A, authorName: "Anna" });
+    expect(store.react(p.id, "agree", true, { hash: B, name: "Ben" })).toBe(true);
+    now++;
+    store.react(p.id, "agree", true, { hash: A, name: "Anna" });
+    store.react(p.id, "agree", true, { hash: B, name: "Ben (new name)" }); // twice: no second reaction
+    store.react(p.id, "done", true, { hash: A, name: "Anna" });
+    expect(store.get(p.id)?.reactions).toEqual([
+      { kind: "agree", authorHash: B, authorName: "Ben" },
+      { kind: "agree", authorHash: A, authorName: "Anna" },
+      { kind: "done", authorHash: A, authorName: "Anna" },
+    ]);
+    expect(store.list(3)[0]?.reactions).toHaveLength(3);
+    store.react(p.id, "agree", false, { hash: B, name: "Ben" });
+    expect(store.get(p.id)?.reactions.map((r) => r.authorName)).toEqual(["Anna", "Anna"]);
+    expect(store.get(p.id)?.updatedByName).toBeUndefined(); // not an edit
+    expect(store.react("missing", "agree", true, { hash: A, name: "Anna" })).toBe(false);
+    store.delete(p.id);
+    const q = store.create({ channelId: 3, kind: "text", text: "y", authorHash: A, authorName: "Anna" });
+    expect(store.get(q.id)?.reactions).toEqual([]);
+  });
+
   it("migration is repeatable, backup contains database and attachments", async () => {
     const { store, dir } = tempStore();
     const att = store.putFile(PNG, "image/png");
@@ -183,6 +207,30 @@ describe("REST /api/board", () => {
     expect((await app.inject({ method: "DELETE", url: `/api/board/posts/${post.id}`, headers: as("ben") })).statusCode).toBe(204);
   });
 
+  it("reactions: set and take back, aggregated per kind, no notice, others reload (A1)", async () => {
+    const { app, notified, as, hub } = await setup();
+    const post = (await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "x" } })).json();
+    notified.length = 0;
+    const annaUi = recorder<BridgeToUi>();
+    hub.uiConnected(annaUi.conn, A);
+    const url = (kind: string) => `/api/board/posts/${post.id}/reactions/${kind}`;
+    expect((await app.inject({ method: "PUT", url: url("agree"), headers: as("ben") })).json().reactions).toEqual([{ kind: "agree", count: 1, names: ["Ben"], mine: true }]);
+    await app.inject({ method: "PUT", url: url("unclear"), headers: as("anna") });
+    const view = (await app.inject({ method: "PUT", url: url("agree"), headers: as("anna") })).json();
+    expect(view.reactions).toEqual([
+      { kind: "agree", count: 2, names: ["Ben", "Anna"], mine: true },
+      { kind: "unclear", count: 1, names: ["Anna"], mine: true },
+    ]);
+    expect(view.updatedByName).toBeUndefined();
+    expect(annaUi.last("board")).toEqual({ v: 1, type: "board", channelId: 2 });
+    expect(notified).toEqual([]);
+    const taken = (await app.inject({ method: "DELETE", url: url("agree"), headers: as("ben") })).json();
+    expect(taken.reactions[0]).toEqual({ kind: "agree", count: 1, names: ["Anna"], mine: false });
+    expect((await app.inject({ method: "PUT", url: url("love"), headers: as("ben") })).json()).toEqual({ error: "invalid" });
+    expect((await app.inject({ method: "PUT", url: "/api/board/posts/nope/reactions/agree", headers: as("ben") })).json()).toEqual({ error: "not-found" });
+    expect((await app.inject({ method: "PUT", url: url("agree") })).statusCode).toBe(401);
+  });
+
   it("non-admin may not delete other people's posts", async () => {
     const { app, source, as } = await setup();
     source.admins.clear();
@@ -198,6 +246,7 @@ describe("REST /api/board", () => {
     await poller.poll();
     expect((await app.inject({ url: "/api/board", headers: as("ben") })).json().posts).toEqual([]);
     expect((await app.inject({ method: "PATCH", url: `/api/board/posts/${post.id}`, headers: as("ben"), payload: { text: "y" } })).json()).toEqual({ error: "not-in-room" });
+    expect((await app.inject({ method: "PUT", url: `/api/board/posts/${post.id}/reactions/agree`, headers: as("ben") })).json()).toEqual({ error: "not-in-room" });
   });
 
   it("temporary channels have no board", async () => {

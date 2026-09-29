@@ -7,7 +7,7 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, REACTION_KINDS, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
@@ -53,7 +53,7 @@ function sampleImage(): MockFile | null {
 /** Sample posts for the mock (room ID → posts, newest first) */
 function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Post[]> {
   const post = (p: Partial<Post> & Pick<Post, "id" | "channelId" | "kind" | "text" | "authorName">): Post => ({
-    mine: false, canDelete: false, createdAt: now, updatedAt: now, ...p,
+    mine: false, canDelete: false, createdAt: now, updatedAt: now, reactions: [], ...p,
   });
   const code = [
     "export function greet(name: string): string {",
@@ -95,8 +95,10 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
     [3, [
       ...(image ? [post({ id: "m4", channelId: 3, kind: "image", authorName: "Clara", createdAt: now - 3 * MINUTE, updatedAt: now - 3 * MINUTE, text: "Architecture sketch from the whiteboard", attachment: attachment(image, "whiteboard.png") })] : []),
       post({ id: "m5", channelId: 3, kind: "file", authorName: "Ben", createdAt: now - 8 * MINUTE, updatedAt: now - 8 * MINUTE, text: "", attachment: attachment(file, "server.log") }),
-      post({ id: "m1", channelId: 3, kind: "code", language: "typescript", authorName: "Ben", createdAt: now - 12 * MINUTE, updatedAt: now - 12 * MINUTE, text: code }),
-      post({ id: "m2", channelId: 3, kind: "text", authorName: "Anna", mine: true, canDelete: true, createdAt: now - 60 * MINUTE, updatedAt: now - 30 * MINUTE, updatedByName: "Ben", text: notes }),
+      post({ id: "m1", channelId: 3, kind: "code", language: "typescript", authorName: "Ben", createdAt: now - 12 * MINUTE, updatedAt: now - 12 * MINUTE, text: code,
+        reactions: [{ kind: "agree", count: 2, names: ["Clara", "Anna"], mine: true }, { kind: "unclear", count: 1, names: ["David"], mine: false }] }),
+      post({ id: "m2", channelId: 3, kind: "text", authorName: "Anna", mine: true, canDelete: true, createdAt: now - 60 * MINUTE, updatedAt: now - 30 * MINUTE, updatedByName: "Ben", text: notes,
+        reactions: [{ kind: "done", count: 1, names: ["Ben"], mine: false }] }),
     ]],
     [7, [post({ id: "m3", channelId: 7, kind: "text", authorName: "Clara", text: "In a customer call from 2 pm." })]],
   ]);
@@ -154,7 +156,7 @@ export class MockAdapter implements MumbleAdapter {
           id: `mock-${this.nextPostId++}`, channelId, kind: input.kind, text: input.text,
           ...(input.language ? { language: input.language } : {}),
           ...(file ? { attachment: { ...(stored as Omit<Attachment, "name">), name: input.attachmentName || "file" } } : {}),
-          authorName: me.name, mine: true, canDelete: true, createdAt: now, updatedAt: now,
+          authorName: me.name, mine: true, canDelete: true, createdAt: now, updatedAt: now, reactions: [],
         };
         this.posts.set(channelId, [post, ...(this.posts.get(channelId) ?? [])]);
         this.boardChanged(channelId);
@@ -181,6 +183,23 @@ export class MockAdapter implements MumbleAdapter {
         this.posts.set(channelId, list.filter((p) => p.id !== id));
         this.boardChanged(channelId);
         return true as const;
+      }),
+    react: async (id: string, kind: ReactionKind, on: boolean) =>
+      this.boardRoom((channelId) => {
+        const list = this.posts.get(channelId) ?? [];
+        const i = list.findIndex((p) => p.id === id);
+        if (i < 0) return null;
+        const name = this.me()!.name;
+        // like the service: only the toggled kind changes, the own name at most once and at the end
+        const reactions = REACTION_KINDS.flatMap((k) => {
+          const r = list[i]!.reactions.find((x) => x.kind === k);
+          if (k !== kind) return r ? [r] : [];
+          const names = [...(r?.names ?? []).filter((n) => !(r?.mine && n === name)), ...(on ? [name] : [])];
+          return names.length ? [{ kind: k, count: names.length, names, mine: on }] : [];
+        });
+        list[i] = { ...list[i]!, reactions };
+        this.boardChanged(channelId);
+        return list[i]!;
       }),
     upload: async (file: Blob, _name: string, onProgress?: (fraction: number) => void) => {
       const room = this.boardRoom(() => true as const);

@@ -2,7 +2,7 @@
  * Interface between web UI and Mumble (ADR-0007).
  * Implementations: MockAdapter (fixtures, simulated Mumble) and LiveAdapter (WebSocket and REST to the service).
  */
-import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Post, PostUpdate, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
+import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Post, PostUpdate, ReactionKind, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
 
 export type BoardErrorCode = ServerBoardError | "offline";
 export type BoardResult<T> = { ok: true; value: T } | { ok: false; error: BoardErrorCode };
@@ -24,6 +24,8 @@ export interface BoardApi {
   create(post: NewPost): Promise<BoardResult<Post>>;
   update(id: string, change: PostUpdate): Promise<BoardResult<Post>>;
   remove(id: string): Promise<BoardResult<true>>;
+  /** set (`on`) or take back a quick reaction (A1) */
+  react(id: string, kind: ReactionKind, on: boolean): Promise<BoardResult<Post>>;
   /** Upload an attachment (image or file, at most `BOARD_LIMITS.fileBytes`); `onProgress` with 0…1 */
   upload(file: Blob, name: string, onProgress?: (fraction: number) => void): Promise<BoardResult<Uploaded>>;
   /** Address of an attachment; `download`: always save as a file */

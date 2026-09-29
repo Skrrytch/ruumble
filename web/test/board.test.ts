@@ -3,7 +3,7 @@ import type { Post } from "@ruumble/protocol";
 import { t } from "../src/lib/i18n/index.svelte.ts";
 import { fileKind, filterPosts, formatSize, isLong, looksLikeCode, pastedName, relativeTime } from "../src/lib/board/model.ts";
 
-const post = (kind: Post["kind"], id: string = kind): Post => ({ id, channelId: 3, kind, text: "x", authorName: "A", mine: false, canDelete: false, createdAt: 0, updatedAt: 0 });
+const post = (kind: Post["kind"], id: string = kind): Post => ({ id, channelId: 3, kind, text: "x", authorName: "A", mine: false, canDelete: false, createdAt: 0, updatedAt: 0, reactions: [] });
 
 describe("Board model", () => {
   it("detects pasted source code, but not plain text", () => {
