@@ -32,13 +32,13 @@ jobs:
           fi
 
           cp -r third_party/mumble /tmp/before
-          scripts/update-mumble-interfaces.sh "$latest" > /dev/null
+          tools/update-mumble-interfaces.sh "$latest" > /dev/null
           diff -ru --exclude=VERSION --exclude=SHA256SUMS --exclude=README.md /tmp/before third_party/mumble > /tmp/interfaces.diff || true
 
           {
             echo "A new Mumble release is available: **$latest** (Ruumble uses $current)."
             echo
-            echo "To adopt it: \`scripts/update-mumble-interfaces.sh $latest\`, then check \`docs/mumble-interfaces.md\` against the changes. The live tests were started for this release (workflow live.yml)."
+            echo "To adopt it: \`tools/update-mumble-interfaces.sh $latest\`, then check \`docs/mumble-interfaces.md\` against the changes. The live tests were started for this release (workflow live.yml)."
             echo
             if [[ -s /tmp/interfaces.diff ]]; then
               echo "<details><summary>Changes to the interface files</summary>"

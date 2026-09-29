@@ -29,7 +29,7 @@ The results of the feasibility studies S1 and S2 mentioned below are summarised 
 | Rule | Implementation |
 |---|---|
 | Ruumble is a **standalone repository** ([ADR-0009](decisions/0009-standalone-repository.md)). | Only the two interface files are taken from Mumble, unchanged and pinned to a release tag, with checksums and the BSD-3 licence (`third_party/mumble/`). |
-| The interfaces are never edited by hand. | They are updated only with `scripts/update-mumble-interfaces.sh <tag>`. CI checks `SHA256SUMS`. |
+| The interfaces are never edited by hand. | They are updated only with `tools/update-mumble-interfaces.sh <tag>`. CI checks `SHA256SUMS`. |
 | Ruumble does not build Mumble. | The plugin has its **own CMake project** with the include path `third_party/mumble/plugins`. The service generates Ice stubs from `third_party/mumble/src/murmur/MumbleServer.ice`. |
 | The runtime does not depend on our own build of Mumble. | The plugin runs in the **Mumble client of the Linux distribution**, the service next to the **official server image**. Neither Mumble part is built by us. |
 | The server state is never changed. | The service only gets `icesecretread`. Callbacks and write methods are therefore technically blocked (see 3.1). |
@@ -173,7 +173,7 @@ Minimum requirements: server 1.5 (Ice module `MumbleServer`, see 3.1), client 1.
 
 **Change detection:**
 
-- **Release watch** (`.github/workflows/mumble-release-watch.yml`, weekly on Mondays and on demand): compares the latest Mumble release with `third_party/mumble/VERSION`. If there is a newer one, it opens an issue with a diff of the two interface files (produced with `scripts/update-mumble-interfaces.sh`) and starts the live tests against that release.
+- **Release watch** (`.github/workflows/mumble-release-watch.yml`, weekly on Mondays and on demand): compares the latest Mumble release with `third_party/mumble/VERSION`. If there is a newer one, it opens an issue with a diff of the two interface files (produced with `tools/update-mumble-interfaces.sh`) and starts the live tests against that release.
 - **Live tests** (`.github/workflows/live.yml`, weekly on Tuesdays, on demand, and triggered by the release watch): start a real Mumble server and headless Mumble clients with the Ruumble plugin, and run the Playwright tests in `web/e2e-live`. The standard matrix is server v1.5.735, v1.6.870 and `latest` with the Ubuntu client, plus server v1.6.870 with the Debian and Fedora clients. These catch behaviour changes that a diff of the interface files does not show. The client images and test tools are in `tools/live-test/`.
 - **Client versions in operation:** the plugin reports the Mumble client version (from `mumble_setMumbleInfo`) and its own version in its `hello`. The service counts connected plugins per version and shows them under `"clients"` in `/healthz`, e.g. `{ "mumble 1.5.735 / plugin 0.4.0": 2 }`.
 
