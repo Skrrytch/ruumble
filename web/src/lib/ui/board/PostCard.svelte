@@ -6,6 +6,8 @@
   import FaceSlightlySmilingPlus from "@lucide/svelte/icons/face-slightly-smiling-plus";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
   import ListChecks from "@lucide/svelte/icons/list-checks";
+  import Pin from "@lucide/svelte/icons/pin";
+  import PinOff from "@lucide/svelte/icons/pin-off";
   import { parseTaskList, type Post, type ReactionKind } from "@ruumble/protocol";
   import { PREVIEW_LINES, isLong, relativeTime, summarizeReactions } from "../../board/model.ts";
   import { intlLocale, t } from "../../i18n/index.svelte.ts";
@@ -16,9 +18,10 @@
   import { REACTION_ICONS } from "./reactionIcons.ts";
 
   /** `avatar`: the author's image if they are currently connected and registered; otherwise initials */
-  let { post, now, avatar = null, onopen, onreact, ontoggle }: {
-    post: Post; now: number; avatar?: string | null; onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
-    ontoggle: (post: Post, index: number, done: boolean) => void;
+  /** `pinned`: this post is the one kept on top (A3); `onpin`: the dot keeps it on top or takes it down */
+  let { post, now, avatar = null, pinned = false, onopen, onreact, ontoggle, onpin }: {
+    post: Post; now: number; avatar?: string | null; pinned?: boolean; onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
+    ontoggle: (post: Post, index: number, done: boolean) => void; onpin: (post: Post) => void;
   } = $props();
   let avatarBroken = $state<string | null>(null);
 
@@ -46,7 +49,11 @@
 </script>
 
 <article class="card" aria-label={t().board.postBy(post.authorName)}>
-  <span class="pin" aria-hidden="true"></span>
+  <!-- the pin dot is also the handle for "keep on top": it grows into a button on hover and keyboard focus -->
+  <button type="button" class="pin" class:pinned aria-label={pinned ? t().board.unpin : t().board.pinOnTop} title={pinned ? t().board.unpin : t().board.pinOnTop} onclick={() => onpin(post)}>
+    <span class="dot" aria-hidden="true"></span>
+    <span class="glyph" aria-hidden="true">{#if pinned}<PinOff size={12} />{:else}<Pin size={12} />{/if}</span>
+  </button>
   <header>
     <span class="av" class:me={post.mine} aria-hidden="true">
       {#if avatar && avatarBroken !== avatar}<img src={avatar} alt="" onerror={() => (avatarBroken = avatar)} />{:else}{initials(post.authorName)}{/if}
@@ -103,7 +110,16 @@
 
 <style>
   .card { position: relative; background: var(--color-white); border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); padding: 12px 12px 8px; display: flex; flex-direction: column; gap: 8px; }
-  .pin { position: absolute; top: -5px; left: 50%; width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; background: var(--color-navy); }
+  /* 28 px hit area around the 9 px dot, centred on the top edge */
+  .pin { position: absolute; top: -14px; left: 50%; width: 28px; height: 28px; margin-left: -14px; padding: 0; border: 0; background: none; cursor: pointer; z-index: 1; }
+  .pin .dot, .pin .glyph { position: absolute; left: 50%; top: 50%; border-radius: 50%; transform: translate(-50%, -50%); }
+  .pin .dot { width: 9px; height: 9px; background: var(--color-navy); transition: width 0.12s, height 0.12s; }
+  .pin .glyph { display: flex; align-items: center; justify-content: center; color: var(--color-white); opacity: 0; transition: opacity 0.12s; }
+  .pin:hover .dot, .pin:focus-visible .dot { width: 24px; height: 24px; }
+  .pin:hover .glyph, .pin:focus-visible .glyph { opacity: 1; }
+  .pin:focus-visible { outline: none; }
+  .pin:focus-visible .dot { box-shadow: 0 0 0 3px var(--color-sky); }
+  @media (prefers-reduced-motion: reduce) { .pin .dot, .pin .glyph { transition: none; } }
   header { display: flex; align-items: center; gap: 8px; }
   .av { width: 26px; height: 26px; border-radius: 50%; background: var(--color-blue-500); color: var(--color-white); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
   .av img { width: 100%; height: 100%; object-fit: cover; }

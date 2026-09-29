@@ -1,6 +1,6 @@
 {
   "name": "@ruumble/web",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "private": true,
   "description": "Ruumble web UI (Svelte)",
   "license": "BSD-3-Clause",

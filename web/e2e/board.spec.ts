@@ -119,16 +119,12 @@ test.describe("Board (AP11.2)", () => {
   test("keep on top: slim bar, unfolds on click, replaces with a note, not twice in the list (A3)", async ({ page }) => {
     await page.getByRole("button", { name: "Show board" }).click();
     const board = page.getByRole("complementary", { name: "Board" });
-    const dialog = page.getByRole("dialog");
+    const title = board.getByRole("textbox", { name: "Title on top" });
     // Anna's notes: title suggested from the first heading, editable
-    await board.getByRole("article", { name: "Post by Anna" }).getByRole("button", { name: "Open", exact: true }).click();
-    await dialog.getByRole("button", { name: "Keep on top" }).click();
-    const title = dialog.getByRole("textbox", { name: "Title on top" });
+    await board.getByRole("article", { name: "Post by Anna" }).getByRole("button", { name: "Keep on top" }).click();
     await expect(title).not.toHaveValue("");
     await title.fill("Team notes");
-    await dialog.getByRole("button", { name: "Keep on top" }).click();
-    await expect(dialog.getByRole("button", { name: "Remove from top" })).toBeVisible();
-    await page.keyboard.press("Escape");
+    await board.getByRole("form", { name: "Keep on top" }).getByRole("button", { name: "Keep on top" }).click();
     const bar = board.getByRole("button", { name: /Team notes/ });
     await expect(bar).toHaveAttribute("aria-expanded", "false");
     await expect(board.getByRole("article")).toHaveCount(3); // no longer in the list
@@ -140,18 +136,40 @@ test.describe("Board (AP11.2)", () => {
     await expect(board.getByRole("article", { name: "Post by Anna" })).toBeVisible();
     await board.getByRole("searchbox").fill("");
     // another post replaces it, with a note
-    await board.getByRole("article").first().getByRole("button", { name: "Open", exact: true }).click();
-    await dialog.getByRole("button", { name: "Keep on top" }).click();
-    await expect(dialog.getByText("Replaces “Team notes”, which is on top now.")).toBeVisible();
-    await dialog.getByRole("button", { name: "Keep on top" }).click();
-    await page.keyboard.press("Escape");
+    await board.getByRole("article").first().getByRole("button", { name: "Keep on top" }).click();
+    await expect(board.getByText("Replaces “Team notes”, which is on top now.")).toBeVisible();
+    await title.press("Enter");
     await expect(board.getByRole("button", { name: /Team notes/ })).toHaveCount(0);
     await expect(board.getByRole("article", { name: "Post by Anna" })).toBeVisible(); // back in the list
-    // the open state is remembered; remove from the top
-    await expect(board.getByRole("region", { name: /^Kept on top: / }).getByRole("button", { name: "Remove from top" })).toBeVisible();
+    // remove from the top in the unfolded bar
+    await board.getByRole("region", { name: /^Kept on top: / }).getByRole("button", { expanded: false }).click(); // unfold
     await board.getByRole("button", { name: "Remove from top" }).click();
     await expect(board.getByRole("region", { name: /^Kept on top: / })).toHaveCount(0);
     await expect(board.getByRole("article")).toHaveCount(4);
+    // the popup has no such option
+    await board.getByRole("article").first().getByRole("button", { name: "Open", exact: true }).click();
+    await expect(page.getByRole("dialog").getByRole("button", { name: "Keep on top" })).toHaveCount(0);
+  });
+
+  test("keep on top via the pin dot: title where the post will be, Escape cancels, the dot takes it down (A3)", async ({ page }) => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    const anna = board.getByRole("article", { name: "Post by Anna" });
+    await anna.getByRole("button", { name: "Keep on top" }).click();
+    const form = board.getByRole("form", { name: "Keep on top" });
+    const title = form.getByRole("textbox", { name: "Title on top" });
+    await expect(title).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(form).toHaveCount(0);
+    await anna.getByRole("button", { name: "Keep on top" }).click();
+    await title.fill("Sprint");
+    await title.press("Enter");
+    await expect(board.getByRole("button", { name: /^Sprint/ })).toHaveAttribute("aria-expanded", "false");
+    await expect(board.getByRole("article", { name: "Post by Anna" })).toHaveCount(0);
+    // in the search results its dot takes it down again
+    await board.getByRole("searchbox").fill("release");
+    await board.getByRole("article", { name: "Post by Anna" }).getByRole("button", { name: "Remove from top" }).click();
+    await expect(board.getByRole("region", { name: /^Kept on top: / })).toHaveCount(0);
   });
 
   test("other rooms show no notes, even when something is pinned there", async ({ page }) => {

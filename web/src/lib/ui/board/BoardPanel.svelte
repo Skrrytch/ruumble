@@ -1,10 +1,11 @@
 <script lang="ts">
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ListFilter from "@lucide/svelte/icons/list-filter";
+  import Pin from "@lucide/svelte/icons/pin";
   import Search from "@lucide/svelte/icons/search";
   import X from "@lucide/svelte/icons/x";
   import type { Post } from "@ruumble/protocol";
-  import { FILTERS, filterPosts, type BoardFilter } from "../../board/model.ts";
+  import { FILTERS, PIN_TITLE_MAX, filterPosts, suggestTitle, type BoardFilter } from "../../board/model.ts";
   import { t } from "../../i18n/index.svelte.ts";
   import type { RuumbleState } from "../../state.svelte.ts";
   import Composer from "./Composer.svelte";
@@ -52,6 +53,19 @@
   // kept on top (A3): not a second time in the list, except in search and filter results
   const pinnedPost = $derived(board?.pinned ? (board.posts.find((p) => p.id === board.pinned!.postId) ?? null) : null);
   const listed = $derived(narrowed || !pinnedPost ? posts : posts.filter((p) => p.id !== pinnedPost.id));
+  // the dot on a card: take the post down, or ask for the title right where it will be kept on top
+  let pinDraft = $state<{ post: Post; title: string } | null>(null);
+  function pinFromDot(post: Post): void {
+    if (post.id === pinnedPost?.id) void app.unpinPost();
+    else pinDraft = { post, title: suggestTitle(post) };
+  }
+  async function confirmPin(): Promise<void> {
+    if (!pinDraft?.title.trim()) return;
+    if (await app.pinPost(pinDraft.post, pinDraft.title.trim())) {
+      pinDraft = null;
+      pinnedOpen = false;
+    }
+  }
   const PINNED_OPEN_KEY = "ruumble.pinnedOpen";
   let pinnedOpen = $state(readPinnedOpen());
   function readPinnedOpen(): boolean {
@@ -145,7 +159,20 @@
   {:else if app.boardError}
     <p class="empty">{t().board.unavailable}</p>
   {:else if board}
-    {#if board.pinned && pinnedPost}
+    {#if pinDraft}
+      <!-- title for keeping on top, in the place where the post will then be -->
+      <form class="pindraft" aria-label={t().board.pinOnTop} onsubmit={(e) => { e.preventDefault(); void confirmPin(); }}>
+        <Pin size={14} aria-hidden="true" />
+        <input
+          bind:value={pinDraft.title} maxlength={PIN_TITLE_MAX} aria-label={t().board.pinTitle}
+          onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); pinDraft = null; } }}
+          {@attach (el) => { el.focus(); el.select(); }}
+        />
+        <button type="submit" class="ok" disabled={!pinDraft.title.trim()}>{t().board.pinOnTop}</button>
+        <button type="button" class="cancel" aria-label={t().common.cancel} title={t().common.cancel} onclick={() => (pinDraft = null)}><X size={14} aria-hidden="true" /></button>
+        {#if board.pinned && pinnedPost}<span class="replaces">{t().board.pinReplaces(board.pinned.title)}</span>{/if}
+      </form>
+    {:else if board.pinned && pinnedPost}
       <PinnedBar
         pinned={board.pinned}
         post={pinnedPost}
@@ -157,7 +184,8 @@
     {/if}
     <div class="list">
       {#each listed as post (post.id)}
-        <PostCard {post} {now} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)} />
+        <PostCard {post} {now} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
+          pinned={post.id === pinnedPost?.id} onpin={pinFromDot} />
       {:else}
         <!-- only the post on top: nothing to say below it -->
         {#if narrowed || !pinnedPost}<p class="empty">{board.posts.length ? t().board.emptyFilter : t().board.empty}</p>{/if}
@@ -179,9 +207,6 @@
     onsave={(text, language) => app.editPost(openPost.id, text, language)}
     ondelete={() => app.deletePost(openPost.id)}
     ontoggle={(index, done) => app.toggleTask(openPost, index, done)}
-    pinned={board?.pinned ?? null}
-    onpin={(title) => app.pinPost(openPost, title)}
-    onunpin={() => app.unpinPost()}
   />
 {/if}
 
@@ -205,6 +230,18 @@
   .menu button { min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); font-size: 14px; text-align: left; cursor: pointer; }
   .menu button:hover { background: var(--color-blue-100); }
   .menu button[aria-checked="true"] { font-weight: 700; background: var(--color-blue-100); }
+  .pindraft {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 12px 0; padding: 4px 6px 4px 10px; color: var(--color-navy);
+    border: 1px solid var(--color-blue-300); border-left: 3px solid var(--color-navy); border-radius: var(--radius-md); background: var(--color-white);
+  }
+  .pindraft input { flex: 1; min-width: 0; height: 28px; padding: 0 6px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); font: inherit; font-size: 14px; font-weight: 700; color: var(--color-navy); }
+  .pindraft input:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
+  .pindraft .ok { height: 28px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: var(--color-navy); color: var(--color-white); font-size: 13px; font-weight: 700; cursor: pointer; }
+  .pindraft .ok:disabled { opacity: 0.5; cursor: default; }
+  .pindraft .cancel { width: 28px; height: 28px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .pindraft .cancel:hover { background: var(--color-blue-100); }
+  .pindraft .ok:focus-visible, .pindraft .cancel:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
+  .replaces { flex-basis: 100%; font-size: 12px; color: var(--color-blue-700); }
   .narrowed { display: flex; align-items: center; gap: 6px; padding: 4px 12px; font-size: 13px; color: var(--color-blue-700); border-bottom: 1px solid var(--color-blue-100); }
   .clear { width: 24px; height: 24px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
   .clear:hover { background: var(--color-blue-100); }
