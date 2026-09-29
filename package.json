@@ -8,7 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "check:interfaces": "scripts/update-mumble-interfaces.sh",
+    "check:interfaces": "tools/update-mumble-interfaces.sh",
     "lint": "pnpm -r --if-present run lint",
     "test": "pnpm -r --if-present run test",
     "build": "pnpm -r --if-present run build"

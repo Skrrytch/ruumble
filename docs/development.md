@@ -21,8 +21,8 @@ On the first CMake run the plugin downloads its dependencies (nlohmann/json, IXW
 | `web/` | web UI (Svelte 5, Vite): building, elevator, board; mock adapter for development |
 | `plugin/` | Mumble plugin (C++17, plugin API 1.0) |
 | `third_party/mumble/` | the two interface files from Mumble, unmodified ([README](../third_party/mumble/README.md)) |
-| `deploy/` | Dockerfile, Compose templates for operation, local stack for tests |
-| `tools/live-test/` | setup script, test bot and client images for live tests |
+| `deploy/` | Dockerfile (with `Dockerfile.dockerignore`), Compose templates for operation, local stack for tests |
+| `tools/` | `update-mumble-interfaces.sh`; `live-test/`: setup script, test bot and client images for live tests |
 | `docs/` | architecture decisions, analyses, guides |
 
 ## Build and test
@@ -113,7 +113,7 @@ On GitHub the live tests run as the workflow `.github/workflows/live.yml`: weekl
 A weekly GitHub workflow (`mumble-release-watch.yml`) reports new Mumble releases as an issue, with the diff of the interface files, and starts the live tests against the new release. This also catches behaviour changes that a diff does not show. To take over a release:
 
 ```sh
-scripts/update-mumble-interfaces.sh v1.6.870     # desired tag
+tools/update-mumble-interfaces.sh v1.6.870     # desired tag
 ```
 
 Then check the changes against [mumble-interfaces.md](mumble-interfaces.md) and run the live tests. The files under `third_party/mumble/` are never edited by hand; CI checks their checksums.
