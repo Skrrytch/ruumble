@@ -28,6 +28,7 @@ import { notifyRoom } from "./board/notify.ts";
 import { boardRoutes } from "./board/routes.ts";
 import { BoardStore } from "./board/store.ts";
 import { Hub, type AddressCheck } from "./hub.ts";
+import { keepAlive } from "./keepalive.ts";
 import { IceMumbleSource } from "./mumble.ts";
 import { Pairing } from "./pairing.ts";
 import { Poller } from "./poller.ts";
@@ -148,6 +149,7 @@ const cookieOf = (header: string | undefined, name: string) =>
   header?.split(";").map((c) => c.trim().split("=")).find(([k]) => k === name)?.[1];
 
 function wire(socket: WebSocket, handler: { onMessage(raw: string): unknown; onClose(): void }) {
+  keepAlive(socket);
   socket.on("message", (data) => void handler.onMessage(String(data)));
   socket.on("close", () => handler.onClose());
   socket.on("error", () => handler.onClose());

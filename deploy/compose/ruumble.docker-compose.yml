@@ -14,13 +14,19 @@ services:
             ICE_SECRET_READ_FILE: /run/secrets/ice_read
             PUBLIC_URL: http://<LAN-IP>:8080
             ADDRESS_CHECK: enforce
+            # HTTPS behind a reverse proxy (docs/operations.md): instead of the two lines above
+            # PUBLIC_URL: https://ruumble.example.com
+            # ADDRESS_CHECK: warn
+            # TRUST_PROXY: "true"
         secrets:
             - ice_read
         volumes:
             - ruumble-data:/data
         networks:
             - mumble-network
+            # - homeserver-network   # network of the reverse proxy
         ports:
+            # remove with HTTPS, unless plain HTTP on the LAN should stay available
             - <LAN-IP>:8080:8080
 
 secrets:
@@ -34,3 +40,5 @@ volumes:
 networks:
     mumble-network:
         external: true
+    # homeserver-network:
+    #     external: true
