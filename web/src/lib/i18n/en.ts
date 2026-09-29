@@ -10,6 +10,7 @@ const ordinal = (n: number) => {
 
 export const en: Messages = {
   common: {
+    ok: "Ok",
     close: "Close",
     download: "Download",
     yes: "Yes",

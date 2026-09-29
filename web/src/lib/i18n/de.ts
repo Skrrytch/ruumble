@@ -4,6 +4,7 @@ const MUMBLE_OFFLINE = "Mumble ist nicht verbunden.";
 
 export const de = {
   common: {
+    ok: "Ok",
     close: "Schließen",
     download: "Herunterladen",
     yes: "Ja",

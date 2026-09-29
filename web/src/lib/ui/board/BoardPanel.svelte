@@ -168,7 +168,7 @@
           onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); pinDraft = null; } }}
           {@attach (el) => { el.focus(); el.select(); }}
         />
-        <button type="submit" class="ok" disabled={!pinDraft.title.trim()}>{t().board.pinOnTop}</button>
+        <button type="submit" class="ok" title={t().board.pinOnTop} disabled={!pinDraft.title.trim()}>{t().common.ok}</button>
         <button type="button" class="cancel" aria-label={t().common.cancel} title={t().common.cancel} onclick={() => (pinDraft = null)}><X size={14} aria-hidden="true" /></button>
         {#if board.pinned && pinnedPost}<span class="replaces">{t().board.pinReplaces(board.pinned.title)}</span>{/if}
       </form>

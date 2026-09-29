@@ -124,7 +124,7 @@ test.describe("Board (AP11.2)", () => {
     await board.getByRole("article", { name: "Post by Anna" }).getByRole("button", { name: "Keep on top" }).click();
     await expect(title).not.toHaveValue("");
     await title.fill("Team notes");
-    await board.getByRole("form", { name: "Keep on top" }).getByRole("button", { name: "Keep on top" }).click();
+    await board.getByRole("form", { name: "Keep on top" }).getByRole("button", { name: "Ok" }).click();
     const bar = board.getByRole("button", { name: /Team notes/ });
     await expect(bar).toHaveAttribute("aria-expanded", "false");
     await expect(board.getByRole("article")).toHaveCount(3); // no longer in the list
