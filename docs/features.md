@@ -158,7 +158,9 @@ Extensions of the board (idea A) for the everyday exchange between developers: s
 
 The label appears as a tooltip. Everyone present can set each reaction once per post and take it back; the card shows the symbols with a count, the tooltip also the names. Reactions do not send a Mumble notice, so they stay quiet. They are stored with the post (author hash, name at the time) and deleted together with it.
 
-**A2 – Shared task lists.** A line in a text post that starts with `[ ]` or `[x]` is recognised as a task automatically, with or without a list marker in front (`[ ] Task`, `- [ ] Task`, `* [x] Task`). Such lines appear as checkboxes that **everyone present** can tick, for example the TODOs of a pairing session or a deployment checklist. The card header shows the progress ("3/7"). No button or special mode is needed: typing the brackets is enough.
+**A2 – Shared task lists.** A text post becomes a task list automatically, without a button or special mode, but the detection is **strict**. It applies only if the post consists of an optional introductory text followed **exclusively** by task lines. A task line starts with `[ ]` or `[x]` (also `[X]`), with or without a list marker in front (`[ ] Task`, `- [ ] Task`, `* [x] Task`). Blank lines are allowed between the tasks. As soon as anything else follows the first task, for example a paragraph or a code block, the post stays ordinary Markdown and the brackets are shown as text. This way a checklist is never detected by accident in the middle of a longer text.
+
+In a task list, the tasks appear as checkboxes that **everyone present** can tick, for example the TODOs of a pairing session or a deployment checklist. The introductory text is rendered as Markdown above them. The card header shows the progress ("3/7").
 
 A tick does not send the whole text as an edit does, but only "task N done / not done" to its own endpoint; the service changes exactly that line. Two people ticking at the same time therefore do not overwrite each other. Ticking counts as an edit ("last edited by …") but sends no Mumble notice. Together with A3, a checklist can stay visible above the list.
 
