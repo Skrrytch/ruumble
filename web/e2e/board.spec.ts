@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Pinnwand (AP11.2)", () => {
-  test.beforeEach(async ({ page }) => page.goto("/?fixture=musterhaus&talking=0"));
+  test.beforeEach(async ({ page }) => page.goto("/?fixture=sample&talking=0"));
 
   test("zu Beginn ausgeblendet, Zettel im eigenen Raum blenden ein und aus", async ({ page }) => {
     await expect(page.getByRole("complementary", { name: "Pinnwand" })).toHaveCount(0);
@@ -16,7 +16,7 @@ test.describe("Pinnwand (AP11.2)", () => {
   });
 
   test("fremde Räume zeigen keine Zettel, auch wenn dort etwas hängt", async ({ page }) => {
-    await expect(page.locator('.wrap:has(.room[data-channel="5"]) .notes')).toHaveCount(0); // Clara, with posts
+    await expect(page.locator('.wrap:has(.room[data-channel="7"]) .notes')).toHaveCount(0); // Clara, with posts
     await expect(page.locator("svg.notes")).toHaveCount(1); // only the toggle in the user's own room
   });
 
@@ -29,7 +29,7 @@ test.describe("Pinnwand (AP11.2)", () => {
     await expect(notes.getByText("zuletzt bearbeitet von Ben")).toBeVisible();
     await notes.getByRole("button", { name: "Öffnen · bearbeiten" }).click();
     const dialog = page.getByRole("dialog", { name: "Beitrag von Anna" });
-    await expect(dialog.getByText("Punkt vier")).toBeVisible();
+    await expect(dialog.getByText("Tag the release")).toBeVisible();
     await dialog.getByRole("button", { name: "Bearbeiten" }).click();
     await dialog.getByRole("textbox", { name: "Beitrag bearbeiten" }).fill("Neu **fett**");
     await dialog.getByRole("button", { name: "Speichern" }).click();
@@ -91,13 +91,13 @@ test.describe("Pinnwand (AP11.2)", () => {
 
   test("im Flur: Hinweis statt Pinnwand", async ({ page }) => {
     await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
-    await page.getByRole("button", { name: "Flur ENTWICKLUNG betreten" }).click();
+    await page.getByRole("button", { name: "Flur Development betreten" }).click();
     await expect(page.getByText("Pinnwände gibt es nur in Räumen.")).toBeVisible();
   });
 });
 
 test("Etage mit 2 Räumen: je ein Raum oben und unten, die offene Pinnwand wird breiter", async ({ page }) => {
-  await page.goto("/?fixture=sonderfaelle&talking=0");
+  await page.goto("/?fixture=edge-cases&talking=0");
   await page.getByRole("button", { name: /STUDIO/ }).click();
   await page.getByRole("button", { name: "Studio A betreten" }).click();
   const a = page.locator('.room[data-channel="41"]');
@@ -111,7 +111,7 @@ test("Etage mit 2 Räumen: je ein Raum oben und unten, die offene Pinnwand wird 
 
 test.describe("Pinnwand: Bilder und Dateien (AP11.3)", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/?fixture=musterhaus&talking=0");
+    await page.goto("/?fixture=sample&talking=0");
     await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
   });
 
@@ -199,7 +199,7 @@ test.describe("Pinnwand: Bilder und Dateien (AP11.3)", () => {
 });
 
 test("Avatarbild im Benutzerbereich und auf eigenen Pinnwand-Karten (sonst Initialen)", async ({ page }) => {
-  await page.goto("/?fixture=sonderfaelle&talking=0");
+  await page.goto("/?fixture=edge-cases&talking=0");
   await expect(page.locator(".av-me img")).toBeVisible();
   await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
   const board = page.getByRole("complementary", { name: "Pinnwand" });
