@@ -16,10 +16,10 @@ WebSocketTransport::WebSocketTransport() : ws_(std::make_unique< ix::WebSocket >
 	ws_->setMaxWaitBetweenReconnectionRetries(30000);
 	ws_->setPingInterval(30);
 	ix::SocketTLSOptions tls;
-	tls.caFile = "SYSTEM"; // Zertifikate des Systems (z. B. für Let's Encrypt oder eine interne CA)
+	tls.caFile = "SYSTEM"; // system certificates (e.g. for Let's Encrypt or an internal CA)
 	ws_->setTLSOptions(tls);
 	ws_->setOnMessageCallback([this](const ix::WebSocketMessagePtr &msg) {
-		// IXWebSocket-Thread: nur weiterreichen, Core legt Ereignisse ab
+		// IXWebSocket thread: only pass on, Core queues events
 		switch (msg->type) {
 			case ix::WebSocketMessageType::Open: {
 				std::lock_guard< std::mutex > lock(mutex_);
@@ -63,13 +63,13 @@ void WebSocketTransport::disconnect() {
 		running_  = false;
 		stopping_ = true;
 	}
-	cv_.notify_all(); // eine laufende Wartezeit sofort beenden
-	ws_->stop();      // blockiert, bis der Netzwerk-Thread beendet ist
+	cv_.notify_all(); // end a running wait immediately
+	ws_->stop();      // blocks until the network thread has finished
 }
 
 void WebSocketTransport::backoffAfterClose() {
-	// Läuft im IXWebSocket-Thread direkt vor dessen Neuverbindung. IXWebSocket selbst wartet nach einer
-	// zuvor erfolgreichen Verbindung gar nicht; ein sofortiges reject würde sonst eine enge Schleife ergeben.
+	// Runs in the IXWebSocket thread right before its reconnection. IXWebSocket itself does not wait at all after a
+	// previously successful connection; an immediate reject would otherwise cause a tight loop.
 	using namespace std::chrono;
 	std::unique_lock< std::mutex > lock(mutex_);
 	const auto lived = steady_clock::now() - openedAt_;

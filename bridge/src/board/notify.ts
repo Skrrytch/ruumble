@@ -1,7 +1,7 @@
 /**
- * Hinweis im Mumble-Protokoll beim Anheften (AP11.4): kurz und mit dem Typ des Beitrags,
- * in der Sprache des jeweiligen Empfängers (vom Plugin gemeldet, sonst Deutsch).
- * Mumble setzt „Ruumble:“ davor und maskiert HTML selbst, der Text bleibt deshalb reiner Text.
+ * Notice in the Mumble log when pinning (AP11.4): short and with the type of the post,
+ * in the language of each recipient (reported by the plugin, otherwise German).
+ * Mumble prefixes "Ruumble:" and escapes HTML itself, so the text stays plain text.
  */
 import { PROTOCOL_VERSION, type Locale, type PostKind } from "@ruumble/protocol";
 import type { Hub } from "../hub.ts";
@@ -15,7 +15,7 @@ export function notifyText(authorName: string, kind: PostKind, locale: Locale = 
   return TEXT[locale](authorName.slice(0, 120), kind);
 }
 
-/** An die Plugins der übrigen Anwesenden im Raum schicken (ohne den Autor) */
+/** Send to the plugins of the other people present in the room (excluding the author) */
 export function notifyRoom(
   hub: Pick<Hub, "pluginsIn">,
   post: { channelId: number; kind: PostKind },

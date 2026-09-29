@@ -26,7 +26,7 @@ Open the address of the Ruumble service in your browser and download the plugin 
 
 Connect to the server as usual. The first time, the plugin opens your browser with a **pairing link**. This tells Ruumble that this browser belongs to your Mumble. After that, just open Ruumble at the service's address; the browser stays paired.
 
-If the Mumble log says "Hover once over the top channel …" (German: „Fahre einmal mit der Maus über den obersten Kanal …“), the channel description is too long to be sent automatically. Hovering over the top channel once is enough; then the plugin connects.
+If the Mumble log says "Hover once over the top channel …", the channel description is too long to be sent automatically. Hovering over the top channel once is enough; then the plugin connects.
 
 ## Using Ruumble
 

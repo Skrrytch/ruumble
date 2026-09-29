@@ -2,7 +2,7 @@
   "v": 1,
   "type": "snapshot",
   "server": {
-    "name": "Musterhaus",
+    "name": "Acme HQ",
     "version": "1.6.870"
   },
   "self": {
@@ -12,7 +12,7 @@
     {
       "id": 0,
       "parent": null,
-      "name": "Musterhaus",
+      "name": "Acme HQ",
       "position": 0,
       "links": [],
       "temporary": false
@@ -28,7 +28,7 @@
     {
       "id": 2,
       "parent": 0,
-      "name": "ENTWICKLUNG",
+      "name": "DEVELOPMENT",
       "position": 1,
       "links": [],
       "temporary": false
@@ -36,7 +36,7 @@
     {
       "id": 3,
       "parent": 2,
-      "name": "Büro von Anna",
+      "name": "Anna's office",
       "position": 0,
       "links": [],
       "temporary": false
@@ -44,7 +44,7 @@
     {
       "id": 4,
       "parent": 2,
-      "name": "Büro von Ben",
+      "name": "Ben's office",
       "position": 1,
       "links": [],
       "temporary": false
@@ -52,7 +52,7 @@
     {
       "id": 5,
       "parent": 2,
-      "name": "Büro von Clara",
+      "name": "Clara's office",
       "position": 2,
       "links": [],
       "temporary": false
@@ -60,7 +60,7 @@
     {
       "id": 6,
       "parent": 2,
-      "name": "Büro von David",
+      "name": "David's office",
       "position": 3,
       "links": [],
       "temporary": false
@@ -68,7 +68,7 @@
     {
       "id": 7,
       "parent": 2,
-      "name": "Büro von Eva",
+      "name": "Eva's office",
       "position": 4,
       "links": [],
       "temporary": false
@@ -76,7 +76,7 @@
     {
       "id": 8,
       "parent": 2,
-      "name": "Büro von Felix",
+      "name": "Felix's office",
       "position": 5,
       "links": [],
       "temporary": false
@@ -84,7 +84,7 @@
     {
       "id": 9,
       "parent": 0,
-      "name": "VERTRIEB",
+      "name": "SALES",
       "position": 2,
       "links": [],
       "temporary": false
@@ -92,7 +92,7 @@
     {
       "id": 10,
       "parent": 9,
-      "name": "Abwesend",
+      "name": "Away",
       "position": 0,
       "links": [],
       "temporary": false
@@ -100,7 +100,7 @@
     {
       "id": 11,
       "parent": 9,
-      "name": "Fokusraum (stumm)",
+      "name": "Focus room (muted)",
       "position": 1,
       "links": [],
       "temporary": false
@@ -108,7 +108,7 @@
     {
       "id": 12,
       "parent": 9,
-      "name": "Teeküche",
+      "name": "Kitchen",
       "position": 2,
       "links": [
         13
@@ -118,7 +118,7 @@
     {
       "id": 13,
       "parent": 9,
-      "name": "Raucherecke",
+      "name": "Coffee corner",
       "position": 3,
       "links": [
         12
@@ -128,7 +128,7 @@
     {
       "id": 14,
       "parent": 9,
-      "name": "Gregors Büro",
+      "name": "Gregor's office",
       "position": 4,
       "links": [],
       "temporary": false
@@ -136,7 +136,7 @@
     {
       "id": 15,
       "parent": 9,
-      "name": "Projektraum",
+      "name": "Project room",
       "position": 5,
       "links": [],
       "temporary": false
@@ -144,7 +144,7 @@
     {
       "id": 16,
       "parent": 0,
-      "name": "ARCHIV",
+      "name": "ARCHIVE",
       "position": 3,
       "links": [],
       "temporary": false
@@ -152,7 +152,7 @@
     {
       "id": 17,
       "parent": 16,
-      "name": "Aktenraum",
+      "name": "File room",
       "position": 0,
       "links": [],
       "temporary": false
@@ -160,7 +160,7 @@
     {
       "id": 18,
       "parent": 16,
-      "name": "Tiefer Raum",
+      "name": "Deep room",
       "position": 1,
       "links": [],
       "temporary": false
@@ -168,7 +168,7 @@
     {
       "id": 19,
       "parent": 18,
-      "name": "Unterkanal",
+      "name": "Subchannel",
       "position": 0,
       "links": [],
       "temporary": false
@@ -176,7 +176,7 @@
     {
       "id": 20,
       "parent": 0,
-      "name": "GROSSRAUM",
+      "name": "OPEN SPACE",
       "position": 4,
       "links": [],
       "temporary": false
@@ -184,7 +184,7 @@
     {
       "id": 21,
       "parent": 20,
-      "name": "Platz 1",
+      "name": "Desk 1",
       "position": 0,
       "links": [],
       "temporary": false
@@ -192,7 +192,7 @@
     {
       "id": 22,
       "parent": 20,
-      "name": "Platz 2",
+      "name": "Desk 2",
       "position": 1,
       "links": [],
       "temporary": false
@@ -200,7 +200,7 @@
     {
       "id": 23,
       "parent": 20,
-      "name": "Platz 3",
+      "name": "Desk 3",
       "position": 2,
       "links": [],
       "temporary": false
@@ -208,7 +208,7 @@
     {
       "id": 24,
       "parent": 20,
-      "name": "Platz 4",
+      "name": "Desk 4",
       "position": 3,
       "links": [],
       "temporary": false
@@ -216,7 +216,7 @@
     {
       "id": 25,
       "parent": 20,
-      "name": "Platz 5",
+      "name": "Desk 5",
       "position": 4,
       "links": [],
       "temporary": false
@@ -224,7 +224,7 @@
     {
       "id": 26,
       "parent": 20,
-      "name": "Platz 6",
+      "name": "Desk 6",
       "position": 5,
       "links": [],
       "temporary": false
@@ -232,7 +232,7 @@
     {
       "id": 27,
       "parent": 20,
-      "name": "Platz 7",
+      "name": "Desk 7",
       "position": 6,
       "links": [],
       "temporary": false
@@ -240,7 +240,7 @@
     {
       "id": 28,
       "parent": 20,
-      "name": "Platz 8",
+      "name": "Desk 8",
       "position": 7,
       "links": [],
       "temporary": false
@@ -248,7 +248,7 @@
     {
       "id": 29,
       "parent": 20,
-      "name": "Platz 9",
+      "name": "Desk 9",
       "position": 8,
       "links": [],
       "temporary": false
@@ -256,7 +256,7 @@
     {
       "id": 30,
       "parent": 0,
-      "name": "EXTERN",
+      "name": "EXTERNAL",
       "position": 5,
       "links": [
         31
@@ -266,7 +266,7 @@
     {
       "id": 31,
       "parent": 0,
-      "name": "PARTNER",
+      "name": "PARTNERS",
       "position": 6,
       "links": [
         30
@@ -276,7 +276,7 @@
     {
       "id": 32,
       "parent": 30,
-      "name": "Gästebüro",
+      "name": "Guest office",
       "position": 0,
       "links": [],
       "temporary": false
@@ -284,7 +284,7 @@
     {
       "id": 33,
       "parent": 2,
-      "name": "Besprechung (temporär)",
+      "name": "Meeting (temporary)",
       "position": 6,
       "links": [],
       "temporary": true

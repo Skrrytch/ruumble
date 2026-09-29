@@ -1,4 +1,4 @@
-/* Basis. Farben, Maße und Motion kommen ausschließlich aus tokens.css. */
+/* Base. Colours, sizes and motion come exclusively from tokens.css. */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body {
@@ -12,7 +12,7 @@ button { font: inherit; color: inherit; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-/* Syntax-Hervorhebung (highlight.js), nur mit Farben aus den Tokens */
+/* Syntax highlighting (highlight.js), only with colours from the tokens */
 .hljs { color: var(--color-navy); }
 .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-doctag { color: var(--color-blue-700); font-weight: 700; }
 .hljs-string, .hljs-attr, .hljs-template-tag, .hljs-regexp, .hljs-addition { color: var(--color-blue-500); }

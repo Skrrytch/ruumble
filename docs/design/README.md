@@ -1,13 +1,13 @@
-# Designunterlagen
+# Design documents
 
-Die ursprüngliche Designübergabe für die Etagenansicht, **neutralisiert**: Es gibt keine Firmen-Tokens und keine internen Namen oder Personen.
+The original design handover for the floor view, **neutralised**: there are no company tokens and no internal names or people.
 
-| Datei | Inhalt |
+| File | Content |
 |---|---|
-| `SPEC.md` | ursprüngliche Spezifikation. Wo sie abweicht, gilt [`../PLANUNG.md`](../PLANUNG.md). |
-| `prototype/index.html` | lauffähiger Referenzprototyp (Vanilla JS, Mock-Daten), einfach im Browser öffnen. Dient als visuelle Referenz für den Screenshot-Vergleich (AP4). |
-| `prototype/mock-data.json` | Beispieldaten „Musterhaus“ im Mumble-Format |
-| `tokens.css` | Farben, Maße und Motion, die die Oberfläche nutzt |
-| `pinnwand-varianten.html` | Entwurfsvarianten der Pinnwand-Grafik im Raum; entschieden wurde Variante B (ADR-0011) |
+| `SPEC.md` | original specification. Where it differs, the [charter](../internal/charter.md) applies. |
+| `prototype/index.html` | runnable reference prototype (vanilla JS, mock data); just open it in the browser. Serves as the visual reference for the screenshot comparison (AP4). |
+| `prototype/mock-data.json` | sample data "Acme HQ" in Mumble format |
+| `tokens.css` | colours, sizes and motion used by the web UI |
+| `board-variants.html` | design variants of the board graphic in the room; variant B was chosen (ADR-0011) |
 
-Der Prototyp setzt die Regeln aus `PLANUNG.md` nicht um, z. B. gesperrte Etagen, den Eingang und das Ausblenden verlinkter Kanäle. Auch die kompakte Kopfzeile und die Raumbreiten nach Rang (E31) fehlen dort. Er bleibt die Referenz für den Layouttest (`web/e2e/layout.spec.ts`).
+The prototype does not implement the rules from the charter, e.g. locked floors, the entrance and hiding linked channels. The compact header and the room widths by rank (E31) are also missing there. It remains the reference for the layout test (`web/e2e/layout.spec.ts`).

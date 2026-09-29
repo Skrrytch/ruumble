@@ -2,7 +2,7 @@
   "name": "@ruumble/protocol",
   "version": "0.1.0",
   "private": true,
-  "description": "Nachrichten zwischen Ruumble-Oberfläche, -Dienst und -Plugin (ADR-0007)",
+  "description": "Messages between the Ruumble web UI, service and plugin (ADR-0007)",
   "license": "BSD-3-Clause",
   "type": "module",
   "exports": {

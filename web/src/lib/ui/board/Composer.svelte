@@ -20,13 +20,13 @@
     onattach: (attachment: Uploaded, caption: string) => Promise<boolean>;
   } = $props();
 
-  /** Ein Anhang pro Beitrag (AP11.3): hochgeladen wird sofort, angeheftet erst beim Senden */
+  /** one attachment per post (AP11.3): uploaded immediately, pinned only on send */
   type Pending = { name: string; size: number; preview: string | null; progress: number; uploaded: Uploaded | null; error: string | null };
   let pending = $state<Pending | null>(null);
   let picker: HTMLInputElement;
   let uploadRun = 0;
 
-  /** Datei übernehmen (Büroklammer, Einfügen oder Ablegen auf der Pinnwand) */
+  /** take over a file (paperclip, paste or drop onto the board) */
   export async function attach(file: File): Promise<void> {
     clearAttachment();
     const name = pastedName(file);
@@ -40,7 +40,7 @@
       return;
     }
     const r = await onupload(file, name, (f) => { if (pending && run === uploadRun) pending.progress = f; });
-    if (!pending || run !== uploadRun) return; // inzwischen entfernt oder ersetzt
+    if (!pending || run !== uploadRun) return; // removed or replaced in the meantime
     if (r.ok) pending.uploaded = r.value;
     else pending.error = boardErrorText(r.error);
   }
@@ -67,7 +67,7 @@
       return;
     }
     const pasted = e.clipboardData?.getData("text/plain") ?? "";
-    // Einfügemodus für Quellcode: automatisch vorschlagen
+    // paste mode for source code: suggest automatically
     if (!codeMode && looksLikeCode(pasted)) suggestCode = true;
   }
 

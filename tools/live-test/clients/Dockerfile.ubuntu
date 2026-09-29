@@ -1,4 +1,4 @@
-# Mumble-Client (Distro-Paket) headless: Xvfb als Display, PulseAudio mit Null-Sink.
+# Mumble client (distro package) headless: Xvfb as display, PulseAudio with a null sink.
 FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \

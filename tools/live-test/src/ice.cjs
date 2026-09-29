@@ -1,4 +1,4 @@
-// Ice-Verbindung zum Mumble-Server. Das Secret geht als Implicit Context mit.
+// Ice connection to the Mumble server. The secret is sent as the implicit context.
 const { Ice } = require("ice");
 const { MumbleServer } = require("../gen/MumbleServer.js");
 
@@ -13,8 +13,8 @@ async function connect({ host = "127.0.0.1", port = 6502, secret, serverId } = {
   let server;
   if (serverId === undefined) {
     const booted = await meta.getBootedServers();
-    // Der Proxy trägt den Endpoint aus Sicht des Servers (Container-IP). Deshalb die Identität übernehmen
-    // und selbst mit unserem Host/Port verbinden.
+    // The proxy carries the endpoint as seen by the server (container IP). Hence take over the identity
+    // and connect ourselves with our host/port.
     const id = booted[0].ice_getIdentity().name;
     server = MumbleServer.ServerPrx.uncheckedCast(communicator.stringToProxy(`s/${id}:tcp -h ${host} -p ${port}`));
   } else {

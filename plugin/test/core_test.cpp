@@ -44,7 +44,7 @@ struct FakeApi : MumbleApi {
 		}
 		if (confirmMoves) {
 			channel = ch;
-			core->onChannelEntered(7, ch); // wie Mumble: Bestätigung kommt als Callback
+			core->onChannelEntered(7, ch); // like Mumble: confirmation arrives as a callback
 		}
 		return true;
 	}
@@ -64,7 +64,7 @@ struct FakeApi : MumbleApi {
 	bool isDeafened() override { return deafened; }
 	Description description{ Description::Status::Ok, "ruumble: http://r.test" };
 	std::vector< std::string > logs;
-	std::string rootName() override { return "Musterhaus"; }
+	std::string rootName() override { return "Acme HQ"; }
 	Description rootDescription() override {
 		std::lock_guard< std::mutex > l(m);
 		return description;
@@ -136,7 +136,7 @@ struct Fixture {
 		Settings s;
 		s.pluginVersion  = "0.1.0";
 		s.mumbleVersion  = "1.5.735";
-		s.locale         = Locale::de;
+		s.locale         = Locale::en;
 		s.bridgeUrl      = bridgeUrl;
 		s.spacing        = 40ms;
 		s.confirmTimeout = 150ms;
@@ -149,7 +149,7 @@ struct Fixture {
 		core->start();
 	}
 
-	/** synchronisiert, verbunden und vom Dienst begrüßt */
+	/** synchronised, connected and welcomed by the service */
 	void ready(const std::string &welcome = R"({"v":1,"type":"welcome"})") {
 		core->onSynchronized();
 		REQUIRE(eventually([&] { return transport.connectCount() == 1; }));
@@ -183,9 +183,9 @@ TEST_CASE("talkingStateName") {
 	CHECK_FALSE(talkingStateName(-1).has_value());
 }
 
-TEST_CASE("Adresse aus der Root-Beschreibung, hello erst nach dem Verbindungsaufbau") {
+TEST_CASE("address from the root description, hello only once connected") {
 	Fixture f;
-	f.api.description = { Description::Status::Ok, "<p>Wichtig für Ruumble:</p><p>- ruumble: http://r.test/</p><p>Danke.</p>" };
+	f.api.description = { Description::Status::Ok, "<p>Important for Ruumble:</p><p>- ruumble: http://r.test/</p><p>Thanks.</p>" };
 	f.core->onSynchronized();
 	REQUIRE(eventually([&] { return f.transport.connectCount() == 1; }));
 	CHECK(f.transport.connects[0] == "http://r.test");
@@ -198,16 +198,16 @@ TEST_CASE("Adresse aus der Root-Beschreibung, hello erst nach dem Verbindungsauf
 	CHECK(hello["certHash"] == HASH);
 	CHECK(hello["paired"] == false);
 	CHECK(hello["mumbleVersion"] == "1.5.735");
-	CHECK(hello["locale"] == "de");
+	CHECK(hello["locale"] == "en");
 }
 
-TEST_CASE("Kopplungslink nur einmal je Dienst öffnen") {
+TEST_CASE("open the pairing link only once per service") {
 	Fixture f;
 	f.ready(R"({"v":1,"type":"welcome","pairUrl":"https://r.test/pair?code=x"})");
 	REQUIRE(eventually([&] { return f.opened == 1; }));
 	CHECK(f.openedUrl == "https://r.test/pair?code=x");
 	CHECK(f.paired.count("http://r.test") == 1);
-	// erneuter Sync mit derselben Adresse: kein neuer Verbindungsaufbau, hello mit paired=true
+	// repeated sync with the same address: no new connection, hello with paired=true
 	f.core->onSynchronized();
 	REQUIRE(eventually([&] { return f.transport.of("hello").size() == 2; }));
 	CHECK(f.transport.connectCount() == 1);
@@ -217,7 +217,7 @@ TEST_CASE("Kopplungslink nur einmal je Dienst öffnen") {
 	CHECK(f.opened == 1);
 }
 
-TEST_CASE("Beschreibung noch nicht geladen: einmal Hinweis, dann erneut prüfen") {
+TEST_CASE("description not loaded yet: hint once, then check again") {
 	Fixture f;
 	f.api.description = { Description::Status::Pending, "" };
 	f.core->onSynchronized();
@@ -226,25 +226,25 @@ TEST_CASE("Beschreibung noch nicht geladen: einmal Hinweis, dann erneut prüfen"
 	CHECK(f.transport.connectCount() == 0);
 	{
 		std::lock_guard< std::mutex > l(f.api.m);
-		CHECK(f.api.logs.size() == 1); // Hinweis nur einmal
-		CHECK(f.api.logs[0].find("„Musterhaus“") != std::string::npos);
+		CHECK(f.api.logs.size() == 1); // hint only once
+		CHECK(f.api.logs[0].find("“Acme HQ”") != std::string::npos);
 		f.api.description = { Description::Status::Ok, "ruumble: r.test:8080" };
 	}
 	REQUIRE(eventually([&] { return f.transport.connectCount() == 1; }));
 	CHECK(f.transport.connects[0] == "http://r.test:8080");
 }
 
-TEST_CASE("feste Adresse aus plugin.json übersteuert die Beschreibung") {
-	Fixture f(std::string("http://fest.test"));
-	f.api.description = { Description::Status::Ok, "ruumble: http://beschreibung.test" };
+TEST_CASE("fixed address from plugin.json overrides the description") {
+	Fixture f(std::string("http://fixed.test"));
+	f.api.description = { Description::Status::Ok, "ruumble: http://description.test" };
 	f.core->onSynchronized();
 	REQUIRE(eventually([&] { return f.transport.connectCount() == 1; }));
-	CHECK(f.transport.connects[0] == "http://fest.test");
+	CHECK(f.transport.connects[0] == "http://fixed.test");
 }
 
-TEST_CASE("ohne ruumble-Zeile keine Verbindung, Trennung von Mumble trennt auch den Dienst") {
+TEST_CASE("no ruumble line, no connection; disconnecting from Mumble also disconnects the service") {
 	Fixture f;
-	f.api.description = { Description::Status::Ok, "Willkommen!" };
+	f.api.description = { Description::Status::Ok, "Welcome!" };
 	f.core->onSynchronized();
 	std::this_thread::sleep_for(80ms);
 	CHECK(f.transport.connectCount() == 0);
@@ -255,13 +255,13 @@ TEST_CASE("ohne ruumble-Zeile keine Verbindung, Trennung von Mumble trennt auch 
 	REQUIRE(eventually([&] { std::lock_guard< std::mutex > l(f.transport.m); return f.transport.disconnects == 1; }));
 }
 
-TEST_CASE("Befehle vor welcome und ungültige Nachrichten werden ignoriert") {
+TEST_CASE("commands before welcome and invalid messages are ignored") {
 	Fixture f;
 	f.core->onSynchronized();
 	REQUIRE(eventually([&] { return f.transport.connectCount() == 1; }));
 	f.core->onTransportOpen();
 	f.command("c1", { { "cmd", "join" }, { "channel", 2 } });
-	f.core->onTransportMessage("kaputt");
+	f.core->onTransportMessage("broken");
 	f.core->onTransportMessage(R"({"v":2,"type":"welcome"})");
 	std::this_thread::sleep_for(80ms);
 	CHECK(f.transport.of("result").empty());
@@ -269,7 +269,7 @@ TEST_CASE("Befehle vor welcome und ungültige Nachrichten werden ignoriert") {
 	CHECK_FALSE(f.core->helloAcknowledged());
 }
 
-TEST_CASE("join: bestätigt → ok") {
+TEST_CASE("join: confirmed → ok") {
 	Fixture f;
 	f.ready();
 	f.command("c1", { { "cmd", "join" }, { "channel", 2 } });
@@ -277,7 +277,7 @@ TEST_CASE("join: bestätigt → ok") {
 	CHECK(f.api.moveCount() == 1);
 }
 
-TEST_CASE("join in den eigenen Kanal → sofort ok ohne API-Aufruf") {
+TEST_CASE("join into the own channel → ok at once without an API call") {
 	Fixture f;
 	f.ready();
 	f.command("c1", { { "cmd", "join" }, { "channel", 1 } });
@@ -285,7 +285,7 @@ TEST_CASE("join in den eigenen Kanal → sofort ok ohne API-Aufruf") {
 	CHECK(f.api.moveCount() == 0);
 }
 
-TEST_CASE("join ohne Bestätigung: eine Wiederholung, dann rejected") {
+TEST_CASE("join without confirmation: one retry, then rejected") {
 	Fixture f;
 	f.api.confirmMoves = false;
 	f.ready();
@@ -294,7 +294,7 @@ TEST_CASE("join ohne Bestätigung: eine Wiederholung, dann rejected") {
 	CHECK(f.api.moveCount() == 2);
 }
 
-TEST_CASE("der letzte Wechsel gewinnt") {
+TEST_CASE("the last move wins") {
 	Fixture f;
 	f.api.confirmMoves = false;
 	f.ready();
@@ -309,7 +309,7 @@ TEST_CASE("der letzte Wechsel gewinnt") {
 	CHECK(f.api.channel == 4);
 }
 
-TEST_CASE("Abstand zwischen Statusänderungen, keine Änderung ohne Bedarf") {
+TEST_CASE("spacing between state changes, no change unless needed") {
 	Fixture f;
 	f.ready();
 	f.command("m1", { { "cmd", "mute" }, { "on", true } });
@@ -319,33 +319,33 @@ TEST_CASE("Abstand zwischen Statusänderungen, keine Änderung ohne Bedarf") {
 	CHECK(f.resultOf("m2") == "ok");
 	CHECK(f.resultOf("d1") == "ok");
 	std::lock_guard< std::mutex > l(f.api.m);
-	REQUIRE(f.api.changes.size() == 2); // m2 änderte nichts
+	REQUIRE(f.api.changes.size() == 2); // m2 changed nothing
 	CHECK(f.api.changes[1].second - f.api.changes[0].second >= 40ms);
 	CHECK_FALSE(f.transport.of("selfState").empty());
 }
 
-TEST_CASE("notify: Hinweis ins Mumble-Protokoll, erst nach welcome") {
+TEST_CASE("notify: notice in the Mumble log, only after welcome") {
 	Fixture f;
 	f.core->onSynchronized();
 	REQUIRE(eventually([&] { return f.transport.connectCount() == 1; }));
 	f.core->onTransportOpen();
-	f.core->onTransportMessage(R"({"v":1,"type":"notify","text":"zu früh"})");
+	f.core->onTransportMessage(R"({"v":1,"type":"notify","text":"too early"})");
 	f.core->onTransportMessage(R"({"v":1,"type":"welcome"})");
-	f.core->onTransportMessage(R"({"v":1,"type":"notify","text":"Ben hat Code an die Pinnwand geheftet."})");
+	f.core->onTransportMessage(R"({"v":1,"type":"notify","text":"Ben pinned code to the board."})");
 	f.core->onTransportMessage(R"({"v":1,"type":"notify","text":""})");
 	REQUIRE(eventually([&] {
 		std::lock_guard< std::mutex > l(f.api.m);
-		return std::find(f.api.logs.begin(), f.api.logs.end(), "Ben hat Code an die Pinnwand geheftet.") != f.api.logs.end();
+		return std::find(f.api.logs.begin(), f.api.logs.end(), "Ben pinned code to the board.") != f.api.logs.end();
 	}));
 	std::lock_guard< std::mutex > l(f.api.m);
-	CHECK(std::find(f.api.logs.begin(), f.api.logs.end(), "zu früh") == f.api.logs.end());
+	CHECK(std::find(f.api.logs.begin(), f.api.logs.end(), "too early") == f.api.logs.end());
 	CHECK(std::count_if(f.api.logs.begin(), f.api.logs.end(), [](const std::string &s) { return s.empty(); }) == 0);
 }
 
-TEST_CASE("Sprache: Deutsch, sonst Englisch, POSIX-Reihenfolge") {
+TEST_CASE("language: German, otherwise English, POSIX order") {
 	CHECK(localeFromEnv(nullptr, nullptr, "de_DE.UTF-8") == Locale::de);
-	CHECK(localeFromEnv("en_US.UTF-8", nullptr, "de_DE.UTF-8") == Locale::en); // LC_ALL gewinnt
-	CHECK(localeFromEnv("", "de_AT.UTF-8", "en_GB.UTF-8") == Locale::de);       // leere Werte zählen nicht
+	CHECK(localeFromEnv("en_US.UTF-8", nullptr, "de_DE.UTF-8") == Locale::en); // LC_ALL wins
+	CHECK(localeFromEnv("", "de_AT.UTF-8", "en_GB.UTF-8") == Locale::de);       // empty values do not count
 	CHECK(localeFromEnv(nullptr, nullptr, "fr_FR.UTF-8") == Locale::en);
 	CHECK(localeFromEnv(nullptr, nullptr, "C") == Locale::en);
 	CHECK(localeFromEnv(nullptr, nullptr, nullptr) == Locale::en);
@@ -353,7 +353,7 @@ TEST_CASE("Sprache: Deutsch, sonst Englisch, POSIX-Reihenfolge") {
 	CHECK(text::connected(Locale::de) == "mit dem Dienst verbunden");
 }
 
-TEST_CASE("talking nur nach welcome, als Text") {
+TEST_CASE("talking only after welcome, as text") {
 	Fixture f;
 	f.core->onSynchronized();
 	REQUIRE(eventually([&] { return f.transport.connectCount() == 1; }));
@@ -363,12 +363,12 @@ TEST_CASE("talking nur nach welcome, als Text") {
 	CHECK(f.transport.of("talking").empty());
 	f.core->onTransportMessage(R"({"v":1,"type":"welcome"})");
 	f.core->onTalking(8, 1);
-	f.core->onTalking(8, -1); // INVALID wird nicht gesendet
+	f.core->onTalking(8, -1); // INVALID is not sent
 	REQUIRE(eventually([&] { return f.transport.of("talking").size() == 1; }));
 	CHECK(f.transport.of("talking")[0]["state"] == "talking");
 }
 
-TEST_CASE("Trennung von Mumble: offene Befehle offline, bye") {
+TEST_CASE("disconnect from Mumble: pending commands offline, bye") {
 	Fixture f;
 	f.api.confirmMoves = false;
 	f.ready();
@@ -379,7 +379,7 @@ TEST_CASE("Trennung von Mumble: offene Befehle offline, bye") {
 	CHECK(eventually([&] { return f.transport.of("bye").size() == 1; }));
 }
 
-TEST_CASE("stop beendet den Worker zügig") {
+TEST_CASE("stop ends the worker promptly") {
 	Fixture f;
 	f.ready();
 	const auto start = Clock::now();
@@ -387,25 +387,25 @@ TEST_CASE("stop beendet den Worker zügig") {
 	CHECK(Clock::now() - start < 200ms);
 }
 
-TEST_CASE("findBridgeUrl: Zeile, die auf „ruumble: <adresse>“ endet") {
-	// Klartext mit Begleittext, wie ihn Admins schreiben (auch mit Tippfehlern)
-	CHECK(*findBridgeUrl("HIer ein paart wichtige Konfigurationen für Ruumble:\n \nruumble: http://192.0.2.10:8080\n\nDanke.")
+TEST_CASE("findBridgeUrl: line ending in “ruumble: <address>”") {
+	// plain text with surrounding text, as admins write it (typos included)
+	CHECK(*findBridgeUrl("HEre a cuple of importnt settings for Ruumble:\n \nruumble: http://192.0.2.10:8080\n\nThanks.")
 		  == "http://192.0.2.10:8080");
 	CHECK(*findBridgeUrl("- ruumble: http://192.0.2.10:8080") == "http://192.0.2.10:8080");
-	CHECK(*findBridgeUrl("Etwas davor ruumble: https://ruumble.example/  ") == "https://ruumble.example");
+	CHECK(*findBridgeUrl("Something before ruumble: https://ruumble.example/  ") == "https://ruumble.example");
 	CHECK(*findBridgeUrl("RUUMBLE: 10.0.0.5:8080") == "http://10.0.0.5:8080");
-	// so speichert Mumble Beschreibungen: HTML
-	CHECK(*findBridgeUrl("<!DOCTYPE HTML><html><body><p>Hallo</p><p>-&nbsp;ruumble: http://h:8080</p></body></html>") == "http://h:8080");
-	CHECK(*findBridgeUrl("Hallo<br/>ruumble: http://h:8080<br>Danke") == "http://h:8080");
+	// this is how Mumble stores descriptions: HTML
+	CHECK(*findBridgeUrl("<!DOCTYPE HTML><html><body><p>Hello</p><p>-&nbsp;ruumble: http://h:8080</p></body></html>") == "http://h:8080");
+	CHECK(*findBridgeUrl("Hello<br/>ruumble: http://h:8080<br>Thanks") == "http://h:8080");
 	CHECK(*findBridgeUrl("ruumble: <a href=\"http://h:8080\">http://h:8080</a>") == "http://h:8080");
-	CHECK(*findBridgeUrl("zeile1\r\nruumble: http://h\r\n") == "http://h");
-	// keine Treffer
+	CHECK(*findBridgeUrl("line1\r\nruumble: http://h\r\n") == "http://h");
+	// no matches
 	CHECK_FALSE(findBridgeUrl("").has_value());
-	CHECK_FALSE(findBridgeUrl("Ruumble läuft unter http://h").has_value());
-	CHECK_FALSE(findBridgeUrl("ruumble: http://h danke").has_value()); // Zeile endet nicht mit der Adresse
+	CHECK_FALSE(findBridgeUrl("Ruumble runs at http://h").has_value());
+	CHECK_FALSE(findBridgeUrl("ruumble: http://h thanks").has_value()); // line does not end with the address
 	CHECK_FALSE(findBridgeUrl("xruumble: http://h").has_value());
 	CHECK_FALSE(findBridgeUrl("ruumble: ftp://h").has_value());
 	CHECK_FALSE(findBridgeUrl("ruumble:").has_value());
-	// erste passende Zeile gewinnt
+	// first matching line wins
 	CHECK(*findBridgeUrl("ruumble: http://a\nruumble: http://b") == "http://a");
 }

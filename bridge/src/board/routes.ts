@@ -1,12 +1,12 @@
 /**
- * REST der Pinnwand (ADR-0011). Alles nur für gekoppelte Nutzer, die gerade im Raum anwesend sind.
+ * Board REST API (ADR-0011). Everything only for paired users currently present in the room.
  *
- *   GET    /api/board                 Pinnwand des aktuellen Raums
- *   POST   /api/board/posts           Text/Code oder Bild/Datei (mit attachmentId)
- *   POST   /api/board/uploads         Rohdaten bis 10 MB, Header X-File-Name (URI-kodiert), X-File-Type (sonst Content-Type)
- *   PATCH  /api/board/posts/:id       bearbeiten (alle Anwesenden)
- *   DELETE /api/board/posts/:id       löschen (Autor oder Mumble-Admin)
- *   GET    /api/board/files/:id       Anhang (Bilder inline, alles andere als Download)
+ *   GET    /api/board                 board of the current room
+ *   POST   /api/board/posts           text/code or image/file (with attachmentId)
+ *   POST   /api/board/uploads         raw data up to 10 MB, headers X-File-Name (URI-encoded), X-File-Type (else Content-Type)
+ *   PATCH  /api/board/posts/:id       edit (everyone present)
+ *   DELETE /api/board/posts/:id       delete (author or Mumble admin)
+ *   GET    /api/board/files/:id       attachment (images inline, everything else as download)
  */
 import { createReadStream } from "node:fs";
 import type { FastifyInstance, FastifyReply } from "fastify";
@@ -20,11 +20,11 @@ export interface BoardRouteOptions {
   store: BoardStore;
   hub: Hub;
   source: Pick<MumbleSource, "canWrite">;
-  /** Geräte-Token aus dem Cookie → Zertifikats-Hash */
+  /** device token from the cookie → certificate hash */
   certHashOf: (cookieHeader: string | undefined) => string | null;
-  /** nach dem Anheften: Hinweis an die Plugins der Anwesenden (AP11.4) */
+  /** after pinning: notice to the plugins of those present (AP11.4) */
   onNewPost?: (post: StoredPost, viewer: Viewer) => void;
-  /** Schreibvorgänge je Nutzer und Minute */
+  /** write operations per user and minute */
   writesPerMinute?: number;
 }
 
@@ -38,12 +38,12 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
   const writes = new Map<string, number[]>();
   const limit = o.writesPerMinute ?? 30;
 
-  /** Nutzer ermitteln und prüfen, dass er in einem Raum mit Pinnwand steht */
+  /** identify the user and check that they are in a room with a board */
   function room(cookie: string | undefined): { viewer: Viewer } | { error: ErrorCode } {
     const certHash = o.certHashOf(cookie);
     if (!certHash) return { error: "not-paired" };
     const viewer = o.hub.whoIs(certHash);
-    if (!viewer) return { error: "not-paired" }; // gekoppelt, aber Mumble gerade nicht verbunden
+    if (!viewer) return { error: "not-paired" }; // paired, but Mumble currently not connected
     if (!o.hub.isBoardRoom(viewer.channelId)) return { error: "no-board-here" };
     return { viewer };
   }
@@ -57,7 +57,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     return false;
   }
 
-  /** `isAdmin`: Mumble-Schreibrecht im Raum des Beitrags (je Anfrage einmal abgefragt) */
+  /** `isAdmin`: Mumble write permission in the post's room (queried once per request) */
   function toView(p: StoredPost, viewer: Viewer, isAdmin: boolean): Post {
     const mine = p.authorHash === viewer.certHash;
     return {
@@ -109,7 +109,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     return reply.code(201).send(toView(post, viewer, await o.source.canWrite(viewer.session, viewer.channelId)));
   });
 
-  // Rohdaten-Upload (Bilder und Dateien), eigene Grenze statt der globalen 1 MB
+  // raw data upload (images and files), own limit instead of the global 1 MB
   app.addContentTypeParser("*", { parseAs: "buffer", bodyLimit: BOARD_LIMITS.fileBytes }, (_req, body, done) => done(null, body));
   app.post("/api/board/uploads", { bodyLimit: BOARD_LIMITS.fileBytes }, async (req, reply) => {
     const r = room(req.headers.cookie);
@@ -117,10 +117,10 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     const bytes = req.body;
     if (!(bytes instanceof Buffer) || bytes.length === 0) return fail(reply, "invalid");
-    // Bildtyp immer an den Bytes prüfen; SVG und alles andere gilt als Datei (nie inline, ADR-0011)
+    // always check the image type from the bytes; SVG and everything else counts as a file (never inline, ADR-0011)
     const imageMime = detectImage(bytes);
-    // Die Oberfläche schickt immer application/octet-stream (sonst greifen Fastifys JSON- und Text-Parser)
-    // und den eigentlichen Typ in X-File-Type
+    // The web UI always sends application/octet-stream (otherwise Fastify's JSON and text parsers kick in)
+    // and the actual type in X-File-Type
     const declared = String(req.headers["x-file-type"] || req.headers["content-type"] || "application/octet-stream").split(";")[0]!.trim().toLowerCase();
     const mime = imageMime ?? (/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/.test(declared) && !declared.startsWith("image/") ? declared : "application/octet-stream");
     const dims = imageMime ? imageSize(bytes, imageMime) : null;
@@ -159,12 +159,12 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     const r = room(req.headers.cookie);
     if ("error" in r) return fail(reply, r.error);
     if (!/^[0-9a-f]{64}$/.test(req.params.id)) return fail(reply, "not-found");
-    // nur Anhänge von Beiträgen des aktuellen Raums
+    // only attachments of posts in the current room
     const post = o.store.list(r.viewer.channelId).find((p) => p.attachment?.id === req.params.id);
     if (!post?.attachment) return fail(reply, "not-found");
     const a = post.attachment;
     const inline = a.mime.startsWith("image/") && req.query.download === undefined;
-    const name = encodeURIComponent(a.name || "datei");
+    const name = encodeURIComponent(a.name || "file");
     return reply
       .header("Content-Type", a.mime)
       .header("Content-Length", a.size)

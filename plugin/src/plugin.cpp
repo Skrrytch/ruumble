@@ -1,6 +1,6 @@
-// Ruumble-Plugin für Mumble: Exporte, Callbacks und MumbleApi-Umsetzung.
-// Einzige Übersetzungseinheit, die MumblePlugin.h ohne MUMBLE_PLUGIN_NO_DEFAULT_FUNCTION_DEFINITIONS einbindet.
-// Plugin-API 1.0.x, damit das Plugin ab Mumble 1.4 läuft (S2: Fedora liefert 1.4).
+// Ruumble plugin for Mumble: exports, callbacks and MumbleApi implementation.
+// The only translation unit that includes MumblePlugin.h without MUMBLE_PLUGIN_NO_DEFAULT_FUNCTION_DEFINITIONS.
+// Plugin API 1.0.x, so that the plugin runs on Mumble 1.4 and later (S2: Fedora ships 1.4).
 
 #define MUMBLE_PLUGIN_API_MINOR_MACRO 0
 #include "MumblePlugin.h"
@@ -19,7 +19,7 @@ namespace {
 MumbleAPI api;
 mumble_plugin_id_t ownId = 0;
 
-/** MumbleApi über die echte Plugin-API. Aufrufe kommen aus dem Worker-Thread (max. 800 ms, Analyse 2.1). */
+/** MumbleApi via the real plugin API. Calls come from the worker thread (max. 800 ms, Analyse 2.1). */
 class RealApi : public ruumble::MumbleApi {
 public:
 	bool connected() override {
@@ -83,7 +83,7 @@ public:
 		if (api.getActiveServerConnection(ownId, &conn) != MUMBLE_EC_OK) return d;
 		const mumble_error_t e = api.getChannelDescription(ownId, conn, 0, &text);
 		if (e == MUMBLE_EC_UNSYNCHRONIZED_BLOB) {
-			d.status = ruumble::Description::Status::Pending; // Mumble lädt den Text erst beim Ansehen (ADR-0010)
+			d.status = ruumble::Description::Status::Pending; // Mumble only loads the text when it is viewed (ADR-0010)
 		} else if (e == MUMBLE_EC_OK) {
 			d.status = ruumble::Description::Status::Ok;
 			if (text) {
@@ -106,7 +106,7 @@ public:
 
 	void log(const std::string &message) override {
 		api.log(ownId, message.c_str());
-		// Live-Tests lesen das Protokoll mit, Mumble selbst schreibt es nicht auf die Konsole
+		// live tests follow the log; Mumble itself does not write it to the console
 		if (logToStderr) std::fprintf(stderr, "ruumble-log: %s\n", message.c_str());
 	}
 
@@ -120,10 +120,10 @@ ruumble::Config config;
 
 } // namespace
 
-// ---------------------------------------------------------------- Pflicht-Exporte
+// ---------------------------------------------------------------- mandatory exports
 
 namespace {
-/** aus mumble_setMumbleInfo; Mumble ruft das als Erstes auf, noch vor mumble_init */
+/** from mumble_setMumbleInfo; Mumble calls it first, even before mumble_init */
 std::string mumbleVersion;
 } // namespace
 
@@ -155,13 +155,13 @@ mumble_error_t mumble_init(mumble_plugin_id_t id) {
 	transport->onClose([] { core->onTransportClosed(); });
 	transport->onMessage([](std::string msg) { core->onTransportMessage(std::move(msg)); });
 	core->start();
-	// Wird das Plugin bei bestehender Verbindung aktiviert, kommt kein onServerSynchronized mehr.
+	// If the plugin is enabled while already connected, no further onServerSynchronized arrives.
 	if (realApi->connected()) core->onSynchronized();
 	return MUMBLE_STATUS_OK;
 }
 
 void mumble_shutdown() {
-	// Reihenfolge: erst der Worker (er steuert das Netz), dann das Netz. Danach entlädt Mumble die Bibliothek.
+	// Order: first the worker (it drives the network), then the network. Afterwards Mumble unloads the library.
 	if (core) core->stop();
 	if (transport) transport->disconnect();
 	core.reset();
@@ -179,7 +179,7 @@ mumble_version_t mumble_getAPIVersion() {
 }
 
 void mumble_registerAPIFunctions(void *apiStruct) {
-	api = MUMBLE_API_CAST(apiStruct); // kopieren: Mumble übergibt einen Zeiger auf den Stack
+	api = MUMBLE_API_CAST(apiStruct); // copy: Mumble passes a pointer to the stack
 }
 
 void mumble_releaseResource(const void *) {
@@ -195,18 +195,18 @@ MumbleStringWrapper mumble_getAuthor() {
 }
 
 MumbleStringWrapper mumble_getDescription() {
-	static const char desc[] = "Zeigt den Mumble-Server als Bürogebäude (Ruumble-Oberfläche im Browser)";
+	static const char desc[] = "Shows the Mumble server as an office building (Ruumble web UI in the browser)";
 	return { desc, std::strlen(desc), false };
 }
 
-// ---------------------------------------------------------------- Callbacks: nur Ereignisse ablegen
+// ---------------------------------------------------------------- callbacks: only queue events
 
 void mumble_onServerSynchronized(mumble_connection_t) {
 	if (core) core->onSynchronized();
 }
 
 void mumble_onServerDisconnected(mumble_connection_t) {
-	if (core) core->onDisconnected(); // ServerHandler-Thread: nicht blockieren
+	if (core) core->onDisconnected(); // ServerHandler thread: do not block
 }
 
 void mumble_onChannelEntered(mumble_connection_t, mumble_userid_t user, mumble_channelid_t, mumble_channelid_t next) {

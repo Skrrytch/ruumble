@@ -59,7 +59,7 @@ In the dev server the web UI runs against the **mock** by default (a simulated M
 
 | Parameter | Effect |
 |---|---|
-| `?fixture=musterhaus` / `sonderfaelle` / `leerstand` / `nicht-gekoppelt` | choose sample data (sample building / edge cases / vacant / not paired) |
+| `?fixture=sample` / `edge-cases` / `vacant` / `unpaired` | choose sample data (sample building / edge cases / vacant / not paired) |
 | `?debug` | debug panel (switch fixture, disconnect plugin, create channels …) |
 | `?talking=0` | turn off simulated talking events |
 | `?live` | against a running service on `127.0.0.1:8080` (proxy for `/ws`, `/api`, `/avatar`, `/download`, `/pair`) |
@@ -71,7 +71,7 @@ The web UI, the plugin and the board notices speak German and English.
 - **Web UI:** `web/src/lib/i18n/`. `de.ts` is the template and defines the shape (`Messages`); `en.ts` must have exactly the same shape. `t()` from `index.svelte.ts` returns the dictionary of the current language (reactive). Detection: the first of the browser's languages (`navigator.languages`) that is German or English wins, otherwise English; a choice made with the language button in the user menu overrides this and is stored in the browser. The unit test `web/test/i18n.test.ts` checks that both dictionaries match.
 - **Plugin:** messages in `plugin/src/messages.cpp`. The language comes from `LC_ALL`, then `LC_MESSAGES`, then `LANG`: `de…` gives German, anything else English.
 - **Board notices** in the Mumble log: `bridge/src/board/notify.ts`, in the language each recipient's plugin reports (German if none is reported).
-- **Browser tests:** `web/playwright.config.ts` and `web/playwright.live.config.ts` pin the browser locale to `de-DE`, so tests match German texts. `web/e2e/i18n.spec.ts` covers the English UI and the language switch.
+- **Browser tests:** `web/playwright.config.ts` and `web/playwright.live.config.ts` pin the browser locale to `en-US`, so tests match English texts. `web/e2e/i18n.spec.ts` covers the German UI (with a `de-DE` browser) and the language switch in both directions.
 
 ## Local stack with a real Mumble
 

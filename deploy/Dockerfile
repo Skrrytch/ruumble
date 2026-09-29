@@ -1,10 +1,10 @@
-# Ruumble-Dienst mit Oberfläche (ADR-0008). Build-Kontext: Repository-Root.
+# Ruumble service with web UI (ADR-0008). Build context: repository root.
 #   docker build -f deploy/Dockerfile -t ruumble .
 #
-# Lizenz: Der Dienst nutzt Ice for JavaScript (GPL-2.0). Das Image ist als Gesamtwerk GPL-2.0 (E26);
-# der Ruumble-Quellcode selbst steht unter BSD-3-Clause.
+# Licence: the service uses Ice for JavaScript (GPL-2.0). The image as a combined work is GPL-2.0 (E26);
+# the Ruumble source code itself is under BSD-3-Clause.
 
-# Plugin: gebaut auf Debian 12 (glibc 2.36), damit es auch mit älteren Distributionen läuft
+# Plugin: built on Debian 12 (glibc 2.36) so that it also runs on older distributions
 FROM debian:bookworm-slim AS plugin
 RUN apt-get update && apt-get install -y --no-install-recommends cmake g++ make libssl-dev git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -28,12 +28,12 @@ COPY protocol protocol
 COPY web web
 COPY bridge bridge
 RUN pnpm -F @ruumble/web build && pnpm -F @ruumble/bridge build
-# nur die Laufzeitabhängigkeiten des Dienstes (fastify, ice)
+# only the runtime dependencies of the service (fastify, ice)
 RUN pnpm -F @ruumble/bridge deploy --prod --legacy /out
 
 FROM node:22-bookworm-slim
 LABEL org.opencontainers.image.title="Ruumble" \
-      org.opencontainers.image.description="Mumble-Server als Bürogebäude" \
+      org.opencontainers.image.description="Mumble server as an office building" \
       org.opencontainers.image.source="https://github.com/Skrrytch/ruumble" \
       org.opencontainers.image.licenses="GPL-2.0-only AND BSD-3-Clause"
 ENV NODE_ENV=production WEB_DIST=/app/web DATA_DIR=/data PORT=8080 PLUGIN_BUNDLE_DIR=/app/plugin

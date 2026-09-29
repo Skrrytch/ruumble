@@ -1,13 +1,13 @@
 /**
- * NUR Testvorbereitung für den Live-Test (lokaler Server aus deploy/local, Test-Write-Secret):
- * Nutzer registrieren, Avatar setzen, Nutzer trennen. Der Ruumble-Dienst selbst hat nie das Write-Secret.
+ * ONLY test setup for the live test (local server from deploy/local, test write secret):
+ * register users, set avatars, disconnect users. The Ruumble service itself never has the write secret.
  */
 import { createRequire } from "node:module";
 import { deflateSync } from "node:zlib";
 
 const require = createRequire(new URL("../../bridge/package.json", import.meta.url));
 const { Ice } = require("ice");
-const { MumbleServer } = require("./gen/MumbleServer.cjs"); // relativ zu bridge/
+const { MumbleServer } = require("./gen/MumbleServer.cjs"); // relative to bridge/
 
 const WRITE_SECRET = "s1-write-secret-only-for-setup";
 
@@ -28,7 +28,7 @@ export async function withServer<T>(fn: (server: any, M: any) => Promise<T>): Pr
   }
 }
 
-/** Version des Mumble-Servers, z. B. [1, 5, 735] */
+/** version of the Mumble server, e.g. [1, 5, 735] */
 export async function serverVersion(): Promise<[number, number, number]> {
   const init = new Ice.InitializationData();
   init.properties = Ice.createProperties();
@@ -42,7 +42,7 @@ export async function serverVersion(): Promise<[number, number, number]> {
   }
 }
 
-/** registriert einen Nutzer anhand seines Zertifikats-Hashes (oder liefert die vorhandene ID) */
+/** registers a user by their certificate hash (or returns the existing ID) */
 export async function registerUser(name: string, certHash: string): Promise<number> {
   return withServer(async (server, M) => {
     const existing = await server.getUserIds([name]);
@@ -55,7 +55,7 @@ export async function registerUser(name: string, certHash: string): Promise<numb
   });
 }
 
-/** Registrierung aufheben (Aufräumen: sonst lehnt Mumble beim nächsten Lauf das neue Test-Zertifikat ab) */
+/** remove the registration (clean-up: otherwise Mumble rejects the new test certificate on the next run) */
 export async function unregisterUser(name: string): Promise<void> {
   await withServer(async (server) => {
     const id = (await server.getUserIds([name])).get(name);
@@ -63,24 +63,24 @@ export async function unregisterUser(name: string): Promise<void> {
   });
 }
 
-// Hinweis: Ice setTexture und getTexture sind ab Mumble 1.6 unbrauchbar. impl_Server_setTexture und
-// impl_Server_getTexture werfen InvalidUserException gerade dann, wenn der Nutzer registriert ist (Bedingung vertauscht,
-// in 1.5.735 noch korrekt: isUserId). Den Avatar setzt im Test deshalb ein Client selbst.
+// Note: Ice setTexture and getTexture are unusable from Mumble 1.6 on. impl_Server_setTexture and
+// impl_Server_getTexture throw InvalidUserException precisely when the user is registered (condition inverted,
+// still correct in 1.5.735: isUserId). In the test, a client therefore sets the avatar itself.
 
-/** Test-Bot aus tools/live-test (Mumble-Protokoll in Node), z. B. um als registrierter Nutzer einen Avatar zu setzen */
+/** test bot from tools/live-test (Mumble protocol in Node), e.g. to set an avatar as a registered user */
 export function loadBot(): { Bot: new (name: string) => any } {
   return createRequire(new URL("../../tools/live-test/package.json", import.meta.url))("./src/bot.cjs");
 }
 
-/** trennt eine Session; der Mumble-Client verbindet sich von selbst neu (und ist dann registriert) */
+/** disconnects a session; the Mumble client reconnects by itself (and is then registered) */
 export async function kick(name: string): Promise<void> {
   await withServer(async (server) => {
     const users = await server.getUsers();
-    for (const u of users.values()) if (u.name === name) await server.kickUser(u.session, "Test: neu verbinden");
+    for (const u of users.values()) if (u.name === name) await server.kickUser(u.session, "Test: reconnect");
   });
 }
 
-/** einfarbiges PNG (für den Avatar-Test) */
+/** single-colour PNG (for the avatar test) */
 export function solidPng(size: number, [r, g, b]: [number, number, number]): Uint8Array {
   const crcTable = Array.from({ length: 256 }, (_, n) => {
     let c = n;
@@ -99,7 +99,7 @@ export function solidPng(size: number, [r, g, b]: [number, number, number]): Uin
     return Buffer.concat([len, td, c]);
   };
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0); ihdr.writeUInt32BE(size, 4); ihdr[8] = 8; ihdr[9] = 2; // 8 Bit, RGB
+  ihdr.writeUInt32BE(size, 0); ihdr.writeUInt32BE(size, 4); ihdr[8] = 8; ihdr[9] = 2; // 8 bit, RGB
   const row = Buffer.concat([Buffer.from([0]), Buffer.from(Array.from({ length: size }, () => [r, g, b]).flat())]);
   const raw = Buffer.concat(Array.from({ length: size }, () => row));
   return Uint8Array.from(Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]));

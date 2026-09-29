@@ -15,7 +15,7 @@
 
   const building = $derived(app.building);
   const floor = $derived(app.floor);
-  // wenige Räume: die offene Pinnwand bekommt mehr Breite
+  // few rooms: the open board gets more width
   const fewRooms = $derived(
     app.boardOpen && !app.readonly && !!floor && !floor.lock && floor.rooms.length > 0 && floor.rooms.length <= FEW_ROOMS,
   );
@@ -40,7 +40,7 @@
       <PluginHelp />
     </div>
   {:else}
-    <!-- Titelleiste, platzsparend: die Etage ist im Aufzug markiert, hier nur Name und Zahlen -->
+    <!-- title bar, space-saving: the floor is marked in the elevator, here only name and numbers -->
     <header class="head">
       <div class="where">
         <h1>{floor?.name ?? t().screens.vacancyTitle}</h1>
@@ -62,7 +62,7 @@
     <div class="plan" class:few={fewRooms}>
       <Core {app} {building} {floor} />
       {#if floor}
-        <!-- auch bei Leerstand: Steht der eigene Nutzer auf einer gesperrten Etage, erscheint dort deren Hinweis -->
+        <!-- also when vacant: if the user is on a locked floor, its notice appears there -->
         <FloorPlan
           {floor}
           readonly={app.readonly}
@@ -110,10 +110,10 @@
   }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-sky); box-shadow: 0 0 0 3px rgb(255 255 255 / 0.7); }
 
-  /* Etage mit 1–2 Räumen: Grundriss und Pinnwand teilen sich die Breite */
+  /* floor with 1–2 rooms: floor plan and board share the width */
   .plan.few :global(.floorplan), .plan.few :global(.board) { flex: 1 1 0; width: auto; min-width: 340px; }
 
-  /* Grundriss: Wände = 4 px Dunkelblau als Abstand */
+  /* floor plan: walls = 4 px dark blue as gap */
   .plan {
     flex: 1 1 auto; min-height: 520px; padding: var(--wall); background: var(--color-navy);
     display: flex; gap: var(--wall);

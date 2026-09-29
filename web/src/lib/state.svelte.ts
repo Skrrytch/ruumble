@@ -1,6 +1,6 @@
 /**
- * Zustand der Oberfläche: hält den letzten Snapshot, leitet das Gebäude ab und führt Befehle aus.
- * Kein optimistisches Umschalten: Der eigene Kanal ändert sich erst mit dem nächsten Snapshot (ADR-0003).
+ * State of the web UI: holds the latest snapshot, derives the building and runs commands.
+ * No optimistic switching: the own channel only changes with the next snapshot (ADR-0003).
  */
 import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
@@ -10,7 +10,7 @@ import { avatarUrlOf, buildBuilding, homeFloor, type Building, type Floor } from
 
 export type Notice = { text: string };
 
-/** Klartext zu einem Fehler der Pinnwand in der Sprache der Oberfläche */
+/** Plain text for a board error in the web UI's language */
 export function boardErrorText(error: BoardErrorCode): string {
   const m = t().boardErrors[error];
   return typeof m === "function" ? m(formatSize(BOARD_LIMITS.fileBytes)) : m;
@@ -19,31 +19,31 @@ export function boardErrorText(error: BoardErrorCode): string {
 export class RuumbleState {
   snapshot = $state<Snapshot | null>(null);
   plugin = $state<PluginStatus>("disconnected");
-  /** nur lesend, ohne eigenen Nutzer (Vorschau des Dienstes) */
+  /** read-only, without own user (service preview) */
   preview = $state(false);
   connection = $state<ConnectionState>("connected");
-  /** Session → spricht gerade (nur was der eigene Client hört) */
+  /** session → currently talking (only what the own client hears) */
   talking = $state<Record<number, boolean>>({});
-  /** laufender Kanalwechsel (Übergangszustand) */
+  /** channel switch in progress (transitional state) */
   pendingChannel = $state<number | null>(null);
   notice = $state<Notice | null>(null);
-  /** Seitenleiste der Pinnwand: zu Beginn ausgeblendet, Schalter ist die Grafik im eigenen Raum (ADR-0011) */
+  /** Board sidebar: hidden initially, the toggle is the graphic in your own room (ADR-0011) */
   boardOpen = $state(false);
   board = $state<BoardView | null>(null);
   boardError = $state<BoardErrorCode | null>(null);
   boardFilter = $state<BoardFilter>("all");
   private boardChannel: number | null = null;
 
-  /** angezeigte Etage; `null` = eigene bzw. erste darstellbare */
+  /** displayed floor; `null` = own or first displayable one */
   private viewFloorId = $state<number | null>(null);
 
   building: Building | null = $derived.by(() => {
     if (!this.snapshot) return null;
-    const custom = this.adapter.avatarUrl?.bind(this.adapter); // Mock: eigene Bilder, sonst /avatar/<id>
+    const custom = this.adapter.avatarUrl?.bind(this.adapter); // mock: own images, otherwise /avatar/<id>
     return buildBuilding(this.snapshot, custom ? { avatarUrl: custom } : {});
   });
 
-  /** Avatarbild eines gerade verbundenen Nutzers (Benutzerbereich, Pinnwand); sonst `null` → Initialen */
+  /** Avatar image of a currently connected user (user area, board); otherwise `null` → initials */
   avatarOf(name: string): string | null {
     const u = this.snapshot?.users.find((x) => x.name === name);
     if (!u) return null;
@@ -51,14 +51,14 @@ export class RuumbleState {
     return custom ? avatarUrlOf(u, custom) : avatarUrlOf(u);
   }
 
-  /** angezeigte Etage */
+  /** displayed floor */
   floor: Floor | null = $derived.by(() => {
     const b = this.building;
     if (!b) return null;
     return b.floors.find((f) => f.channelId === this.viewFloorId && (!f.lock || f.isSelf)) ?? homeFloor(b);
   });
 
-  /** Ohne eigenen Nutzer ist alles nur lesbar. */
+  /** Without an own user everything is read-only. */
   readonly = $derived(!this.snapshot?.self);
 
   me = $derived(this.snapshot?.users.find((u) => u.session === this.snapshot?.self?.session) ?? null);
@@ -104,7 +104,7 @@ export class RuumbleState {
     this.report(result, channelId);
   }
 
-  /** Mikrofon-Knopf: gedrückt = stumm oder taub; Klick schaltet den Zielzustand (Mumble löst Taub dabei mit auf). */
+  /** Microphone button: pressed = muted or deafened; a click toggles the target state (Mumble lifts deaf along with it). */
   async toggleMute(): Promise<void> {
     const me = this.me;
     if (!me) return;
@@ -117,7 +117,7 @@ export class RuumbleState {
     this.report(await this.adapter.command({ cmd: "deaf", on: !me.selfDeaf }));
   }
 
-  // ---------------------------------------------------------------- Pinnwand
+  // ---------------------------------------------------------------- Board
 
   toggleBoard(): void {
     this.boardOpen = !this.boardOpen;
@@ -140,7 +140,7 @@ export class RuumbleState {
     }
   }
 
-  /** Beitrag anheften; `true` bei Erfolg (die Eingabe wird dann geleert) */
+  /** Pin a post; `true` on success (the input is then cleared) */
   async pin(kind: PostKind, text: string, language?: string): Promise<boolean> {
     const r = await this.adapter.board.create({ kind, text, ...(language ? { language } : {}) });
     if (!r.ok) return this.boardFailed(r.error);
@@ -148,7 +148,7 @@ export class RuumbleState {
     return true;
   }
 
-  /** Anhang hochladen; die Eingabe zeigt den Fortschritt und heftet ihn danach mit `pinAttachment` an */
+  /** Upload an attachment; the input shows the progress and then pins it with `pinAttachment` */
   upload(file: Blob, name: string, onProgress?: (fraction: number) => void): Promise<BoardResult<Uploaded>> {
     return this.adapter.board.upload(file, name, onProgress);
   }
@@ -206,12 +206,12 @@ export class RuumbleState {
 
   private onSnapshot(s: Snapshot): void {
     this.snapshot = s;
-    // Raum gewechselt: Die Seitenleiste zeigt immer die Pinnwand des aktuellen Raums
+    // room changed: the sidebar always shows the board of the current room
     const channel = s.users.find((u) => u.session === s.self?.session)?.channel ?? null;
     if (this.boardOpen && channel !== this.boardChannel) void this.loadBoard();
-    // Den Sprechzustand meldet der eigene Client (nur für Hörbares, ADR-0005) und beendet ihn selbst mit
-    // „passive“. Nicht am Snapshot filtern: Der Client hört neue Nutzer früher, als das Polling sie zeigt.
-    // Entfernt wird nur, wer den Server verlassen hat, und alles bei eigenem Taub.
+    // The talking state is reported by the own client (only for what is audible, ADR-0005), which also ends it
+    // with “passive”. Do not filter by the snapshot: the client hears new users earlier than polling shows them.
+    // Only those who left the server are removed, and everything when self-deafened.
     const me = s.users.find((u) => u.session === s.self?.session);
     const present = new Set(s.users.map((u) => u.session));
     const next: Record<number, boolean> = {};

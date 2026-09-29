@@ -28,7 +28,7 @@ async function pairedUi(hub: Hub, pairing: Pairing, certHash = A) {
 }
 
 describe("formatAddress", () => {
-  it("IPv4 in IPv6 wird zu a.b.c.d, IPv6 bleibt", () => {
+  it("IPv4-in-IPv6 becomes a.b.c.d, IPv6 stays", () => {
     expect(formatAddress([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 172, 23, 0, 1])).toBe("172.23.0.1");
     expect(formatAddress([0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])).toBe("2001:db8:0:0:0:0:0:1");
     expect(formatAddress([])).toBe("");
@@ -36,7 +36,7 @@ describe("formatAddress", () => {
 });
 
 describe("Pairing", () => {
-  it("Einmal-Code nur einmal und nur bis zum Ablauf", () => {
+  it("one-time code works only once and only until expiry", () => {
     const p = new Pairing(null, 60_000);
     const code = p.createCode(A, "Anna", 0);
     expect(p.redeem(code, 1000)).toBeTruthy();
@@ -44,18 +44,18 @@ describe("Pairing", () => {
     expect(p.redeem(p.createCode(A, "Anna", 0), 61_000)).toBeNull();
   });
 
-  it("Token gehört zum Hash und lässt sich widerrufen", () => {
+  it("token belongs to the hash and can be revoked", () => {
     const p = new Pairing(null);
     const token = p.redeem(p.createCode(A, "Anna"))!;
     expect(p.certHashOf(token)).toBe(A);
-    expect(p.certHashOf("falsch")).toBeNull();
+    expect(p.certHashOf("wrong")).toBeNull();
     p.revoke(token);
     expect(p.certHashOf(token)).toBeNull();
   });
 });
 
 describe("Poller", () => {
-  it("meldet nur echte Änderungen und fragt Rechte nur für gekoppelte Sessions", async () => {
+  it("reports only real changes and queries permissions only for paired sessions", async () => {
     const source = new FakeSource();
     let changes = 0;
     const poller = new Poller(source, { onChange: () => changes++ });
@@ -71,7 +71,7 @@ describe("Poller", () => {
     expect(changes).toBe(3);
   });
 
-  it("erkennt einen Neustart an kleinerer Uptime", async () => {
+  it("detects a restart by a smaller uptime", async () => {
     const source = new FakeSource();
     let restarts = 0;
     const poller = new Poller(source, { onChange: () => {}, onRestart: () => restarts++ });
@@ -83,23 +83,23 @@ describe("Poller", () => {
 });
 
 describe("Hub: Plugin", () => {
-  it("hello mit passendem Hash → welcome mit Kopplungslink", async () => {
+  it("hello with matching hash → welcome with pairing link", async () => {
     const { hub } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(hello());
     expect(plugin.last("welcome")?.pairUrl).toMatch(/^https:\/\/ruumble\.test\/pair\?code=/);
     expect(hub.pluginCount).toBe(1);
-    expect(hub.clientVersions()).toEqual({ "mumble unknown / plugin 0.1.0": 1 }); // altes Plugin ohne mumbleVersion
+    expect(hub.clientVersions()).toEqual({ "mumble unknown / plugin 0.1.0": 1 }); // old plugin without mumbleVersion
   });
 
-  it("Plugin meldet die Mumble-Version → sichtbar in clientVersions", async () => {
+  it("plugin reports the Mumble version → visible in clientVersions", async () => {
     const { hub } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(JSON.stringify({ ...JSON.parse(hello()), pluginVersion: "0.4.0", mumbleVersion: "1.5.735" }));
     expect(hub.clientVersions()).toEqual({ "mumble 1.5.735 / plugin 0.4.0": 1 });
   });
 
-  it("bereits gekoppelt → welcome ohne Link", async () => {
+  it("already paired → welcome without link", async () => {
     const { hub } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(hello(7, A, true));
@@ -109,7 +109,7 @@ describe("Hub: Plugin", () => {
   it.each([
     [hello(99), "unknown-session"],
     [hello(7, "c".repeat(40)), "hash-mismatch"],
-  ])("Ablehnung: %s → %s", async (msg, reason) => {
+  ])("rejection: %s → %s", async (msg, reason) => {
     const { hub } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(msg);
@@ -117,7 +117,7 @@ describe("Hub: Plugin", () => {
     expect(plugin.closed?.code).toBe(4403);
   });
 
-  it("Adressprüfung: warn lässt zu, enforce lehnt ab", async () => {
+  it("address check: warn allows, enforce rejects", async () => {
     for (const [mode, expected] of [["warn", "welcome"], ["enforce", "reject"]] as const) {
       const { hub } = await setup({ addressCheck: mode });
       const plugin = recorder<BridgeToPlugin>();
@@ -126,19 +126,19 @@ describe("Hub: Plugin", () => {
     }
   });
 
-  it("unbekannte Session: erst neu abfragen, dann entscheiden", async () => {
+  it("unknown session: query again first, then decide", async () => {
     const source = new FakeSource();
     const hub = new Hub({ source, pairing: new Pairing(null), publicUrl: "https://r.test", addressCheck: "off", preview: false, refresh: () => poller.poll() });
     const poller: Poller = new Poller(source, { onChange: (s) => hub.setState(s) });
     await poller.poll();
-    source.users.push({ ...source.users[0]!, session: 9, name: "Neu" });
+    source.users.push({ ...source.users[0]!, session: 9, name: "New" });
     source.hashes[9] = "d".repeat(40);
     const plugin = recorder<BridgeToPlugin>();
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(hello(9, "d".repeat(40)));
     expect(plugin.sent[0]?.type).toBe("welcome");
   });
 
-  it("ohne Zertifikat → no-certificate", async () => {
+  it("without certificate → no-certificate", async () => {
     const { hub, source } = await setup();
     delete source.hashes[7];
     const plugin = recorder<BridgeToPlugin>();
@@ -146,16 +146,16 @@ describe("Hub: Plugin", () => {
     expect(plugin.last("reject")?.reason).toBe("no-certificate");
   });
 
-  it("Nachrichten vor hello werden ignoriert, ungültiges JSON auch", async () => {
+  it("messages before hello are ignored, as is invalid JSON", async () => {
     const { hub } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     const h = hub.pluginConnected(plugin.conn, "10.0.0.7");
     await h.onMessage('{"v":1,"type":"bye"}');
-    await h.onMessage("kaputt");
+    await h.onMessage("broken");
     expect(plugin.sent).toEqual([]);
   });
 
-  it("zweite Verbindung desselben Nutzers ersetzt die erste", async () => {
+  it("second connection of the same user replaces the first", async () => {
     const { hub } = await setup();
     const first = recorder<BridgeToPlugin>();
     const second = recorder<BridgeToPlugin>();
@@ -165,7 +165,7 @@ describe("Hub: Plugin", () => {
     expect(hub.pluginCount).toBe(1);
   });
 
-  it("Server-Neustart schließt alle Plugins (neue Sessions)", async () => {
+  it("server restart closes all plugins (new sessions)", async () => {
     const { hub } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(hello());
@@ -174,8 +174,8 @@ describe("Hub: Plugin", () => {
   });
 });
 
-describe("Hub: Oberfläche", () => {
-  it("ohne Kopplung abgewiesen, in der Vorschau nur lesend", async () => {
+describe("Hub: web UI", () => {
+  it("rejected without pairing, read-only in preview", async () => {
     const closed = await setup();
     const ui = recorder<BridgeToUi>();
     closed.hub.uiConnected(ui.conn, null);
@@ -188,7 +188,7 @@ describe("Hub: Oberfläche", () => {
     expect(viewer.last("snapshot")?.self).toBeNull();
   });
 
-  it("gekoppelt: Snapshot mit self und canEnter, ohne IP-Adressen", async () => {
+  it("paired: snapshot with self and canEnter, without IP addresses", async () => {
     const { hub, pairing, poller } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(hello(7, A, true));
@@ -202,7 +202,7 @@ describe("Hub: Oberfläche", () => {
     expect(JSON.stringify(snap)).not.toContain("10.0.0.");
   });
 
-  it("Befehl wird weitergeleitet, Ergebnis kommt mit der ID der Oberfläche zurück", async () => {
+  it("command is forwarded, result comes back with the web UI's ID", async () => {
     const { hub, pairing } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     const ph = hub.pluginConnected(plugin.conn, "10.0.0.7");
@@ -215,7 +215,7 @@ describe("Hub: Oberfläche", () => {
     expect(ui.last("result")).toEqual({ v: 1, type: "result", id: "ui-1", result: "ok" });
   });
 
-  it("join ohne Zutrittsrecht oder in unbekannten Kanal wird gar nicht erst weitergeleitet", async () => {
+  it("join without enter permission or into an unknown channel is not forwarded at all", async () => {
     const { hub, pairing, poller } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(hello(7, A, true));
@@ -228,7 +228,7 @@ describe("Hub: Oberfläche", () => {
     expect(plugin.last("command")).toBeUndefined();
   });
 
-  it("ohne Plugin → offline; Plugin trennt → offene Befehle offline, Status disconnected", async () => {
+  it("without plugin → offline; plugin disconnects → pending commands offline, status disconnected", async () => {
     const { hub, pairing } = await setup();
     const { ui, handler } = await pairedUi(hub, pairing);
     handler.onMessage(JSON.stringify({ v: 1, type: "command", id: "a", body: { cmd: "mute", on: true } }));
@@ -244,7 +244,7 @@ describe("Hub: Oberfläche", () => {
     expect(ui.last("snapshot")?.self).toBeNull();
   });
 
-  it("Missbrauchsschutz: mehr als 5 Befehle pro Sekunde werden abgelehnt", async () => {
+  it("abuse protection: more than 5 commands per second are rejected", async () => {
     const { hub, pairing } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(hello(7, A, true));
@@ -254,7 +254,7 @@ describe("Hub: Oberfläche", () => {
     expect(ui.sent.filter((m) => m.type === "result")).toHaveLength(2);
   });
 
-  it("Snapshot: userId, idleMinutes, recording und Avatar-Version", async () => {
+  it("snapshot: userId, idleMinutes, recording and avatar version", async () => {
     const source = new FakeSource();
     const pairing = new Pairing(null);
     const hub = new Hub({ source, pairing, publicUrl: "https://r.test", addressCheck: "off", preview: true, avatarVersion: (id) => (id === 1 ? "0123456789abcdef" : null) });
@@ -268,7 +268,7 @@ describe("Hub: Oberfläche", () => {
     expect(hub.canView(null)).toBe(true);
   });
 
-  it("talking nur an die eigenen Oberflächen, selfState sofort an alle", async () => {
+  it("talking only to one's own web UIs, selfState immediately to all", async () => {
     const { hub, pairing } = await setup();
     const plugin = recorder<BridgeToPlugin>();
     const ph = hub.pluginConnected(plugin.conn, "10.0.0.7");

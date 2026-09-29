@@ -2,10 +2,10 @@
   import { FIXTURES, type FixtureName, type MockAdapter } from "../adapter/mock.ts";
   import type { RuumbleState } from "../state.svelte.ts";
 
-  // Nur mit ?debug: spielt die Gebäuderegeln (docs/internal/charter.md) gegen den Mock durch.
+  // Only with ?debug: plays through the building rules (docs/internal/charter.md) against the mock.
   let { mock, app }: { mock: MockAdapter; app: RuumbleState } = $props();
   const requested = new URLSearchParams(location.search).get("fixture") ?? "";
-  let fixture = $state<FixtureName>((requested in FIXTURES ? requested : "musterhaus") as FixtureName);
+  let fixture = $state<FixtureName>((requested in FIXTURES ? requested : "sample") as FixtureName);
   let open = $state(true);
 </script>
 

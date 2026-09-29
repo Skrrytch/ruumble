@@ -1,4 +1,4 @@
-/** Deutsche Texte der Oberfläche. Vorlage für alle Sprachen: `en.ts` muss dieselbe Struktur haben. */
+/** German texts of the web UI. Template for all languages: `en.ts` must have the same structure. */
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 const MUMBLE_OFFLINE = "Mumble ist nicht verbunden.";
 
@@ -21,7 +21,7 @@ export const de = {
     entrance: "Eingang",
   },
   people: {
-    /** Belegung eines Raums */
+    /** Occupancy of a room */
     count: (n: number) => (n === 0 ? "frei" : plural(n, "1 Person", `${n} Personen`)),
     you: "du",
     listening: (n: number) => plural(n, "1 Person hört mit", `${n} Personen hören mit`),
@@ -95,7 +95,7 @@ export const de = {
   pluginHelp: {
     label: "Ruumble-Plugin einrichten",
     download: "Ruumble-Plugin herunterladen",
-    /** Bezeichnungen wie im deutschen Mumble (mumble_de.ts) */
+    /** Labels as in the German Mumble (mumble_de.ts) */
     step1: ["In Mumble: ", "Konfigurieren → Einstellungen → Plugins → „Installiere Plugin …“", ", die Datei wählen und mit ", "Ja", " bestätigen."],
     step2: ["Bei ", "Ruumble", " den Haken ", "„Aktivieren“", " setzen und mit OK schließen."],
     step3: "Mit dem Server verbinden. Beim ersten Mal öffnet sich diese Seite mit einem Kopplungslink.",
@@ -124,7 +124,7 @@ export const de = {
     editPost: "Beitrag bearbeiten",
     editDescription: "Beschreibung bearbeiten",
     captionPlaceholder: "Beschreibung (optional) …",
-    // Eingabe
+    // Input
     newPost: "Neuer Beitrag",
     placeholder: "Etwas an die Pinnwand heften …",
     placeholderCode: "Quellcode einfügen …",
@@ -139,17 +139,17 @@ export const de = {
     uploadProgress: "Hochladen",
     ready: (size: string) => `${size} · bereit`,
     removeAttachment: "Anhang entfernen",
-    // Anhänge
+    // Attachments
     showImage: (name: string) => `Bild ${name} groß anzeigen`,
     downloadFile: (name: string) => `${name} herunterladen`,
     fallbackName: "datei",
     pastedPrefix: "bild",
-    // Vollbild
+    // Fullscreen
     image: (name: string) => `Bild: ${name}`,
     zoomOut: "Verkleinern",
     zoomIn: "Vergrößern",
     fit: "Einpassen",
-    // Zeit
+    // Time
     justNow: "Gerade eben",
     minutesAgo: (n: number) => `vor ${n} Min.`,
     hoursAgo: (n: number) => `vor ${n} Std.`,

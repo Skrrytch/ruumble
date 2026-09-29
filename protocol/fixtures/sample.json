@@ -2,15 +2,17 @@
   "v": 1,
   "type": "snapshot",
   "server": {
-    "name": "Musterhaus",
+    "name": "Acme HQ",
     "version": "1.6.870"
   },
-  "self": null,
+  "self": {
+    "session": 4
+  },
   "channels": [
     {
       "id": 0,
       "parent": null,
-      "name": "Musterhaus",
+      "name": "Acme HQ",
       "position": 0,
       "links": [],
       "temporary": false
@@ -26,7 +28,7 @@
     {
       "id": 2,
       "parent": 0,
-      "name": "ENTWICKLUNG",
+      "name": "Development",
       "position": 1,
       "links": [],
       "temporary": false
@@ -34,7 +36,7 @@
     {
       "id": 3,
       "parent": 2,
-      "name": "Büro von Anna",
+      "name": "Let's talk",
       "position": 0,
       "links": [],
       "temporary": false
@@ -42,7 +44,7 @@
     {
       "id": 4,
       "parent": 2,
-      "name": "Büro von Ben",
+      "name": "Let's play",
       "position": 1,
       "links": [],
       "temporary": false
@@ -50,7 +52,7 @@
     {
       "id": 5,
       "parent": 2,
-      "name": "Büro von Clara",
+      "name": "Retrospective",
       "position": 2,
       "links": [],
       "temporary": false
@@ -58,7 +60,7 @@
     {
       "id": 6,
       "parent": 2,
-      "name": "Büro von David",
+      "name": "Ben's office",
       "position": 3,
       "links": [],
       "temporary": false
@@ -66,72 +68,48 @@
     {
       "id": 7,
       "parent": 2,
-      "name": "Büro von Eva",
+      "name": "Clara's office",
       "position": 4,
       "links": [],
       "temporary": false
     },
     {
       "id": 8,
-      "parent": 2,
-      "name": "Büro von Felix",
-      "position": 5,
+      "parent": 0,
+      "name": "Support",
+      "position": 2,
       "links": [],
       "temporary": false
     },
     {
       "id": 9,
-      "parent": 0,
-      "name": "VERTRIEB",
-      "position": 2,
-      "links": [],
-      "temporary": false
-    },
-    {
-      "id": 10,
-      "parent": 9,
-      "name": "Abwesend",
+      "parent": 8,
+      "name": "Office 1",
       "position": 0,
       "links": [],
       "temporary": false
     },
     {
-      "id": 11,
-      "parent": 9,
-      "name": "Fokusraum (stumm)",
+      "id": 10,
+      "parent": 8,
+      "name": "Office 2",
       "position": 1,
       "links": [],
       "temporary": false
     },
     {
-      "id": 12,
-      "parent": 9,
-      "name": "Teeküche",
+      "id": 11,
+      "parent": 8,
+      "name": "Office 3",
       "position": 2,
       "links": [],
       "temporary": false
     },
     {
-      "id": 13,
-      "parent": 9,
-      "name": "Raucherecke",
+      "id": 12,
+      "parent": 8,
+      "name": "Office 4",
       "position": 3,
-      "links": [],
-      "temporary": false
-    },
-    {
-      "id": 14,
-      "parent": 9,
-      "name": "Gregors Büro",
-      "position": 4,
-      "links": [],
-      "temporary": false
-    },
-    {
-      "id": 15,
-      "parent": 9,
-      "name": "Projektraum",
-      "position": 5,
       "links": [],
       "temporary": false
     }
@@ -140,7 +118,7 @@
     {
       "session": 1,
       "name": "Ben",
-      "channel": 1,
+      "channel": 6,
       "selfMute": false,
       "selfDeaf": false,
       "mute": false,
@@ -188,7 +166,7 @@
       "mute": false,
       "deaf": false,
       "suppress": false,
-      "userId": null,
+      "userId": 1,
       "avatar": null,
       "idleMinutes": 0,
       "recording": false
@@ -196,7 +174,7 @@
     {
       "session": 5,
       "name": "Gregor",
-      "channel": 12,
+      "channel": 9,
       "selfMute": false,
       "selfDeaf": false,
       "mute": false,
@@ -210,7 +188,35 @@
     {
       "session": 6,
       "name": "Hanna",
-      "channel": 12,
+      "channel": 11,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
+    },
+    {
+      "session": 7,
+      "name": "Clara",
+      "channel": 3,
+      "selfMute": false,
+      "selfDeaf": false,
+      "mute": false,
+      "deaf": false,
+      "suppress": false,
+      "userId": null,
+      "avatar": null,
+      "idleMinutes": 0,
+      "recording": false
+    },
+    {
+      "session": 8,
+      "name": "David",
+      "channel": 3,
       "selfMute": false,
       "selfDeaf": false,
       "mute": false,

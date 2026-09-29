@@ -1,8 +1,8 @@
 /**
- * Vergleich mit dem Referenzprototyp (docs/design/prototype/index.html) bei 1440 × 900.
- * Die Schrift ist bewusst eine andere (Inter statt der Originalschrift), deshalb wird das Layout per DOM
- * verglichen (Lage und Größe relativ zum Grundriss) statt Pixel für Pixel. Screenshots beider Seiten
- * landen zur Sichtprüfung in test-results/.
+ * Comparison with the reference prototype (docs/design/prototype/index.html) at 1440 × 900.
+ * The font is deliberately different (Inter instead of the original font), so the layout is compared
+ * via the DOM (position and size relative to the floor plan) instead of pixel by pixel. Screenshots of both pages
+ * end up in test-results/ for visual inspection.
  */
 import { expect, test, type Page } from "@playwright/test";
 
@@ -10,6 +10,23 @@ const PROTOTYPE = new URL("../../docs/design/prototype/index.html", import.meta.
 const TOLERANCE = 3;
 
 type Box = { x: number; y: number; width: number; height: number };
+
+/** Building of the prototype (docs/design/prototype/index.html): same IDs, positions and occupancy, names translated */
+const PROTOTYPE_SNAPSHOT = (() => {
+  const ch = (id: number, parent: number | null, name: string, position: number) => ({ id, parent, name, position, links: [], temporary: false });
+  const user = (session: number, name: string, channel: number) => ({
+    session, name, channel, selfMute: false, selfDeaf: false, mute: false, deaf: false, suppress: false,
+    userId: session === 4 ? 1 : null, avatar: null, idleMinutes: 0, recording: false,
+  });
+  const offices = ["Anna", "Ben", "Clara", "David", "Eva", "Felix"].map((n, i) => ch(3 + i, 2, `${n}'s office`, i));
+  const sales = ["Away", "Focus room (muted)", "Kitchen", "Coffee corner", "Gregor's office", "Project room"].map((n, i) => ch(10 + i, 9, n, i));
+  return {
+    v: 1, type: "snapshot", server: { name: "Acme HQ", version: "1.6.870" }, self: { session: 4 },
+    channels: [ch(0, null, "Acme HQ", 0), ch(1, 0, "Lobby", 0), ch(2, 0, "DEVELOPMENT", 1), ...offices, ch(9, 0, "SALES", 2), ...sales],
+    users: [user(1, "Ben", 1), user(2, "Felix", 1), user(3, "Eva", 1), user(4, "Anna", 3), user(5, "Gregor", 12), user(6, "Hanna", 12)],
+    listeners: {}, canEnter: {},
+  };
+})();
 
 async function boxes(page: Page, attr: "data-join" | "data-channel") {
   return page.evaluate((attr) => {
@@ -29,16 +46,21 @@ async function boxes(page: Page, attr: "data-join" | "data-channel") {
   }, attr);
 }
 
-test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ page }, info) => {
+test("layout matches the prototype (sample building, DEVELOPMENT floor)", async ({ page }, info) => {
   await page.goto(PROTOTYPE);
   const reference = await boxes(page, "data-join");
-  await page.screenshot({ path: info.outputPath("prototyp.png") });
+  await page.screenshot({ path: info.outputPath("prototype.png") });
 
-  await page.goto("/?fixture=musterhaus&talking=0");
-  await expect(page.getByRole("heading", { name: "ENTWICKLUNG" })).toBeVisible();
+  // The sample building no longer matches the prototype: the service is simulated and sends its layout
+  await page.routeWebSocket("**/ws/ui", (ws) => {
+    ws.send(JSON.stringify({ v: 1, type: "status", plugin: "connected" }));
+    ws.send(JSON.stringify(PROTOTYPE_SNAPSHOT));
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "DEVELOPMENT" })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
-  // Die Titelleiste ist kompakter als im Prototyp und der Grundriss füllt die Höhe: Fenster so weit
-  // verkleinern, dass der Grundriss so hoch ist wie im Prototyp, dann vergleichen
+  // The title bar is more compact than in the prototype and the floor plan fills the height: shrink the window
+  // until the floor plan is as tall as in the prototype, then compare
   const first = await boxes(page, "data-channel");
   const size = page.viewportSize()!;
   await page.setViewportSize({ width: size.width, height: Math.round(size.height - (first.plan!.height - reference.plan!.height)) });
@@ -48,11 +70,11 @@ test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ 
   const deviations: string[] = [];
   for (const [key, ref] of Object.entries(reference) as [string, Box][]) {
     const box = ours[key] as Box | undefined;
-    if (!box) { deviations.push(`${key}: fehlt`); continue; }
-    // Etagentasten sind bewusst kompakter als im Prototyp (Platz für mehr Etagen und den Eingang):
-    // bei ihnen nur x und Breite, beim Aufzug-Panel alles außer der Höhe
-    // Raumbreiten folgen seit dem Etagen-Layout der Mumble-Reihenfolge (Raum 1 und 2 groß), nicht mehr dem Namen
-    // wie im Prototyp: bei Räumen deshalb nur Zeile (y) und Höhe
+    if (!box) { deviations.push(`${key}: missing`); continue; }
+    // Floor buttons are deliberately more compact than in the prototype (room for more floors and the entrance):
+    // for them only x and width, for the elevator panel everything except the height
+    // Since the floor layout, room widths follow the Mumble order (rooms 1 and 2 large), no longer the name
+    // as in the prototype: for rooms therefore only row (y) and height
     const keys = key.startsWith("floor-")
       ? (["x", "width"] as const)
       : key.startsWith("room-") && key !== "room-2"
@@ -61,7 +83,7 @@ test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ 
         ? (["x", "y", "width"] as const)
         : (["x", "y", "width", "height"] as const);
     for (const k of keys) {
-      if (Math.abs(box[k] - ref[k]) > TOLERANCE) deviations.push(`${key}.${k}: ${box[k].toFixed(1)} statt ${ref[k].toFixed(1)}`);
+      if (Math.abs(box[k] - ref[k]) > TOLERANCE) deviations.push(`${key}.${k}: ${box[k].toFixed(1)} instead of ${ref[k].toFixed(1)}`);
     }
   }
   expect(deviations, deviations.join("\n")).toEqual([]);

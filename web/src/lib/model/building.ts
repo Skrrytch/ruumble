@@ -1,17 +1,17 @@
 /**
- * building-model: leitet aus einem Mumble-Snapshot das Gebäude ab (Gebäuderegeln in docs/internal/charter.md, ADR-0007).
- * Reine Funktionen ohne Svelte und ohne DOM. Jede Änderung am Snapshot ergibt ein neues Gebäude,
- * gespeichert wird nichts.
+ * building-model: derives the building from a Mumble snapshot (building rules in docs/internal/charter.md, ADR-0007).
+ * Pure functions without Svelte and without DOM. Every change to the snapshot yields a new building,
+ * nothing is stored.
  */
 import type { Channel, Snapshot, User } from "@ruumble/protocol";
 import { t } from "../i18n/index.svelte.ts";
 
-/** Mehr Räume passen nicht sinnvoll auf eine Etage (docs/internal/charter.md). */
+/** More rooms do not fit sensibly on one floor (docs/internal/charter.md). */
 export const MAX_ROOMS = 8;
 
-/** Ab so vielen Minuten ohne Sprechen gilt jemand als still (E30). Ice idlesecs zählt nur Sprechen. */
+/** After this many minutes without talking someone counts as quiet (E30). Ice idlesecs only counts talking. */
 export const QUIET_MINUTES = 15;
-/** Selbst taub und mindestens so viele Minuten still: abwesend (E30). */
+/** Self-deafened and quiet for at least this many minutes: away (E30). */
 export const AWAY_MINUTES = 5;
 
 export type Presence = "active" | "quiet" | "away";
@@ -23,37 +23,37 @@ export interface UserView {
   name: string;
   initials: string;
   isSelf: boolean;
-  /** selbst stumm oder taub geschaltet */
+  /** self-muted or self-deafened */
   selfMuted: boolean;
   selfDeafened: boolean;
-  /** vom Server stummgeschaltet, taub geschaltet oder unterdrückt (Symbolik: O6) */
+  /** muted, deafened or suppressed by the server (symbols: O6) */
   serverMuted: boolean;
-  /** Avatarbild (AP9), `null`: Initialen */
+  /** Avatar image (AP9), `null`: initials */
   avatarUrl: string | null;
-  /** Anwesenheit ohne Berücksichtigung des Sprechens; wer spricht, zeigt die Oberfläche immer als aktiv (AP10) */
+  /** Presence without regard to talking; whoever is talking is always shown as active by the web UI (AP10) */
   presence: Presence;
   idleMinutes: number;
   recording: boolean;
 }
 
-/** Ein betretbarer Bereich: Raum, Flur oder offene Etage. */
+/** An enterable area: room, corridor or open floor. */
 export interface Space {
   channelId: number;
   name: string;
   users: UserView[];
   isSelf: boolean;
-  /** Der eigene Nutzer darf den Kanal nicht betreten (ADR-0003). */
+  /** The own user may not enter the channel (ADR-0003). */
   locked: boolean;
-  /** Sessions, die hier mitlauschen */
+  /** Sessions listening here */
   listeners: number[];
-  /** Jemand im Raum zeichnet auf (AP10) */
+  /** Someone in the room is recording (AP10) */
   recording: boolean;
 }
 
 export interface Room extends Space {
-  /** Name enthält „(stumm)“ */
+  /** Name contains “(stumm)” */
   muted: boolean;
-  /** flex-grow nach Rang in der Mumble-Reihenfolge (roomGrow) */
+  /** flex-grow by rank in the Mumble order (roomGrow) */
   grow: number;
 }
 
@@ -62,13 +62,13 @@ export interface Floor {
   name: string;
   level: string;
   badge: string;
-  /** Der Etagenkanal selbst: Flur, bei einer Etage ohne Räume die offene Etage */
+  /** The floor channel itself: corridor, or the open floor for a floor without rooms */
   corridor: Space;
   rooms: Room[];
-  /** nur ohne Räume: offene Etage */
+  /** only without rooms: open floor */
   open: boolean;
   lock: LockReason | null;
-  /** alle Nutzer im sichtbaren Teilbaum der Etage */
+  /** all users in the floor's visible subtree */
   population: number;
   isSelf: boolean;
 }
@@ -77,33 +77,33 @@ export type SelfLocation =
   | { kind: "room" | "corridor" | "open-floor"; floorId: number; channelId: number }
   | { kind: "locked-floor"; floorId: number; channelId: number }
   | { kind: "entrance" }
-  /** in einem ausgeblendeten (verlinkten) Kanal */
+  /** in a hidden (linked) channel */
   | { kind: "hidden"; channelId: number };
 
 export interface Building {
   name: string;
   serverVersion: string;
   floors: Floor[];
-  /** Nutzer im Root-Kanal */
+  /** Users in the root channel */
   entrance: UserView[];
-  /** alle Nutzer auf dem Server, auch in ausgeblendeten Kanälen */
+  /** all users on the server, including in hidden channels */
   online: number;
-  /** `null`, solange kein gekoppeltes Plugin verbunden ist */
+  /** `null` as long as no paired plugin is connected */
   self: SelfLocation | null;
 }
 
-// ---------------------------------------------------------------- einzelne Regeln
+// ---------------------------------------------------------------- individual rules
 
 const collator = new Intl.Collator("de");
 
-/** Geschwisterkanäle wie im Mumble-Client: nach `position`, dann nach Name (Analyse 3.3). */
+/** Sibling channels as in the Mumble client: by `position`, then by name (analysis 3.3). */
 export function sortSiblings<T extends Pick<Channel, "position" | "name">>(channels: readonly T[]): T[] {
   return [...channels].sort((a, b) => a.position - b.position || collator.compare(a.name, b.name));
 }
 
 /**
- * Sichtbare Kanäle: Verlinkte Kanäle verschwinden samt allen Unterkanälen (docs/internal/charter.md, O2, O3).
- * Der Root-Kanal ist immer sichtbar.
+ * Visible channels: linked channels disappear together with all subchannels (docs/internal/charter.md, O2, O3).
+ * The root channel is always visible.
  */
 export function visibleChannels(channels: readonly Channel[]): Channel[] {
   const byId = new Map(channels.map((c) => [c.id, c]));
@@ -117,8 +117,8 @@ export function visibleChannels(channels: readonly Channel[]): Channel[] {
 }
 
 /**
- * Breite nach Rang in der Mumble-Reihenfolge: Raum 1 und 2 sind groß,
- * danach werden die Räume schrittweise kleiner (1,1 bis 0,85).
+ * Width by rank in the Mumble order: rooms 1 and 2 are large,
+ * after that the rooms get gradually smaller (1.1 to 0.85).
  */
 export function roomGrow(index: number): number {
   if (index < 2) return 1.3;
@@ -126,25 +126,25 @@ export function roomGrow(index: number): number {
 }
 
 /**
- * Oben stehen die großen Räume, deshalb bekommt die untere Reihe bei ungerader Anzahl
- * einen Raum mehr. Ein einzelner Raum steht oben.
+ * The large rooms are at the top, so with an odd count the bottom row gets
+ * one room more. A single room is at the top.
  */
 export function splitRows<T>(rooms: readonly T[]): { top: T[]; bottom: T[] } {
   const top = Math.max(Math.min(rooms.length, 1), Math.floor(rooms.length / 2));
   return { top: rooms.slice(0, top), bottom: rooms.slice(top) };
 }
 
-/** Etagen mit höchstens so vielen Räumen werden schmaler, wenn die Pinnwand offen ist */
+/** Floors with at most this many rooms get narrower when the board is open */
 export const FEW_ROOMS = 2;
 
 const segmenter = new Intl.Segmenter("de", { granularity: "grapheme" });
 
-/** Die ersten zwei Zeichen (Grapheme) des Namens, Emojis und Akzente bleiben ganz. */
+/** The first two characters (graphemes) of the name; emojis and accents stay whole. */
 export function initials(name: string): string {
   return [...segmenter.segment(name.trim())].slice(0, 2).map((s) => s.segment).join("");
 }
 
-/** Belegung: „frei“ / „1 Person“ / „N Personen“ (Sprache der Oberfläche) */
+/** Occupancy: “free” / “1 person” / “N people” (in the web UI's language) */
 export function countText(n: number): string {
   return t().people.count(n);
 }
@@ -159,10 +159,10 @@ export function presenceOf(u: Pick<User, "selfDeaf" | "idleMinutes">): Presence 
   return "active";
 }
 
-/** Standard: Bild vom Dienst, versioniert (AP9) */
+/** Default: image from the service, versioned (AP9) */
 const defaultAvatarUrl = (userId: number, version: string) => `/avatar/${userId}?v=${version}`;
 
-/** Avatarbild eines Nutzers, falls er registriert ist und eins gesetzt hat */
+/** Avatar image of a user, if registered and one is set */
 export function avatarUrlOf(u: Pick<User, "userId" | "avatar">, url: BuildOptions["avatarUrl"] = defaultAvatarUrl): string | null {
   return u.userId !== null && u.avatar ? url!(u.userId, u.avatar) : null;
 }
@@ -171,13 +171,13 @@ export interface BuildOptions {
   avatarUrl?: (userId: number, version: string) => string;
 }
 
-/** „Erdgeschoss“/„EG“, „1. Obergeschoss“/„1“ … (Sprache der Oberfläche) */
+/** “Ground floor”/“G”, “1st floor”/“1” … (in the web UI's language) */
 export function floorLabels(index: number): { level: string; badge: string } {
   const f = t().floors;
   return index === 0 ? { level: f.ground, badge: f.groundBadge } : { level: f.upper(index), badge: String(index) };
 }
 
-// ---------------------------------------------------------------- Gebäude
+// ---------------------------------------------------------------- Building
 
 export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): Building {
   const avatarUrl = options.avatarUrl ?? defaultAvatarUrl;
@@ -268,7 +268,7 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
   };
 }
 
-/** Welche Etage beim Start bzw. bei „Zu meiner Etage“ angezeigt wird: die eigene, sonst die erste darstellbare. */
+/** Which floor is shown at start or on “Go to my floor”: your own, otherwise the first displayable one. */
 export function homeFloor(building: Building): Floor | null {
   const own = building.floors.find((f) => f.isSelf);
   return own ?? building.floors.find((f) => !f.lock) ?? null;

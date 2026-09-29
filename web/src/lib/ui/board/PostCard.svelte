@@ -8,7 +8,7 @@
   import { getFileUrl } from "../../board/context.ts";
   import PostBody from "./PostBody.svelte";
 
-  /** `avatar`: Bild des Autors, wenn er gerade verbunden und registriert ist; sonst Initialen */
+  /** `avatar`: the author's image if they are currently connected and registered; otherwise initials */
   let { post, now, avatar = null, onopen }: { post: Post; now: number; avatar?: string | null; onopen: (post: Post) => void } = $props();
   let avatarBroken = $state<string | null>(null);
 

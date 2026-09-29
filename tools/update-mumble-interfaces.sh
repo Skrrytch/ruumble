@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Übernimmt die Mumble-Schnittstellendateien eines Release-Tags nach third_party/mumble.
-# Aufruf: tools/update-mumble-interfaces.sh <tag>   (z. B. v1.6.870)
-# Ohne Tag wird nur geprüft, ob die Dateien zu SHA256SUMS passen.
+# Copies the Mumble interface files of a release tag into third_party/mumble.
+# Usage: tools/update-mumble-interfaces.sh <tag>   (e.g. v1.6.870)
+# Without a tag, only checks whether the files match SHA256SUMS.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"

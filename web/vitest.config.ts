@@ -1,7 +1,7 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vitest/config";
 export default defineConfig({
-  // Runen in *.svelte.ts (z. B. i18n) auch in den Unit-Tests
+  // Runes in *.svelte.ts (e.g. i18n) in the unit tests too
   plugins: [svelte()],
   test: {
     include: ["test/**/*.test.ts"],

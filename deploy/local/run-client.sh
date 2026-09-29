@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Startet einen headless Mumble-Client mit Ruumble-Plugin im Netz von ruumble-local.
+# Starts a headless Mumble client with the Ruumble plugin in the ruumble-local network.
 #   deploy/local/run-client.sh <ubuntu|debian|fedora> <Name>
-#   BRIDGE_URL= deploy/local/run-client.sh …   → ohne feste Adresse (Erkennung über die Root-Beschreibung)
-#   PLUGIN_DIR=<verzeichnis mit libruumble.so> …   → anderes Plugin-Build (z. B. aus dem Image)
-# Voraussetzung: Images ruumble-client-<distro> (tools/live-test/README.md) und plugin/build.
+#   BRIDGE_URL= deploy/local/run-client.sh …   → without a fixed address (discovery via the root description)
+#   PLUGIN_DIR=<directory with libruumble.so> …   → a different plugin build (e.g. from the image)
+# Prerequisite: images ruumble-client-<distro> (tools/live-test/README.md) and plugin/build.
 set -eu
 cd "$(dirname "$0")"
 distro=$1 user=$2 name="ruumble-client-$2"

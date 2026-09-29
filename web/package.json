@@ -2,7 +2,7 @@
   "name": "@ruumble/web",
   "version": "0.7.2",
   "private": true,
-  "description": "Ruumble-Oberfl\u00e4che (Svelte)",
+  "description": "Ruumble web UI (Svelte)",
   "license": "BSD-3-Clause",
   "type": "module",
   "scripts": {

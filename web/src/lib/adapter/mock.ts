@@ -1,27 +1,27 @@
 /**
- * Mock-Adapter: spielt einen Mumble-Server mit den Fixtures aus `protocol/fixtures` nach.
+ * Mock adapter: simulates a Mumble server with the fixtures from `protocol/fixtures`.
  *
- * Das Verhalten entspricht den Befunden der Machbarkeitstests S1/S2:
- * - Kanalwechsel werden nach kurzer Verzögerung bestätigt, ohne Enter-Recht nach 3 s abgelehnt.
- * - Von mehreren offenen Wechseln gilt nur der letzte (`superseded`), ein Wechsel in den eigenen Kanal ist sofort `ok`.
- * - Stumm/Taub folgen der Semantik der Mumble-Buttons (nur hier nachgebildet, die Oberfläche selbst tut das nicht).
- * - Sprechereignisse gibt es nur für Nutzer im eigenen Raum und nicht, wenn man selbst taub ist.
+ * The behaviour matches the findings of feasibility tests S1/S2:
+ * - Channel switches are confirmed after a short delay, rejected after 3 s without the Enter permission.
+ * - Of several pending switches only the last one counts (`superseded`); a switch to your own channel is `ok` immediately.
+ * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
+ * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
 import { BOARD_IMAGE_TYPES, BOARD_LIMITS, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
-import leerstand from "@ruumble/protocol/fixtures/leerstand.json";
-import musterhaus from "@ruumble/protocol/fixtures/musterhaus.json";
-import nichtGekoppelt from "@ruumble/protocol/fixtures/nicht-gekoppelt.json";
-import sonderfaelle from "@ruumble/protocol/fixtures/sonderfaelle.json";
+import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
+import sample from "@ruumble/protocol/fixtures/sample.json";
+import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
+import vacant from "@ruumble/protocol/fixtures/vacant.json";
 import type { AdapterEvents, BoardApi, BoardResult, MumbleAdapter, PluginStatus } from "./types.ts";
 
 const MINUTE = 60_000;
 
-/** Anhang im Mock: Inhalt im Speicher, Adresse als Blob- oder Data-URL */
+/** Attachment in the mock: content in memory, address as blob or data URL */
 interface MockFile { attachment: Omit<Uploaded, "name">; blob?: Blob; url: string }
 
 const hexId = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
 
-/** Beispielbild (Whiteboard-Skizze), per Canvas gezeichnet; ohne Canvas (Unit-Tests) keins */
+/** Sample image (whiteboard sketch), drawn via canvas; none without canvas (unit tests) */
 function sampleImage(): MockFile | null {
   try {
     const c = document.createElement("canvas");
@@ -41,7 +41,7 @@ function sampleImage(): MockFile | null {
     g.stroke();
     g.fillStyle = "#003869";
     g.font = "bold 40px sans-serif";
-    g.fillText("Browser", 160, 175); g.fillText("Plugin", 660, 175); g.fillText("Dienst", 420, 465);
+    g.fillText("Browser", 160, 175); g.fillText("Plugin", 660, 175); g.fillText("Service", 415, 465);
     const url = c.toDataURL("image/png");
     if (!url.startsWith("data:image/png")) return null;
     return { attachment: { id: hexId(), mime: "image/png", size: Math.round((url.length * 3) / 4), width: 960, height: 600, image: true }, url };
@@ -50,7 +50,7 @@ function sampleImage(): MockFile | null {
   }
 }
 
-/** Beispielbeiträge für den Mock (Raum-ID → Beiträge, neueste zuerst) */
+/** Sample posts for the mock (room ID → posts, newest first) */
 function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Post[]> {
   const post = (p: Partial<Post> & Pick<Post, "id" | "channelId" | "kind" | "text" | "authorName">): Post => ({
     mine: false, canDelete: false, createdAt: now, updatedAt: now, ...p,
@@ -58,34 +58,34 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
   const code = [
     "export function greet(name: string): string {",
     "  if (!name) {",
-    '    throw new Error("Name fehlt");',
+    '    throw new Error("Name is missing");',
     "  }",
-    "  return `Hallo ${name}!`;",
+    "  return `Hello ${name}!`;",
     "}",
     "",
     'console.log(greet("Anna"));',
-    "// weitere Zeilen, damit gekürzt wird",
+    "// a few more lines so the preview gets shortened",
     "const a = 1;",
     "const b = 2;",
   ].join("\n");
   const notes = [
-    "## Sprint-Notizen",
+    "## Sprint notes",
     "",
-    "- Pinnwand in Ruumble **fertig machen**",
-    "- Avatare prüfen",
-    "- Termin mit Clara: *Donnerstag 10 Uhr*",
+    "- **Finish** the Ruumble board",
+    "- Review the avatar handling",
+    "- Sync with Clara: *Thursday 10 am*",
     "",
-    "Details stehen im [Wiki](https://example.org/wiki).",
+    "Details are in the [wiki](https://example.org/wiki).",
     "",
-    "1. Punkt eins",
-    "2. Punkt zwei",
-    "3. Punkt drei",
-    "4. Punkt vier",
+    "1. Fix the flaky e2e test",
+    "2. Bump the dependencies",
+    "3. Update the changelog",
+    "4. Tag the release",
   ].join("\n");
   const image = sampleImage();
   if (image) files.set(image.attachment.id, image);
-  const protocol = new Blob(["Protokoll der Besprechung\n\n- Pinnwand: Bilder und Dateien\n"], { type: "text/plain" });
-  const file: MockFile = { attachment: { id: hexId(), mime: "text/plain", size: protocol.size, image: false }, blob: protocol, url: "" };
+  const log = new Blob(["2026-09-29 09:12:04 INFO  server started on :8443\n2026-09-29 09:12:05 INFO  board: images and files enabled\n"], { type: "text/plain" });
+  const file: MockFile = { attachment: { id: hexId(), mime: "text/plain", size: log.size, image: false }, blob: log, url: "" };
   files.set(file.attachment.id, file);
   const attachment = (f: MockFile, name: string): Attachment => {
     const { image: _image, ...a } = f.attachment;
@@ -93,29 +93,29 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
   };
   return new Map([
     [3, [
-      ...(image ? [post({ id: "m4", channelId: 3, kind: "image", authorName: "Clara", createdAt: now - 3 * MINUTE, updatedAt: now - 3 * MINUTE, text: "Skizze vom Whiteboard", attachment: attachment(image, "whiteboard.png") })] : []),
-      post({ id: "m5", channelId: 3, kind: "file", authorName: "Ben", createdAt: now - 8 * MINUTE, updatedAt: now - 8 * MINUTE, text: "", attachment: attachment(file, "protokoll.txt") }),
+      ...(image ? [post({ id: "m4", channelId: 3, kind: "image", authorName: "Clara", createdAt: now - 3 * MINUTE, updatedAt: now - 3 * MINUTE, text: "Architecture sketch from the whiteboard", attachment: attachment(image, "whiteboard.png") })] : []),
+      post({ id: "m5", channelId: 3, kind: "file", authorName: "Ben", createdAt: now - 8 * MINUTE, updatedAt: now - 8 * MINUTE, text: "", attachment: attachment(file, "server.log") }),
       post({ id: "m1", channelId: 3, kind: "code", language: "typescript", authorName: "Ben", createdAt: now - 12 * MINUTE, updatedAt: now - 12 * MINUTE, text: code }),
       post({ id: "m2", channelId: 3, kind: "text", authorName: "Anna", mine: true, canDelete: true, createdAt: now - 60 * MINUTE, updatedAt: now - 30 * MINUTE, updatedByName: "Ben", text: notes }),
     ]],
-    [5, [post({ id: "m3", channelId: 5, kind: "text", authorName: "Clara", text: "Bin ab 14 Uhr im Kundentermin." })]],
+    [7, [post({ id: "m3", channelId: 7, kind: "text", authorName: "Clara", text: "In a customer call from 2 pm." })]],
   ]);
 }
 
 export const FIXTURES = {
-  musterhaus,
-  sonderfaelle,
-  leerstand,
-  "nicht-gekoppelt": nichtGekoppelt,
+  sample,
+  "edge-cases": edgeCases,
+  vacant,
+  unpaired,
 } as unknown as Record<string, Snapshot>;
 export type FixtureName = keyof typeof FIXTURES;
 
 export interface MockOptions {
-  /** Verzögerung bis zur Bestätigung eines Wechsels (S2: 10–25 ms, hier sichtbar länger) */
+  /** Delay until a switch is confirmed (S2: 10–25 ms, visibly longer here) */
   confirmMs?: number;
-  /** Warten auf eine Bestätigung, die nie kommt (ADR-0003) */
+  /** Waiting for a confirmation that never comes (ADR-0003) */
   rejectMs?: number;
-  /** Sprechereignisse simulieren */
+  /** Simulate talking events */
   talking?: boolean;
 }
 
@@ -147,7 +147,7 @@ export class MockAdapter implements MumbleAdapter {
         const post: Post = {
           id: `mock-${this.nextPostId++}`, channelId, kind: input.kind, text: input.text,
           ...(input.language ? { language: input.language } : {}),
-          ...(file ? { attachment: { ...(stored as Omit<Attachment, "name">), name: input.attachmentName || "datei" } } : {}),
+          ...(file ? { attachment: { ...(stored as Omit<Attachment, "name">), name: input.attachmentName || "file" } } : {}),
           authorName: me.name, mine: true, canDelete: true, createdAt: now, updatedAt: now,
         };
         this.posts.set(channelId, [post, ...(this.posts.get(channelId) ?? [])]);
@@ -159,7 +159,7 @@ export class MockAdapter implements MumbleAdapter {
         const list = this.posts.get(channelId) ?? [];
         const i = list.findIndex((p) => p.id === id);
         if (i < 0) return null;
-        // wie der Dienst: ohne Sprache wird sie zurückgesetzt („automatisch“)
+        // like the service: without a language it is reset (“automatic”)
         const { language: _old, ...rest } = list[i]!;
         const updated: Post = { ...rest, text: change.text, ...(change.language ? { language: change.language } : {}), updatedAt: Date.now(), updatedByName: this.me()!.name };
         list[i] = updated;
@@ -180,12 +180,12 @@ export class MockAdapter implements MumbleAdapter {
       const room = this.boardRoom(() => true as const);
       if (!room.ok) return room;
       if (file.size > BOARD_LIMITS.fileBytes) return { ok: false, error: "too-large" };
-      // Fortschritt sichtbar machen, wie bei einer echten Übertragung
+      // make progress visible, as with a real transfer
       for (const f of [0.25, 0.5, 0.75, 1]) {
         await new Promise((r) => setTimeout(r, 40));
         onProgress?.(f);
       }
-      // wie der Dienst: SVG ist nie ein Bild, sonst zählt der Typ (der Dienst prüft die Bytes)
+      // like the service: SVG is never an image, otherwise the type counts (the service checks the bytes)
       const image = (BOARD_IMAGE_TYPES as readonly string[]).includes(file.type);
       const dims = image ? await createImageBitmap(file).then((b) => ({ width: b.width, height: b.height })).catch(() => null) : null;
       const attachment = { id: hexId(), mime: image ? file.type : file.type && !file.type.startsWith("image/") ? file.type : "application/octet-stream", size: file.size, ...(dims ?? {}), image: image && !!dims };
@@ -195,12 +195,12 @@ export class MockAdapter implements MumbleAdapter {
     fileUrl: (a: Attachment) => {
       const f = this.files.get(a.id);
       if (!f) return "";
-      if (!f.url && f.blob) f.url = URL.createObjectURL(f.blob); // Blob-URL erst bei Bedarf
+      if (!f.url && f.blob) f.url = URL.createObjectURL(f.blob); // blob URL only when needed
       return f.url;
     },
   };
 
-  constructor(fixture: FixtureName | Snapshot = "musterhaus", opts: MockOptions = {}) {
+  constructor(fixture: FixtureName | Snapshot = "sample", opts: MockOptions = {}) {
     this.opts = { confirmMs: 250, rejectMs: 3000, talking: true, ...opts };
     this.state = clone(typeof fixture === "string" ? FIXTURES[fixture]! : fixture);
     if (!this.state.self) this.plugin = "disconnected";
@@ -229,7 +229,7 @@ export class MockAdapter implements MumbleAdapter {
         if (body.on) me.selfMute = true;
         else {
           me.selfMute = false;
-          me.selfDeaf = false; // Unmute hebt Taub mit auf
+          me.selfDeaf = false; // unmute also lifts deaf
           this.unmuteOnUndeaf = false;
         }
         this.emit();
@@ -249,14 +249,14 @@ export class MockAdapter implements MumbleAdapter {
     }
   }
 
-  /** Beispiel-Avatare als SVG (im Mock gibt es keinen Dienst, der Bilder ausliefert) */
+  /** Sample avatars as SVG (in the mock there is no service that serves images) */
   avatarUrl(userId: number, version: string): string {
     const hue = (userId * 67) % 360;
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><rect width="44" height="44" fill="hsl(${hue} 55% 55%)"/><circle cx="22" cy="17" r="8" fill="#fff"/><path d="M8 42c2-10 26-10 28 0" fill="#fff"/></svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}#${version}`;
   }
 
-  // ---------------------------------------------------------------- Debug-Aktionen
+  // ---------------------------------------------------------------- Debug actions
 
   setFixture(name: FixtureName): void {
     this.state = clone(FIXTURES[name]!);
@@ -273,26 +273,26 @@ export class MockAdapter implements MumbleAdapter {
     this.events?.status(status, false);
   }
 
-  /** Der nächste Wechsel wird trotz Zutrittsrecht nicht bestätigt (wie beim Rate-Limit, S2). */
+  /** The next switch is not confirmed despite access permission (as with the rate limit, S2). */
   rejectNextJoin(): void {
     this.rejectNext = true;
   }
 
-  /** legt unter einem Kanal einen Unterkanal an (z. B. um eine Etage zu sperren) */
+  /** creates a subchannel below a channel (e.g. to lock a floor) */
   addSubchannel(parent: number): void {
     const id = Math.max(...this.state.channels.map((c) => c.id)) + 1;
-    this.state.channels.push({ id, parent, name: `Neu ${id}`, position: 99, links: [], temporary: true });
+    this.state.channels.push({ id, parent, name: `New ${id}`, position: 99, links: [], temporary: true });
     this.emit();
   }
 
   removeTemporaryChannels(): void {
-    const temp = new Set(this.state.channels.filter((c) => c.temporary && c.name.startsWith("Neu ")).map((c) => c.id));
+    const temp = new Set(this.state.channels.filter((c) => c.temporary && c.name.startsWith("New ")).map((c) => c.id));
     this.state.channels = this.state.channels.filter((c) => !temp.has(c.id));
     for (const u of this.state.users) if (temp.has(u.channel)) u.channel = 0;
     this.emit();
   }
 
-  /** verschiebt einen zufälligen fremden Nutzer in einen zufälligen Kanal */
+  /** moves a random other user into a random channel */
   moveRandomUser(): void {
     const others = this.state.users.filter((u) => u.session !== this.state.self?.session);
     const user = others[Math.floor(Math.random() * others.length)];
@@ -304,13 +304,13 @@ export class MockAdapter implements MumbleAdapter {
     }
   }
 
-  // ---------------------------------------------------------------- intern
+  // ---------------------------------------------------------------- internal
 
   private channelName(id: number): string {
     return this.state.channels.find((c) => c.id === id)?.name ?? "";
   }
 
-  /** wie der Dienst: nur im eigenen Raum der 2. Ebene, nicht temporär (ADR-0011) */
+  /** like the service: only in your own room on the 2nd level, not temporary (ADR-0011) */
   private boardRoom<T>(fn: (channelId: number) => T | null | "forbidden" | "invalid" | "bad-type"): BoardResult<T> {
     const me = this.me();
     if (this.plugin === "disconnected" || !me) return { ok: false, error: "not-paired" };
@@ -347,7 +347,7 @@ export class MockAdapter implements MumbleAdapter {
           this.pendingJoin = null;
           if (!allowed) return resolve("rejected");
           me.channel = channel;
-          for (const session of [...this.talkingNow]) this.stopTalking(session); // wie Mumble: wer nicht mehr hörbar ist → passive
+          for (const session of [...this.talkingNow]) this.stopTalking(session); // like Mumble: whoever is no longer audible → passive
           this.emit();
           resolve("ok");
         },

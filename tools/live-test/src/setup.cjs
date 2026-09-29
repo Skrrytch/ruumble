@@ -1,11 +1,11 @@
-// NUR Testvorbereitung: legt mit dem WRITE-Secret die Test-Kanäle an. Der Ruumble-Dienst nutzt dieses Secret nie.
+// Test preparation ONLY: creates the test channels with the WRITE secret. The Ruumble service never uses this secret.
 const { connect } = require("./ice.cjs");
 
 const TREE = {
   Lobby: [],
-  ENTWICKLUNG: ["Büro von Anna", "Büro von Ben", "Büro von Clara", "Büro von David", "Büro von Eva", "Büro von Felix"],
-  VERTRIEB: ["Abwesend", "Fokusraum (stumm)", "Teeküche", "Raucherecke", "Gregors Büro", "Projektraum"],
-  ARCHIV: ["Aktenraum", "Tiefer Raum"], // bekommt einen Unterkanal → Etage gesperrt (too-deep)
+  DEVELOPMENT: ["Anna's office", "Ben's office", "Clara's office", "David's office", "Eva's office", "Felix's office"],
+  SALES: ["Away", "Focus room (muted)", "Kitchen", "Coffee corner", "Gregor's office", "Project room"],
+  ARCHIVE: ["File room", "Deep room"], // gets a sub-channel → floor locked (too-deep)
 };
 
 (async () => {
@@ -26,18 +26,18 @@ const TREE = {
         const rs = await server.getChannelState(ids[r]); rs.position = rpos++; await server.setChannelState(rs);
       }
     }
-    ids.deep = await ensure("Unterkanal", ids["Tiefer Raum"]);
-    // Verlinkung Teeküche <-> Raucherecke (nur eine Seite setzen, Server macht sie symmetrisch)
-    const tk = await server.getChannelState(ids["Teeküche"]);
-    tk.links = [ids["Raucherecke"]]; await server.setChannelState(tk);
-    // Gregors Büro: Enter für alle verbieten
+    ids.deep = await ensure("Subchannel", ids["Deep room"]);
+    // Link Kitchen <-> Coffee corner (set one side only, the server makes it symmetric)
+    const tk = await server.getChannelState(ids["Kitchen"]);
+    tk.links = [ids["Coffee corner"]]; await server.setChannelState(tk);
+    // Gregor's office: deny Enter for all
     const acl = new MumbleServer.ACL(true, true, false, -1, "all", 0, MumbleServer.PermissionEnter);
-    await server.setACL(ids["Gregors Büro"], [acl], [], true);
-    // Root-Beschreibung mit der Ruumble-Adresse (ADR-0010); RUUMBLE_URL für den lokalen Live-Test
+    await server.setACL(ids["Gregor's office"], [acl], [], true);
+    // Root description with the Ruumble address (ADR-0010); RUUMBLE_URL for the local live test
     const root = await server.getChannelState(0);
-    // RUUMBLE_DESC_PAD verlängert die Beschreibung über 128 Zeichen: dann schickt Mumble nur einen Hash (ADR-0010)
-    const pad = process.env.RUUMBLE_DESC_PAD ? "<p>" + "Willkommen im Musterhaus. ".repeat(6) + "</p>" : "";
-    root.description = `${pad}Hier ein paar wichtige Konfigurationen für Ruumble:\n\n- ruumble: ${process.env.RUUMBLE_URL ?? "http://ruumble:8080"}\n\nDanke.`;
+    // RUUMBLE_DESC_PAD extends the description beyond 128 characters: then Mumble only sends a hash (ADR-0010)
+    const pad = process.env.RUUMBLE_DESC_PAD ? "<p>" + "Welcome to Acme HQ. ".repeat(6) + "</p>" : "";
+    root.description = `${pad}Here are a few important settings for Ruumble:\n\n- ruumble: ${process.env.RUUMBLE_URL ?? "http://ruumble:8080"}\n\nThanks.`;
     await server.setChannelState(root);
     console.log(JSON.stringify(ids));
   } finally {

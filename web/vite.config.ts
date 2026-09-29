@@ -7,10 +7,10 @@ const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), 
 export default defineConfig({
   plugins: [svelte()],
   define: { __UI_VERSION__: JSON.stringify(pkg.version) },
-  // Workspace-Pakete (z. B. protocol/) liegen außerhalb von web/
+  // Workspace packages (e.g. protocol/) live outside web/
   server: {
     fs: { allow: [".."] },
-    // ?live im Dev-Server: Dienst lokal auf :8080
+    // ?live in the dev server: service locally on :8080
     proxy: {
       "/ws": { target: "ws://127.0.0.1:8080", ws: true },
       ...Object.fromEntries(["/pair", "/api", "/avatar", "/download"].map((p) => [p, "http://127.0.0.1:8080"])),

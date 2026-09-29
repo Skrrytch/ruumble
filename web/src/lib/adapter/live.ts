@@ -1,11 +1,11 @@
 /**
- * LiveAdapter: WebSocket zum Ruumble-Dienst (`/ws/ui`, ADR-0007).
- * Verbindet sich bei Abbruch mit wachsendem Abstand neu. Ergebnisse werden den Befehlen über die ID zugeordnet.
+ * LiveAdapter: WebSocket to the Ruumble service (`/ws/ui`, ADR-0007).
+ * Reconnects with increasing delay after a drop. Results are matched to commands by ID.
  */
 import { BoardError, BoardView, BridgeToUi, PROTOCOL_VERSION, Post, Uploaded, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
 import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, MumbleAdapter } from "./types.ts";
 
-/** REST der Pinnwand; Cookie der Kopplung geht automatisch mit (same-origin) */
+/** REST of the board; the pairing cookie is sent automatically (same-origin) */
 async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit = {}): Promise<BoardResult<T>> {
   let res: Response;
   try {
@@ -32,16 +32,16 @@ const liveBoard: BoardApi = {
   fileUrl: (a, download = false) => `/api/board/files/${a.id}${download ? "?download" : ""}`,
 };
 
-/** Fehler, die Fastify selbst meldet (z. B. Körper zu groß), haben keinen eigenen Code */
+/** Errors that Fastify reports itself (e.g. body too large) have no code of their own */
 const STATUS_ERROR: Record<number, BoardErrorCode> = { 401: "not-paired", 403: "not-in-room", 404: "no-board-here", 413: "too-large", 415: "bad-type", 429: "rate-limited" };
 
-/** XMLHttpRequest statt fetch, weil nur er den Fortschritt beim Hochladen meldet */
+/** XMLHttpRequest instead of fetch, because only it reports upload progress */
 function upload(file: Blob, name: string, onProgress?: (fraction: number) => void): Promise<BoardResult<Uploaded>> {
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/board/uploads");
     xhr.withCredentials = true;
-    // immer Rohdaten: Fastify würde JSON und Text sonst selbst auswerten; der echte Typ geht in X-File-Type
+    // always raw data: Fastify would otherwise parse JSON and text itself; the real type goes in X-File-Type
     xhr.setRequestHeader("content-type", "application/octet-stream");
     if (file.type) xhr.setRequestHeader("x-file-type", file.type);
     xhr.setRequestHeader("x-file-name", encodeURIComponent(name));
@@ -49,7 +49,7 @@ function upload(file: Blob, name: string, onProgress?: (fraction: number) => voi
     xhr.onerror = () => resolve({ ok: false, error: "offline" });
     xhr.onload = () => {
       let body: unknown = null;
-      try { body = JSON.parse(xhr.responseText); } catch { /* kein JSON */ }
+      try { body = JSON.parse(xhr.responseText); } catch { /* not JSON */ }
       if (xhr.status !== 201) {
         const known = BoardError.safeParse(body);
         return resolve({ ok: false, error: known.success ? known.data.error : (STATUS_ERROR[xhr.status] ?? "invalid") });
@@ -61,7 +61,7 @@ function upload(file: Blob, name: string, onProgress?: (fraction: number) => voi
   });
 }
 
-/** Ohne Antwort des Plugins gilt ein Befehl nach dieser Zeit als `timeout` (Plugin: 3 s + Wiederholung). */
+/** Without a reply from the plugin, a command counts as `timeout` after this time (plugin: 3 s + retry). */
 const COMMAND_TIMEOUT_MS = 10_000;
 
 export class LiveAdapter implements MumbleAdapter {
@@ -136,7 +136,7 @@ export class LiveAdapter implements MumbleAdapter {
         this.pending.delete(id);
       }
       if (!this.events) return;
-      if (e.code === 4401) return this.events.connection("unpaired"); // nicht gekoppelt: kein erneuter Versuch
+      if (e.code === 4401) return this.events.connection("unpaired"); // not paired: no retry
       this.events.connection("reconnecting");
       this.retryTimer = setTimeout(() => this.open(), this.retryMs);
       this.retryMs = Math.min(this.retryMs * 2, 10_000);

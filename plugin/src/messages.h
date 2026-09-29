@@ -1,5 +1,5 @@
-// Sprache der Plugin-Meldungen im Mumble-Protokoll: Deutsch, sonst Englisch (wie die Oberfläche).
-// Die Plugin-API verrät Mumbles eigene Sprache nicht; maßgeblich ist deshalb die Systemumgebung.
+// Language of the plugin messages in the Mumble log: German, otherwise English (like the web UI).
+// The plugin API does not reveal Mumble's own language; the system environment therefore decides.
 #pragma once
 
 #include <string>
@@ -8,9 +8,9 @@ namespace ruumble {
 
 enum class Locale { de, en };
 
-/** POSIX-Reihenfolge: LC_ALL vor LC_MESSAGES vor LANG; „de…“ → Deutsch, alles andere → Englisch */
+/** POSIX order: LC_ALL before LC_MESSAGES before LANG; "de…" → German, anything else → English */
 Locale localeFromEnv(const char *lcAll, const char *lcMessages, const char *lang);
-/** „de“ / „en“, so wie der Dienst es erwartet */
+/** "de" / "en", as the service expects it */
 const char *localeName(Locale locale);
 
 namespace text {

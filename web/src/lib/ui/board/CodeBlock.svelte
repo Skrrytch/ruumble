@@ -6,10 +6,10 @@
   const lines = $derived(code.split(/\r?\n/).length);
 </script>
 
-<!-- Zeilennummern als eigene Spalte: highlight.js-Spans können über Zeilen reichen -->
+<!-- line numbers as a separate column: highlight.js spans can span lines -->
 <div class="code">
   {#if numbers}<pre class="gutter" aria-hidden="true">{Array.from({ length: lines }, (_, i) => i + 1).join("\n")}</pre>{/if}
-  <!-- von DOMPurify bereinigt (render.ts) -->
+  <!-- sanitised by DOMPurify (render.ts) -->
   <pre class="hljs"><code>{@html rendered.html}</code></pre>
 </div>
 {#if rendered.language}<span class="lang">{rendered.language}</span>{/if}

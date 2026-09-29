@@ -9,12 +9,12 @@ services:
         hostname: mumble-server
         restart: unless-stopped
         environment:
-            # Ice für Ruumble: nur in den Docker-Netzen erreichbar, Port 6502 wird nicht veröffentlicht.
-            # Read- und Write-Secret sind verschieden; Ruumble bekommt nur das Read-Secret.
+            # Ice for Ruumble: reachable only within the Docker networks, port 6502 is not published.
+            # Read and write secrets differ; Ruumble only gets the read secret.
             MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'
-            # Begrüßung mit anklickbarem Link zu Ruumble (Plugins können keine Links oder Knöpfe anzeigen)
+            # Welcome message with a clickable link to Ruumble (plugins cannot show links or buttons)
             MUMBLE_CONFIG_WELCOMETEXT: >-
-                "Willkommen! <a href='http://<LAN-IP>:8080'><b>Geb&auml;ude &ouml;ffnen (Ruumble)</b></a> &ndash; hier siehst du wer in welchem Raum ist."
+                "Welcome! <a href='http://<LAN-IP>:8080'><b>Open the building (Ruumble)</b></a> &ndash; see who is in which room."
         secrets:
             - source: ice_read
               target: MUMBLE_CONFIG_ICESECRETREAD
@@ -26,7 +26,7 @@ services:
             - mumble-data:/data
         networks:
             - mumble-network
-            - homeserver-network # optional: vorhandenes Netz eines Reverse-Proxys
+            - homeserver-network # optional: existing network of a reverse proxy
         ports:
             - 64738:64738
             - 64738:64738/udp
@@ -49,5 +49,5 @@ networks:
     mumble-network:
         name: mumble-network
         driver: bridge
-    homeserver-network: # optional, siehe oben
+    homeserver-network: # optional, see above
         external: true

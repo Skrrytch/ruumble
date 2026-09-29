@@ -1,6 +1,6 @@
 /**
- * Text in die Zwischenablage. `navigator.clipboard` gibt es nur in sicheren Kontexten (HTTPS, localhost);
- * im Heimnetz über http://<LAN-IP> fällt die Oberfläche deshalb auf `execCommand("copy")` zurück.
+ * Text to the clipboard. `navigator.clipboard` only exists in secure contexts (HTTPS, localhost);
+ * on the home network via http://<LAN-IP> the web UI therefore falls back to `execCommand("copy")`.
  */
 export async function copyText(text: string): Promise<boolean> {
   if (window.isSecureContext && navigator.clipboard) {
@@ -8,7 +8,7 @@ export async function copyText(text: string): Promise<boolean> {
       await navigator.clipboard.writeText(text);
       return true;
     } catch {
-      // weiter mit dem Rückfall
+      // continue with the fallback
     }
   }
   const area = document.createElement("textarea");

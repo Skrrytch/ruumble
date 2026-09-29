@@ -6,10 +6,10 @@
 
   let { user, talking = false, showName = true }: { user: UserView; talking?: boolean; showName?: boolean } = $props();
 
-  // Bild nicht ladbar → Initialen (AP9)
+  // image not loadable → initials (AP9)
   let failedUrl = $state<string | null>(null);
   const imageUrl = $derived(user.avatarUrl && user.avatarUrl !== failedUrl ? user.avatarUrl : null);
-  // Wer spricht, ist aktiv – egal was idlesecs sagt (AP10)
+  // whoever is talking is active – whatever idlesecs says (AP10)
   const presence = $derived(talking ? "active" : user.presence);
 
   const p = $derived(t().people);
@@ -25,7 +25,7 @@
       .filter(Boolean)
       .join(", "),
   );
-  /** gleiche Wörter wie im Label, als Tooltip am Abzeichen großgeschrieben */
+  /** same words as in the label, capitalised as the badge tooltip */
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 </script>
 
@@ -60,12 +60,12 @@
     transition: opacity var(--dur) var(--ease-out);
   }
   .av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-  /* Anwesenheit (AP10): nur die Deckkraft, damit Ring und Abzeichen gut lesbar bleiben */
+  /* presence (AP10): only the opacity, so ring and badges stay readable */
   .av.quiet { opacity: 0.7; }
   .av.away { opacity: 0.4; }
-  /* eigener Nutzer: das einzige gelbe Element */
+  /* own user: the only yellow element */
   .av.me { background: var(--color-navy); box-shadow: 0 0 0 3px var(--color-accent); }
-  /* Sprechanzeige: pulsierender Ring in Mittelblau (docs/internal/charter.md) */
+  /* talking indicator: pulsing ring in medium blue (docs/internal/charter.md) */
   .av.talking::after {
     content: ""; position: absolute; inset: -7px; border-radius: 50%;
     border: 3px solid var(--color-sky); animation: pulse 1.2s var(--ease-out) infinite;

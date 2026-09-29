@@ -68,7 +68,7 @@
     {
       "v": 1,
       "type": "notify",
-      "text": "Ben hat Code an die Pinnwand geheftet."
+      "text": "Ben pinned code to the board."
     }
   ],
   "UiToBridge": [

@@ -1,5 +1,5 @@
-// Minimaler Mumble-Test-Client (nur Steuerkanal, kein Audio) für Machbarkeitstests.
-// Rahmen: 2 Byte Typ + 4 Byte Länge (Big Endian) + protobuf-Nutzlast.
+// Minimal Mumble test client (control channel only, no audio) for feasibility tests.
+// Framing: 2-byte type + 4-byte length (big endian) + protobuf payload.
 const tls = require("tls");
 const crypto = require("crypto");
 const { execFileSync } = require("child_process");
@@ -18,7 +18,7 @@ const T = Object.fromEntries(TYPES.map((n) => [n, root.lookupType(`MumbleProto.$
 
 const CERT_DIR = path.join(__dirname, "../gen/certs");
 
-/** Erzeugt (einmalig) ein selbstsigniertes Client-Zertifikat und liefert Schlüssel, Zertifikat und SHA1-Hash. */
+/** Creates (once) a self-signed client certificate and returns key, certificate and SHA1 hash. */
 function certFor(name) {
   fs.mkdirSync(CERT_DIR, { recursive: true });
   const key = path.join(CERT_DIR, `${name}.key`), crt = path.join(CERT_DIR, `${name}.crt`);

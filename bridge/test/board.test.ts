@@ -23,73 +23,73 @@ const tempStore = (opts: ConstructorParameters<typeof BoardStore>[1] = {}) => {
 };
 
 describe("media", () => {
-  it("liest Bildmaße aus dem Dateikopf", () => {
+  it("reads image dimensions from the file header", () => {
     expect(imageSize(PNG, "image/png")).toEqual({ width: 64, height: 32 });
     expect(imageSize(Buffer.from("GIF89a\x10\x00\x08\x00", "latin1"), "image/gif")).toEqual({ width: 16, height: 8 });
     expect(imageSize(Buffer.from([0xff, 0xd8, 0xff, 0xc0, 0, 17, 8, 0, 20, 0, 40, 3]), "image/jpeg")).toEqual({ width: 40, height: 20 });
     expect(imageSize(Buffer.alloc(4), "image/png")).toBeNull();
   });
 
-  it("bereinigt Dateinamen", () => {
+  it("sanitises file names", () => {
     expect(safeFileName("..%2F..%2Fetc%2Fpasswd")).toBe(".._.._etc_passwd");
-    expect(safeFileName(encodeURIComponent("Bericht (final).pdf"))).toBe("Bericht (final).pdf");
-    expect(safeFileName(undefined)).toBe("datei");
-    expect(safeFileName("%E0%A4%A")).toBe("%E0%A4%A"); // kaputte Kodierung → roh
+    expect(safeFileName(encodeURIComponent("Report (final).pdf"))).toBe("Report (final).pdf");
+    expect(safeFileName(undefined)).toBe("file");
+    expect(safeFileName("%E0%A4%A")).toBe("%E0%A4%A"); // broken encoding → raw
   });
 });
 
 describe("BoardStore", () => {
-  it("legt an, listet neueste zuerst, bearbeitet und löscht", () => {
+  it("creates, lists newest first, edits and deletes", () => {
     const { store } = tempStore();
-    const a = store.create({ channelId: 3, kind: "text", text: "erster", authorHash: A, authorName: "Anna" });
+    const a = store.create({ channelId: 3, kind: "text", text: "first", authorHash: A, authorName: "Anna" });
     const b = store.create({ channelId: 3, kind: "code", text: "x = 1", language: "python", authorHash: B, authorName: "Ben" });
-    store.create({ channelId: 4, kind: "text", text: "anderswo", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 4, kind: "text", text: "elsewhere", authorHash: A, authorName: "Anna" });
     expect(store.list(3).map((p) => p.id)).toEqual([b.id, a.id]);
     expect(store.channelsWithPosts()).toEqual([3, 4]);
-    expect(store.update(a.id, { text: "geändert" }, "Ben")).toMatchObject({ text: "geändert", updatedByName: "Ben" });
+    expect(store.update(a.id, { text: "changed" }, "Ben")).toMatchObject({ text: "changed", updatedByName: "Ben" });
     expect(store.delete(a.id)).toBe(true);
     expect(store.delete(a.id)).toBe(false);
     expect(store.get(b.id)?.language).toBe("python");
   });
 
-  it("Anhänge: ein Inhalt nur einmal, verwaiste werden entfernt", () => {
+  it("attachments: each content stored once, orphans are removed", () => {
     const { store } = tempStore({ orphanMinutes: 0 });
     const att = store.putFile(PNG, "image/png", { width: 64, height: 32 });
     expect(store.putFile(PNG, "image/png").id).toBe(att.id);
-    const p = store.create({ channelId: 3, kind: "image", text: "", attachmentId: att.id, attachmentName: "bild.png", authorHash: A, authorName: "Anna" });
-    expect(store.get(p.id)?.attachment).toMatchObject({ id: att.id, name: "bild.png", mime: "image/png", width: 64 });
+    const p = store.create({ channelId: 3, kind: "image", text: "", attachmentId: att.id, attachmentName: "image.png", authorHash: A, authorName: "Anna" });
+    expect(store.get(p.id)?.attachment).toMatchObject({ id: att.id, name: "image.png", mime: "image/png", width: 64 });
     expect(existsSync(store.filePath(att.id))).toBe(true);
     store.delete(p.id);
     expect(store.attachment(att.id)).toBeNull();
     expect(existsSync(store.filePath(att.id))).toBe(false);
   });
 
-  it("Löschen eines Beitrags lässt frische Uploads anderer stehen", () => {
+  it("deleting a post leaves other people's fresh uploads alone", () => {
     const { store } = tempStore();
     const mine = store.putFile(PNG, "image/png");
     const p = store.create({ channelId: 3, kind: "image", text: "", attachmentId: mine.id, attachmentName: "a.png", authorHash: A, authorName: "Anna" });
-    const pending = store.putFile(Buffer.from("noch nicht angeheftet"), "text/plain"); // Ben lädt gerade hoch
+    const pending = store.putFile(Buffer.from("not pinned yet"), "text/plain"); // Ben is uploading right now
     store.delete(p.id);
     expect(store.attachment(mine.id)).toBeNull();
     expect(store.attachment(pending.id)).not.toBeNull();
     expect(existsSync(store.filePath(pending.id))).toBe(true);
   });
 
-  it("Aufbewahrung 30 Tage und gelöschte Kanäle nach 7 Tagen", () => {
+  it("retention 30 days, deleted channels after 7 days", () => {
     let now = 1_000 * DAY;
     const { store } = tempStore({ now: () => now });
-    store.create({ channelId: 3, kind: "text", text: "alt", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 3, kind: "text", text: "old", authorHash: A, authorName: "Anna" });
     now += 10 * DAY;
-    store.create({ channelId: 5, kind: "text", text: "Kanal verschwindet", authorHash: A, authorName: "Anna" });
-    store.syncChannels([3]); // Kanal 5 ist weg
+    store.create({ channelId: 5, kind: "text", text: "channel disappears", authorHash: A, authorName: "Anna" });
+    store.syncChannels([3]); // channel 5 is gone
     now += 8 * DAY;
-    expect(store.cleanup()).toEqual({ removed: 1, channels: [5] }); // Kanal 5 nach 7 Tagen
-    now += 13 * DAY; // Beitrag in 3 ist jetzt 31 Tage alt
+    expect(store.cleanup()).toEqual({ removed: 1, channels: [5] }); // channel 5 after 7 days
+    now += 13 * DAY; // post in 3 is now 31 days old
     expect(store.cleanup().removed).toBe(1);
     expect(store.channelsWithPosts()).toEqual([]);
   });
 
-  it("wieder aufgetauchter Kanal wird nicht gelöscht", () => {
+  it("reappeared channel is not deleted", () => {
     let now = 0;
     const { store } = tempStore({ now: () => now });
     store.create({ channelId: 5, kind: "text", text: "x", authorHash: A, authorName: "Anna" });
@@ -100,7 +100,7 @@ describe("BoardStore", () => {
     expect(store.cleanup().removed).toBe(0);
   });
 
-  it("Kontingent: älteste Beiträge mit Anhang zuerst", () => {
+  it("quota: oldest posts with attachment first", () => {
     let now = 0;
     const { store } = tempStore({ quotaBytes: 250, orphanMinutes: 0, now: () => now });
     const ids: string[] = [];
@@ -114,7 +114,7 @@ describe("BoardStore", () => {
     expect(store.list(3).map((p) => p.id)).toEqual([ids[2], ids[1]]);
   });
 
-  it("Migration ist wiederholbar, Sicherung enthält Datenbank und Anhänge", async () => {
+  it("migration is repeatable, backup contains database and attachments", async () => {
     const { store, dir } = tempStore();
     const att = store.putFile(PNG, "image/png");
     store.create({ channelId: 3, kind: "image", text: "", attachmentId: att.id, attachmentName: "b.png", authorHash: A, authorName: "Anna" });
@@ -125,14 +125,14 @@ describe("BoardStore", () => {
     expect(restored.list(3)).toHaveLength(1);
     expect(existsSync(restored.filePath(att.id))).toBe(true);
     restored.close();
-    expect(new BoardStore(dir).list(3)).toHaveLength(1); // erneutes Öffnen: Migration greift nicht doppelt
+    expect(new BoardStore(dir).list(3)).toHaveLength(1); // reopening: migration does not apply twice
   });
 });
 
 describe("REST /api/board", () => {
   async function setup() {
     const source = new FakeSource();
-    // Etage 1 mit Raum 2 (Anna und Ben sollen dort stehen), Flur = Kanal 1
+    // floor 1 with room 2 (Anna and Ben should be there), corridor = channel 1
     source.users[0]!.channel = 2;
     source.users[1]!.channel = 2;
     source.admins.add(8);
@@ -148,7 +148,7 @@ describe("REST /api/board", () => {
     const app = Fastify();
     await app.register(boardRoutes, {
       store, hub, source,
-      certHashOf: (c) => (c === "anna" ? A : c === "ben" ? B : c === "fremd" ? "c".repeat(40) : null),
+      certHashOf: (c) => (c === "anna" ? A : c === "ben" ? B : c === "stranger" ? "c".repeat(40) : null),
       onNewPost: (p) => notified.push(p.id),
       writesPerMinute: 5,
     });
@@ -156,51 +156,51 @@ describe("REST /api/board", () => {
     return { app, store, hub, source, poller, notified, as, plugins };
   }
 
-  it("ohne Kopplung 401, Plugin nicht verbunden 401, im Flur 404, im Raum 200", async () => {
+  it("without pairing 401, plugin not connected 401, in the corridor 404, in a room 200", async () => {
     const { app, source, poller, as } = await setup();
     expect((await app.inject({ url: "/api/board" })).statusCode).toBe(401);
-    expect((await app.inject({ url: "/api/board", headers: as("fremd") })).statusCode).toBe(401);
+    expect((await app.inject({ url: "/api/board", headers: as("stranger") })).statusCode).toBe(401);
     const ok = await app.inject({ url: "/api/board", headers: as("anna") });
     expect(ok.statusCode).toBe(200);
-    expect(ok.json()).toMatchObject({ channelId: 2, channelName: "Büro", posts: [] });
-    source.users[0]!.channel = 1; // Anna geht in den Flur
+    expect(ok.json()).toMatchObject({ channelId: 2, channelName: "Office", posts: [] });
+    source.users[0]!.channel = 1; // Anna goes to the corridor
     await poller.poll();
     expect((await app.inject({ url: "/api/board", headers: as("anna") })).json()).toEqual({ error: "no-board-here" });
   });
 
-  it("anheften, sehen, bearbeiten (alle Anwesenden), löschen (Autor oder Admin)", async () => {
+  it("pin, view, edit (everyone present), delete (author or admin)", async () => {
     const { app, notified, as } = await setup();
-    const created = await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "**Hallo**" } });
+    const created = await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "**Hello**" } });
     expect(created.statusCode).toBe(201);
     const post = created.json();
-    expect(post).toMatchObject({ kind: "text", text: "**Hallo**", authorName: "Anna", mine: true, canDelete: true });
+    expect(post).toMatchObject({ kind: "text", text: "**Hello**", authorName: "Anna", mine: true, canDelete: true });
     expect(notified).toEqual([post.id]);
-    // Ben sieht ihn, darf bearbeiten, ist Admin → darf löschen
+    // Ben sees it, may edit, is admin → may delete
     const benView = (await app.inject({ url: "/api/board", headers: as("ben") })).json();
     expect(benView.posts[0]).toMatchObject({ id: post.id, mine: false, canDelete: true });
-    const edited = await app.inject({ method: "PATCH", url: `/api/board/posts/${post.id}`, headers: as("ben"), payload: { text: "geändert" } });
-    expect(edited.json()).toMatchObject({ text: "geändert", updatedByName: "Ben" });
+    const edited = await app.inject({ method: "PATCH", url: `/api/board/posts/${post.id}`, headers: as("ben"), payload: { text: "changed" } });
+    expect(edited.json()).toMatchObject({ text: "changed", updatedByName: "Ben" });
     expect((await app.inject({ method: "DELETE", url: `/api/board/posts/${post.id}`, headers: as("ben") })).statusCode).toBe(204);
   });
 
-  it("Nicht-Admin darf fremde Beiträge nicht löschen", async () => {
+  it("non-admin may not delete other people's posts", async () => {
     const { app, source, as } = await setup();
     source.admins.clear();
     const post = (await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "x" } })).json();
     expect((await app.inject({ method: "DELETE", url: `/api/board/posts/${post.id}`, headers: as("ben") })).json()).toEqual({ error: "forbidden" });
   });
 
-  it("Beiträge anderer Räume sind unerreichbar", async () => {
+  it("posts of other rooms are unreachable", async () => {
     const { app, source, poller, as } = await setup();
     const post = (await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "x" } })).json();
-    source.channels.push({ id: 4, parent: 1, name: "Anderer", position: 2, links: [], temporary: false });
+    source.channels.push({ id: 4, parent: 1, name: "Other", position: 2, links: [], temporary: false });
     source.users[1]!.channel = 4;
     await poller.poll();
     expect((await app.inject({ url: "/api/board", headers: as("ben") })).json().posts).toEqual([]);
     expect((await app.inject({ method: "PATCH", url: `/api/board/posts/${post.id}`, headers: as("ben"), payload: { text: "y" } })).json()).toEqual({ error: "not-in-room" });
   });
 
-  it("temporäre Kanäle haben keine Pinnwand", async () => {
+  it("temporary channels have no board", async () => {
     const { app, source, poller, as } = await setup();
     source.channels.push({ id: 6, parent: 1, name: "Temp", position: 3, links: [], temporary: true });
     source.users[0]!.channel = 6;
@@ -208,7 +208,7 @@ describe("REST /api/board", () => {
     expect((await app.inject({ url: "/api/board", headers: as("anna") })).statusCode).toBe(404);
   });
 
-  it("Upload: Bildtyp aus den Bytes, SVG nie als Bild, Größengrenze, Datei als Download", async () => {
+  it("upload: image type from the bytes, SVG never as image, size limit, file as download", async () => {
     const { app, as } = await setup();
     const img = await app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream" }, payload: PNG });
     expect(img.json()).toMatchObject({ mime: "image/png", width: 64, height: 32, image: true });
@@ -216,25 +216,25 @@ describe("REST /api/board", () => {
     expect(svg.json()).toMatchObject({ mime: "application/octet-stream", image: false });
     const big = await app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream" }, payload: Buffer.alloc(10 * 1024 * 1024 + 1) });
     expect(big.statusCode).toBe(413);
-    // SVG als „Bild“ anheften → abgelehnt; als Datei → Download
+    // pin SVG as "image" → rejected; as file → download
     const svgId = svg.json().id;
     expect((await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "image", text: "", attachmentId: svgId } })).json()).toEqual({ error: "bad-type" });
     await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "file", text: "", attachmentId: svgId, attachmentName: "x.svg" } });
     const file = await app.inject({ url: `/api/board/files/${svgId}`, headers: as("anna") });
     expect(file.headers["content-disposition"]).toMatch(/^attachment;/);
     expect(file.headers["x-content-type-options"]).toBe("nosniff");
-    const imgPost = await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "image", text: "Bild", attachmentId: img.json().id, attachmentName: "b.png" } });
+    const imgPost = await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "image", text: "Image", attachmentId: img.json().id, attachmentName: "b.png" } });
     expect((await app.inject({ url: `/api/board/files/${imgPost.json().attachment.id}`, headers: as("anna") })).headers["content-disposition"]).toMatch(/^inline;/);
   });
 
-  it("Upload: JSON und Text kommen als Rohdaten an, der Typ steht in X-File-Type", async () => {
+  it("upload: JSON and text arrive as raw data, the type is in X-File-Type", async () => {
     const { app, as } = await setup();
-    const json = await app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream", "x-file-type": "application/json", "x-file-name": "daten.json" }, payload: Buffer.from('{"a":1}') });
+    const json = await app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream", "x-file-type": "application/json", "x-file-name": "data.json" }, payload: Buffer.from('{"a":1}') });
     expect(json.statusCode).toBe(201);
-    expect(json.json()).toMatchObject({ mime: "application/json", size: 7, name: "daten.json", image: false });
+    expect(json.json()).toMatchObject({ mime: "application/json", size: 7, name: "data.json", image: false });
   });
 
-  it("Hinweis im Mumble-Protokoll: kurz, mit Typ, an die anderen Anwesenden, nicht an den Autor", async () => {
+  it("notice in the Mumble log (German default): short, with type, to the others present, not to the author", async () => {
     const { hub, plugins, source, poller } = await setup();
     expect(notifyText("Ben", "code")).toBe("Ben hat Code an die Pinnwand geheftet.");
     expect(["text", "image", "file"].map((k) => notifyText("Anna", k as PostKind))).toEqual([
@@ -245,12 +245,12 @@ describe("REST /api/board", () => {
     expect(notifyRoom(hub, { channelId: 2, kind: "image" }, { name: "Anna", certHash: A })).toBe(1);
     expect(plugins.ben.last("notify")).toEqual({ v: 1, type: "notify", text: "Anna hat ein Bild an die Pinnwand geheftet." });
     expect(plugins.anna.last("notify")).toBeUndefined();
-    source.users[1]!.channel = 1; // Ben geht in den Flur: kein Hinweis mehr
+    source.users[1]!.channel = 1; // Ben goes to the corridor: no more notice
     await poller.poll();
     expect(notifyRoom(hub, { channelId: 2, kind: "text" }, { name: "Anna", certHash: A })).toBe(0);
   });
 
-  it("Hinweis in der Sprache des Empfängers (Plugin meldet locale)", async () => {
+  it("notice in the recipient's language (plugin reports locale)", async () => {
     const { hub } = await setup();
     expect(["text", "code", "image", "file"].map((k) => notifyText("Anna", k as PostKind, "en"))).toEqual([
       "Anna pinned a text to the board.",
@@ -264,15 +264,15 @@ describe("REST /api/board", () => {
     expect(benEn.last("notify")?.text).toBe("Anna pinned code to the board.");
   });
 
-  it("ungültige Eingaben, Rate-Limit", async () => {
+  it("invalid input, rate limit", async () => {
     const { app, as } = await setup();
     expect((await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "  " } })).statusCode).toBe(400);
     expect((await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "video", text: "x" } })).statusCode).toBe(400);
     for (let i = 0; i < 5; i++) await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: `t${i}` } });
-    expect((await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "zu viel" } })).statusCode).toBe(429);
+    expect((await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "too many" } })).statusCode).toBe(429);
   });
 
-  it("Oberflächen im Raum bekommen „board“, der Snapshot verrät nichts über Beiträge", async () => {
+  it("web UIs in the room get \"board\", the snapshot reveals nothing about posts", async () => {
     const { app, hub, as } = await setup();
     const uiAnna = recorder<BridgeToUi>();
     hub.uiConnected(uiAnna.conn, A);

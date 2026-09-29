@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Vollbildansicht eines Bilds (AP11.3): Zoom per Mausrad, Tasten oder zwei Fingern, Verschieben per Ziehen,
-  // Doppelklick wechselt zwischen eingepasst und 2,5-fach. Esc schließt (natives <dialog>).
+  // full-screen view of an image (AP11.3): zoom via mouse wheel, keys or two fingers, pan by dragging,
+  // double-click toggles between fitted and 2.5x. Esc closes (native <dialog>).
   import Download from "@lucide/svelte/icons/download";
   import Scan from "@lucide/svelte/icons/scan";
   import X from "@lucide/svelte/icons/x";
@@ -25,7 +25,7 @@
     return () => dialog.close();
   });
 
-  /** Zoom auf `next`, der Punkt (px, py) relativ zur Bühnenmitte bleibt dabei unter dem Zeiger */
+  /** zoom to `next`, keeping the point (px, py) relative to the stage centre under the pointer */
   function zoomTo(next: number, px = 0, py = 0) {
     const s = Math.min(MAX, Math.max(MIN, next));
     tx = px - ((px - tx) * s) / scale;
