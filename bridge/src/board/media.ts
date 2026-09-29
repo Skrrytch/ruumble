@@ -1,6 +1,6 @@
-/** Bilder der Pinnwand: Typ an den ersten Bytes erkennen, Maße aus dem Dateikopf lesen (ohne Bibliothek). */
+/** Board images: detect the type from the first bytes, read dimensions from the file header (no library). */
 
-/** Bildformat an den ersten Bytes erkennen. Das alte Mumble-Rohformat (zlib, 600×60 BGRA) gilt als „kein Bild“. */
+/** Detect the image format from the first bytes. The old raw Mumble format (zlib, 600×60 BGRA) counts as "no image". */
 export function detectImage(bytes: Uint8Array): string | null {
   const b = (i: number) => bytes[i] ?? -1;
   if (b(0) === 0x89 && b(1) === 0x50 && b(2) === 0x4e && b(3) === 0x47) return "image/png";
@@ -10,7 +10,7 @@ export function detectImage(bytes: Uint8Array): string | null {
   return null;
 }
 
-/** Breite und Höhe für PNG, GIF, JPEG und WEBP; `null`, wenn nicht lesbar */
+/** Width and height for PNG, GIF, JPEG and WEBP; `null` if unreadable */
 export function imageSize(b: Uint8Array, mime: string): { width: number; height: number } | null {
   const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
   try {
@@ -31,7 +31,7 @@ export function imageSize(b: Uint8Array, mime: string): { width: number; height:
         if (b[i] !== 0xff) return null;
         const marker = b[i + 1]!;
         const len = dv.getUint16(i + 2);
-        // SOF0–SOF15 außer DHT (C4), JPG (C8), DAC (CC)
+        // SOF0–SOF15 except DHT (C4), JPG (C8), DAC (CC)
         if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { width: dv.getUint16(i + 7), height: dv.getUint16(i + 5) };
         i += 2 + len;
       }
@@ -42,7 +42,7 @@ export function imageSize(b: Uint8Array, mime: string): { width: number; height:
   return null;
 }
 
-/** Dateiname für Speicher und Download bereinigen (keine Pfade, keine Steuerzeichen) */
+/** Sanitise the file name for storage and download (no paths, no control characters) */
 export function safeFileName(raw: string | undefined): string {
   let name = "";
   try {

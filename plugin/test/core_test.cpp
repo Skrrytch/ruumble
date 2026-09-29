@@ -44,7 +44,7 @@ struct FakeApi : MumbleApi {
 		}
 		if (confirmMoves) {
 			channel = ch;
-			core->onChannelEntered(7, ch); // wie Mumble: Bestätigung kommt als Callback
+			core->onChannelEntered(7, ch); // like Mumble: confirmation arrives as a callback
 		}
 		return true;
 	}
@@ -149,7 +149,7 @@ struct Fixture {
 		core->start();
 	}
 
-	/** synchronisiert, verbunden und vom Dienst begrüßt */
+	/** synchronised, connected and welcomed by the service */
 	void ready(const std::string &welcome = R"({"v":1,"type":"welcome"})") {
 		core->onSynchronized();
 		REQUIRE(eventually([&] { return transport.connectCount() == 1; }));
@@ -207,7 +207,7 @@ TEST_CASE("Kopplungslink nur einmal je Dienst öffnen") {
 	REQUIRE(eventually([&] { return f.opened == 1; }));
 	CHECK(f.openedUrl == "https://r.test/pair?code=x");
 	CHECK(f.paired.count("http://r.test") == 1);
-	// erneuter Sync mit derselben Adresse: kein neuer Verbindungsaufbau, hello mit paired=true
+	// repeated sync with the same address: no new connection, hello with paired=true
 	f.core->onSynchronized();
 	REQUIRE(eventually([&] { return f.transport.of("hello").size() == 2; }));
 	CHECK(f.transport.connectCount() == 1);
@@ -226,7 +226,7 @@ TEST_CASE("Beschreibung noch nicht geladen: einmal Hinweis, dann erneut prüfen"
 	CHECK(f.transport.connectCount() == 0);
 	{
 		std::lock_guard< std::mutex > l(f.api.m);
-		CHECK(f.api.logs.size() == 1); // Hinweis nur einmal
+		CHECK(f.api.logs.size() == 1); // hint only once
 		CHECK(f.api.logs[0].find("„Musterhaus“") != std::string::npos);
 		f.api.description = { Description::Status::Ok, "ruumble: r.test:8080" };
 	}
@@ -319,7 +319,7 @@ TEST_CASE("Abstand zwischen Statusänderungen, keine Änderung ohne Bedarf") {
 	CHECK(f.resultOf("m2") == "ok");
 	CHECK(f.resultOf("d1") == "ok");
 	std::lock_guard< std::mutex > l(f.api.m);
-	REQUIRE(f.api.changes.size() == 2); // m2 änderte nichts
+	REQUIRE(f.api.changes.size() == 2); // m2 changed nothing
 	CHECK(f.api.changes[1].second - f.api.changes[0].second >= 40ms);
 	CHECK_FALSE(f.transport.of("selfState").empty());
 }
@@ -344,8 +344,8 @@ TEST_CASE("notify: Hinweis ins Mumble-Protokoll, erst nach welcome") {
 
 TEST_CASE("Sprache: Deutsch, sonst Englisch, POSIX-Reihenfolge") {
 	CHECK(localeFromEnv(nullptr, nullptr, "de_DE.UTF-8") == Locale::de);
-	CHECK(localeFromEnv("en_US.UTF-8", nullptr, "de_DE.UTF-8") == Locale::en); // LC_ALL gewinnt
-	CHECK(localeFromEnv("", "de_AT.UTF-8", "en_GB.UTF-8") == Locale::de);       // leere Werte zählen nicht
+	CHECK(localeFromEnv("en_US.UTF-8", nullptr, "de_DE.UTF-8") == Locale::en); // LC_ALL wins
+	CHECK(localeFromEnv("", "de_AT.UTF-8", "en_GB.UTF-8") == Locale::de);       // empty values do not count
 	CHECK(localeFromEnv(nullptr, nullptr, "fr_FR.UTF-8") == Locale::en);
 	CHECK(localeFromEnv(nullptr, nullptr, "C") == Locale::en);
 	CHECK(localeFromEnv(nullptr, nullptr, nullptr) == Locale::en);
@@ -363,7 +363,7 @@ TEST_CASE("talking nur nach welcome, als Text") {
 	CHECK(f.transport.of("talking").empty());
 	f.core->onTransportMessage(R"({"v":1,"type":"welcome"})");
 	f.core->onTalking(8, 1);
-	f.core->onTalking(8, -1); // INVALID wird nicht gesendet
+	f.core->onTalking(8, -1); // INVALID is not sent
 	REQUIRE(eventually([&] { return f.transport.of("talking").size() == 1; }));
 	CHECK(f.transport.of("talking")[0]["state"] == "talking");
 }
@@ -388,24 +388,24 @@ TEST_CASE("stop beendet den Worker zügig") {
 }
 
 TEST_CASE("findBridgeUrl: Zeile, die auf „ruumble: <adresse>“ endet") {
-	// Klartext mit Begleittext, wie ihn Admins schreiben (auch mit Tippfehlern)
+	// plain text with surrounding text, as admins write it (typos included)
 	CHECK(*findBridgeUrl("HIer ein paart wichtige Konfigurationen für Ruumble:\n \nruumble: http://192.0.2.10:8080\n\nDanke.")
 		  == "http://192.0.2.10:8080");
 	CHECK(*findBridgeUrl("- ruumble: http://192.0.2.10:8080") == "http://192.0.2.10:8080");
 	CHECK(*findBridgeUrl("Etwas davor ruumble: https://ruumble.example/  ") == "https://ruumble.example");
 	CHECK(*findBridgeUrl("RUUMBLE: 10.0.0.5:8080") == "http://10.0.0.5:8080");
-	// so speichert Mumble Beschreibungen: HTML
+	// this is how Mumble stores descriptions: HTML
 	CHECK(*findBridgeUrl("<!DOCTYPE HTML><html><body><p>Hallo</p><p>-&nbsp;ruumble: http://h:8080</p></body></html>") == "http://h:8080");
 	CHECK(*findBridgeUrl("Hallo<br/>ruumble: http://h:8080<br>Danke") == "http://h:8080");
 	CHECK(*findBridgeUrl("ruumble: <a href=\"http://h:8080\">http://h:8080</a>") == "http://h:8080");
 	CHECK(*findBridgeUrl("zeile1\r\nruumble: http://h\r\n") == "http://h");
-	// keine Treffer
+	// no matches
 	CHECK_FALSE(findBridgeUrl("").has_value());
 	CHECK_FALSE(findBridgeUrl("Ruumble läuft unter http://h").has_value());
-	CHECK_FALSE(findBridgeUrl("ruumble: http://h danke").has_value()); // Zeile endet nicht mit der Adresse
+	CHECK_FALSE(findBridgeUrl("ruumble: http://h danke").has_value()); // line does not end with the address
 	CHECK_FALSE(findBridgeUrl("xruumble: http://h").has_value());
 	CHECK_FALSE(findBridgeUrl("ruumble: ftp://h").has_value());
 	CHECK_FALSE(findBridgeUrl("ruumble:").has_value());
-	// erste passende Zeile gewinnt
+	// first matching line wins
 	CHECK(*findBridgeUrl("ruumble: http://a\nruumble: http://b") == "http://a");
 }

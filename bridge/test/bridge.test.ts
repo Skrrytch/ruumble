@@ -89,7 +89,7 @@ describe("Hub: Plugin", () => {
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(hello());
     expect(plugin.last("welcome")?.pairUrl).toMatch(/^https:\/\/ruumble\.test\/pair\?code=/);
     expect(hub.pluginCount).toBe(1);
-    expect(hub.clientVersions()).toEqual({ "mumble unknown / plugin 0.1.0": 1 }); // altes Plugin ohne mumbleVersion
+    expect(hub.clientVersions()).toEqual({ "mumble unknown / plugin 0.1.0": 1 }); // old plugin without mumbleVersion
   });
 
   it("Plugin meldet die Mumble-Version → sichtbar in clientVersions", async () => {

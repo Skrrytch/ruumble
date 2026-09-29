@@ -17,7 +17,7 @@
   let openId = $state<string | null>(null);
   let now = $state(Date.now());
   $effect(() => {
-    const timer = setInterval(() => (now = Date.now()), 30_000); // „vor N Min.“ aktuell halten
+    const timer = setInterval(() => (now = Date.now()), 30_000); // keep "N min ago" up to date
     return () => clearInterval(timer);
   });
 
@@ -25,7 +25,7 @@
   const posts = $derived(board ? filterPosts(board.posts, app.boardFilter) : []);
   const openPost = $derived<Post | null>(board?.posts.find((p) => p.id === openId) ?? null);
 
-  // Dateien auf die Pinnwand ziehen (AP11.3); der Zähler hält die Markierung über Kindelementen stabil
+  // drag files onto the board (AP11.3); the counter keeps the highlight stable over child elements
   let composer = $state<{ attach: (file: File) => Promise<void> } | null>(null);
   let dragDepth = $state(0);
   const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes("Files");
@@ -53,7 +53,7 @@
 
 <aside id="board-panel" class="board" aria-label={t().board.title} {ondragenter} {ondragover} {ondragleave} {ondrop}>
   {#if dragDepth > 0}<div class="drop" aria-hidden="true">{t().board.dropHere}</div>{/if}
-  <!-- kompakt: der Raum ist der eigene (im Grundriss markiert), deshalb kein Raumname -->
+  <!-- compact: the room is the user's own (marked in the floor plan), hence no room name -->
   <header>
     <h2><StickyNote size={18} aria-hidden="true" /> {t().board.title}</h2>
     {#if board}<span class="sub">{t().board.count(board.posts.length)}</span>{/if}
@@ -98,10 +98,10 @@
 {/if}
 
 <style>
-  /* leicht blau getönt, damit sich die Pinnwand vom Grundriss abhebt (ohne das Punktraster des Flurs) */
+  /* lightly tinted blue, so the board stands out from the floor plan (without the corridor's dot grid) */
   .board { --board-bg: color-mix(in srgb, var(--color-blue-100) 45%, var(--color-white)); position: relative; width: 340px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--board-bg); min-height: 0; }
   header { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--color-blue-300); }
-  /* so groß wie die Raumtitel im Grundriss */
+  /* as large as the room titles in the floor plan */
   h2 { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 700; }
   h2 :global(svg) { color: var(--color-blue-500); }
   .sub { flex: 1; font-size: 13px; color: var(--color-blue-700); }
@@ -110,7 +110,7 @@
   .filters { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px; }
   .filters button { min-height: 32px; padding: 0 10px; border: 1px solid var(--color-blue-300); border-radius: 999px; background: var(--color-white); color: var(--color-navy); font-size: 13px; cursor: pointer; }
   .filters button[aria-pressed="true"] { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); }
-  /* gleicher seitlicher Abstand wie Kopf und Eingabe (12 px) */
+  /* same side spacing as header and input (12 px) */
   .list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 12px; min-height: 0; }
   .drop {
     position: absolute; inset: 8px; z-index: 2; display: flex; align-items: center; justify-content: center; pointer-events: none;

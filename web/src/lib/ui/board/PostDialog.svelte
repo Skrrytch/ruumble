@@ -25,7 +25,7 @@
   let language = $state("");
   let busy = $state(false);
   let copied = $state(false);
-  // Bilder und Dateien: bearbeitet wird die Bildunterschrift, sie darf leer sein
+  // images and files: the caption is what gets edited, it may be empty
   const hasAttachment = $derived(post.kind === "image" || post.kind === "file");
 
   $effect(() => {

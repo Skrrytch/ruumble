@@ -37,7 +37,7 @@ Config Config::load() {
 	if (j.contains("pairedWith") && j["pairedWith"].is_array())
 		for (const auto &u : j["pairedWith"])
 			if (u.is_string()) c.pairedWith.insert(u.get< std::string >());
-	// ältere Fassung: "paired": true galt für die feste Adresse
+	// older format: "paired": true applied to the fixed address
 	if (j.value("paired", false) && c.bridgeUrl) c.pairedWith.insert(*c.bridgeUrl);
 	return c;
 }
@@ -58,8 +58,8 @@ void Config::save() const {
 
 void openUrl(const std::string &url) {
 	if (url.rfind("http://", 0) != 0 && url.rfind("https://", 0) != 0) return;
-	// sh startet xdg-open im Hintergrund und endet sofort; die URL ist ein Argument ($1), nie Teil des Befehls.
-	// So bleibt kein Kindprozess zurück, auf den das Plugin nach dem Entladen noch warten müsste.
+	// sh starts xdg-open in the background and exits immediately; the URL is an argument ($1), never part of the command.
+	// This leaves no child process behind that the plugin would still have to wait for after unloading.
 	const char *argv[] = { "sh", "-c", "xdg-open \"$1\" >/dev/null 2>&1 &", "sh", url.c_str(), nullptr };
 	pid_t pid;
 	if (posix_spawnp(&pid, "sh", nullptr, nullptr, const_cast< char *const * >(argv), environ) == 0) {

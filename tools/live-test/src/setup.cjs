@@ -1,11 +1,11 @@
-// NUR Testvorbereitung: legt mit dem WRITE-Secret die Test-Kanäle an. Der Ruumble-Dienst nutzt dieses Secret nie.
+// Test preparation ONLY: creates the test channels with the WRITE secret. The Ruumble service never uses this secret.
 const { connect } = require("./ice.cjs");
 
 const TREE = {
   Lobby: [],
   ENTWICKLUNG: ["Büro von Anna", "Büro von Ben", "Büro von Clara", "Büro von David", "Büro von Eva", "Büro von Felix"],
   VERTRIEB: ["Abwesend", "Fokusraum (stumm)", "Teeküche", "Raucherecke", "Gregors Büro", "Projektraum"],
-  ARCHIV: ["Aktenraum", "Tiefer Raum"], // bekommt einen Unterkanal → Etage gesperrt (too-deep)
+  ARCHIV: ["Aktenraum", "Tiefer Raum"], // gets a sub-channel → floor locked (too-deep)
 };
 
 (async () => {
@@ -27,15 +27,15 @@ const TREE = {
       }
     }
     ids.deep = await ensure("Unterkanal", ids["Tiefer Raum"]);
-    // Verlinkung Teeküche <-> Raucherecke (nur eine Seite setzen, Server macht sie symmetrisch)
+    // Link Teeküche <-> Raucherecke (set one side only, the server makes it symmetric)
     const tk = await server.getChannelState(ids["Teeküche"]);
     tk.links = [ids["Raucherecke"]]; await server.setChannelState(tk);
-    // Gregors Büro: Enter für alle verbieten
+    // Gregors Büro: deny Enter for all
     const acl = new MumbleServer.ACL(true, true, false, -1, "all", 0, MumbleServer.PermissionEnter);
     await server.setACL(ids["Gregors Büro"], [acl], [], true);
-    // Root-Beschreibung mit der Ruumble-Adresse (ADR-0010); RUUMBLE_URL für den lokalen Live-Test
+    // Root description with the Ruumble address (ADR-0010); RUUMBLE_URL for the local live test
     const root = await server.getChannelState(0);
-    // RUUMBLE_DESC_PAD verlängert die Beschreibung über 128 Zeichen: dann schickt Mumble nur einen Hash (ADR-0010)
+    // RUUMBLE_DESC_PAD extends the description beyond 128 characters: then Mumble only sends a hash (ADR-0010)
     const pad = process.env.RUUMBLE_DESC_PAD ? "<p>" + "Willkommen im Musterhaus. ".repeat(6) + "</p>" : "";
     root.description = `${pad}Hier ein paar wichtige Konfigurationen für Ruumble:\n\n- ruumble: ${process.env.RUUMBLE_URL ?? "http://ruumble:8080"}\n\nDanke.`;
     await server.setChannelState(root);

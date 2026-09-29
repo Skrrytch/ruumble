@@ -1,5 +1,5 @@
-// Erzeugt gen/MumbleServer.cjs aus third_party/mumble/src/murmur/MumbleServer.ice.
-// slice2js 3.7.110: Die CLI ist kaputt (tut still nichts), deshalb compile() direkt (S1).
+// Generates gen/MumbleServer.cjs from third_party/mumble/src/murmur/MumbleServer.ice.
+// slice2js 3.7.110: the CLI is broken (silently does nothing), hence compile() directly (S1).
 import { createRequire } from "node:module";
 import { existsSync, mkdirSync, renameSync } from "node:fs";
 const require = createRequire(import.meta.url);
@@ -12,5 +12,5 @@ compile(["--output-dir", out, ice], { stdio: "inherit" }).on("exit", (code) => {
     console.error("slice2js fehlgeschlagen");
     process.exit(1);
   }
-  renameSync(out + "MumbleServer.js", out + "MumbleServer.cjs"); // CommonJS im ESM-Paket
+  renameSync(out + "MumbleServer.js", out + "MumbleServer.cjs"); // CommonJS in the ESM package
 });

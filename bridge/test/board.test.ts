@@ -34,7 +34,7 @@ describe("media", () => {
     expect(safeFileName("..%2F..%2Fetc%2Fpasswd")).toBe(".._.._etc_passwd");
     expect(safeFileName(encodeURIComponent("Bericht (final).pdf"))).toBe("Bericht (final).pdf");
     expect(safeFileName(undefined)).toBe("datei");
-    expect(safeFileName("%E0%A4%A")).toBe("%E0%A4%A"); // kaputte Kodierung → roh
+    expect(safeFileName("%E0%A4%A")).toBe("%E0%A4%A"); // broken encoding → raw
   });
 });
 
@@ -68,7 +68,7 @@ describe("BoardStore", () => {
     const { store } = tempStore();
     const mine = store.putFile(PNG, "image/png");
     const p = store.create({ channelId: 3, kind: "image", text: "", attachmentId: mine.id, attachmentName: "a.png", authorHash: A, authorName: "Anna" });
-    const pending = store.putFile(Buffer.from("noch nicht angeheftet"), "text/plain"); // Ben lädt gerade hoch
+    const pending = store.putFile(Buffer.from("noch nicht angeheftet"), "text/plain"); // Ben is uploading right now
     store.delete(p.id);
     expect(store.attachment(mine.id)).toBeNull();
     expect(store.attachment(pending.id)).not.toBeNull();
@@ -81,10 +81,10 @@ describe("BoardStore", () => {
     store.create({ channelId: 3, kind: "text", text: "alt", authorHash: A, authorName: "Anna" });
     now += 10 * DAY;
     store.create({ channelId: 5, kind: "text", text: "Kanal verschwindet", authorHash: A, authorName: "Anna" });
-    store.syncChannels([3]); // Kanal 5 ist weg
+    store.syncChannels([3]); // channel 5 is gone
     now += 8 * DAY;
-    expect(store.cleanup()).toEqual({ removed: 1, channels: [5] }); // Kanal 5 nach 7 Tagen
-    now += 13 * DAY; // Beitrag in 3 ist jetzt 31 Tage alt
+    expect(store.cleanup()).toEqual({ removed: 1, channels: [5] }); // channel 5 after 7 days
+    now += 13 * DAY; // post in 3 is now 31 days old
     expect(store.cleanup().removed).toBe(1);
     expect(store.channelsWithPosts()).toEqual([]);
   });
@@ -125,14 +125,14 @@ describe("BoardStore", () => {
     expect(restored.list(3)).toHaveLength(1);
     expect(existsSync(restored.filePath(att.id))).toBe(true);
     restored.close();
-    expect(new BoardStore(dir).list(3)).toHaveLength(1); // erneutes Öffnen: Migration greift nicht doppelt
+    expect(new BoardStore(dir).list(3)).toHaveLength(1); // reopening: migration does not apply twice
   });
 });
 
 describe("REST /api/board", () => {
   async function setup() {
     const source = new FakeSource();
-    // Etage 1 mit Raum 2 (Anna und Ben sollen dort stehen), Flur = Kanal 1
+    // floor 1 with room 2 (Anna and Ben should be there), corridor = channel 1
     source.users[0]!.channel = 2;
     source.users[1]!.channel = 2;
     source.admins.add(8);
@@ -163,7 +163,7 @@ describe("REST /api/board", () => {
     const ok = await app.inject({ url: "/api/board", headers: as("anna") });
     expect(ok.statusCode).toBe(200);
     expect(ok.json()).toMatchObject({ channelId: 2, channelName: "Büro", posts: [] });
-    source.users[0]!.channel = 1; // Anna geht in den Flur
+    source.users[0]!.channel = 1; // Anna goes to the corridor
     await poller.poll();
     expect((await app.inject({ url: "/api/board", headers: as("anna") })).json()).toEqual({ error: "no-board-here" });
   });
@@ -175,7 +175,7 @@ describe("REST /api/board", () => {
     const post = created.json();
     expect(post).toMatchObject({ kind: "text", text: "**Hallo**", authorName: "Anna", mine: true, canDelete: true });
     expect(notified).toEqual([post.id]);
-    // Ben sieht ihn, darf bearbeiten, ist Admin → darf löschen
+    // Ben sees it, may edit, is admin → may delete
     const benView = (await app.inject({ url: "/api/board", headers: as("ben") })).json();
     expect(benView.posts[0]).toMatchObject({ id: post.id, mine: false, canDelete: true });
     const edited = await app.inject({ method: "PATCH", url: `/api/board/posts/${post.id}`, headers: as("ben"), payload: { text: "geändert" } });
@@ -216,7 +216,7 @@ describe("REST /api/board", () => {
     expect(svg.json()).toMatchObject({ mime: "application/octet-stream", image: false });
     const big = await app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream" }, payload: Buffer.alloc(10 * 1024 * 1024 + 1) });
     expect(big.statusCode).toBe(413);
-    // SVG als „Bild“ anheften → abgelehnt; als Datei → Download
+    // pin SVG as "image" → rejected; as file → download
     const svgId = svg.json().id;
     expect((await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "image", text: "", attachmentId: svgId } })).json()).toEqual({ error: "bad-type" });
     await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "file", text: "", attachmentId: svgId, attachmentName: "x.svg" } });
@@ -245,7 +245,7 @@ describe("REST /api/board", () => {
     expect(notifyRoom(hub, { channelId: 2, kind: "image" }, { name: "Anna", certHash: A })).toBe(1);
     expect(plugins.ben.last("notify")).toEqual({ v: 1, type: "notify", text: "Anna hat ein Bild an die Pinnwand geheftet." });
     expect(plugins.anna.last("notify")).toBeUndefined();
-    source.users[1]!.channel = 1; // Ben geht in den Flur: kein Hinweis mehr
+    source.users[1]!.channel = 1; // Ben goes to the corridor: no more notice
     await poller.poll();
     expect(notifyRoom(hub, { channelId: 2, kind: "text" }, { name: "Anna", certHash: A })).toBe(0);
   });

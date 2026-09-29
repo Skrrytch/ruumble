@@ -1,5 +1,5 @@
-// slice2js 3.7.110: Der bin-Eintrag ist nur ein Modul mit compile(), als CLI tut er nichts.
-// Deshalb compile() direkt aufrufen (fügt das Ice-Slice-Verzeichnis als -I hinzu).
+// slice2js 3.7.110: the bin entry is just a module with compile(); as a CLI it does nothing.
+// Hence call compile() directly (adds the Ice slice directory as -I).
 const { compile } = require("slice2js");
 const fs = require("fs");
 fs.mkdirSync("gen", { recursive: true });

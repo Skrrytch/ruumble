@@ -1,4 +1,4 @@
-// Nur für die Test-Bots: Mumble.proto des festgelegten Releases laden (nicht Teil von third_party).
+// Only for the test bots: download Mumble.proto of the pinned release (not part of third_party).
 const fs = require("fs");
 const tag = fs.readFileSync(__dirname + "/../../../third_party/mumble/VERSION", "utf8").trim();
 fetch(`https://raw.githubusercontent.com/mumble-voip/mumble/${tag}/src/Mumble.proto`)

@@ -1,7 +1,7 @@
 import type { Channel } from "@ruumble/protocol";
 import type { Basics, MumbleSource } from "../src/mumble.ts";
 
-/** Gefälschter Mumble-Server für Tests von Poller und Hub */
+/** Fake Mumble server for poller and hub tests */
 export class FakeSource implements MumbleSource {
   calls: string[] = [];
   channels: Channel[] = [
@@ -33,7 +33,7 @@ export class FakeSource implements MumbleSource {
   async close() {}
 }
 
-/** Verbindung, die gesendete Nachrichten sammelt */
+/** Connection that collects sent messages */
 export function recorder<T>() {
   const sent: T[] = [];
   let closed: { code: number; reason: string } | null = null;

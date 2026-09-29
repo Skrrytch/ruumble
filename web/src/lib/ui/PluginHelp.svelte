@@ -5,8 +5,8 @@
   const h = $derived(t().pluginHelp);
 </script>
 
-<!-- Kurzanleitung auf den Hinweisseiten: Plugins können in Mumble weder Knöpfe noch Links anzeigen (ADR-0010). -->
-<!-- Menü- und Knopfnamen so, wie Mumble sie in der jeweiligen Sprache zeigt; hervorgehoben: jedes zweite Stück -->
+<!-- Quick guide on the notice pages: plugins can show neither buttons nor links in Mumble (ADR-0010). -->
+<!-- Menu and button names as Mumble shows them in the respective language; highlighted: every second piece -->
 <section class="help" aria-label={h.label}>
   <a class="download" href="/download" download>
     <Download size={18} /> {h.download}

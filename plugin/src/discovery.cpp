@@ -14,7 +14,7 @@ std::string lower(std::string s) {
 	return s;
 }
 
-/** HTML aus Mumble in Textzeilen: Blockende und <br> werden zu Zeilenumbrüchen, übrige Tags entfallen. */
+/** HTML from Mumble to text lines: block ends and <br> become line breaks, other tags are dropped. */
 std::string htmlToText(const std::string &html) {
 	static const std::regex lineBreaks(R"(<\s*(br\s*/?|/\s*(p|div|li|h[1-6]|tr|pre))\s*>)", std::regex::icase);
 	static const std::regex tags(R"(<[^>]*>)");
@@ -33,7 +33,7 @@ std::string htmlToText(const std::string &html) {
 } // namespace
 
 std::optional< std::string > findBridgeUrl(const std::string &description) {
-	// „ruumble:“ als eigenes Wort (nicht „xruumble:“), danach genau eine Adresse bis zum Zeilenende
+	// "ruumble:" as a word of its own (not "xruumble:"), followed by exactly one address up to the end of the line
 	static const std::regex line(R"((?:^|[^A-Za-z0-9_])ruumble:[ \t]*([^\s]+)[ \t]*$)", std::regex::icase);
 	std::istringstream in(htmlToText(description));
 	for (std::string l; std::getline(in, l);) {
@@ -43,11 +43,11 @@ std::optional< std::string > findBridgeUrl(const std::string &description) {
 		std::string url = m[1].str();
 		const std::string l0 = lower(url);
 		if (l0.rfind("http://", 0) != 0 && l0.rfind("https://", 0) != 0) {
-			if (l0.find("://") != std::string::npos) continue; // andere Schemata (ws://, ftp://) nicht zulassen
+			if (l0.find("://") != std::string::npos) continue; // do not allow other schemes (ws://, ftp://)
 			url = "http://" + url;
 		}
 		while (!url.empty() && url.back() == '/') url.pop_back();
-		if (url.find("://") + 3 >= url.size()) continue; // kein Host
+		if (url.find("://") + 3 >= url.size()) continue; // no host
 		return url;
 	}
 	return std::nullopt;

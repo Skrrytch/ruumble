@@ -11,7 +11,7 @@ describe("detectImage", () => {
     expect(detectImage(JPEG)).toBe("image/jpeg");
     expect(detectImage(new TextEncoder().encode("GIF89a…"))).toBe("image/gif");
     expect(detectImage(new TextEncoder().encode("RIFF1234WEBPVP8 "))).toBe("image/webp");
-    expect(detectImage(Uint8Array.from([0, 0, 0x8c, 0xa0, 0x78, 0x9c]))).toBeNull(); // qCompress: Länge + zlib
+    expect(detectImage(Uint8Array.from([0, 0, 0x8c, 0xa0, 0x78, 0x9c]))).toBeNull(); // qCompress: length + zlib
     expect(detectImage(new Uint8Array())).toBeNull();
   });
 });
@@ -44,7 +44,7 @@ describe("AvatarCache", () => {
     expect(s.cache.get(1)?.mime).toBe("image/png");
     expect(s.changes()).toBe(1);
     const first = s.cache.version(1);
-    // vor Ablauf kein neuer Abruf, danach schon – neues Bild → neue Version
+    // no new fetch before expiry, afterwards yes – new image → new version
     s.cache.sync([1]);
     expect(s.calls).toHaveLength(2);
     images[1] = JPEG;

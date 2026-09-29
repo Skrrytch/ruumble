@@ -1,4 +1,4 @@
-// Verbindung zum Ruumble-Dienst: ausgehender WebSocket (ws/wss) mit automatischer Neuverbindung (ADR-0001).
+// Connection to the Ruumble service: outgoing WebSocket (ws/wss) with automatic reconnection (ADR-0001).
 #pragma once
 
 #include "core.h"
@@ -33,7 +33,7 @@ public:
 	void send(const std::string &json) override;
 
 private:
-	/** Wartezeit vor der Neuverbindung: wächst, solange Verbindungen nur kurz halten (z. B. reject) */
+	/** wait before reconnecting: grows as long as connections only last briefly (e.g. reject) */
 	void backoffAfterClose();
 
 	std::unique_ptr< ix::WebSocket > ws_;

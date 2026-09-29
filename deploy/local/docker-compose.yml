@@ -1,10 +1,10 @@
-# Lokaler Live-Test: echter Mumble-Server + Ruumble-Dienst (+ Test-Clients mit Plugin, siehe run-client.sh).
-# NUR für Tests: feste Test-Secrets, Ice auf 127.0.0.1 veröffentlicht (für setup und Diagnose).
+# Local live test: real Mumble server + Ruumble service (+ test clients with plugin, see run-client.sh).
+# FOR TESTS ONLY: fixed test secrets, Ice published on 127.0.0.1 (for setup and diagnostics).
 #   docker compose -f deploy/local/docker-compose.yml up -d --build
 name: ruumble-local
 services:
   mumble:
-    # andere Server-Version: MUMBLE_VERSION=v1.5.735 docker compose … (Live-Tests in der CI prüfen mehrere)
+    # different server version: MUMBLE_VERSION=v1.5.735 docker compose … (live tests in CI check several)
     image: mumblevoip/mumble-server:${MUMBLE_VERSION:-v1.6.870}
     environment:
       MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'

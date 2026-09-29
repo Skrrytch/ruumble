@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Pinnwand-Grafik im Raum (ADR-0011, Variante B): zwei Zettel mit Nadeln, rechtsbündig.
-  // Nur im eigenen Raum, als Schalter für die Seitenleiste; sie zeigt nie an, ob oder wie viel dort hängt.
+  // board graphic in the room (ADR-0011, variant B): two notes with pins, right-aligned.
+  // Only in the user's own room, as the toggle for the sidebar; it never shows whether or how much is pinned there.
 </script>
 
 <svg class="notes" width="56" height="38" viewBox="0 0 44 30" aria-hidden="true">

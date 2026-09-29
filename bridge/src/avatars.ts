@@ -1,6 +1,6 @@
 /**
- * Avatar-Zwischenspeicher (AP9): Bilder registrierter Nutzer per Ice getTexture, nur im Arbeitsspeicher.
- * Ice meldet keine Änderungen, deshalb wird regelmäßig neu abgefragt und über einen Hash versioniert.
+ * Avatar cache (AP9): images of registered users via Ice getTexture, in memory only.
+ * Ice reports no changes, so they are re-fetched periodically and versioned by a hash.
  */
 import { createHash } from "node:crypto";
 import { detectImage } from "./board/media.ts";
@@ -15,10 +15,10 @@ export interface Avatar {
 
 export interface AvatarOptions {
   fetch: (userId: number) => Promise<Uint8Array | null>;
-  /** nach einer Änderung (neues oder entferntes Bild) */
+  /** after a change (new or removed image) */
   onChange: () => void;
   refreshMs?: number;
-  /** Einträge von Nutzern, die so lange fehlen, werden verworfen */
+  /** entries of users absent for this long are discarded */
   forgetMs?: number;
   now?: () => number;
 }
@@ -38,11 +38,11 @@ export class AvatarCache {
     this.opts = { refreshMs: 5 * 60_000, forgetMs: 60 * 60_000, now: Date.now, ...opts };
   }
 
-  /** mit den aktuell anwesenden registrierten Nutzern abgleichen; holt neue und veraltete Bilder im Hintergrund */
+  /** reconcile with the currently present registered users; fetches new and stale images in the background */
   sync(userIds: Iterable<number>): void {
     const now = this.opts.now();
     for (const id of userIds) {
-      const e = this.entries.get(id) ?? { avatar: null, fetchedAt: Number.NEGATIVE_INFINITY, lastSeen: now, pending: false }; // noch nie geladen
+      const e = this.entries.get(id) ?? { avatar: null, fetchedAt: Number.NEGATIVE_INFINITY, lastSeen: now, pending: false }; // never loaded yet
       e.lastSeen = now;
       this.entries.set(id, e);
       if (!e.pending && now - e.fetchedAt >= this.opts.refreshMs) void this.load(id, e);
@@ -58,7 +58,7 @@ export class AvatarCache {
     return this.entries.get(userId)?.avatar ?? null;
   }
 
-  /** ein Bild sofort (neu) laden */
+  /** (re)load an image immediately */
   private async load(userId: number, entry = this.entries.get(userId)): Promise<void> {
     if (!entry) return;
     entry.pending = true;

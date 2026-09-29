@@ -18,7 +18,7 @@ describe("Snapshot-Fixtures", () => {
     expect(s.channels.filter((c) => c.parent === null).map((c) => c.id)).toEqual([0]);
     for (const c of s.channels) {
       if (c.parent !== null) expect(ids).toContain(c.parent);
-      for (const l of c.links) expect(s.channels.find((o) => o.id === l)?.links).toContain(c.id); // symmetrisch wie in Mumble
+      for (const l of c.links) expect(s.channels.find((o) => o.id === l)?.links).toContain(c.id); // symmetric as in Mumble
     }
     for (const u of s.users) expect(ids).toContain(u.channel);
     if (s.self) expect(s.users.map((u) => u.session)).toContain(s.self.session);

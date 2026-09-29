@@ -149,7 +149,7 @@ describe("Sonderfälle", () => {
     expect(b.entrance.map((u) => u.name)).toEqual(["Ida", "Jonas"]);
     expect(b.online).toBe(13);
     const onFloors = b.floors.reduce((n, f) => n + f.population, 0);
-    expect(onFloors + b.entrance.length).toBe(13 - 3); // Gregor + Hanna (Teeküche↔Raucherecke) und Lena (Gästebüro) sind ausgeblendet
+    expect(onFloors + b.entrance.length).toBe(13 - 3); // Gregor + Hanna (Teeküche↔Raucherecke) and Lena (Gästebüro) are hidden
   });
 
   it("Mitlauschen, Schloss und Nutzerstatus", () => {
@@ -233,8 +233,8 @@ describe("Avatare (AP9) und Anwesenheit (AP10)", () => {
 
   it("Avatar-URL nur für registrierte Nutzer mit Bild, eigene URL-Funktion möglich", () => {
     expect(find("Anna").avatarUrl).toBe("/avatar/1?v=a1b2c3d4e5f60718");
-    expect(find("Ben").avatarUrl).toBeNull(); // registriert, aber ohne Bild
-    expect(find("Ida").avatarUrl).toBeNull(); // unregistriert
+    expect(find("Ben").avatarUrl).toBeNull(); // registered, but without image
+    expect(find("Ida").avatarUrl).toBeNull(); // unregistered
     const custom = buildBuilding(fixture("sonderfaelle"), { avatarUrl: (id, v) => `x:${id}:${v}` });
     expect(custom.floors[1]!.rooms[0]!.users[0]!.avatarUrl).toBe("x:1:a1b2c3d4e5f60718");
   });
@@ -245,9 +245,9 @@ describe("Avatare (AP9) und Anwesenheit (AP10)", () => {
     expect(presenceOf({ selfDeaf: false, idleMinutes: 15 })).toBe("quiet");
     expect(presenceOf({ selfDeaf: true, idleMinutes: 4 })).toBe("active");
     expect(presenceOf({ selfDeaf: true, idleMinutes: 5 })).toBe("away");
-    expect(find("Ben").presence).toBe("quiet"); // 20 Min., nicht taub
-    expect(find("Felix").presence).toBe("away"); // taub, 12 Min.
-    expect(find("Jonas").presence).toBe("quiet"); // im Eingang, 40 Min.
+    expect(find("Ben").presence).toBe("quiet"); // 20 min, not deafened
+    expect(find("Felix").presence).toBe("away"); // deafened, 12 min
+    expect(find("Jonas").presence).toBe("quiet"); // in the entrance, 40 min
   });
 
   it("Aufnahme am Nutzer und am Raum", () => {

@@ -21,7 +21,7 @@ describe("Darstellung: Markdown und Code ohne XSS (ADR-0011)", () => {
   ])("%s wird entschärft", (_name, input) => {
     const html = renderMarkdown(input);
     const doc = new DOMParser().parseFromString(html, "text/html");
-    // entscheidend ist, was der Browser als Elemente und Attribute sieht (maskierter Text ist harmlos)
+    // what matters is what the browser sees as elements and attributes (escaped text is harmless)
     expect(doc.querySelectorAll("script, iframe, img, object, embed, svg, style").length).toBe(0);
     for (const el of doc.body.querySelectorAll("*")) {
       for (const attr of el.attributes) expect(attr.name).not.toMatch(/^on/i);
@@ -39,7 +39,7 @@ describe("Darstellung: Markdown und Code ohne XSS (ADR-0011)", () => {
     const r = renderCode('<script>alert("x")</script>', "xml");
     expect(r.html).not.toContain("<script>");
     expect(r.html).toContain("&lt;");
-    // Auto-Erkennung braucht etwas Kontext; für kurze Stücke gibt es im Code-Modus die Sprachauswahl
+    // auto-detection needs some context; for short snippets code mode offers the language selection
     expect(highlight("import os\n\ndef main():\n    print(os.getcwd())\n\nif __name__ == '__main__':\n    main()", undefined).language).toBe("python");
     expect(highlight("SELECT name FROM users WHERE id = 1;", "sql").language).toBe("sql");
     expect(highlight("x", "gibt-es-nicht").language).not.toBe("gibt-es-nicht");

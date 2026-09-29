@@ -23,23 +23,23 @@
     space: Space | Room;
     variant: "room" | "corridor" | "open";
     row?: "top" | "bottom";
-    /** Anzeigename, z. B. „Flur“ statt des Kanalnamens */
+    /** display name, e.g. "Corridor" instead of the channel name */
     title: string;
-    /** Zeile unter dem Titel; Standard: Belegung */
+    /** line below the title; default: occupancy */
     subtitle?: string;
     pending?: boolean;
-    /** Vorschau ohne eigenen Nutzer: nichts betretbar */
+    /** preview without own user: nothing can be entered */
     readonly?: boolean;
     talking: Record<number, boolean>;
     onjoin: (channelId: number) => void;
-    /** Pinnwand-Seitenleiste offen (für den Schalter im eigenen Raum, ADR-0011) */
+    /** board sidebar open (for the toggle in the user's own room, ADR-0011) */
     boardOpen?: boolean;
     ontoggleboard?: () => void;
   } = $props();
 
 
   const room = $derived("grow" in space ? space : null);
-  // Pinnwand-Grafik nur im eigenen Raum, als Schalter für die Seitenleiste
+  // board graphic only in the user's own room, as the toggle for the sidebar
   const boardToggle = $derived(!!room && space.isSelf && !readonly && !!ontoggleboard);
   const disabled = $derived((space.locked && !space.isSelf) || readonly);
   const ariaLabel = $derived.by(() => {
@@ -117,7 +117,7 @@
 </div>
 
 <style>
-  /* Basis = horizontales Padding des Raums, damit die Breiten wie ohne Hülle verteilt werden */
+  /* basis = horizontal padding of the room, so the widths are distributed as without the wrapper */
   .wrap { position: relative; display: flex; flex-basis: 44px; min-width: 0; }
   .wrap-corridor { flex: none; }
   .wrap-open { flex-grow: 1; }
@@ -126,8 +126,8 @@
     text-align: left; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
     flex: 1 1 auto; min-width: 0; width: 100%; transition: background var(--dur) var(--ease-out);
   }
-  /* Pinnwand-Grafik rechtsbündig oben (ADR-0011, Variante B) */
-  /* Schalter ohne Kasten: nur die Zettel, beim Überfahren heben sie sich leicht an */
+  /* board graphic top right (ADR-0011, variant B) */
+  /* toggle without a box: only the notes, on hover they lift slightly */
   .notes.toggle {
     position: absolute; top: 12px; right: 12px; border: 0; background: transparent; padding: 4px; margin: -4px; border-radius: var(--radius-md);
     min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer;
@@ -167,6 +167,6 @@
   .room.corridor:hover { background-color: var(--color-surface); }
   .room.corridor.mine { background-color: var(--color-blue-100); }
   .room.corridor .label { min-width: 120px; }
-  .room.open { flex-grow: 1; } /* innerhalb von .wrap-open */
+  .room.open { flex-grow: 1; } /* inside .wrap-open */
   .room.open .title { font-size: 20px; }
 </style>

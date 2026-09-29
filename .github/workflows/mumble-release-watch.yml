@@ -1,6 +1,6 @@
 name: Mumble-Release-Watch
 
-# Meldet ein neues Mumble-Release als Issue, samt Diff der beiden Schnittstellendateien.
+# Reports a new Mumble release as an issue, including a diff of the two interface files.
 on:
   schedule:
     - cron: "17 6 * * 1"
@@ -52,6 +52,6 @@ jobs:
             fi
           } > /tmp/body.md
           gh issue create --title "$title" --body-file /tmp/body.md
-          # Verhalten prüfen, nicht nur die Schnittstellen: Live-Tests gegen das neue Release
+          # Check behaviour, not just the interfaces: live tests against the new release
           gh workflow run live.yml -f mumble="$latest" || echo "Live-Tests konnten nicht gestartet werden"
 

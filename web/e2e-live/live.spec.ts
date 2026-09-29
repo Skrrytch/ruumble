@@ -1,6 +1,6 @@
 /**
- * Live-Test: echter Mumble-Server (Version über MUMBLE_VERSION im lokalen Stack, Standard v1.6.870), Ruumble-Dienst im Container und headless Mumble-Clients mit dem
- * echten Ruumble-Plugin. Die Oberfläche steuert Annas Mumble-Client; geprüft wird, was der Server zurückmeldet.
+ * Live test: real Mumble server (version via MUMBLE_VERSION in the local stack, default v1.6.870), Ruumble service in a container and headless Mumble clients with the
+ * real Ruumble plugin. The web UI controls Anna's Mumble client; what is checked is what the server reports back.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -8,16 +8,16 @@ import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { loadBot, registerUser, serverVersion, solidPng, unregisterUser } from "./mumble-admin.ts";
 
 const root = new URL("../../", import.meta.url).pathname;
-/** `bridgeUrl = ""`: ohne feste Adresse, das Plugin liest sie aus der Root-Beschreibung (ADR-0010) */
-/** `lang`: Systemsprache des Clients; das Plugin schreibt seine Meldungen und bekommt Hinweise in dieser Sprache */
+/** `bridgeUrl = ""`: no fixed address, the plugin reads it from the root description (ADR-0010) */
+/** `lang`: system language of the client; the plugin writes its messages and receives notices in this language */
 const runClient = (distro: string, name: string, bridgeUrl = "http://ruumble:8080", lang = "de_DE.UTF-8") =>
   execFileSync(`${root}deploy/local/run-client.sh`, [distro, name], { env: { ...process.env, BRIDGE_URL: bridgeUrl, CLIENT_LANG: lang } });
-/** Root-Beschreibung setzen (Testvorbereitung mit Write-Secret); `long`: über 128 Zeichen → Mumble schickt nur einen Hash */
+/** set the root description (test setup with write secret); `long`: over 128 characters → Mumble only sends a hash */
 const setRootDescription = (long: boolean) =>
   execFileSync("node", ["src/setup.cjs"], { cwd: `${root}tools/live-test`, env: { ...process.env, RUUMBLE_DESC_PAD: long ? "1" : "" } });
 const stopClient = (name: string) => execFileSync("docker", ["rm", "-f", `ruumble-client-${name}`]);
 
-/** Mumble-Protokoll eines Test-Clients (das Plugin spiegelt es mit RUUMBLE_LOG_STDERR auf stderr) */
+/** Mumble log of a test client (the plugin mirrors it to stderr with RUUMBLE_LOG_STDERR) */
 const mumbleLog = (name: string) => {
   const file = `${root}deploy/local/out/${name}/mumble.log`;
   return existsSync(file) ? readFileSync(file, "utf8") : "";
@@ -40,7 +40,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   test.beforeAll(async ({ browser }) => {
     runClient(distro, "Anna");
     page = await browser.newPage();
-    // Diagnose: alle Nachrichten an Annas Oberfläche (außer Snapshots) festhalten
+    // diagnostics: record all messages to Anna's web UI (except snapshots)
     page.on("websocket", (ws) => ws.on("framereceived", (f) => {
       const text = String(f.payload);
       if (!text.includes('"snapshot"')) frames.push(`${Date.now()} ${text}`);
@@ -55,7 +55,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await ben?.close();
     await unregisterUser("Robo").catch(() => {});
     stopClient("Anna");
-    try { stopClient("Ben"); } catch { /* nicht gestartet */ }
+    try { stopClient("Ben"); } catch { /* not started */ }
   });
 
   test("Kopplungslink des Plugins koppelt den Browser", async () => {
@@ -64,9 +64,9 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await page.goto(url);
     await expect(page).toHaveURL("http://127.0.0.1:8080/");
     await expect(page.getByRole("navigation", { name: "Aufzug – Etagen" })).toBeVisible();
-    // frisch verbunden steht Anna im Root-Kanal: Eingang
+    // freshly connected, Anna is in the root channel: entrance
     await expect(page.getByRole("region", { name: "Eingang" }).getByRole("img", { name: /Anna \(du\)/ })).toBeVisible();
-    // derselbe Link ein zweites Mal: ungültig
+    // the same link a second time: invalid
     const again = await page.request.get(url, { maxRedirects: 0 });
     expect(again.status()).toBe(400);
   });
@@ -110,7 +110,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await deaf.click();
     await expect(deaf).toHaveAttribute("aria-pressed", "true", { timeout: 5000 });
     await expect(page.getByRole("img", { name: "Anna (du), taub" })).toBeVisible();
-    await mute.click(); // Unmute hebt Taub mit auf (Mumble-Semantik)
+    await mute.click(); // unmute also lifts deaf (Mumble semantics)
     await expect(deaf).toHaveAttribute("aria-pressed", "false", { timeout: 5000 });
     await expect(mute).toHaveAttribute("aria-pressed", "false");
   });
@@ -122,7 +122,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   });
 
   test("zweiter Client im selben Raum: sichtbar und hörbar", async () => {
-    runClient(distro, "Ben", undefined, "en_US.UTF-8"); // Ben mit englischem System
+    runClient(distro, "Ben", undefined, "en_US.UTF-8"); // Ben with an English system
     const benUrl = await pairUrl("Ben");
     ben = await page.context().browser()!.newContext();
     benPage = await ben.newPage();
@@ -131,10 +131,10 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await benPage.getByRole("button", { name: "1. Obergeschoss: ENTWICKLUNG" }).click();
     await benPage.getByRole("button", { name: "Büro von Anna betreten" }).click();
     await expect(benPage.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible({ timeout: 5000 });
-    // Annas Oberfläche: Ben sitzt bei ihr und spricht (Annas Client hört ihn)
+    // Anna's web UI: Ben is in her room and talking (Anna's client hears him)
     await expect(page.getByRole("img", { name: /^Ben/ })).toBeVisible({ timeout: 5000 });
-    // Bens headless Client sendet den Sinuston in Schüben (~250 ms „talking“ alle ~2 s), deshalb eng abfragen:
-    // Der Ring muss mindestens einmal erscheinen.
+    // Ben's headless client sends the sine tone in bursts (~250 ms "talking" every ~2 s), so poll tightly:
+    // the ring must appear at least once.
     await page.waitForFunction(
       () => [...document.querySelectorAll('[role="img"]')].some((e) => e.getAttribute("aria-label") === "Ben, spricht"),
       null,
@@ -148,24 +148,24 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     const annaBoard = page.getByRole("complementary", { name: "Pinnwand" });
     const benBoard = benPage.getByRole("complementary", { name: "Pinnwand" });
     await expect(benBoard.getByRole("heading", { name: "Pinnwand" })).toBeVisible();
-    // Anna heftet Code an: Ben sieht ihn ohne Neuladen, sein Mumble meldet es, Annas nicht
+    // Anna pins code: Ben sees it without reloading, his Mumble reports it, Anna's does not
     await annaBoard.getByRole("button", { name: "Als Code anheften" }).click();
     await annaBoard.getByRole("textbox", { name: "Neuer Beitrag" }).fill("const live = true;\nconsole.log(live);");
     await annaBoard.getByRole("button", { name: "Senden" }).click();
     await expect(benBoard.getByRole("article", { name: "Beitrag von Anna" }).locator(".hljs")).toBeVisible({ timeout: 5000 });
     await expect.poll(() => mumbleLog("Ben"), { timeout: 5000 }).toContain("ruumble-log: Anna pinned code to the board.");
     expect(mumbleLog("Anna")).not.toContain("an die Pinnwand geheftet");
-    // Ben lädt ein echtes Bild hoch (XMLHttpRequest mit Fortschritt, Bytes-Prüfung im Dienst)
+    // Ben uploads a real image (XMLHttpRequest with progress, byte check in the service)
     const [chooser] = await Promise.all([benPage.waitForEvent("filechooser"), benBoard.getByRole("button", { name: "Bild oder Datei anhängen" }).click()]);
     await chooser.setFiles({ name: "punkt.png", mimeType: "image/png", buffer: Buffer.from(solidPng(40, [0, 120, 190])) });
     await expect(benBoard.getByText(/· bereit$/)).toBeVisible({ timeout: 5000 });
     await benBoard.getByRole("button", { name: "Senden" }).click();
     const image = annaBoard.getByRole("article", { name: "Beitrag von Ben" }).locator("img");
     await expect(image).toBeVisible({ timeout: 5000 });
-    // sichtbar heißt noch nicht geladen: auf das fertige Bild warten
+    // visible does not mean loaded yet: wait for the finished image
     await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.naturalWidth), { timeout: 5000 }).toBe(40);
     await expect.poll(() => mumbleLog("Anna"), { timeout: 5000 }).toContain("ruumble-log: Ben hat ein Bild an die Pinnwand geheftet.");
-    // aufräumen und Rechte: Ben löscht sein Bild, verlässt den Raum und kommt dann nicht mehr an Annas Beitrag (403)
+    // clean-up and permissions: Ben deletes his image, leaves the room and then can no longer reach Anna's post (403)
     const posts = (await (await page.request.get("/api/board")).json()).posts as { id: string; authorName: string }[];
     const annas = posts.find((p) => p.authorName === "Anna")!;
     expect((await benPage.request.delete(`/api/board/posts/${posts.find((p) => p.authorName === "Ben")!.id}`)).status()).toBe(204);
@@ -180,23 +180,23 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
   test("Avatar aus Mumble erscheint (AP9)", async () => {
     const [major, minor] = await serverVersion();
     test.skip(major > 1 || minor >= 6, "Mumble ≥ 1.6: Ice getTexture wirft für registrierte Nutzer (Fehler in Mumble); Ruumble zeigt Initialen");
-    // registrierter Test-Bot setzt seinen Avatar selbst (so wie ein Mumble-Client über „Avatar ändern“)
+    // registered test bot sets its avatar itself (like a Mumble client via "Change avatar")
     const { Bot } = loadBot();
     const first = new Bot("Robo");
     await first.connect();
     const userId = await registerUser("Robo", first.identity.sha1);
     first.close();
     await new Promise((r) => setTimeout(r, 500));
-    const robo = new Bot("Robo"); // gleiches Zertifikat → jetzt registriert
+    const robo = new Bot("Robo"); // same certificate → now registered
     await robo.connect();
     robo.send("UserState", { session: robo.session, texture: solidPng(64, [230, 120, 20]) });
     try {
       const img = page.getByRole("region", { name: "Eingang" }).locator("img");
-      await expect(img).toBeVisible({ timeout: 20_000 }); // Poll 1 s + Avatar-Abruf
+      await expect(img).toBeVisible({ timeout: 20_000 }); // poll 1 s + avatar fetch
       await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth), { timeout: 5000 }).toBe(64);
       const res = await page.request.get((await img.getAttribute("src")) as string);
       expect(res.headers()["content-type"]).toBe("image/png");
-      // ohne Kopplung kein Bild
+      // no pairing, no image
       const anon = await page.context().browser()!.newContext();
       expect((await anon.request.get(`http://127.0.0.1:8080/avatar/${userId}`)).status()).toBe(401);
       await anon.close();
@@ -220,7 +220,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
 
 test.describe.serial(`Adresse aus der Root-Beschreibung (${distro})`, () => {
   test.afterAll(() => {
-    for (const name of ["Dora", "Emil"]) try { stopClient(name); } catch { /* nicht gestartet */ }
+    for (const name of ["Dora", "Emil"]) try { stopClient(name); } catch { /* not started */ }
     setRootDescription(false);
   });
 
@@ -235,8 +235,8 @@ test.describe.serial(`Adresse aus der Root-Beschreibung (${distro})`, () => {
     runClient(distro, "Emil", "");
     const file = `${root}deploy/local/out/Emil/pair-url.txt`;
     await new Promise((r) => setTimeout(r, 10_000));
-    expect(existsSync(file)).toBe(false); // Mumble hat den Text noch nicht geladen
-    // wie ein Nutzer: Maus über den obersten Kanal (Tooltip lädt die Beschreibung nach)
+    expect(existsSync(file)).toBe(false); // Mumble has not loaded the text yet
+    // like a user: mouse over the top channel (the tooltip loads the description)
     execFileSync("docker", ["exec", "ruumble-client-Emil", "bash", "-c",
       "export DISPLAY=:99; xdotool mousemove 320 73; sleep 0.3; xdotool mousemove 322 74; sleep 2"]);
     expect(await pairUrl("Emil")).toMatch(/\/pair\?code=/);

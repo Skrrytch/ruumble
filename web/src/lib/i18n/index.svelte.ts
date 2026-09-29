@@ -1,7 +1,7 @@
 /**
- * Sprache der Oberfläche: Deutsch, sonst Englisch (Browser-Einstellung, `navigator.languages`).
- * Eine Auswahl im Benutzerbereich übersteuert das und wird im Browser gemerkt.
- * `t()` liefert das Wörterbuch der aktuellen Sprache und ist reaktiv (liest `$state`).
+ * Language of the web UI: German, otherwise English (browser setting, `navigator.languages`).
+ * A choice in the user area overrides this and is remembered in the browser.
+ * `t()` returns the dictionary of the current language and is reactive (reads `$state`).
  */
 import { de } from "./de.ts";
 import { en } from "./en.ts";
@@ -12,7 +12,7 @@ export const LOCALES: readonly Locale[] = ["de", "en"];
 const DICTIONARIES: Record<Locale, Messages> = { de, en };
 const STORAGE_KEY = "ruumble.locale";
 
-/** erste unterstützte Sprache aus der Liste des Browsers; ohne Treffer Englisch */
+/** first supported language from the browser's list; English if none matches */
 export function detectLocale(languages: readonly string[] = globalThis.navigator?.languages ?? []): Locale {
   for (const l of languages) {
     const base = l.toLowerCase().split("-")[0];
@@ -44,16 +44,16 @@ export function setLocale(next: Locale, remember = true): void {
   try {
     globalThis.localStorage?.setItem(STORAGE_KEY, next);
   } catch {
-    // privater Modus o. Ä.: gilt dann nur bis zum Neuladen
+    // private mode or similar: then only applies until reload
   }
 }
 
-/** Wörterbuch der aktuellen Sprache */
+/** Dictionary of the current language */
 export function t(): Messages {
   return DICTIONARIES[current];
 }
 
-/** BCP-47-Tag für Intl (Datum, Zahlen, Sortierung) */
+/** BCP 47 tag for Intl (dates, numbers, sorting) */
 export function intlLocale(): string {
   return current === "de" ? "de-DE" : "en-GB";
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Anhang eines Beitrags (AP11.3): Bild als Vorschau (Klick → Vollbild), Datei mit Symbol, Größe und Download
+  // attachment of a post (AP11.3): image as preview (click → full screen), file with icon, size and download
   import Download from "@lucide/svelte/icons/download";
   import File from "@lucide/svelte/icons/file";
   import FileArchive from "@lucide/svelte/icons/file-archive";

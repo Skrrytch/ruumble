@@ -1,5 +1,5 @@
-# Ruumble-Plugin für Mumble (AP6). Eigenes CMake-Projekt; Mumble selbst wird nicht gebaut.
-# Der Mumble-Header kommt unverändert aus third_party/mumble (ADR-0009).
+# Ruumble plugin for Mumble (AP6). Separate CMake project; Mumble itself is not built.
+# The Mumble header comes unmodified from third_party/mumble (ADR-0009).
 cmake_minimum_required(VERSION 3.20)
 project(ruumble_plugin VERSION 0.4.0 LANGUAGES CXX)
 
@@ -9,7 +9,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-option(RUUMBLE_TESTS "Unit-Tests bauen" ON)
+option(RUUMBLE_TESTS "Build unit tests" ON)
 
 include(FetchContent)
 FetchContent_Declare(nlohmann_json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
@@ -22,7 +22,7 @@ FetchContent_MakeAvailable(nlohmann_json ixwebsocket)
 
 find_package(Threads REQUIRED)
 
-# Kern ohne Mumble-Abhängigkeit (auch für die Tests)
+# Core without Mumble dependency (also used by the tests)
 add_library(ruumble_core STATIC src/core.cpp src/config.cpp src/discovery.cpp src/messages.cpp)
 target_include_directories(ruumble_core PUBLIC src)
 target_link_libraries(ruumble_core PUBLIC nlohmann_json::nlohmann_json Threads::Threads)
@@ -35,7 +35,7 @@ target_compile_definitions(ruumble PRIVATE
   RUUMBLE_VERSION="${PROJECT_VERSION}"
   RUUMBLE_VERSION_MAJOR=${PROJECT_VERSION_MAJOR} RUUMBLE_VERSION_MINOR=${PROJECT_VERSION_MINOR} RUUMBLE_VERSION_PATCH=${PROJECT_VERSION_PATCH})
 target_compile_options(ruumble PRIVATE -Wall -Wextra)
-# nur die mumble_*-Exporte sichtbar machen
+# make only the mumble_* exports visible
 target_link_options(ruumble PRIVATE -Wl,--exclude-libs,ALL)
 
 if(RUUMBLE_TESTS)
@@ -47,7 +47,7 @@ if(RUUMBLE_TESTS)
   add_test(NAME ruumble_tests COMMAND ruumble_tests)
 endif()
 
-# Bundle für den Plugin-Installer von Mumble (Analyse 2.1): ruumble-<version>.mumble_plugin
+# Bundle for Mumble's plugin installer (Analyse 2.1): ruumble-<version>.mumble_plugin
 set(BUNDLE "${CMAKE_BINARY_DIR}/ruumble-${PROJECT_VERSION}.mumble_plugin")
 configure_file(packaging/manifest.xml.in "${CMAKE_BINARY_DIR}/bundle/manifest.xml" @ONLY)
 add_custom_command(OUTPUT "${BUNDLE}"

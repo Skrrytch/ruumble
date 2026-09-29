@@ -3,7 +3,7 @@ packages:
   - web
   - bridge
 
-# Installationsskripte nur ausdrücklich erlaubt (pnpm 11)
+# Install scripts only when explicitly allowed (pnpm 11)
 allowBuilds:
   esbuild: true
   better-sqlite3: true
