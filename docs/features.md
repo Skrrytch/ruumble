@@ -119,6 +119,7 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 | C – Knocking | idea, decision open |
 | F – More controls | idea, decision open |
 | G – "Door closed" | idea, after B and C |
+| A1–A9 – Board for developers | planned, order open |
 | Report the Mumble avatar bug | open (O16) |
 | Address check over proxy and VPN | to be checked on a real deployment (P7) |
 
@@ -140,3 +141,60 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 
 - A layout for small windows (today: minimum height 720 px, width up to 1440 px).
 - Old raw avatar format (600×60 BGRA) from very old clients; treated as "no avatar" today.
+
+### Board for developers (A1–A9)
+
+Extensions of the board (idea A) for the everyday exchange between developers: stack traces, links to tickets and pull requests, screenshots, short agreements and checklists. Guidelines for all of them: **no configuration** by the operator, the service **never fetches foreign URLs**, and the access rule of ADR-0011 stays unchanged (only those present in the room).
+
+**A1 – Stack traces.** Pasting a stack trace is recognised like pasting code today and suggests a code post with the language "stack trace". Recognition works on typical markers without configuration: Java/Kotlin (`at pkg.Class.method(File.java:42)`, `Caused by:`), Python (`Traceback (most recent call last):`, `File "…", line N`), JavaScript/Node (`at fn (file:line:col)`), .NET (`at Ns.Class.Method() in …:line N`), Go (`panic:`, `goroutine N [running]:`) and Rust (`thread '…' panicked at`).
+
+The display is tailored to reading: the exception type and message become the headline of the card, the preview shows them together with the first frame outside libraries. Frames from well-known library and runtime paths (`java.`, `jdk.`, `org.springframework.`, `node_modules/`, `site-packages/`, `runtime/` …) are dimmed and collapsed into "… 38 frames in libraries". `Caused by` chains become their own sections, with the root cause emphasised. Lines never wrap; copy and download always return the original text unchanged.
+
+**A2 – Clickable links everywhere.** Text posts already turn URLs into links (Markdown with linkify). Code posts, stack traces and image or file captions do not: there a URL is plain text today. Links in these posts become clickable too, and in addition every post shows the links it contains as a compact list below its content: duplicates removed, at most three entries, then "+ N more". That way a ticket link in a code comment or log is one click away without searching the text.
+
+Only `http(s)` links are offered, always in a new tab and without access to the Ruumble window (as today). In the list the full URL appears as a tooltip; the entries use the short form from A3.
+
+**A3 – Short form for well-known URLs.** Instead of a long URL, a link shows a symbol and a short text, derived only from the **shape of the URL**, never by fetching it. This works for self-hosted instances too, because the path is recognised, not the host:
+
+| URL shape | Shown as |
+|---|---|
+| `…/<owner>/<repo>/pull/<n>`, `…/-/merge_requests/<n>` | pull request icon, "PR #13 · ruumble" |
+| `…/<owner>/<repo>/issues/<n>` | issue icon, "#42 · ruumble" |
+| `…/commit/<sha>` | commit icon, "a1b2c3d · ruumble" |
+| `…/actions/runs/<id>`, `…/-/pipelines/<id>` | CI icon, "CI run · ruumble" |
+| `…/browse/<KEY-123>` | ticket icon, "KEY-123" |
+| `…/wiki/spaces/…/pages/<id>/<Title>` | page icon, the title from the URL |
+| `…/questions/<id>/<slug>` (Stack Overflow and similar) | question icon, the title from the slug |
+| anything else | host and a shortened path |
+
+Symbols come from Lucide (no brand logos). The recognition is a pure function in the web UI with unit tests, so new shapes can be added without touching the service.
+
+**A4 – Several images in one post.** Pasting or dropping several images at once creates **one** post with all of them, for example before and after, or several steps of a bug. The card shows them as a small gallery; the full-screen view pages through them with the arrow keys. One caption applies to the whole post; when editing, single images can be removed or added.
+
+The limit per image stays at 10 MB, plus a maximum number per post (proposal: 6). This changes the protocol and the storage: `attachments[]` instead of `attachment`, and a table linking posts to attachments in SQLite; existing posts are migrated. Retention and quota count every image.
+
+**A5 – Quick reactions.** A fixed set of reactions with a clear meaning, instead of free emoji, so that nobody has to guess what a symbol means:
+
+| Symbol (Lucide) | Meaning |
+|---|---|
+| thumbs up | agreed / fine by me |
+| eye | I'm looking at it |
+| check | done / works |
+| triangle with exclamation mark | does not work for me |
+| question mark | unclear, let's talk |
+
+The label appears as a tooltip. Everyone present can set each reaction once per post and take it back; the card shows the symbols with a count, the tooltip also the names. Reactions do not send a Mumble notice, so they stay quiet. They are stored with the post (author hash, name at the time) and deleted together with it.
+
+**A6 – Shared task lists.** Markdown task lists (`- [ ]`, `- [x]`) in text posts appear as checkboxes that **everyone present** can tick, for example the TODOs of a pairing session or a deployment checklist. The card header shows the progress ("3/7"). The composer gets a button that starts a checklist.
+
+A tick does not send the whole text as an edit does, but only "task N done / not done" to its own endpoint; the service changes exactly that line. Two people ticking at the same time therefore do not overwrite each other. Ticking counts as an edit ("last edited by …") but sends no Mumble notice. Together with A8, a checklist can stay visible above the list.
+
+**A7 – Full-text search.** A search field in the board header searches the text, captions, file names, code language and author names of all posts of the room, combined with the existing filter by kind. Matches are highlighted, and posts shortened to 8 lines open where the match is. The search runs in the web UI over the posts that are already loaded; with one room and 30 days that is enough. A full-text index in SQLite (FTS5) only comes if a measurement makes it necessary. No export for now.
+
+**A8 – Pinned on top.** **Exactly one** post per room can be pinned on top. It then appears above the list as a chip with a short title (suggested from the first heading or line, max. 40 characters, editable). A click on the chip switches the sidebar between the list of posts and the pinned post; another click switches back. Pinning another post replaces the previous one after a confirmation. Everyone present may pin and unpin, like editing.
+
+Typical uses: the checklist of the day (A6), the link to the current ticket, the commands for the local setup. Open points: whether a pinned post is exempt from the 30-day retention while it is pinned (then ADR-0011 has to be extended), and a UI term that cannot be confused with "pin something to the board" (posting).
+
+**A9 – Read access for AI tools (MCP).** AI assistants such as Claude Code can read the board of the room their user is currently in through an MCP server in the Ruumble service (Streamable HTTP under `/mcp`). This way "take the stack trace from the board" or "look at the screenshot Anna pinned" works directly in the IDE. Tools: list posts (kind, author, time, text, language, links), read one post, fetch an attachment (images as image content, text files as text), and search (as A7). Read-only for now; writing (posting from the agent) is a later option.
+
+Access uses a **personal token** that the user creates in the user menu: bound to the paired identity, shown once, stored only as SHA-256 like the device tokens, revocable at any time. The rule of ADR-0011 stays: only the room in which the user is present in Mumble at the moment of the request, otherwise nothing. The dialog points out that the content goes to the AI provider the user has chosen. Board content is marked as untrusted data in the responses (prompt injection). Prerequisites: HTTPS (O10), because the token travels over the network, and an ADR on the token and its scope.
