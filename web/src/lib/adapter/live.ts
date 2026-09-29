@@ -2,8 +2,8 @@
  * LiveAdapter: WebSocket to the Ruumble service (`/ws/ui`, ADR-0007).
  * Reconnects with increasing delay after a drop. Results are matched to commands by ID.
  */
-import { BoardError, BoardView, BridgeToUi, PROTOCOL_VERSION, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
-import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, MumbleAdapter } from "./types.ts";
+import { BoardError, BoardView, BridgeToUi, PROTOCOL_VERSION, PairError, PairRequested, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, MumbleAdapter, PairApi, PairResult } from "./types.ts";
 
 /** REST of the board; the pairing cookie is sent automatically (same-origin) */
 async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit = {}): Promise<BoardResult<T>> {
@@ -61,6 +61,20 @@ function upload(file: Blob, name: string, onProgress?: (fraction: number) => voi
   });
 }
 
+/** POST to /api/pair/*; errors come as `{ error }` */
+async function pairCall(url: string, body?: unknown): Promise<PairResult<unknown>> {
+  let res: Response;
+  try {
+    res = await fetch(url, { method: "POST", credentials: "same-origin", ...(body ? { headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}) });
+  } catch {
+    return { ok: false, error: "offline" };
+  }
+  const json: unknown = await res.json().catch(() => null);
+  if (res.ok) return { ok: true, value: json };
+  const known = PairError.safeParse(json);
+  return { ok: false, error: known.success ? known.data.error : "invalid" };
+}
+
 /** Without a reply from the plugin, a command counts as `timeout` after this time (plugin: 3 s + retry). */
 const COMMAND_TIMEOUT_MS = 10_000;
 
@@ -73,6 +87,21 @@ export class LiveAdapter implements MumbleAdapter {
   private readonly pending = new Map<string, { resolve: (r: CommandResult) => void; timer: ReturnType<typeof setTimeout> }>();
   private nextId = 1;
   readonly board: BoardApi = liveBoard;
+  readonly pairing: PairApi = {
+    request: async () => {
+      const r = await pairCall("/api/pair/request");
+      if (!r.ok) return r;
+      const parsed = PairRequested.safeParse(r.value);
+      return parsed.success ? { ok: true, value: parsed.data.request } : { ok: false, error: "invalid" };
+    },
+    confirm: async (request, code) => {
+      const r = await pairCall("/api/pair/confirm", { request, code });
+      if (!r.ok) return r;
+      // the cookie is set now: connect again (after 4401 the adapter had stopped)
+      if (this.events && this.socket?.readyState !== WebSocket.OPEN) this.open();
+      return { ok: true, value: true };
+    },
+  };
 
   constructor(url = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/ui`) {
     this.url = url;

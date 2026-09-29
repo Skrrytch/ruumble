@@ -12,7 +12,7 @@ import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
 import vacant from "@ruumble/protocol/fixtures/vacant.json";
-import type { AdapterEvents, BoardApi, BoardResult, MumbleAdapter, PluginStatus } from "./types.ts";
+import type { AdapterEvents, BoardApi, BoardResult, MumbleAdapter, PairApi, PluginStatus } from "./types.ts";
 
 const MINUTE = 60_000;
 
@@ -117,7 +117,12 @@ export interface MockOptions {
   rejectMs?: number;
   /** Simulate talking events */
   talking?: boolean;
+  /** false: this browser is not paired yet; code 123456 pairs it (ADR-0012) */
+  paired?: boolean;
 }
+
+/** code that pairs in the mock */
+export const MOCK_PAIR_CODE = "123456";
 
 const clone = <T>(v: T): T => structuredClone(v);
 
@@ -131,6 +136,7 @@ export class MockAdapter implements MumbleAdapter {
   private talkTimer: ReturnType<typeof setInterval> | null = null;
   private talkingNow = new Set<number>();
   private readonly opts: Required<MockOptions>;
+  private paired: boolean;
   private files = new Map<string, MockFile>();
   private posts = samplePosts(Date.now(), this.files);
   private nextPostId = 1;
@@ -201,13 +207,26 @@ export class MockAdapter implements MumbleAdapter {
   };
 
   constructor(fixture: FixtureName | Snapshot = "sample", opts: MockOptions = {}) {
-    this.opts = { confirmMs: 250, rejectMs: 3000, talking: true, ...opts };
+    this.opts = { confirmMs: 250, rejectMs: 3000, talking: true, paired: true, ...opts };
+    this.paired = this.opts.paired;
     this.state = clone(typeof fixture === "string" ? FIXTURES[fixture]! : fixture);
     if (!this.state.self) this.plugin = "disconnected";
   }
 
+  readonly pairing: PairApi = {
+    request: async () => (this.paired ? { ok: false, error: "invalid" } : { ok: true, value: "mock-request" }),
+    confirm: async (request, code) => {
+      if (request !== "mock-request") return { ok: false, error: "expired" };
+      if (code !== MOCK_PAIR_CODE) return { ok: false, error: "wrong-code" };
+      this.paired = true;
+      if (this.events) this.start(this.events);
+      return { ok: true, value: true };
+    },
+  };
+
   start(events: AdapterEvents): void {
     this.events = events;
+    if (!this.paired) return events.connection("unpaired");
     events.status(this.plugin, false);
     this.emit();
     if (this.opts.talking) this.talkTimer = setInterval(() => this.simulateTalking(), 900);

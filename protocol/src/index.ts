@@ -190,6 +190,16 @@ export type Post = z.infer<typeof Post>;
 export const BoardView = z.object({ channelId, channelName: z.string(), posts: z.array(Post) });
 export type BoardView = z.infer<typeof BoardView>;
 
+/** POST /api/pair/request → a code goes to the Mumble log of the matching plugins (ADR-0012) */
+export const PairRequested = z.object({ request: z.string().min(1) });
+export type PairRequested = z.infer<typeof PairRequested>;
+/** POST /api/pair/confirm: success sets the device token cookie */
+export const PairConfirm = z.object({ request: z.string().min(1).max(64), code: z.string().regex(/^\d{6}$/) });
+export type PairConfirm = z.infer<typeof PairConfirm>;
+export const PairErrorCode = z.enum(["no-plugin", "rate-limited", "wrong-code", "expired", "invalid"]);
+export type PairErrorCode = z.infer<typeof PairErrorCode>;
+export const PairError = z.object({ error: PairErrorCode });
+
 /** GET /api/version: version of the service and of the plugin offered under /download (null: none) */
 export const Versions = z.object({ service: z.string(), plugin: z.string().nullable() });
 export type Versions = z.infer<typeof Versions>;

@@ -8,6 +8,7 @@
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
   import FloorPlan from "./lib/ui/FloorPlan.svelte";
   import { t } from "./lib/i18n/index.svelte.ts";
+  import PairForm from "./lib/ui/PairForm.svelte";
   import PluginHelp from "./lib/ui/PluginHelp.svelte";
   import BoardPanel from "./lib/ui/board/BoardPanel.svelte";
 
@@ -28,6 +29,7 @@
       <Unplug size={40} />
       <strong>{t().screens.notPairedTitle}</strong>
       <span>{t().screens.notPairedText}</span>
+      <PairForm {app} />
       <PluginHelp versions={app.versions} />
     </div>
   {:else if !building}

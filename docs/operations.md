@@ -106,7 +106,7 @@ Ruumble works over plain HTTP; HTTPS is optional. With HTTPS the browser offers 
 3. **Service:** set `PUBLIC_URL: https://ruumble.example.com` and `TRUST_PROXY: "true"` (see the commented lines in the template). Remove the port binding to `<LAN-IP>:64080` so that the unencrypted path is closed, unless you want to keep it (see below).
 4. **Address check:** behind the proxy the service takes the client address from `X-Forwarded-For` and compares it with the address Mumble sees (ADR-0004). Start with `ADDRESS_CHECK: warn` and watch the log for `Plugin address does not match Mumble's`; switch back to `enforce` once there are no mismatches.
 5. **Root channel description:** change the line to `ruumble: https://ruumble.example.com` (section 3). Users who set a fixed `bridgeUrl` in `~/.config/ruumble/plugin.json` change it too. Change the link in the Mumble welcome message (`MUMBLE_CONFIG_WELCOMETEXT`) as well; it is plain Mumble config and takes effect after restarting the Mumble container.
-6. **Pair again:** the device cookie belongs to the old address, so every browser pairs once more. From now on the cookie is sent only over HTTPS (`Secure`).
+6. **Pair again:** the device cookie belongs to the old address, so every browser pairs once more: on the "not paired" page with **Pair this browser** and the code from the Mumble log (ADR-0012). From now on the cookie is sent only over HTTPS (`Secure`).
 7. **Check:** `curl https://ruumble.example.com/healthz`, then open the web UI; the browser's developer tools show the WebSocket as `wss://…/ws/ui`.
 
 Idle WebSocket connections stay open behind the proxy: the service sends a ping every 30 s (nginx closes connections after 60 s without traffic by default) and closes connections that no longer answer.

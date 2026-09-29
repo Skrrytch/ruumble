@@ -21,8 +21,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import fastifyStatic from "@fastify/static";
 import fastifyWebsocket from "@fastify/websocket";
-import Fastify from "fastify";
-import type { Versions } from "@ruumble/protocol";
+import Fastify, { type FastifyReply } from "fastify";
+import { PairConfirm, type PairErrorCode, type Versions } from "@ruumble/protocol";
 import type { WebSocket } from "ws";
 import pkg from "../package.json" with { type: "json" };
 import { AvatarCache } from "./avatars.ts";
@@ -176,13 +176,35 @@ app.get<{ Querystring: { code?: string } }>("/pair", async (req, reply) => {
     // language like the web UI: German if the browser prefers it, otherwise English
     const de = /^\s*de\b/i.test(String(req.headers["accept-language"] ?? "").split(",").find((l) => /^\s*(de|en)\b/i.test(l)) ?? "");
     const text = de
-      ? "Der Kopplungslink ist ungültig oder abgelaufen. Verbinde Mumble neu, um einen neuen zu erhalten."
-      : "The pairing link is invalid or has expired. Reconnect Mumble to get a new one.";
-    return reply.code(400).type("text/html; charset=utf-8").send(`<!doctype html><html lang="${de ? "de" : "en"}"><meta charset="utf-8"><p>${text}</p></html>`);
+      ? "Der Kopplungslink ist ungültig oder abgelaufen. Öffne Ruumble und kopple diesen Browser mit einem Code aus dem Mumble-Protokoll."
+      : "The pairing link is invalid or has expired. Open Ruumble and pair this browser with a code from the Mumble log.";
+    return reply
+      .code(400)
+      .type("text/html; charset=utf-8")
+      .send(`<!doctype html><html lang="${de ? "de" : "en"}"><meta charset="utf-8"><p>${text}</p><p><a href="/">Ruumble</a></p></html>`);
   }
+  setTokenCookie(reply, token);
+  return reply.redirect("/");
+});
+
+function setTokenCookie(reply: FastifyReply, token: string): void {
   const secure = config.publicUrl.startsWith("https://") ? "; Secure" : "";
   reply.header("Set-Cookie", `${TOKEN_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${secure}`);
-  return reply.redirect("/");
+}
+
+// pairing further browsers with a code from the Mumble log (ADR-0012)
+const PAIR_STATUS: Record<PairErrorCode, number> = { "no-plugin": 404, "rate-limited": 429, "wrong-code": 400, expired: 410, invalid: 400 };
+app.post("/api/pair/request", async (req, reply) => {
+  const result = hub.requestPairing(req.ip);
+  return typeof result === "string" ? reply.code(PAIR_STATUS[result]).send({ error: result }) : result;
+});
+app.post("/api/pair/confirm", async (req, reply) => {
+  const body = PairConfirm.safeParse(req.body);
+  if (!body.success) return reply.code(400).send({ error: "invalid" });
+  const result = pairing.confirmCode(body.data.request, body.data.code);
+  if (result === "wrong-code" || result === "expired") return reply.code(PAIR_STATUS[result]).send({ error: result });
+  setTokenCookie(reply, result);
+  return { ok: true };
 });
 
 app.post("/logout", async (req, reply) => {

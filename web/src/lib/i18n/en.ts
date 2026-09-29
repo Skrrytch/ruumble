@@ -97,6 +97,22 @@ export const en: Messages = {
     recording: "Recording in progress here",
     recordingBadge: "● Recording",
   },
+  pairing: {
+    intro: "Is Mumble with the Ruumble plugin already running on this computer? Then pair this browser with a code from the Mumble log.",
+    request: "Pair this browser",
+    sent: "Your Mumble log now shows a pairing code. Enter it here:",
+    codeLabel: "Pairing code",
+    confirm: "Pair",
+    again: "Request a new code",
+    errors: {
+      "no-plugin": "No Mumble with the Ruumble plugin is connected on this computer. Start Mumble, connect to the server and try again.",
+      "rate-limited": "Please wait a few seconds before requesting a new code.",
+      "wrong-code": "The code is not correct. Check it in the Mumble log.",
+      expired: "The code has expired or was entered wrongly too often. Request a new one.",
+      invalid: "That did not work. Please try again.",
+      offline: "The Ruumble service cannot be reached.",
+    },
+  },
   pluginHelp: {
     label: "Set up the Ruumble plugin",
     download: "Download the Ruumble plugin",

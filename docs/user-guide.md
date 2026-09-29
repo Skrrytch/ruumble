@@ -26,11 +26,13 @@ Open the address of the Ruumble service in your browser and download the plugin 
 
 Connect to the server as usual. The first time, the plugin opens your browser with a **pairing link**. This tells Ruumble that this browser belongs to your Mumble. After that, just open Ruumble at the service's address; the browser stays paired.
 
+**Another browser, profile or web app** (or the link did not work): open Ruumble there and click **Pair this browser**. Your Mumble log shows a 6-digit code, e.g. "Ruumble: Pairing code for a browser: 482 913"; type it in and click **Pair**. Mumble with the plugin must be connected on the same computer. The code is valid for 5 minutes.
+
 If the Mumble log says "Hover once over the top channel …", the channel description is too long to be sent automatically. Hovering over the top channel once is enough; then the plugin connects.
 
 ### 4. Install as an app (optional)
 
-With an HTTPS address (`https://…`), Chrome, Edge, Chromium and Brave can install Ruumble as an app: open Ruumble and click the install icon at the right end of the address bar (or menu → **Install Ruumble**). Ruumble then runs in its own window without tabs, with its own entry in the taskbar and the app menu. The app uses the browser's pairing, so there is nothing to pair again.
+With an HTTPS address (`https://…`), Chrome, Edge, Chromium, Brave and Vivaldi can install Ruumble as an app: open Ruumble and click the install icon at the right end of the address bar (or menu → **Install Ruumble**). Ruumble then runs in its own window without tabs, with its own entry in the taskbar and the app menu. The app uses the browser's pairing, so there is nothing to pair again. Tools that create web apps with their own browser profile (e.g. Linux Mint's "Web Apps") start unpaired; pair them once with a code (step 3).
 
 Links from Mumble (welcome message, pairing link) open in your default browser. Chrome can hand them to the installed app instead: turn on **Open supported links** in the app settings (in the app window: menu → **App info** → **Settings**). Where the browser does not support that, simply start Ruumble from the app menu. Firefox cannot install web apps on Linux.
 
@@ -59,8 +61,8 @@ The plugin's messages in the Mumble log follow the system language (`LC_ALL`, th
 
 | Problem | Solution |
 |---|---|
-| "This device is not paired yet." | The browser does not know you yet. Start Mumble with the plugin enabled and connect; the first time, the pairing link opens. |
-| Pair **another browser** or computer | The plugin opens the pairing link only once per server. Remove the address from `pairedWith` in `~/.config/ruumble/plugin.json` and reconnect. |
+| "This device is not paired yet." | The browser does not know you yet. Start Mumble with the plugin enabled and connect, then click **Pair this browser** and enter the code from the Mumble log. |
+| Pair **another browser**, profile or web app | Open Ruumble there, click **Pair this browser** and enter the code from the Mumble log (step 3). |
 | "Mumble is not connected." | Mumble is not running, not connected to the server, or the plugin is not enabled (step 2). |
 | The plugin cannot find the service | Check the Mumble log (lines starting with "Ruumble:"). It names the address the plugin connects to and, if that fails, the reason (e.g. a certificate that does not match the domain). You can set the address in `~/.config/ruumble/plugin.json` with `"bridgeUrl": "http://…"`. |
 | Clicking a room does nothing | You lack the Mumble permission to enter that channel; Ruumble then shows a notice. |

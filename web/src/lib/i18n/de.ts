@@ -92,6 +92,23 @@ export const de = {
     recording: "Hier wird aufgezeichnet",
     recordingBadge: "● Aufnahme",
   },
+  /** Pairing with a code from the Mumble log (ADR-0012) */
+  pairing: {
+    intro: "Läuft Mumble mit dem Ruumble-Plugin schon auf diesem Computer? Dann kopple diesen Browser mit einem Code aus dem Mumble-Protokoll.",
+    request: "Diesen Browser koppeln",
+    sent: "Im Mumble-Protokoll steht jetzt ein Kopplungscode. Gib ihn hier ein:",
+    codeLabel: "Kopplungscode",
+    confirm: "Koppeln",
+    again: "Neuen Code anfordern",
+    errors: {
+      "no-plugin": "Auf diesem Computer ist kein Mumble mit Ruumble-Plugin verbunden. Starte Mumble, verbinde dich mit dem Server und versuche es erneut.",
+      "rate-limited": "Bitte warte ein paar Sekunden, bevor du einen neuen Code anforderst.",
+      "wrong-code": "Der Code stimmt nicht. Prüfe ihn im Mumble-Protokoll.",
+      expired: "Der Code ist abgelaufen oder wurde zu oft falsch eingegeben. Fordere einen neuen an.",
+      invalid: "Das hat nicht geklappt. Versuche es erneut.",
+      offline: "Der Ruumble-Dienst ist nicht erreichbar.",
+    },
+  },
   pluginHelp: {
     label: "Ruumble-Plugin einrichten",
     download: "Ruumble-Plugin herunterladen",

@@ -15,5 +15,6 @@ Format: short MADR. Status: **accepted** = decided by the project owner. **propo
 | [0009](0009-standalone-repository.md) | Standalone repository instead of a Mumble fork | accepted |
 | [0010](0010-address-from-root-description.md) | Service address from the root channel description | accepted |
 | [0011](0011-own-storage-for-the-board.md) | Own storage for the board | accepted |
+| [0012](0012-pairing-with-a-code.md) | Pairing further browsers with a code from the Mumble log | accepted (approach) / proposed (details) |
 
 ADRs record a decision as it was made. Where the code has moved on since, the ADR has a short "Current state" note instead of a silent rewrite.

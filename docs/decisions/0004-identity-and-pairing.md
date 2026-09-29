@@ -30,3 +30,4 @@ Current state (code):
 - The IP check is configurable with `ADDRESS_CHECK` = `off` / `warn` / `enforce`, default `warn` (only logs a mismatch). The home network compose template sets `enforce`. Open question P7 (does the check work behind VPN or proxy) is still open. Reject reasons: `unknown-session`, `hash-mismatch`, `address-mismatch`, `no-certificate` (`protocol/src/index.ts`).
 - The configuration key for opening the browser is `autoOpen` in `plugin.json`; the pairing is stored per service in `pairedWith` (ADR-0010).
 - The service can optionally run in preview mode (`PREVIEW=true`): then an unpaired web UI sees the building read-only. See [operations](../operations.md).
+- Further browsers, profiles and web apps can pair at any time with a code that the service writes to the Mumble log ([ADR-0012](0012-pairing-with-a-code.md)).

@@ -2,10 +2,21 @@
  * Interface between web UI and Mumble (ADR-0007).
  * Implementations: MockAdapter (fixtures, simulated Mumble) and LiveAdapter (WebSocket and REST to the service).
  */
-import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, CommandBody, CommandResult, NewPost, Post, PostUpdate, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
+import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Post, PostUpdate, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
 
 export type BoardErrorCode = ServerBoardError | "offline";
 export type BoardResult<T> = { ok: true; value: T } | { ok: false; error: BoardErrorCode };
+
+export type PairErrorCode = ServerPairError | "offline";
+export type PairResult<T> = { ok: true; value: T } | { ok: false; error: PairErrorCode };
+
+/** Pairing this browser with a code from the Mumble log (ADR-0012) */
+export interface PairApi {
+  /** the service sends a code to the Mumble log of the plugins at this browser's address; returns the request ID */
+  request(): Promise<PairResult<string>>;
+  /** success: the browser is paired and the adapter connects again */
+  confirm(request: string, code: string): Promise<PairResult<true>>;
+}
 
 /** Board of the room the own user is currently in (ADR-0011) */
 export interface BoardApi {
@@ -42,6 +53,7 @@ export interface MumbleAdapter {
   /** Runs a command in the own Mumble client. The result only arrives after confirmation (ADR-0003). */
   command(body: CommandBody): Promise<CommandResult>;
   board: BoardApi;
+  pairing: PairApi;
   /** versions of service and offered plugin (notice pages); null if unknown */
   versions(): Promise<Versions | null>;
   /** optional: custom address for avatar images (mock), otherwise /avatar/<id>?v=<version> */

@@ -16,7 +16,7 @@ import {
   type Snapshot,
 } from "@ruumble/protocol";
 import type { MumbleSource } from "./mumble.ts";
-import type { Pairing } from "./pairing.ts";
+import { pairingCodeText, type Pairing } from "./pairing.ts";
 import type { ServerState } from "./poller.ts";
 
 export interface Conn<T> {
@@ -58,6 +58,8 @@ interface PluginEntry {
   mumbleVersion: string;
   pluginVersion: string;
   locale: Locale;
+  /** source address of the plugin connection (pairing with a code, ADR-0012) */
+  remoteAddress: string;
 }
 
 /** abuse protection per user; the plugin handles the Mumble limits (ADR-0003) */
@@ -128,6 +130,27 @@ export class Hub {
       .map((p) => ({ send: (msg: BridgeToPlugin) => p.conn.send(msg), locale: p.locale }));
   }
 
+  /**
+   * A browser at `address` wants to pair (ADR-0012): every plugin from the same address, or whose
+   * Mumble user has it, gets its own code in the Mumble log.
+   */
+  requestPairing(address: string, now = Date.now()): { request: string } | "no-plugin" | "rate-limited" {
+    const a = normalize(address);
+    const targets = [...this.plugins.values()].filter((p) => {
+      const user = this.state?.users.find((u) => u.session === p.session);
+      return normalize(p.remoteAddress) === a || (!!user && normalize(user.address) === a);
+    });
+    const name = (p: PluginEntry) => this.state?.users.find((u) => u.session === p.session)?.name ?? "";
+    const result = this.opts.pairing.requestCodes(a, targets.map((p) => ({ certHash: p.certHash, name: name(p) })), now);
+    if (typeof result === "string") return result;
+    for (const { certHash, code } of result.codes) {
+      const p = this.plugins.get(certHash)!;
+      p.conn.send({ v, type: "notify", text: pairingCodeText(code, p.locale) });
+    }
+    this.log("Pairing code requested", { plugins: result.codes.length });
+    return { request: result.request };
+  }
+
   /** May this web UI see images and data? (paired or preview, ADR-0004) */
   canView(certHash: string | null): boolean {
     return certHash !== null || this.opts.preview;
@@ -158,7 +181,7 @@ export class Hub {
           const previous = this.plugins.get(msg.certHash);
           if (previous && previous.conn !== conn) previous.conn.close(4001, "replaced");
           if (entry && entry.certHash !== msg.certHash) this.removePlugin(entry);
-          entry = { conn, certHash: msg.certHash, session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unknown", pluginVersion: msg.pluginVersion, locale: msg.locale ?? "de" };
+          entry = { conn, certHash: msg.certHash, session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unknown", pluginVersion: msg.pluginVersion, locale: msg.locale ?? "de", remoteAddress };
           this.plugins.set(msg.certHash, entry);
           const pairUrl = msg.paired ? undefined : `${this.opts.publicUrl}/pair?code=${this.opts.pairing.createCode(msg.certHash, name)}`;
           conn.send(pairUrl ? { v, type: "welcome", pairUrl } : { v, type: "welcome" });

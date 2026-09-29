@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { BridgeToPlugin, BridgeToUi } from "@ruumble/protocol";
 import { Hub } from "../src/hub.ts";
 import { formatAddress } from "../src/mumble.ts";
-import { Pairing } from "../src/pairing.ts";
+import { CODE_REQUEST_INTERVAL_MS, CODE_REQUEST_TTL_MS, Pairing, pairingCodeText } from "../src/pairing.ts";
 import { Poller } from "../src/poller.ts";
 import { FakeSource, recorder } from "./fake.ts";
 
@@ -51,6 +51,52 @@ describe("Pairing", () => {
     expect(p.certHashOf("wrong")).toBeNull();
     p.revoke(token);
     expect(p.certHashOf(token)).toBeNull();
+  });
+});
+
+describe("Pairing with a code (ADR-0012)", () => {
+  const anna = { certHash: A, name: "Anna" };
+  const B = "b".repeat(40);
+
+  it("one 6-digit code per target; the right code gives a token for that hash, only once", () => {
+    const p = new Pairing(null);
+    const r = p.requestCodes("10.0.0.7", [anna, { certHash: B, name: "Ben" }], 0);
+    if (typeof r === "string") throw new Error(r);
+    expect(r.codes).toHaveLength(2);
+    for (const c of r.codes) expect(c.code).toMatch(/^\d{6}$/);
+    expect(r.codes[0]!.code).not.toBe(r.codes[1]!.code);
+    const ben = r.codes.find((c) => c.certHash === B)!.code;
+    const token = p.confirmCode(r.request, ben, 1000);
+    expect(p.certHashOf(token)).toBe(B);
+    expect(p.confirmCode(r.request, ben, 1000)).toBe("expired");
+  });
+
+  it("no target → no-plugin; second request from the same address within 10 s → rate-limited", () => {
+    const p = new Pairing(null);
+    expect(p.requestCodes("10.0.0.7", [], 0)).toBe("no-plugin");
+    expect(typeof p.requestCodes("10.0.0.7", [anna], 0)).toBe("object");
+    expect(p.requestCodes("10.0.0.7", [anna], CODE_REQUEST_INTERVAL_MS - 1)).toBe("rate-limited");
+    expect(typeof p.requestCodes("10.0.0.8", [anna], 1)).toBe("object");
+    expect(typeof p.requestCodes("10.0.0.7", [anna], CODE_REQUEST_INTERVAL_MS)).toBe("object");
+  });
+
+  it("5 wrong attempts or expiry void the request", () => {
+    const p = new Pairing(null);
+    const r = p.requestCodes("10.0.0.7", [anna], 0);
+    if (typeof r === "string") throw new Error(r);
+    const wrong = r.codes[0]!.code === "000000" ? "000001" : "000000";
+    for (let i = 0; i < 4; i++) expect(p.confirmCode(r.request, wrong, 0)).toBe("wrong-code");
+    expect(p.confirmCode(r.request, wrong, 0)).toBe("expired");
+    expect(p.confirmCode(r.request, r.codes[0]!.code, 0)).toBe("expired");
+    const late = p.requestCodes("10.0.0.9", [anna], 0);
+    if (typeof late === "string") throw new Error(late);
+    expect(p.confirmCode(late.request, late.codes[0]!.code, CODE_REQUEST_TTL_MS + 1)).toBe("expired");
+    expect(p.confirmCode("unknown", "123456", 0)).toBe("expired");
+  });
+
+  it("notice text in the plugin's language, code in two groups", () => {
+    expect(pairingCodeText("482913", "en")).toBe("Pairing code for a browser: 482 913 (valid for 5 minutes). Ignore it if you did not request it.");
+    expect(pairingCodeText("482913")).toContain("Kopplungscode für einen Browser: 482 913");
   });
 });
 
@@ -171,6 +217,30 @@ describe("Hub: Plugin", () => {
     await hub.pluginConnected(plugin.conn, "10.0.0.7").onMessage(hello());
     hub.serverRestarted();
     expect(plugin.closed?.code).toBe(4000);
+  });
+});
+
+describe("Hub: pairing with a code", () => {
+  it("code goes to the plugin from the browser's address or whose Mumble user has it", async () => {
+    const { hub, pairing } = await setup();
+    const anna = recorder<BridgeToPlugin>();
+    await hub.pluginConnected(anna.conn, "203.0.113.5").onMessage(hello(7, A, true)); // e.g. public address behind the proxy
+    const r = hub.requestPairing("::ffff:203.0.113.5");
+    if (typeof r === "string") throw new Error(r);
+    const text = anna.last("notify")?.text ?? "";
+    const code = /(\d{3}) (\d{3})/.exec(text)!.slice(1).join("");
+    expect(pairing.certHashOf(pairing.confirmCode(r.request, code))).toBe(A);
+    // Mumble's address of Anna is 10.0.0.7 (fake)
+    const again = hub.requestPairing("10.0.0.7");
+    expect(typeof again).toBe("object");
+  });
+
+  it("no plugin at the address → no-plugin, nothing sent", async () => {
+    const { hub } = await setup();
+    const anna = recorder<BridgeToPlugin>();
+    await hub.pluginConnected(anna.conn, "10.0.0.7").onMessage(hello(7, A, true));
+    expect(hub.requestPairing("10.0.0.99")).toBe("no-plugin");
+    expect(anna.last("notify")).toBeUndefined();
   });
 });
 

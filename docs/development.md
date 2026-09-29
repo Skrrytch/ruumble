@@ -60,6 +60,7 @@ In the dev server the web UI runs against the **mock** by default (a simulated M
 | Parameter | Effect |
 |---|---|
 | `?fixture=sample` / `edge-cases` / `vacant` / `unpaired` | choose sample data (sample building / edge cases / vacant / not paired) |
+| `?paired=0` | browser not paired yet: "Pair this browser", code `123456` pairs (ADR-0012) |
 | `?debug` | debug panel (switch fixture, disconnect plugin, create channels …) |
 | `?talking=0` | turn off simulated talking events |
 | `?live` | against a running service on `127.0.0.1:64080` (proxy for `/ws`, `/api`, `/avatar`, `/download`, `/pair`) |

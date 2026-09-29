@@ -147,6 +147,20 @@ test("without a paired plugin: notice instead of the building", async ({ page })
   await expect(page.getByText(/^Ruumble service \d+\.\d+\.\d+ · plugin \d+\.\d+\.\d+$/)).toBeVisible();
 });
 
+test("not paired: pair this browser with a code from the Mumble log (ADR-0012)", async ({ page }) => {
+  await page.goto("/?fixture=sample&paired=0&talking=0");
+  await expect(page.getByText("This device is not paired yet.")).toBeVisible();
+  await page.getByRole("button", { name: "Pair this browser" }).click();
+  await expect(page.getByText("Your Mumble log now shows a pairing code.")).toBeVisible();
+  const code = page.getByRole("textbox", { name: "Pairing code" });
+  await code.fill("111 111");
+  await page.getByRole("button", { name: "Pair", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveText("The code is not correct. Check it in the Mumble log.");
+  await code.fill("123 456");
+  await page.getByRole("button", { name: "Pair", exact: true }).click();
+  await expect(page.getByRole("navigation", { name: "Elevator – floors" })).toBeVisible();
+});
+
 test("talking indicator in the user's own room", async ({ page }) => {
   await page.goto("/?fixture=sample");
   await expect(page.locator(".av.talking")).not.toHaveCount(0, { timeout: 15000 });

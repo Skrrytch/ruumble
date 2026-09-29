@@ -70,6 +70,7 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 
 - The plugin finds the service through a line `ruumble: <address>` in the root channel description, or through `bridgeUrl` in `~/.config/ruumble/plugin.json` ([ADR-0010](decisions/0010-address-from-root-description.md)).
 - On first connect the plugin opens a **one-time pairing link** in the browser. The browser then keeps a device token (stored as SHA-256 on the server).
+- **Further browsers, profiles and web apps** pair themselves: "Pair this browser" sends a 6-digit code to the Mumble log of the user on the same computer ([ADR-0012](decisions/0012-pairing-with-a-code.md)).
 - Only users with a paired plugin see the building. Optional read-only **preview** without pairing (`PREVIEW=true`).
 - Identity by plausibility check: certificate hash of the plugin and, optionally, the IP address (`ADDRESS_CHECK=off|warn|enforce`, [ADR-0004](decisions/0004-identity-and-pairing.md)).
 - The service reads Mumble via Ice with the **read secret only** and never writes to Mumble.

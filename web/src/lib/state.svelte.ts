@@ -3,7 +3,7 @@
  * No optimistic switching: the own channel only changes with the next snapshot (ADR-0003).
  */
 import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
-import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
+import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairErrorCode, PluginStatus } from "./adapter/types.ts";
 import { formatSize, type BoardFilter } from "./board/model.ts";
 import { t } from "./i18n/index.svelte.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
@@ -24,6 +24,10 @@ export class RuumbleState {
   connection = $state<ConnectionState>("connected");
   /** versions of service and offered plugin, shown on the notice pages */
   versions = $state<Versions | null>(null);
+  /** pairing with a code (ADR-0012): request ID once a code was sent, last error, request running */
+  pairRequest = $state<string | null>(null);
+  pairError = $state<PairErrorCode | null>(null);
+  pairBusy = $state(false);
   /** session → currently talking (only what the own client hears) */
   talking = $state<Record<number, boolean>>({});
   /** channel switch in progress (transitional state) */
@@ -88,6 +92,25 @@ export class RuumbleState {
 
   stop(): void {
     this.adapter.stop();
+  }
+
+  async requestPairing(): Promise<void> {
+    this.pairBusy = true;
+    const r = await this.adapter.pairing.request();
+    this.pairBusy = false;
+    this.pairError = r.ok ? null : r.error;
+    if (r.ok) this.pairRequest = r.value;
+    else if (r.error !== "rate-limited") this.pairRequest = null;
+  }
+
+  /** spaces and dashes in the code are ignored ("482 913") */
+  async confirmPairing(code: string): Promise<void> {
+    if (!this.pairRequest) return;
+    this.pairBusy = true;
+    const r = await this.adapter.pairing.confirm(this.pairRequest, code.replace(/[\s-]/g, ""));
+    this.pairBusy = false;
+    this.pairError = r.ok ? null : r.error;
+    if (r.ok || r.error === "expired") this.pairRequest = null;
   }
 
   showFloor(floor: Floor): void {
