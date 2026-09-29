@@ -28,6 +28,12 @@ Connect to the server as usual. The first time, the plugin opens your browser wi
 
 If the Mumble log says "Hover once over the top channel …", the channel description is too long to be sent automatically. Hovering over the top channel once is enough; then the plugin connects.
 
+### 4. Install as an app (optional)
+
+With an HTTPS address (`https://…`), Chrome, Edge, Chromium and Brave can install Ruumble as an app: open Ruumble and click the install icon at the right end of the address bar (or menu → **Install Ruumble**). Ruumble then runs in its own window without tabs, with its own entry in the taskbar and the app menu. The app uses the browser's pairing, so there is nothing to pair again.
+
+Links from Mumble (welcome message, pairing link) open in your default browser. Chrome can hand them to the installed app instead: turn on **Open supported links** in the app settings (in the app window: menu → **App info** → **Settings**). Where the browser does not support that, simply start Ruumble from the app menu. Firefox cannot install web apps on Linux.
+
 ## Using Ruumble
 
 - **Elevator (left):** one button per floor. Locked floors (nested too deeply or more than 8 rooms) are greyed out; for those, use the classic channel view in Mumble.
