@@ -201,8 +201,15 @@ export const Post = z.object({
 });
 export type Post = z.infer<typeof Post>;
 
+/** the post kept on top of a room's board (A3): at most one per room */
+export const Pinned = z.object({ postId: z.string().min(1), title: z.string().min(1).max(40), pinnedByName: z.string(), pinnedAt: z.number().int() });
+export type Pinned = z.infer<typeof Pinned>;
+/** PUT /api/board/pin: keep a post of the room on top (replaces the previous one) */
+export const PinRequest = z.object({ postId: z.string().min(1), title: z.string().trim().min(1).max(40) });
+export type PinRequest = z.infer<typeof PinRequest>;
+
 /** GET /api/board: board of the room the own user is currently in */
-export const BoardView = z.object({ channelId, channelName: z.string(), posts: z.array(Post) });
+export const BoardView = z.object({ channelId, channelName: z.string(), posts: z.array(Post), pinned: Pinned.nullable() });
 export type BoardView = z.infer<typeof BoardView>;
 
 /** PUT /api/board/posts/:id/tasks/:index: tick or untick one task of a task list (A2) */

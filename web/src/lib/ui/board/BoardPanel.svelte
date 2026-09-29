@@ -8,6 +8,7 @@
   import { t } from "../../i18n/index.svelte.ts";
   import type { RuumbleState } from "../../state.svelte.ts";
   import Composer from "./Composer.svelte";
+  import PinnedBar from "./PinnedBar.svelte";
   import PostCard from "./PostCard.svelte";
   import PostDialog from "./PostDialog.svelte";
   import { setFileUrl } from "../../board/context.ts";
@@ -47,6 +48,26 @@
     app.boardQuery = "";
   }
   const openPost = $derived<Post | null>(board?.posts.find((p) => p.id === openId) ?? null);
+
+  // kept on top (A3): not a second time in the list, except in search and filter results
+  const pinnedPost = $derived(board?.pinned ? (board.posts.find((p) => p.id === board.pinned!.postId) ?? null) : null);
+  const listed = $derived(narrowed || !pinnedPost ? posts : posts.filter((p) => p.id !== pinnedPost.id));
+  const PINNED_OPEN_KEY = "ruumble.pinnedOpen";
+  let pinnedOpen = $state(readPinnedOpen());
+  function readPinnedOpen(): boolean {
+    try {
+      return localStorage.getItem(PINNED_OPEN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+  $effect(() => {
+    try {
+      localStorage.setItem(PINNED_OPEN_KEY, pinnedOpen ? "1" : "0");
+    } catch {
+      /* private mode: not remembered */
+    }
+  });
 
   // drag files onto the board (AP11.3); the counter keeps the highlight stable over child elements
   let composer = $state<{ attach: (file: File) => Promise<void> } | null>(null);
@@ -124,11 +145,22 @@
   {:else if app.boardError}
     <p class="empty">{t().board.unavailable}</p>
   {:else if board}
+    {#if board.pinned && pinnedPost}
+      <PinnedBar
+        pinned={board.pinned}
+        post={pinnedPost}
+        bind:open={pinnedOpen}
+        onopen={(p) => (openId = p.id)}
+        onunpin={() => app.unpinPost()}
+        ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
+      />
+    {/if}
     <div class="list">
-      {#each posts as post (post.id)}
+      {#each listed as post (post.id)}
         <PostCard {post} {now} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)} />
       {:else}
-        <p class="empty">{board.posts.length ? t().board.emptyFilter : t().board.empty}</p>
+        <!-- only the post on top: nothing to say below it -->
+        {#if narrowed || !pinnedPost}<p class="empty">{board.posts.length ? t().board.emptyFilter : t().board.empty}</p>{/if}
       {/each}
     </div>
     <Composer
@@ -147,6 +179,9 @@
     onsave={(text, language) => app.editPost(openPost.id, text, language)}
     ondelete={() => app.deletePost(openPost.id)}
     ontoggle={(index, done) => app.toggleTask(openPost, index, done)}
+    pinned={board?.pinned ?? null}
+    onpin={(title) => app.pinPost(openPost, title)}
+    onunpin={() => app.unpinPost()}
   />
 {/if}
 

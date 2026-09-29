@@ -207,6 +207,21 @@ export class RuumbleState {
     return true;
   }
 
+  /** keep a post on top of the room (A3); the board reloads like after pinning a post */
+  async pinPost(post: Post, title: string): Promise<boolean> {
+    const r = await this.adapter.board.pin(post.id, title);
+    if (!r.ok) return this.boardFailed(r.error);
+    await this.loadBoard();
+    return true;
+  }
+
+  async unpinPost(): Promise<boolean> {
+    const r = await this.adapter.board.unpin();
+    if (!r.ok) return this.boardFailed(r.error);
+    await this.loadBoard();
+    return true;
+  }
+
   /** tick or untick one task (A2); like reactions, the card shows the service's answer */
   async toggleTask(post: Post, index: number, done: boolean): Promise<void> {
     const r = await this.adapter.board.toggleTask(post.id, index, done);

@@ -164,6 +164,13 @@ export const de = {
     react: "Reagieren",
     reactHint: "Symbol wählen",
     reactionsLabel: "Reaktionen",
+    /** kept on top (A3); "anheften" already means posting, hence "oben festhalten" */
+    pinOnTop: "Oben festhalten",
+    pinTitle: "Titel oben",
+    pinReplaces: (title: string) => `Ersetzt „${title}“, das gerade oben steht.`,
+    unpin: "Nicht mehr oben halten",
+    pinned: (title: string) => `Oben festgehalten: ${title}`,
+    pinnedBy: (name: string) => `oben festgehalten von ${name}`,
     /** task lists (A2): progress in the card header */
     taskProgress: (done: number, total: number) => `${done} von ${total} Aufgaben erledigt`,
     /** tooltip and screen reader: meaning, then who */

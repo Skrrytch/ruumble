@@ -97,9 +97,17 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     await list.getByRole("checkbox", { name: "second" }).click();
     await expect(list.getByRole("checkbox", { name: "second" })).toBeChecked();
     await expect(list.getByRole("img", { name: "1 of 2 tasks done" })).toBeVisible();
-    page.once("dialog", (d) => d.accept());
+    // keep it on top (A3), then delete it: the bar goes with the post
     await list.getByRole("button", { name: "Open", exact: true }).click();
-    await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: "Keep on top" }).click();
+    await dialog.getByRole("textbox", { name: "Title on top" }).fill("Live list");
+    await dialog.getByRole("button", { name: "Keep on top" }).click();
+    await expect(dialog.getByRole("button", { name: "Remove from top" })).toBeVisible();
+    await expect(board.getByRole("button", { name: /Live list/ })).toBeVisible();
+    page.once("dialog", (d) => d.accept());
+    await dialog.getByRole("button", { name: "Delete" }).click();
+    await expect(board.getByRole("button", { name: /Live list/ })).toHaveCount(0);
     await expect(board.getByRole("article")).toHaveCount(1);
     page.once("dialog", (d) => d.accept());
     await board.getByRole("article").first().getByRole("button", { name: "Open", exact: true }).click();

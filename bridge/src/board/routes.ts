@@ -6,6 +6,8 @@
  *   POST   /api/board/uploads         raw data up to 10 MB, headers X-File-Name (URI-encoded), X-File-Type (else Content-Type)
  *   PATCH  /api/board/posts/:id       edit (everyone present)
  *   DELETE /api/board/posts/:id       delete (author or Mumble admin)
+ *   PUT    /api/board/pin                          keep a post on top { postId, title } (A3, everyone present, replaces)
+ *   DELETE /api/board/pin                          remove it from the top
  *   PUT    /api/board/posts/:id/tasks/:index      tick or untick one task of a task list (A2, everyone present)
  *   PUT    /api/board/posts/:id/reactions/:kind   set a quick reaction (A1, everyone present)
  *   DELETE /api/board/posts/:id/reactions/:kind   take it back
@@ -13,7 +15,7 @@
  */
 import { createReadStream } from "node:fs";
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { BOARD_LIMITS, NewPost, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, type BoardView, type Post, type Reaction } from "@ruumble/protocol";
+import { BOARD_LIMITS, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, type BoardView, type Post, type Reaction } from "@ruumble/protocol";
 import type { Hub, Viewer } from "../hub.ts";
 import type { MumbleSource } from "../mumble.ts";
 import { detectImage, imageSize, safeFileName } from "./media.ts";
@@ -89,7 +91,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     const { viewer } = r;
     const isAdmin = await o.source.canWrite(viewer.session, viewer.channelId);
     const posts = o.store.list(viewer.channelId).map((p) => toView(p, viewer, isAdmin));
-    const view: BoardView = { channelId: viewer.channelId, channelName: o.hub.channelName(viewer.channelId), posts };
+    const view: BoardView = { channelId: viewer.channelId, channelName: o.hub.channelName(viewer.channelId), posts, pinned: o.store.pinned(viewer.channelId) };
     return view;
   });
 
@@ -164,6 +166,26 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     if (!allowed) return fail(reply, "forbidden");
     o.store.delete(post.id);
     o.hub.boardChanged(post.channelId);
+    return reply.code(204).send();
+  });
+
+  // kept on top (A3): one post per room, everyone present may set, replace and remove it; no Mumble notice
+  app.put("/api/board/pin", async (req, reply) => {
+    const r = room(req.headers.cookie);
+    if ("error" in r) return fail(reply, r.error);
+    const body = PinRequest.safeParse(req.body);
+    if (!body.success) return fail(reply, "invalid");
+    if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
+    if (!o.store.pin(r.viewer.channelId, body.data.postId, body.data.title, r.viewer.name)) return fail(reply, "not-found");
+    o.hub.boardChanged(r.viewer.channelId);
+    return o.store.pinned(r.viewer.channelId);
+  });
+  app.delete("/api/board/pin", async (req, reply) => {
+    const r = room(req.headers.cookie);
+    if ("error" in r) return fail(reply, r.error);
+    if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
+    o.store.unpin(r.viewer.channelId);
+    o.hub.boardChanged(r.viewer.channelId);
     return reply.code(204).send();
   });
 

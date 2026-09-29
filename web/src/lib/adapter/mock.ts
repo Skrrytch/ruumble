@@ -7,7 +7,7 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, REACTION_KINDS, setTask, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, REACTION_KINDS, setTask, type Attachment, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
@@ -142,8 +142,32 @@ export class MockAdapter implements MumbleAdapter {
   private files = new Map<string, MockFile>();
   private posts = samplePosts(Date.now(), this.files);
   private nextPostId = 1;
+  /** room → post kept on top (A3) */
+  private pins = new Map<number, Pinned>();
   readonly board: BoardApi = {
-    load: async () => this.boardRoom((channelId) => ({ channelId, channelName: this.channelName(channelId), posts: this.posts.get(channelId) ?? [] })),
+    load: async () =>
+      this.boardRoom((channelId) => {
+        const posts = this.posts.get(channelId) ?? [];
+        // like the service: the pin goes away with its post
+        const pin = this.pins.get(channelId);
+        const pinned = pin && posts.some((p) => p.id === pin.postId) ? pin : null;
+        return { channelId, channelName: this.channelName(channelId), posts, pinned };
+      }),
+    pin: async (postId: string, title: string) =>
+      this.boardRoom((channelId) => {
+        if (!(this.posts.get(channelId) ?? []).some((p) => p.id === postId)) return null;
+        if (!title.trim() || title.trim().length > 40) return "invalid";
+        const pinned: Pinned = { postId, title: title.trim(), pinnedByName: this.me()!.name, pinnedAt: Date.now() };
+        this.pins.set(channelId, pinned);
+        this.boardChanged(channelId);
+        return pinned;
+      }),
+    unpin: async () =>
+      this.boardRoom((channelId) => {
+        this.pins.delete(channelId);
+        this.boardChanged(channelId);
+        return true as const;
+      }),
     create: async (input: NewPost) =>
       this.boardRoom((channelId) => {
         const me = this.me()!;

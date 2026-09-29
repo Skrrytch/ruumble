@@ -103,6 +103,14 @@ export const MIGRATIONS = [
    INSERT INTO reactions_new SELECT post_id, kind, author_hash, author_name, created_at FROM reactions;
    DROP TABLE reactions;
    ALTER TABLE reactions_new RENAME TO reactions;`,
+  // A3: at most one post per room kept on top; goes away with the post
+  `CREATE TABLE pins (
+     channel_id INTEGER PRIMARY KEY,
+     post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+     title TEXT NOT NULL,
+     pinned_by_name TEXT NOT NULL,
+     pinned_at INTEGER NOT NULL
+   );`,
 ];
 
 export class BoardStore {
@@ -155,6 +163,27 @@ export class BoardStore {
       byPost.set(r.post_id, list);
     }
     return byPost;
+  }
+
+  /** the post kept on top of the room (A3), or null */
+  pinned(channelId: number): { postId: string; title: string; pinnedByName: string; pinnedAt: number } | null {
+    const r = this.db.prepare("SELECT post_id, title, pinned_by_name, pinned_at FROM pins WHERE channel_id = ?").get(channelId) as
+      | { post_id: string; title: string; pinned_by_name: string; pinned_at: number }
+      | undefined;
+    return r ? { postId: r.post_id, title: r.title, pinnedByName: r.pinned_by_name, pinnedAt: r.pinned_at } : null;
+  }
+
+  /** keep a post on top of its room, replacing the previous one; `false` if the post is not in that room */
+  pin(channelId: number, postId: string, title: string, byName: string): boolean {
+    if (!this.db.prepare("SELECT 1 FROM posts WHERE id = ? AND channel_id = ?").get(postId, channelId)) return false;
+    this.db
+      .prepare("INSERT INTO pins (channel_id, post_id, title, pinned_by_name, pinned_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(channel_id) DO UPDATE SET post_id = excluded.post_id, title = excluded.title, pinned_by_name = excluded.pinned_by_name, pinned_at = excluded.pinned_at")
+      .run(channelId, postId, title, byName, this.opts.now());
+    return true;
+  }
+
+  unpin(channelId: number): void {
+    this.db.prepare("DELETE FROM pins WHERE channel_id = ?").run(channelId);
   }
 
   /** set or take back a reaction (A1); does not count as an edit. `false` if the post does not exist */

@@ -18,6 +18,29 @@ export function filterPosts(posts: readonly Post[], filter: BoardFilter, query =
   });
 }
 
+/** longest title of a post kept on top (A3, like the service's PinRequest) */
+export const PIN_TITLE_MAX = 40;
+
+/**
+ * Suggested title for keeping a post on top (A3): the first heading, otherwise the first line, without Markdown
+ * markers; code: its first line; attachments without a caption: the file name. At most PIN_TITLE_MAX characters.
+ */
+export function suggestTitle(post: Post): string {
+  const source = post.text.trim() ? post.text : (post.attachment?.name ?? "");
+  const lines = source.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  let line = post.kind === "code" ? (lines[0] ?? "") : (lines.find((l) => /^#{1,6}\s+\S/.test(l)) ?? lines[0] ?? "");
+  if (post.kind !== "code") {
+    line = line
+      .replace(/^#{1,6}\s+/, "")
+      .replace(/^(?:[-*+>]\s+)?(?:\[[ xX]?\]\s+)?/, "") // list, quote, task marker
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // [text](url) → text
+      .replace(/(\*\*|__|~~|`|\*|_)/g, "")
+      .trim();
+  }
+  if (!line) return t().board.kinds[post.kind];
+  return line.length > PIN_TITLE_MAX ? `${line.slice(0, PIN_TITLE_MAX - 1).trimEnd()}…` : line;
+}
+
 /** compact summary for the card header: the `max` most frequent kinds (ties in the fixed order), total, own among them */
 export function summarizeReactions(reactions: readonly Reaction[], max = 3): { top: ReactionKind[]; total: number; mine: boolean } {
   const order = (k: ReactionKind) => REACTION_KINDS.indexOf(k);

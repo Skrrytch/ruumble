@@ -139,6 +139,26 @@ describe("BoardStore", () => {
     expect(store.get(q.id)?.reactions).toEqual([]);
   });
 
+  it("kept on top: one per room, replaced, removed with the post (A3)", () => {
+    let now = 5;
+    const { store } = tempStore({ now: () => now });
+    const a = store.create({ channelId: 3, kind: "text", text: "a", authorHash: A, authorName: "Anna" });
+    const b = store.create({ channelId: 3, kind: "text", text: "b", authorHash: A, authorName: "Anna" });
+    const other = store.create({ channelId: 4, kind: "text", text: "c", authorHash: A, authorName: "Anna" });
+    expect(store.pinned(3)).toBeNull();
+    expect(store.pin(3, other.id, "wrong room", "Anna")).toBe(false);
+    expect(store.pin(3, a.id, "First", "Anna")).toBe(true);
+    now = 6;
+    store.pin(3, b.id, "Second", "Ben"); // replaces
+    expect(store.pinned(3)).toEqual({ postId: b.id, title: "Second", pinnedByName: "Ben", pinnedAt: 6 });
+    store.pin(4, other.id, "Other room", "Ben");
+    store.delete(b.id);
+    expect(store.pinned(3)).toBeNull();
+    expect(store.pinned(4)?.postId).toBe(other.id);
+    store.unpin(4);
+    expect(store.pinned(4)).toBeNull();
+  });
+
   it("migration 3 keeps existing reactions and allows the new kinds", () => {
     const dir = mkdtempSync(join(tmpdir(), "ruumble-board-"));
     const old = new Database(join(dir, "board.sqlite"));
@@ -278,6 +298,29 @@ describe("REST /api/board", () => {
     expect((await tick("ben", 0, "yes")).json()).toEqual({ error: "invalid" });
     const plain = (await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "- [ ] a\nno list" } })).json();
     expect((await app.inject({ method: "PUT", url: `/api/board/posts/${plain.id}/tasks/0`, headers: as("ben"), payload: { done: true } })).json()).toEqual({ error: "invalid" });
+  });
+
+  it("kept on top: in the board view, everyone present may set and remove it, only posts of the room (A3)", async () => {
+    const { app, as, hub, source, poller } = await setup();
+    const post = (await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "- [ ] a" } })).json();
+    expect((await app.inject({ url: "/api/board", headers: as("ben") })).json().pinned).toBeNull();
+    const annaUi = recorder<BridgeToUi>();
+    hub.uiConnected(annaUi.conn, A);
+    const pinned = await app.inject({ method: "PUT", url: "/api/board/pin", headers: as("ben"), payload: { postId: post.id, title: "  Checklist  " } });
+    expect(pinned.json()).toMatchObject({ postId: post.id, title: "Checklist", pinnedByName: "Ben" });
+    expect(annaUi.last("board")).toEqual({ v: 1, type: "board", channelId: 2 });
+    expect((await app.inject({ url: "/api/board", headers: as("anna") })).json().pinned).toMatchObject({ postId: post.id, title: "Checklist" });
+    expect((await app.inject({ method: "PUT", url: "/api/board/pin", headers: as("ben"), payload: { postId: post.id, title: "x".repeat(41) } })).json()).toEqual({ error: "invalid" });
+    expect((await app.inject({ method: "PUT", url: "/api/board/pin", headers: as("ben"), payload: { postId: post.id, title: "   " } })).json()).toEqual({ error: "invalid" });
+    expect((await app.inject({ method: "PUT", url: "/api/board/pin", headers: as("ben"), payload: { postId: "nope", title: "x" } })).json()).toEqual({ error: "not-found" });
+    expect((await app.inject({ method: "DELETE", url: "/api/board/pin", headers: as("anna") })).statusCode).toBe(204);
+    expect((await app.inject({ url: "/api/board", headers: as("ben") })).json().pinned).toBeNull();
+    // a post of another room cannot be put on top here
+    source.channels.push({ id: 4, parent: 1, name: "Other", position: 2, links: [], temporary: false });
+    source.users[1]!.channel = 4;
+    await poller.poll();
+    expect((await app.inject({ method: "PUT", url: "/api/board/pin", headers: as("ben"), payload: { postId: post.id, title: "x" } })).json()).toEqual({ error: "not-found" });
+    expect((await app.inject({ method: "DELETE", url: "/api/board/pin" })).statusCode).toBe(401);
   });
 
   it("non-admin may not delete other people's posts", async () => {

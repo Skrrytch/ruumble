@@ -2,7 +2,7 @@
  * LiveAdapter: WebSocket to the Ruumble service (`/ws/ui`, ADR-0007).
  * Reconnects with increasing delay after a drop. Results are matched to commands by ID.
  */
-import { BoardError, BoardView, BridgeToUi, PROTOCOL_VERSION, PairError, PairRequested, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import { BoardError, BoardView, BridgeToUi, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
 import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, MumbleAdapter, PairApi, PairResult } from "./types.ts";
 
 /** REST of the board; the pairing cookie is sent automatically (same-origin) */
@@ -28,6 +28,8 @@ const liveBoard: BoardApi = {
   create: (post) => call(Post, "/api/board/posts", { method: "POST", body: JSON.stringify(post) }),
   update: (id, change) => call(Post, `/api/board/posts/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(change) }),
   remove: (id) => call<true>(null, `/api/board/posts/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  pin: (postId, title) => call(Pinned, "/api/board/pin", { method: "PUT", body: JSON.stringify({ postId, title }) }),
+  unpin: () => call<true>(null, "/api/board/pin", { method: "DELETE" }),
   toggleTask: (id, index, done) => call(Post, `/api/board/posts/${encodeURIComponent(id)}/tasks/${index}`, { method: "PUT", body: JSON.stringify({ done }) }),
   react: (id, kind, on) => call(Post, `/api/board/posts/${encodeURIComponent(id)}/reactions/${kind}`, { method: on ? "PUT" : "DELETE" }),
   upload,

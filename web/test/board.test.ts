@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Post, Reaction } from "@ruumble/protocol";
 import { t } from "../src/lib/i18n/index.svelte.ts";
-import { fileKind, filterPosts, formatSize, isLong, looksLikeCode, pastedName, relativeTime, summarizeReactions } from "../src/lib/board/model.ts";
+import { PIN_TITLE_MAX, fileKind, filterPosts, formatSize, isLong, looksLikeCode, pastedName, relativeTime, suggestTitle, summarizeReactions } from "../src/lib/board/model.ts";
 
 const post = (kind: Post["kind"], id: string = kind): Post => ({ id, channelId: 3, kind, text: "x", authorName: "A", mine: false, canDelete: false, createdAt: 0, updatedAt: 0, reactions: [] });
 
@@ -55,6 +55,18 @@ describe("Board model", () => {
     expect(summarizeReactions([])).toEqual({ top: [], total: 0, mine: false });
     expect(summarizeReactions([r("agree", 1), r("unclear", 3), r("done", 1), r("cheers", 2, true)])).toEqual({ top: ["unclear", "cheers", "agree"], total: 7, mine: true });
     expect(summarizeReactions([r("birthday", 1), r("agree", 1)], 1).top).toEqual(["agree"]);
+  });
+
+  it("title suggestion for keeping on top: heading, else first line, without Markdown, at most 40 characters (A3)", () => {
+    const text = (t: string): Post => ({ ...post("text"), text: t });
+    expect(suggestTitle(text("Intro line\n\n## Release **1.4**\n- [ ] Tag"))).toBe("Release 1.4");
+    expect(suggestTitle(text("- [ ] Tag the [release](https://x.test)\n- [x] Changelog"))).toBe("Tag the release");
+    expect(suggestTitle(text("> `quoted` _text_"))).toBe("quoted text");
+    expect(suggestTitle(text("a".repeat(60)))).toBe(`${"a".repeat(PIN_TITLE_MAX - 1)}…`);
+    expect(suggestTitle(text("**  **"))).toBe("Text"); // nothing left: the kind
+    expect(suggestTitle({ ...post("code"), text: "# not a heading in code\nx = 1" })).toBe("# not a heading in code");
+    expect(suggestTitle({ ...post("file"), text: "", attachment: { id: "0".repeat(64), name: "server.log", mime: "text/plain", size: 1 } })).toBe("server.log");
+    expect(suggestTitle({ ...post("image"), text: "" })).toBe("Image");
   });
 
   it("long posts", () => {
