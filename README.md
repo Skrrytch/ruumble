@@ -24,7 +24,7 @@ Full list and plans: [docs/features.md](docs/features.md).
 
 **Requirements:** Mumble server 1.5 or later with Ice enabled, Mumble client 1.4 or later on Linux. Details: [docs/operations.md](docs/operations.md#requirements).
 
-> **Status:** service and web UI 0.7, plugin 0.4.
+> **Status:** service and web UI 0.8, plugin 0.4.
 
 ## Architecture
 

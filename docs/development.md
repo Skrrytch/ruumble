@@ -62,7 +62,7 @@ In the dev server the web UI runs against the **mock** by default (a simulated M
 | `?fixture=sample` / `edge-cases` / `vacant` / `unpaired` | choose sample data (sample building / edge cases / vacant / not paired) |
 | `?debug` | debug panel (switch fixture, disconnect plugin, create channels …) |
 | `?talking=0` | turn off simulated talking events |
-| `?live` | against a running service on `127.0.0.1:8080` (proxy for `/ws`, `/api`, `/avatar`, `/download`, `/pair`) |
+| `?live` | against a running service on `127.0.0.1:64080` (proxy for `/ws`, `/api`, `/avatar`, `/download`, `/pair`) |
 
 ## Translations
 
@@ -80,7 +80,7 @@ The web UI, the plugin and the board notices speak German and English.
 ```sh
 docker compose -f deploy/local/docker-compose.yml up -d --build
 (cd tools/live-test && pnpm install && pnpm gen && node src/setup.cjs)   # channels, permissions, description
-# web UI: http://127.0.0.1:8080 – pair through a test client:
+# web UI: http://127.0.0.1:64080 – pair through a test client:
 deploy/local/run-client.sh ubuntu Anna     # headless Mumble client with plugin; pairing link in deploy/local/out/Anna/pair-url.txt
 ```
 
@@ -92,7 +92,7 @@ Environment variables for the local stack:
 |---|---|---|---|
 | `MUMBLE_VERSION` | `deploy/local/docker-compose.yml` | `v1.6.870` | Docker tag of `mumblevoip/mumble-server` |
 | `CLIENT_LANG` | `deploy/local/run-client.sh` | `de_DE.UTF-8` | `LANG` of the test client, and thus the plugin's language (e.g. `CLIENT_LANG=en_US.UTF-8`) |
-| `BRIDGE_URL` | `deploy/local/run-client.sh` | `http://ruumble:8080` | fixed service address for the plugin; empty = discover it from the root channel description |
+| `BRIDGE_URL` | `deploy/local/run-client.sh` | `http://ruumble:64080` | fixed service address for the plugin; empty = discover it from the root channel description |
 | `PLUGIN_DIR` | `deploy/local/run-client.sh` | `plugin/build` | directory with another plugin build |
 
 ## Live tests

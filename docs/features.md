@@ -1,6 +1,6 @@
 # Ruumble – Features
 
-As of 2026-09-28: service and web UI 0.7, plugin 0.4.
+As of 2026-09-29: service and web UI 0.8, plugin 0.4.
 
 How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.md](operations.md). Architecture: [decisions/](decisions/README.md).
 

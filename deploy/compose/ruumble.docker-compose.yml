@@ -2,7 +2,7 @@
 # Accesses Mumble via Ice read-only. Reachable only in the home network (bound to the LAN address).
 services:
     ruumble:
-        image: ruumble:0.6.0
+        image: ruumble:0.8.0
         container_name: ruumble
         restart: unless-stopped
         deploy:
@@ -12,7 +12,7 @@ services:
         environment:
             ICE_HOST: mumble-server
             ICE_SECRET_READ_FILE: /run/secrets/ice_read
-            PUBLIC_URL: http://<LAN-IP>:8080
+            PUBLIC_URL: http://<LAN-IP>:64080
             ADDRESS_CHECK: enforce
             # HTTPS behind a reverse proxy (docs/operations.md): instead of the two lines above
             # PUBLIC_URL: https://ruumble.example.com
@@ -27,7 +27,7 @@ services:
             # - homeserver-network   # network of the reverse proxy
         ports:
             # remove with HTTPS, unless plain HTTP on the LAN should stay available
-            - <LAN-IP>:8080:8080
+            - <LAN-IP>:64080:64080
 
 secrets:
     ice_read:

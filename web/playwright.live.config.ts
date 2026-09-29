@@ -10,5 +10,5 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"]],
   // Tests check the English texts (browser language en-US); German is checked by e2e/i18n.spec.ts
-  use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, baseURL: "http://127.0.0.1:8080", locale: "en-US" },
+  use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, baseURL: "http://127.0.0.1:64080", locale: "en-US" },
 });

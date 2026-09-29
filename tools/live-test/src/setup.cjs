@@ -37,7 +37,7 @@ const TREE = {
     const root = await server.getChannelState(0);
     // RUUMBLE_DESC_PAD extends the description beyond 128 characters: then Mumble only sends a hash (ADR-0010)
     const pad = process.env.RUUMBLE_DESC_PAD ? "<p>" + "Welcome to Acme HQ. ".repeat(6) + "</p>" : "";
-    root.description = `${pad}Here are a few important settings for Ruumble:\n\n- ruumble: ${process.env.RUUMBLE_URL ?? "http://ruumble:8080"}\n\nThanks.`;
+    root.description = `${pad}Here are a few important settings for Ruumble:\n\n- ruumble: ${process.env.RUUMBLE_URL ?? "http://ruumble:64080"}\n\nThanks.`;
     await server.setChannelState(root);
     console.log(JSON.stringify(ids));
   } finally {

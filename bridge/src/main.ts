@@ -5,7 +5,7 @@
  *   ICE_SECRET_READ_FILE                         alternatively: file containing the read secret (Docker secret)
  *   SERVER_ID                                    optional, else the first running server
  *   PUBLIC_URL                                   base URL for pairing links (https://…)
- *   PORT (8080), HOST (0.0.0.0)                  HTTP/WebSocket
+ *   PORT (64080), HOST (0.0.0.0)                 HTTP/WebSocket
  *   WEB_DIST                                     built web UI (web/dist)
  *   DATA_DIR (./data)                            device tokens and board (board.sqlite, board/)
  *   PLUGIN_BUNDLE, PLUGIN_BUNDLE_DIR             optional: .mumble_plugin for /download (file or directory)
@@ -57,8 +57,8 @@ const config = {
   icePort: Number(env.ICE_PORT ?? 6502),
   iceSecret: env.ICE_SECRET_READ_FILE ? readFileSync(env.ICE_SECRET_READ_FILE, "utf8").trim() : required("ICE_SECRET_READ"),
   serverId: env.SERVER_ID ? Number(env.SERVER_ID) : undefined,
-  publicUrl: (env.PUBLIC_URL ?? "http://localhost:8080").replace(/\/$/, ""),
-  port: Number(env.PORT ?? 8080),
+  publicUrl: (env.PUBLIC_URL ?? "http://localhost:64080").replace(/\/$/, ""),
+  port: Number(env.PORT ?? 64080),
   host: env.HOST ?? "0.0.0.0",
   webDist: resolve(env.WEB_DIST ?? new URL("../../web/dist", import.meta.url).pathname),
   pluginBundle: env.PLUGIN_BUNDLE

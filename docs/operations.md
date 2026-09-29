@@ -68,11 +68,11 @@ Template: [`deploy/compose/ruumble.docker-compose.yml`](../deploy/compose/ruumbl
    docker save ruumble:<version> | gzip | ssh <server> 'gunzip | docker load'
    ```
 2. **Adjust the Compose file** (image tag, `PUBLIC_URL`, port binding to `<LAN-IP>`) and start it: `docker compose up -d`.
-3. **Check:** `curl http://<LAN-IP>:8080/healthz` → `{"ice":"ok",…}`. The response also shows the Mumble server version (`mumbleServer`) and the connected clients per Mumble and plugin version (`clients`, for example `{"mumble 1.5.735 / plugin 0.4.0": 2}`; reported by plugin 0.4 or newer).
+3. **Check:** `curl http://<LAN-IP>:64080/healthz` → `{"ice":"ok",…}`. The response also shows the Mumble server version (`mumbleServer`) and the connected clients per Mumble and plugin version (`clients`, for example `{"mumble 1.5.735 / plugin 0.4.0": 2}`; reported by plugin 0.4 or newer).
 
 If the Mumble server is older than 1.5, the service stops with: `No MumbleServer Meta object at … Ruumble needs Mumble server 1.5 or later (up to 1.4 the Ice interface was called "Murmur").`
 
-The image contains the plugin (built on Debian 12, glibc 2.36, so it also runs on older distributions). Users download it at `http://<LAN-IP>:8080/download`.
+The image contains the plugin (built on Debian 12, glibc 2.36, so it also runs on older distributions). Users download it at `http://<LAN-IP>:64080/download`.
 
 ### Environment variables
 
@@ -82,8 +82,8 @@ The image contains the plugin (built on Debian 12, glibc 2.36, so it also runs o
 | `ICE_PORT` | `6502` | Ice port |
 | `ICE_SECRET_READ` / `ICE_SECRET_READ_FILE` | – (required) | Read secret, directly or as a file (Docker secret). **Never the write secret.** |
 | `SERVER_ID` | first running | Server ID, if the Mumble process runs several virtual servers |
-| `PUBLIC_URL` | `http://localhost:8080` | Address where users reach Ruumble (used for pairing links) |
-| `PORT`, `HOST` | `8080`, `0.0.0.0` | HTTP and WebSocket |
+| `PUBLIC_URL` | `http://localhost:64080` | Address where users reach Ruumble (used for pairing links) |
+| `PORT`, `HOST` | `64080`, `0.0.0.0` | HTTP and WebSocket |
 | `DATA_DIR` | `./data` (`/data` in the image) | Device tokens and board |
 | `ADDRESS_CHECK` | `warn` | `off` / `warn` / `enforce`: compare the IP addresses of the plugin and the Mumble connection (ADR-0004). Use `enforce` on a home network; check first when running over VPN or a proxy. |
 | `TRUST_PROXY` | `false` | `true` behind a reverse proxy: client addresses come from `X-Forwarded-For` ([HTTPS](#https-behind-a-reverse-proxy-optional)) |
@@ -102,8 +102,8 @@ Ruumble works over plain HTTP; HTTPS is optional. With HTTPS the browser offers 
 **Steps** (example: Nginx Proxy Manager, address `ruumble.example.com`):
 
 1. **DNS:** `ruumble.example.com` points to the address of the proxy, e.g. via a local DNS entry or a public record with the private IP.
-2. **Proxy host:** forward to `ruumble:8080` (the container must be in a network the proxy can reach, e.g. `homeserver-network` in the template), enable **Websockets Support** (otherwise `/ws/*` fails), request the certificate with a DNS challenge and enable **Force SSL**. Uploads to the board go up to 10 MB: if they fail with `413`, add `client_max_body_size 20m;` in the proxy host's Advanced tab.
-3. **Service:** set `PUBLIC_URL: https://ruumble.example.com` and `TRUST_PROXY: "true"` (see the commented lines in the template). Remove the port binding to `<LAN-IP>:8080` so that the unencrypted path is closed, unless you want to keep it (see below).
+2. **Proxy host:** forward to `ruumble:64080` (the container must be in a network the proxy can reach, e.g. `homeserver-network` in the template), enable **Websockets Support** (otherwise `/ws/*` fails), request the certificate with a DNS challenge and enable **Force SSL**. Uploads to the board go up to 10 MB: if they fail with `413`, add `client_max_body_size 20m;` in the proxy host's Advanced tab.
+3. **Service:** set `PUBLIC_URL: https://ruumble.example.com` and `TRUST_PROXY: "true"` (see the commented lines in the template). Remove the port binding to `<LAN-IP>:64080` so that the unencrypted path is closed, unless you want to keep it (see below).
 4. **Address check:** behind the proxy the service takes the client address from `X-Forwarded-For` and compares it with the address Mumble sees (ADR-0004). Start with `ADDRESS_CHECK: warn` and watch the log for `Plugin address does not match Mumble's`; switch back to `enforce` once there are no mismatches.
 5. **Root channel description:** change the line to `ruumble: https://ruumble.example.com` (section 3). Users who set a fixed `bridgeUrl` in `~/.config/ruumble/plugin.json` change it too.
 6. **Pair again:** the device cookie belongs to the old address, so every browser pairs once more. From now on the cookie is sent only over HTTPS (`Secure`).
@@ -111,7 +111,7 @@ Ruumble works over plain HTTP; HTTPS is optional. With HTTPS the browser offers 
 
 Idle WebSocket connections stay open behind the proxy: the service sends a ping every 30 s (nginx closes connections after 60 s without traffic by default) and closes connections that no longer answer.
 
-**HTTP and HTTPS side by side** is possible, e.g. HTTPS for everyday use and `http://<LAN-IP>:8080` for development. Keep the port binding for that. The plugins connect to whatever address the root channel description names (a single client can use `bridgeUrl` instead); pairing links always use `PUBLIC_URL`, and a browser has to pair separately for each address.
+**HTTP and HTTPS side by side** is possible, e.g. HTTPS for everyday use and `http://<LAN-IP>:64080` for development. Keep the port binding for that. The plugins connect to whatever address the root channel description names (a single client can use `bridgeUrl` instead); pairing links always use `PUBLIC_URL`, and a browser has to pair separately for each address.
 
 ## 3. Publish the address for the plugin
 
@@ -120,7 +120,7 @@ There is **one** plugin for all servers (ADR-0010). It reads the service's addre
 ```
 A few important settings for Ruumble:
 
-- ruumble: http://<LAN-IP>:8080
+- ruumble: http://<LAN-IP>:64080
 ```
 
 Keep the description **under 128 characters**, measured on the stored HTML; then all clients receive it immediately. With a longer description, every user has to hover the mouse over the top channel once (the plugin says so). Mumble's editor adds a lot of formatting; three lines easily become 400 characters. It stays short if you set it once via Ice with the write secret, in a short-lived helper container, not through Ruumble.
@@ -149,6 +149,8 @@ docker exec ruumble rm -rf /data/backup
 ```sh
 docker run --rm -v ruumble-data:/d -v <backup-dir>:/b alpine tar czf /b/ruumble-data-$(date +%Y%m%d-%H%M%S).tgz -C /d .
 ```
+
+> **Updating from 0.7 to 0.8: the port changes from 8080 to 64080.** Change the port binding (`<LAN-IP>:64080:64080`) and `PUBLIC_URL` in the Compose file, the `ruumble:` line in the root channel description (section 3), the link in the welcome message and, behind a reverse proxy, its forward target (`ruumble:64080`). Browsers that used the old address pair once more; users with a fixed `bridgeUrl` in `plugin.json` change it too. To keep the old address instead, set `PORT: 8080` in the Compose file.
 
 > **Caution: upgrading the Mumble server from 1.5 to 1.6.** Back up the Mumble data first (`docker cp mumble-server:/data/. <backup-dir>/mumble-data/`). The database migration of Mumble 1.6.870 fails if `channel_info` contains NULL values, with an error like `Failed at migrating table channel_properties from schema version 9 to 11 … NOT NULL constraint failed`. Check before upgrading; the result must be `0`:
 >

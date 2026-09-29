@@ -36,7 +36,7 @@ LABEL org.opencontainers.image.title="Ruumble" \
       org.opencontainers.image.description="Mumble server as an office building" \
       org.opencontainers.image.source="https://github.com/Skrrytch/ruumble" \
       org.opencontainers.image.licenses="GPL-2.0-only AND BSD-3-Clause"
-ENV NODE_ENV=production WEB_DIST=/app/web DATA_DIR=/data PORT=8080 PLUGIN_BUNDLE_DIR=/app/plugin
+ENV NODE_ENV=production WEB_DIST=/app/web DATA_DIR=/data PORT=64080 PLUGIN_BUNDLE_DIR=/app/plugin
 WORKDIR /app
 COPY --from=build /out/node_modules node_modules
 COPY --from=build /src/bridge/dist dist
@@ -46,6 +46,6 @@ COPY --from=plugin /out plugin
 RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME /data
-EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s CMD node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+EXPOSE 64080
+HEALTHCHECK --interval=30s --timeout=5s CMD node -e "fetch('http://127.0.0.1:64080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "dist/main.mjs"]

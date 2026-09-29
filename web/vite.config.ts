@@ -10,10 +10,10 @@ export default defineConfig({
   // Workspace packages (e.g. protocol/) live outside web/
   server: {
     fs: { allow: [".."] },
-    // ?live in the dev server: service locally on :8080
+    // ?live in the dev server: service locally on :64080
     proxy: {
-      "/ws": { target: "ws://127.0.0.1:8080", ws: true },
-      ...Object.fromEntries(["/pair", "/api", "/avatar", "/download"].map((p) => [p, "http://127.0.0.1:8080"])),
+      "/ws": { target: "ws://127.0.0.1:64080", ws: true },
+      ...Object.fromEntries(["/pair", "/api", "/avatar", "/download"].map((p) => [p, "http://127.0.0.1:64080"])),
     },
   },
 });

@@ -28,10 +28,10 @@ services:
     environment:
       ICE_HOST: mumble
       ICE_SECRET_READ: s1-read-secret
-      PUBLIC_URL: http://127.0.0.1:8080
+      PUBLIC_URL: http://127.0.0.1:64080
       ADDRESS_CHECK: enforce
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:64080:64080"
     volumes:
       - ruumble-data:/data
 

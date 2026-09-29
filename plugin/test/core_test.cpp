@@ -228,10 +228,10 @@ TEST_CASE("description not loaded yet: hint once, then check again") {
 		std::lock_guard< std::mutex > l(f.api.m);
 		CHECK(f.api.logs.size() == 1); // hint only once
 		CHECK(f.api.logs[0].find("“Acme HQ”") != std::string::npos);
-		f.api.description = { Description::Status::Ok, "ruumble: r.test:8080" };
+		f.api.description = { Description::Status::Ok, "ruumble: r.test:64080" };
 	}
 	REQUIRE(eventually([&] { return f.transport.connectCount() == 1; }));
-	CHECK(f.transport.connects[0] == "http://r.test:8080");
+	CHECK(f.transport.connects[0] == "http://r.test:64080");
 }
 
 TEST_CASE("fixed address from plugin.json overrides the description") {
@@ -389,15 +389,15 @@ TEST_CASE("stop ends the worker promptly") {
 
 TEST_CASE("findBridgeUrl: line ending in “ruumble: <address>”") {
 	// plain text with surrounding text, as admins write it (typos included)
-	CHECK(*findBridgeUrl("HEre a cuple of importnt settings for Ruumble:\n \nruumble: http://192.0.2.10:8080\n\nThanks.")
-		  == "http://192.0.2.10:8080");
-	CHECK(*findBridgeUrl("- ruumble: http://192.0.2.10:8080") == "http://192.0.2.10:8080");
+	CHECK(*findBridgeUrl("HEre a cuple of importnt settings for Ruumble:\n \nruumble: http://192.0.2.10:64080\n\nThanks.")
+		  == "http://192.0.2.10:64080");
+	CHECK(*findBridgeUrl("- ruumble: http://192.0.2.10:64080") == "http://192.0.2.10:64080");
 	CHECK(*findBridgeUrl("Something before ruumble: https://ruumble.example/  ") == "https://ruumble.example");
-	CHECK(*findBridgeUrl("RUUMBLE: 10.0.0.5:8080") == "http://10.0.0.5:8080");
+	CHECK(*findBridgeUrl("RUUMBLE: 10.0.0.5:64080") == "http://10.0.0.5:64080");
 	// this is how Mumble stores descriptions: HTML
-	CHECK(*findBridgeUrl("<!DOCTYPE HTML><html><body><p>Hello</p><p>-&nbsp;ruumble: http://h:8080</p></body></html>") == "http://h:8080");
-	CHECK(*findBridgeUrl("Hello<br/>ruumble: http://h:8080<br>Thanks") == "http://h:8080");
-	CHECK(*findBridgeUrl("ruumble: <a href=\"http://h:8080\">http://h:8080</a>") == "http://h:8080");
+	CHECK(*findBridgeUrl("<!DOCTYPE HTML><html><body><p>Hello</p><p>-&nbsp;ruumble: http://h:64080</p></body></html>") == "http://h:64080");
+	CHECK(*findBridgeUrl("Hello<br/>ruumble: http://h:64080<br>Thanks") == "http://h:64080");
+	CHECK(*findBridgeUrl("ruumble: <a href=\"http://h:64080\">http://h:64080</a>") == "http://h:64080");
 	CHECK(*findBridgeUrl("line1\r\nruumble: http://h\r\n") == "http://h");
 	// no matches
 	CHECK_FALSE(findBridgeUrl("").has_value());

@@ -10,7 +10,7 @@ import { loadBot, registerUser, serverVersion, solidPng, unregisterUser } from "
 const root = new URL("../../", import.meta.url).pathname;
 /** `bridgeUrl = ""`: no fixed address, the plugin reads it from the root description (ADR-0010) */
 /** `lang`: system language of the client; the plugin writes its messages and receives notices in this language */
-const runClient = (distro: string, name: string, bridgeUrl = "http://ruumble:8080", lang = "de_DE.UTF-8") =>
+const runClient = (distro: string, name: string, bridgeUrl = "http://ruumble:64080", lang = "de_DE.UTF-8") =>
   execFileSync(`${root}deploy/local/run-client.sh`, [distro, name], { env: { ...process.env, BRIDGE_URL: bridgeUrl, CLIENT_LANG: lang } });
 /** set the root description (test setup with write secret); `long`: over 128 characters → Mumble only sends a hash */
 const setRootDescription = (long: boolean) =>
@@ -62,7 +62,7 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     const url = await pairUrl("Anna");
     expect(url).toMatch(/\/pair\?code=/);
     await page.goto(url);
-    await expect(page).toHaveURL("http://127.0.0.1:8080/");
+    await expect(page).toHaveURL("http://127.0.0.1:64080/");
     await expect(page.getByRole("navigation", { name: "Elevator – floors" })).toBeVisible();
     // freshly connected, Anna is in the root channel: entrance
     await expect(page.getByRole("region", { name: "Entrance" }).getByRole("img", { name: /Anna \(you\)/ })).toBeVisible();
@@ -198,7 +198,7 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
       expect(res.headers()["content-type"]).toBe("image/png");
       // no pairing, no image
       const anon = await page.context().browser()!.newContext();
-      expect((await anon.request.get(`http://127.0.0.1:8080/avatar/${userId}`)).status()).toBe(401);
+      expect((await anon.request.get(`http://127.0.0.1:64080/avatar/${userId}`)).status()).toBe(401);
       await anon.close();
     } finally {
       robo.close();

@@ -53,7 +53,7 @@ public:
 class Transport {
 public:
 	virtual ~Transport()                               = default;
-	/** base URL of the service, e.g. http://ruumble.example:8080 (connects to …/ws/plugin) */
+	/** base URL of the service, e.g. http://ruumble.example:64080 (connects to …/ws/plugin) */
 	virtual void connect(const std::string &baseUrl) = 0;
 	virtual void disconnect()                        = 0;
 	virtual void send(const std::string &json)       = 0;
