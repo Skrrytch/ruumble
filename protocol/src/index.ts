@@ -166,8 +166,11 @@ export type Attachment = z.infer<typeof Attachment>;
 export const Uploaded = Attachment.extend({ image: z.boolean() });
 export type Uploaded = z.infer<typeof Uploaded>;
 
-/** Quick reactions with a fixed meaning (A1), in display order */
-export const REACTION_KINDS = ["agree", "looking", "done", "broken", "unclear"] as const;
+/** Quick reactions with a fixed meaning (A1), in display order: work first, then social */
+export const REACTION_KINDS = [
+  "agree", "disagree", "looking", "thinking", "wait", "done", "broken", "unclear", "important", "idea", "release", "deal",
+  "happy", "sad", "applause", "congrats", "birthday", "break", "cheers",
+] as const;
 export const ReactionKind = z.enum(REACTION_KINDS);
 export type ReactionKind = z.infer<typeof ReactionKind>;
 /** one kind on one post: who reacted (names at the time) and whether the own user is among them */

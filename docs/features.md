@@ -52,7 +52,7 @@ Every room has a board next to the floor plan. It shows the board of the room yo
 - **Images**: paste, drag and drop or paper clip. Preview in the card, full-screen view with zoom, pan and download.
 - **Files** as downloads.
 - Long posts are shortened to 8 lines and open in a dialog to read, edit, copy or delete.
-- **Quick reactions** with a fixed meaning (agreed, looking at it, done, does not work for me, unclear): once per person and kind, with count and names in the tooltip, without a Mumble notice (A1).
+- **Quick reactions** with a fixed meaning (19 symbols, from "agreed" and "does not work for me" to "happy birthday" and "time to call it a day"): once per person and kind, with count and names in the tooltip, without a Mumble notice (A1).
 - **Mumble notice**: when someone pins something, the others in the room get a short line in their Mumble log, e.g. "Anna pinned code to the board." (in each recipient's language).
 
 | Rule | Value |
@@ -154,12 +154,26 @@ Extensions of the board (idea A) for the everyday exchange between developers: s
 | Symbol (Lucide) | Meaning |
 |---|---|
 | thumbs up | agreed / fine by me |
+| thumbs down | I disagree |
 | eye | I'm looking at it |
+| brain (no thinking face in Lucide) | I'm thinking about it |
+| hourglass | one moment, please |
 | check | done / works |
 | triangle with exclamation mark | does not work for me |
 | question mark | unclear, let's talk |
+| pin | important info |
+| light bulb | good idea |
+| rocket | release, progress |
+| handshake | deal |
+| grinning face | happy about it |
+| slightly frowning face | too bad |
+| party popper (no clapping hands in Lucide) | applause |
+| wine glass (no champagne glasses in Lucide) | congratulations |
+| cake | happy birthday |
+| coffee cup | break |
+| beer mug | time to call it a day |
 
-The label appears as a tooltip. Everyone present can set each reaction once per post and take it back; the card shows the symbols with a count, the tooltip also the names. Reactions do not send a Mumble notice, so they stay quiet. They are stored with the post (author hash, name at the time) and deleted together with it.
+Work reactions come first, then social ones; the order is fixed. The picker shows the symbols as a grid and the meaning of the one under the mouse or keyboard focus in words; the label is also the tooltip. Everyone present can set each reaction once per post and take it back; the card shows the symbols with a count, the tooltip also the names. Reactions do not send a Mumble notice, so they stay quiet. They are stored with the post (author hash, name at the time) and deleted together with it.
 
 **A2 – Shared task lists.** A text post becomes a task list automatically, without a button or special mode, but the detection is **strict**. It applies only if the post consists of an optional introductory text followed **exclusively** by task lines. A task line starts with `[ ]` or `[x]` (also `[X]`), with or without a list marker in front (`[ ] Task`, `- [ ] Task`, `* [x] Task`). Blank lines are allowed between the tasks. As soon as anything else follows the first task, for example a paragraph or a code block, the post stays ordinary Markdown and the brackets are shown as text. This way a checklist is never detected by accident in the middle of a longer text.
 

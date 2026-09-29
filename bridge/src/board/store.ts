@@ -56,8 +56,8 @@ export interface CleanupResult {
   channels: number[];
 }
 
-/** Schema migrations, in this order, never change them afterwards */
-const MIGRATIONS = [
+/** Schema migrations, in this order, never change them afterwards (exported for the migration test) */
+export const MIGRATIONS = [
   `CREATE TABLE posts (
      id TEXT PRIMARY KEY,
      channel_id INTEGER NOT NULL,
@@ -91,6 +91,18 @@ const MIGRATIONS = [
      created_at INTEGER NOT NULL,
      PRIMARY KEY (post_id, kind, author_hash)
    );`,
+  // more reaction kinds: without the CHECK, the kinds are validated in code (ReactionKind), so new ones need no migration
+  `CREATE TABLE reactions_new (
+     post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+     kind TEXT NOT NULL,
+     author_hash TEXT NOT NULL,
+     author_name TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     PRIMARY KEY (post_id, kind, author_hash)
+   );
+   INSERT INTO reactions_new SELECT post_id, kind, author_hash, author_name, created_at FROM reactions;
+   DROP TABLE reactions;
+   ALTER TABLE reactions_new RENAME TO reactions;`,
 ];
 
 export class BoardStore {

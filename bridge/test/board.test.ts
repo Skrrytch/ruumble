@@ -1,13 +1,14 @@
 import { mkdtempSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import Database from "better-sqlite3";
 import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
 import type { BridgeToPlugin, BridgeToUi, PostKind } from "@ruumble/protocol";
 import { imageSize, safeFileName } from "../src/board/media.ts";
 import { notifyRoom, notifyText } from "../src/board/notify.ts";
 import { boardRoutes } from "../src/board/routes.ts";
-import { BoardStore } from "../src/board/store.ts";
+import { BoardStore, MIGRATIONS } from "../src/board/store.ts";
 import { Hub } from "../src/hub.ts";
 import { Pairing } from "../src/pairing.ts";
 import { Poller } from "../src/poller.ts";
@@ -138,6 +139,24 @@ describe("BoardStore", () => {
     expect(store.get(q.id)?.reactions).toEqual([]);
   });
 
+  it("migration 3 keeps existing reactions and allows the new kinds", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ruumble-board-"));
+    const old = new Database(join(dir, "board.sqlite"));
+    old.exec(MIGRATIONS[0]!);
+    old.exec(MIGRATIONS[1]!);
+    old.pragma("user_version = 2");
+    old.exec("INSERT INTO posts VALUES ('p1', 3, 'text', 'x', NULL, NULL, NULL, 'h', 'Anna', 1, 1, NULL)");
+    old.exec("INSERT INTO reactions VALUES ('p1', 'agree', 'h', 'Anna', 1)");
+    expect(() => old.exec("INSERT INTO reactions VALUES ('p1', 'birthday', 'h', 'Anna', 2)")).toThrow(/CHECK/);
+    old.close();
+    const store = new BoardStore(dir);
+    expect(store.get("p1")?.reactions).toEqual([{ kind: "agree", authorHash: "h", authorName: "Anna" }]);
+    store.react("p1", "birthday", true, { hash: "h", name: "Anna" });
+    expect(store.get("p1")?.reactions.map((r) => r.kind)).toEqual(["agree", "birthday"]);
+    store.delete("p1"); // cascade still in place after the rebuild
+    expect(store.react("p1", "agree", true, { hash: "h", name: "Anna" })).toBe(false);
+  });
+
   it("migration is repeatable, backup contains database and attachments", async () => {
     const { store, dir } = tempStore();
     const att = store.putFile(PNG, "image/png");
@@ -227,6 +246,10 @@ describe("REST /api/board", () => {
     const taken = (await app.inject({ method: "DELETE", url: url("agree"), headers: as("ben") })).json();
     expect(taken.reactions[0]).toEqual({ kind: "agree", count: 1, names: ["Anna"], mine: false });
     expect((await app.inject({ method: "PUT", url: url("love"), headers: as("ben") })).json()).toEqual({ error: "invalid" });
+    // work kinds come before social ones, whatever the order of setting them
+    await app.inject({ method: "PUT", url: url("cheers"), headers: as("ben") });
+    await app.inject({ method: "PUT", url: url("disagree"), headers: as("ben") });
+    expect((await app.inject({ url: "/api/board", headers: as("ben") })).json().posts[0].reactions.map((r: { kind: string }) => r.kind)).toEqual(["agree", "disagree", "unclear", "cheers"]);
     expect((await app.inject({ method: "PUT", url: "/api/board/posts/nope/reactions/agree", headers: as("ben") })).json()).toEqual({ error: "not-found" });
     expect((await app.inject({ method: "PUT", url: url("agree") })).statusCode).toBe(401);
   });

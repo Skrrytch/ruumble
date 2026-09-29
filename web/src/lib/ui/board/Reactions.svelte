@@ -1,22 +1,44 @@
 <script lang="ts">
+  import Beer from "@lucide/svelte/icons/beer";
+  import Brain from "@lucide/svelte/icons/brain";
+  import Cake from "@lucide/svelte/icons/cake";
   import Check from "@lucide/svelte/icons/check";
   import CircleQuestionMark from "@lucide/svelte/icons/circle-question-mark";
+  import Coffee from "@lucide/svelte/icons/coffee";
   import Eye from "@lucide/svelte/icons/eye";
+  import FaceGrinning from "@lucide/svelte/icons/face-grinning";
+  import FaceSlightlyFrowning from "@lucide/svelte/icons/face-slightly-frowning";
+  import Handshake from "@lucide/svelte/icons/handshake";
+  import Hourglass from "@lucide/svelte/icons/hourglass";
+  import Lightbulb from "@lucide/svelte/icons/lightbulb";
+  import PartyPopper from "@lucide/svelte/icons/party-popper";
+  import Pin from "@lucide/svelte/icons/pin";
   import Plus from "@lucide/svelte/icons/plus";
+  import Rocket from "@lucide/svelte/icons/rocket";
+  import ThumbsDown from "@lucide/svelte/icons/thumbs-down";
   import ThumbsUp from "@lucide/svelte/icons/thumbs-up";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
+  import Wine from "@lucide/svelte/icons/wine";
   import { REACTION_KINDS, type Reaction, type ReactionKind } from "@ruumble/protocol";
   import { t } from "../../i18n/index.svelte.ts";
 
-  /** Quick reactions with a fixed meaning (A1): used ones with count, the rest behind "React" */
+  /** Quick reactions with a fixed meaning (A1): used ones with count, all of them behind "React" */
   let { reactions, onreact }: { reactions: Reaction[]; onreact: (kind: ReactionKind) => void } = $props();
 
-  const ICONS = { agree: ThumbsUp, looking: Eye, done: Check, broken: TriangleAlert, unclear: CircleQuestionMark };
+  // Lucide has no thinking face, clapping hands or champagne glasses: brain, party popper and a glass stand in
+  const ICONS = {
+    agree: ThumbsUp, disagree: ThumbsDown, looking: Eye, thinking: Brain, wait: Hourglass, done: Check, broken: TriangleAlert,
+    unclear: CircleQuestionMark, important: Pin, idea: Lightbulb, release: Rocket, deal: Handshake,
+    happy: FaceGrinning, sad: FaceSlightlyFrowning, applause: PartyPopper, congrats: Wine, birthday: Cake, break: Coffee, cheers: Beer,
+  } satisfies Record<ReactionKind, unknown>;
   let picking = $state(false);
+  /** symbol under the mouse or with keyboard focus: its meaning is shown in words below the grid */
+  let hovered = $state<ReactionKind | null>(null);
   const mine = $derived(new Set(reactions.filter((r) => r.mine).map((r) => r.kind)));
 
   function pick(kind: ReactionKind): void {
     picking = false;
+    hovered = null;
     onreact(kind);
   }
 </script>
@@ -33,14 +55,20 @@
     <Plus size={14} aria-hidden="true" />
   </button>
   {#if picking}
-    <!-- all five with their meaning in words: the symbols alone should not have to be guessed -->
     <div class="picker">
-      {#each REACTION_KINDS as kind (kind)}
-        {@const Icon = ICONS[kind]}
-        <button type="button" class="pick" class:mine={mine.has(kind)} aria-pressed={mine.has(kind)} onclick={() => pick(kind)}>
-          <Icon size={16} aria-hidden="true" /><span>{t().board.reactions[kind]}</span>
-        </button>
-      {/each}
+      <div class="grid">
+        {#each REACTION_KINDS as kind (kind)}
+          {@const Icon = ICONS[kind]}
+          <button
+            type="button" class="pick" class:mine={mine.has(kind)} aria-pressed={mine.has(kind)} aria-label={t().board.reactions[kind]} title={t().board.reactions[kind]}
+            onclick={() => pick(kind)} onmouseenter={() => (hovered = kind)} onfocus={() => (hovered = kind)}
+          >
+            <Icon size={16} aria-hidden="true" />
+          </button>
+        {/each}
+      </div>
+      <!-- the symbols alone should not have to be guessed -->
+      <div class="meaning" aria-hidden="true">{hovered ? t().board.reactions[hovered] : t().board.reactHint}</div>
     </div>
   {/if}
 </div>
@@ -55,7 +83,9 @@
   button:hover { background: var(--color-blue-100); }
   button.mine { background: var(--color-blue-100); border-color: var(--color-navy); }
   .add { padding: 0; border-style: dashed; color: var(--color-blue-500); }
-  .picker { flex-basis: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-  .pick { justify-content: flex-start; font-weight: 400; font-size: 13px; padding: 0 10px; }
+  .picker { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px; }
+  .pick { padding: 0; min-height: 34px; border-radius: var(--radius-md); }
+  .meaning { min-height: 1.4em; font-size: 13px; color: var(--color-navy); }
   button:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
 </style>
