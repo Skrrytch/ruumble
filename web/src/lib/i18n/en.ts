@@ -129,6 +129,7 @@ export const en: Messages = {
   board: {
     title: "Board",
     show: "Show board",
+    withKey: (label, key) => `${label} (${key.toUpperCase()})`,
     hide: "Hide board",
     dropHere: "Drop to pin",
     onlyRooms: "Boards exist only in rooms. Go to a room to pin something there.",

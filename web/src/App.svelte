@@ -8,6 +8,7 @@
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
   import FloorPlan from "./lib/ui/FloorPlan.svelte";
   import { t } from "./lib/i18n/index.svelte.ts";
+  import { shortcutOf } from "./lib/shortcuts.ts";
   import PairForm from "./lib/ui/PairForm.svelte";
   import PluginHelp from "./lib/ui/PluginHelp.svelte";
   import BoardPanel from "./lib/ui/board/BoardPanel.svelte";
@@ -21,7 +22,19 @@
     app.boardOpen && !app.readonly && !!floor && !floor.lock && floor.rooms.length > 0 && floor.rooms.length <= FEW_ROOMS,
   );
   const hidden = $derived(building?.self?.kind === "hidden");
+
+  // keyboard shortcuts (lib/shortcuts.ts): only in the building view with an own user
+  function onkeydown(e: KeyboardEvent): void {
+    if (!building || app.readonly || app.connection !== "connected") return;
+    const shortcut = shortcutOf(e, !!document.querySelector("dialog[open]"));
+    if (shortcut === "toggleBoard") {
+      e.preventDefault();
+      app.toggleBoard();
+    }
+  }
 </script>
+
+<svelte:window {onkeydown} />
 
 <div class="app">
   {#if app.connection === "unpaired"}

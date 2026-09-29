@@ -98,6 +98,24 @@ test.describe("Board (AP11.2)", () => {
     await expect(card.getByRole("img", { name: "2 of 3 tasks done" })).toBeVisible();
   });
 
+  test("keyboard: B shows and hides the board, not while typing (tooltip names the key)", async ({ page }) => {
+    const toggle = page.getByRole("button", { name: "Show board" });
+    await expect(toggle).toHaveAttribute("title", "Show board (B)");
+    await expect(toggle).toHaveAttribute("aria-keyshortcuts", "B");
+    await page.keyboard.press("b");
+    const board = page.getByRole("complementary", { name: "Board" });
+    await expect(board).toBeVisible();
+    await board.getByRole("textbox", { name: "New post" }).click();
+    await page.keyboard.type("b");
+    await expect(board.getByRole("textbox", { name: "New post" })).toHaveValue("b");
+    await board.getByRole("textbox", { name: "New post" }).fill("");
+    await page.locator("body").click({ position: { x: 5, y: 5 } }); // focus away from the input
+    await page.keyboard.press("Control+b"); // browser shortcut: left alone
+    await expect(board).toBeVisible();
+    await page.keyboard.press("B");
+    await expect(board).toHaveCount(0);
+  });
+
   test("other rooms show no notes, even when something is pinned there", async ({ page }) => {
     await expect(page.locator('.wrap:has(.room[data-channel="7"]) .notes')).toHaveCount(0); // Clara, with posts
     await expect(page.locator("svg.notes")).toHaveCount(1); // only the toggle in the user's own room

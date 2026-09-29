@@ -6,6 +6,7 @@
   import Avatar from "./Avatar.svelte";
   import BoardNotes from "./board/BoardNotes.svelte";
   import { t } from "../i18n/index.svelte.ts";
+  import { SHORTCUT_KEYS } from "../shortcuts.ts";
 
   let {
     space,
@@ -106,7 +107,8 @@
     type="button"
     class="notes toggle"
     aria-label={boardOpen ? t().board.hide : t().board.show}
-    title={boardOpen ? t().board.hide : t().board.show}
+    title={t().board.withKey(boardOpen ? t().board.hide : t().board.show, SHORTCUT_KEYS.toggleBoard)}
+    aria-keyshortcuts={SHORTCUT_KEYS.toggleBoard.toUpperCase()}
     aria-expanded={boardOpen}
     aria-controls="board-panel"
     onclick={ontoggleboard}

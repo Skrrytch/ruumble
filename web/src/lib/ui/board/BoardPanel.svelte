@@ -11,6 +11,7 @@
   import PostCard from "./PostCard.svelte";
   import PostDialog from "./PostDialog.svelte";
   import { setFileUrl } from "../../board/context.ts";
+  import { SHORTCUT_KEYS } from "../../shortcuts.ts";
 
   let { app }: { app: RuumbleState } = $props();
 
@@ -104,7 +105,10 @@
     {:else}
       <span class="title">{t().board.title}</span>
     {/if}
-    <button type="button" class="tool" aria-label={t().board.hide} title={t().board.hide} onclick={() => app.closeBoard()}>
+    <button
+      type="button" class="tool" aria-label={t().board.hide} title={t().board.withKey(t().board.hide, SHORTCUT_KEYS.toggleBoard)}
+      aria-keyshortcuts={SHORTCUT_KEYS.toggleBoard.toUpperCase()} onclick={() => app.closeBoard()}
+    >
       <ChevronRight size={20} />
     </button>
   </header>
