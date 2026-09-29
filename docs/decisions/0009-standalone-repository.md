@@ -14,7 +14,7 @@ Originally, development was to take place in a fork of Mumble (`Skrrytch/roomble
 Option 1.
 - The files `plugins/MumblePlugin.h` and `src/murmur/MumbleServer.ice` are taken **unchanged** from a **release tag**, not from `master`. Reason: Ruumble is meant to run against released versions. Currently this is **v1.6.870**.
 - Mumble's `VERSION`, `SHA256SUMS` and BSD-3 `LICENSE` are kept next to them.
-- Updates happen only via `scripts/update-mumble-interfaces.sh <tag>`. Afterwards, [Mumble interfaces](../mumble-interfaces.md) is checked against the differences.
+- Updates happen only via `tools/update-mumble-interfaces.sh <tag>`. Afterwards, [Mumble interfaces](../mumble-interfaces.md) is checked against the differences.
 - A CI job checks `SHA256SUMS`. A weekly job reports a newer Mumble release as an issue.
 - The name in the plugin and in the product is **Ruumble**.
 

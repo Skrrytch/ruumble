@@ -14,7 +14,7 @@ Ruumble connects to Mumble **only** through two public interfaces. Exactly these
 The files are **never edited by hand**. They are updated only with:
 
 ```sh
-scripts/update-mumble-interfaces.sh v1.6.870   # desired release tag
+tools/update-mumble-interfaces.sh v1.6.870   # desired release tag
 ```
 
 The script downloads both files for the given tag, rewrites `VERSION` and `SHA256SUMS` and shows the differences. Every change to an interface must then be checked against [docs/mumble-interfaces.md](../../docs/mumble-interfaces.md).

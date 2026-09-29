@@ -4,6 +4,5 @@
 **/build
 **/test-results
 **/coverage
-spikes
 plugin/build*
 .git
