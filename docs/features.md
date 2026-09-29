@@ -53,6 +53,7 @@ Every room has a board next to the floor plan. It shows the board of the room yo
 - **Files** as downloads.
 - Long posts are shortened to 8 lines and open in a dialog to read, edit, copy or delete.
 - **Quick reactions** with a fixed meaning (19 symbols, from "agreed" and "does not work for me" to "happy birthday" and "time to call it a day"): once per person and kind, without a Mumble notice (A1). The card header shows a summary of fixed width (the three most frequent symbols and the total, all of them with names in the tooltip); the picker shows every symbol with its count.
+- **Task lists**: a text post consisting of an optional introduction and then only task lines (`- [ ] Task`, `[x] Done`) shows checkboxes that everyone present can tick, with the progress ("2/5") in the card header. Ticking changes only that line in the service, counts as an edit and sends no Mumble notice (A2).
 - **Compact layout**: one slim header row with a search field (text, caption, file name, code language and author; the simple form of A7) and a filter menu by kind. While a search or filter is active, a line shows "N of M posts" with a reset. Each card has a single toolbar row: open on the left, react in the middle, copy or download as an icon on the right. The input stays one line until it has focus.
 - **Mumble notice**: when someone pins something, the others in the room get a short line in their Mumble log, e.g. "Anna pinned code to the board." (in each recipient's language).
 
@@ -123,7 +124,8 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 | F – More controls | idea, decision open |
 | G – "Door closed" | idea, after B and C |
 | A1 – Quick reactions | done (0.10.0) |
-| A2–A9 – Board for developers | planned, in this order |
+| A2 – Shared task lists | done (0.12.0) |
+| A3–A9 – Board for developers | planned, in this order |
 | Report the Mumble avatar bug | open (O16) |
 | Address check over proxy and VPN | proxy: needs `ADDRESS_CHECK=warn` with hairpin NAT; VPN not tested (P7) |
 

@@ -7,7 +7,7 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, REACTION_KINDS, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, REACTION_KINDS, setTask, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
@@ -183,6 +183,20 @@ export class MockAdapter implements MumbleAdapter {
         this.posts.set(channelId, list.filter((p) => p.id !== id));
         this.boardChanged(channelId);
         return true as const;
+      }),
+    toggleTask: async (id: string, index: number, done: boolean) =>
+      this.boardRoom((channelId) => {
+        const list = this.posts.get(channelId) ?? [];
+        const i = list.findIndex((p) => p.id === id);
+        if (i < 0) return null;
+        // like the service: exactly one line, and no edit if nothing changes
+        const text = list[i]!.kind === "text" ? setTask(list[i]!.text, index, done) : null;
+        if (text === null) return "invalid";
+        if (text !== list[i]!.text) {
+          list[i] = { ...list[i]!, text, updatedAt: Date.now(), updatedByName: this.me()!.name };
+          this.boardChanged(channelId);
+        }
+        return list[i]!;
       }),
     react: async (id: string, kind: ReactionKind, on: boolean) =>
       this.boardRoom((channelId) => {

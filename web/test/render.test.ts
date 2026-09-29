@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { highlight, renderCode, renderMarkdown } from "../src/lib/board/render.ts";
+import { highlight, renderCode, renderInline, renderMarkdown } from "../src/lib/board/render.ts";
 
 describe("Rendering: Markdown and code without XSS (ADR-0011)", () => {
   it("renders common Markdown", () => {
@@ -85,5 +85,18 @@ describe("Language detection", () => {
     expect(highlight("x = 1", "python").language).toBe("python");
     expect(highlight("x = 1", "does-not-exist").language).not.toBe("does-not-exist");
     expect(highlight("Hello <World>")).toEqual({ html: "Hello &lt;World&gt;", language: "" });
+  });
+});
+
+describe("Task texts (A2)", () => {
+  it("inline Markdown for task texts: links and code, no blocks, sanitised", () => {
+    const html = renderInline("Review `api.ts` in https://example.test/pr/1 **now**");
+    expect(html).toContain("<code>api.ts</code>");
+    expect(html).toContain('<a href="https://example.test/pr/1"');
+    expect(html).toContain("<strong>now</strong>");
+    expect(html).not.toContain("<p>");
+    const unsafe = renderInline("[x](javascript:alert(1)) <img src=x onerror=alert(1)>");
+    expect(unsafe).not.toContain("<a");
+    expect(unsafe).not.toContain("<img"); // shown as text, escaped
   });
 });

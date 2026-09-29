@@ -254,6 +254,32 @@ describe("REST /api/board", () => {
     expect((await app.inject({ method: "PUT", url: url("agree") })).statusCode).toBe(401);
   });
 
+  it("task lists: tick exactly one line, counts as an edit, no notice; not a task list → invalid (A2)", async () => {
+    const { app, notified, as, hub } = await setup();
+    const text = "Release:\n\n- [ ] Tag\n- [ ] Deploy";
+    const post = (await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text } })).json();
+    notified.length = 0;
+    const annaUi = recorder<BridgeToUi>();
+    hub.uiConnected(annaUi.conn, A);
+    const tick = (who: string, index: number | string, done: unknown) =>
+      app.inject({ method: "PUT", url: `/api/board/posts/${post.id}/tasks/${index}`, headers: as(who), payload: { done } });
+    // Ben and Anna tick different tasks one after the other: both ticks survive
+    await tick("ben", 1, true);
+    const both = (await tick("anna", 0, true)).json();
+    expect(both.text).toBe("Release:\n\n- [x] Tag\n- [x] Deploy");
+    expect(both.updatedByName).toBe("Anna");
+    expect(annaUi.last("board")).toEqual({ v: 1, type: "board", channelId: 2 });
+    expect(notified).toEqual([]);
+    // the same state again: no edit
+    expect((await tick("ben", 0, true)).json().updatedByName).toBe("Anna");
+    expect((await tick("ben", 1, false)).json().text).toBe("Release:\n\n- [x] Tag\n- [ ] Deploy");
+    expect((await tick("ben", 2, true)).json()).toEqual({ error: "invalid" }); // no such task
+    expect((await tick("ben", "x", true)).json()).toEqual({ error: "invalid" });
+    expect((await tick("ben", 0, "yes")).json()).toEqual({ error: "invalid" });
+    const plain = (await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "- [ ] a\nno list" } })).json();
+    expect((await app.inject({ method: "PUT", url: `/api/board/posts/${plain.id}/tasks/0`, headers: as("ben"), payload: { done: true } })).json()).toEqual({ error: "invalid" });
+  });
+
   it("non-admin may not delete other people's posts", async () => {
     const { app, source, as } = await setup();
     source.admins.clear();

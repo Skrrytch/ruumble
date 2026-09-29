@@ -5,7 +5,8 @@
   import Download from "@lucide/svelte/icons/download";
   import FaceSlightlySmilingPlus from "@lucide/svelte/icons/face-slightly-smiling-plus";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
-  import type { Post, ReactionKind } from "@ruumble/protocol";
+  import ListChecks from "@lucide/svelte/icons/list-checks";
+  import { parseTaskList, type Post, type ReactionKind } from "@ruumble/protocol";
   import { PREVIEW_LINES, isLong, relativeTime, summarizeReactions } from "../../board/model.ts";
   import { intlLocale, t } from "../../i18n/index.svelte.ts";
   import { initials } from "../../model/building.ts";
@@ -15,13 +16,18 @@
   import { REACTION_ICONS } from "./reactionIcons.ts";
 
   /** `avatar`: the author's image if they are currently connected and registered; otherwise initials */
-  let { post, now, avatar = null, onopen, onreact }: { post: Post; now: number; avatar?: string | null; onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void } = $props();
+  let { post, now, avatar = null, onopen, onreact, ontoggle }: {
+    post: Post; now: number; avatar?: string | null; onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
+    ontoggle: (post: Post, index: number, done: boolean) => void;
+  } = $props();
   let avatarBroken = $state<string | null>(null);
 
   const fileUrl = getFileUrl();
   let copied = $state(false);
   let picking = $state(false);
   const long = $derived(!post.attachment && isLong(post.text));
+  const tasks = $derived(post.kind === "text" ? parseTaskList(post.text) : null);
+  const tasksDone = $derived(tasks?.tasks.filter((x) => x.done).length ?? 0);
   // reactions only as a summary with a fixed width, however many kinds there are
   const summary = $derived(summarizeReactions(post.reactions));
   const summaryLabel = $derived(
@@ -49,6 +55,11 @@
       <strong>{post.authorName}</strong>
       <span class="when" title={new Date(post.createdAt).toLocaleString(intlLocale())}>{relativeTime(post.createdAt, now)}</span>
     </span>
+    {#if tasks}
+      <span class="progress" class:complete={tasksDone === tasks.tasks.length} role="img" aria-label={t().board.taskProgress(tasksDone, tasks.tasks.length)} title={t().board.taskProgress(tasksDone, tasks.tasks.length)}>
+        <ListChecks size={13} aria-hidden="true" />{tasksDone}/{tasks.tasks.length}
+      </span>
+    {/if}
     {#if summary.total}
       <button type="button" class="summary" class:mine={summary.mine} aria-expanded={picking} aria-label={summaryLabel} title={summaryLabel} onclick={() => (picking = !picking)}>
         <span class="icons">
@@ -62,7 +73,7 @@
     {/if}
   </header>
   <div class="body" class:clamped={long} style:--lines={PREVIEW_LINES}>
-    <PostBody {post} />
+    <PostBody {post} ontoggle={(index, done) => ontoggle(post, index, done)} />
   </div>
   {#if post.updatedByName}
     <div class="edited">{t().board.editedBy(post.updatedByName)} · {relativeTime(post.updatedAt, now)}</div>
@@ -99,6 +110,9 @@
   .av.me { background: var(--color-navy); box-shadow: 0 0 0 2px var(--color-accent); }
   .who { display: flex; flex-direction: column; line-height: 1.2; font-size: 13px; min-width: 0; }
   .when { font-size: 12px; color: var(--color-blue-700); }
+  .progress { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--color-blue-700); }
+  .progress.complete { color: var(--color-navy); }
+  .progress + .summary { margin-left: 0; }
   .summary {
     margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 26px; padding: 0 8px 0 4px; flex-shrink: 0;
     border: 1px solid var(--color-blue-300); border-radius: 999px; background: var(--color-white); color: var(--color-navy);

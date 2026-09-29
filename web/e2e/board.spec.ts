@@ -70,6 +70,34 @@ test.describe("Board (AP11.2)", () => {
     await expect(board.getByRole("button", { name: "Attach image or file" })).toBeHidden();
   });
 
+  test("task list: detected strictly, ticking changes the progress and counts as an edit (A2)", async ({ page }) => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    const input = board.getByRole("textbox", { name: "New post" });
+    await input.fill("Not a list:\n- [ ] one\nand more text");
+    await input.press("Control+Enter");
+    await expect(board.getByRole("article").first().getByRole("checkbox")).toHaveCount(0);
+    await input.fill("**Release** checklist\n\n- [ ] Tag\n- [x] Changelog\n- [ ] Deploy to `prod`");
+    await input.press("Control+Enter");
+    const card = board.getByRole("article").first();
+    await expect(card.locator("strong", { hasText: "Release" })).toBeVisible();
+    await expect(card.getByRole("img", { name: "1 of 3 tasks done" })).toHaveText("1/3");
+    const deploy = card.getByRole("checkbox", { name: "Deploy to prod" });
+    await expect(deploy).not.toBeChecked();
+    await deploy.click();
+    await expect(deploy).toBeChecked();
+    await expect(card.getByRole("img", { name: "2 of 3 tasks done" })).toBeVisible();
+    await expect(card.getByText("last edited by Anna")).toBeVisible();
+    await card.getByRole("checkbox", { name: "Changelog" }).click();
+    await expect(card.getByRole("checkbox", { name: "Changelog" })).not.toBeChecked();
+    // also in the popup
+    await card.getByRole("button", { name: "Open", exact: true }).click();
+    await page.getByRole("dialog").getByRole("checkbox", { name: "Tag" }).click();
+    await expect(page.getByRole("dialog").getByRole("checkbox", { name: "Tag" })).toBeChecked();
+    await page.keyboard.press("Escape");
+    await expect(card.getByRole("img", { name: "2 of 3 tasks done" })).toBeVisible();
+  });
+
   test("other rooms show no notes, even when something is pinned there", async ({ page }) => {
     await expect(page.locator('.wrap:has(.room[data-channel="7"]) .notes')).toHaveCount(0); // Clara, with posts
     await expect(page.locator("svg.notes")).toHaveCount(1); // only the toggle in the user's own room

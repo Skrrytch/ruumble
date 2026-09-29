@@ -90,6 +90,17 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     await board.getByRole("textbox", { name: "New post" }).fill("Live **Test**");
     await board.getByRole("button", { name: "Send" }).click();
     await expect(board.getByRole("article").first().locator("strong", { hasText: "Test" })).toBeVisible();
+    // task list (A2): ticking goes through the service's own endpoint
+    await board.getByRole("textbox", { name: "New post" }).fill("- [ ] first\n- [ ] second");
+    await board.getByRole("button", { name: "Send" }).click();
+    const list = board.getByRole("article").first();
+    await list.getByRole("checkbox", { name: "second" }).click();
+    await expect(list.getByRole("checkbox", { name: "second" })).toBeChecked();
+    await expect(list.getByRole("img", { name: "1 of 2 tasks done" })).toBeVisible();
+    page.once("dialog", (d) => d.accept());
+    await list.getByRole("button", { name: "Open", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
+    await expect(board.getByRole("article")).toHaveCount(1);
     page.once("dialog", (d) => d.accept());
     await board.getByRole("article").first().getByRole("button", { name: "Open", exact: true }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();

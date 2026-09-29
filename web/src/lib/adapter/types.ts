@@ -24,6 +24,8 @@ export interface BoardApi {
   create(post: NewPost): Promise<BoardResult<Post>>;
   update(id: string, change: PostUpdate): Promise<BoardResult<Post>>;
   remove(id: string): Promise<BoardResult<true>>;
+  /** tick or untick task `index` of a task list (A2) */
+  toggleTask(id: string, index: number, done: boolean): Promise<BoardResult<Post>>;
   /** set (`on`) or take back a quick reaction (A1) */
   react(id: string, kind: ReactionKind, on: boolean): Promise<BoardResult<Post>>;
   /** Upload an attachment (image or file, at most `BOARD_LIMITS.fileBytes`); `onProgress` with 0…1 */

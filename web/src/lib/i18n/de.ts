@@ -162,6 +162,8 @@ export const de = {
     react: "Reagieren",
     reactHint: "Symbol wählen",
     reactionsLabel: "Reaktionen",
+    /** task lists (A2): progress in the card header */
+    taskProgress: (done: number, total: number) => `${done} von ${total} Aufgaben erledigt`,
     /** tooltip and screen reader: meaning, then who */
     reactionTitle: (label: string, names: string) => `${label}: ${names}`,
     /** summary in the card header: all reactions with names */

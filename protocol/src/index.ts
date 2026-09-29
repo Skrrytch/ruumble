@@ -8,6 +8,8 @@
  */
 import { z } from "zod";
 
+export * from "./tasks.ts";
+
 export const PROTOCOL_VERSION = 1 as const;
 
 const v = z.literal(PROTOCOL_VERSION);
@@ -202,6 +204,10 @@ export type Post = z.infer<typeof Post>;
 /** GET /api/board: board of the room the own user is currently in */
 export const BoardView = z.object({ channelId, channelName: z.string(), posts: z.array(Post) });
 export type BoardView = z.infer<typeof BoardView>;
+
+/** PUT /api/board/posts/:id/tasks/:index: tick or untick one task of a task list (A2) */
+export const TaskToggle = z.object({ done: z.boolean() });
+export type TaskToggle = z.infer<typeof TaskToggle>;
 
 /** POST /api/pair/request → a code goes to the Mumble log of the matching plugins (ADR-0012) */
 export const PairRequested = z.object({ request: z.string().min(1) });

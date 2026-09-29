@@ -12,11 +12,14 @@
     onclose,
     onsave,
     ondelete,
+    ontoggle,
   }: {
     post: Post;
     onclose: () => void;
     onsave: (text: string, language?: string) => Promise<boolean>;
     ondelete: () => Promise<boolean>;
+    /** tick a task of a task list (A2) */
+    ontoggle: (index: number, done: boolean) => void;
   } = $props();
 
   let dialog: HTMLDialogElement;
@@ -72,7 +75,7 @@
       {/if}
       <textarea bind:value={draft} class:mono={post.kind === "code"} class:short={hasAttachment} aria-label={hasAttachment ? t().board.editDescription : t().board.editPost} placeholder={hasAttachment ? t().board.captionPlaceholder : ""} spellcheck={post.kind !== "code"}></textarea>
     {:else}
-      <PostBody {post} numbers large />
+      <PostBody {post} numbers large {ontoggle} />
     {/if}
   </div>
   {#if post.updatedByName}<p class="edited">{t().board.editedBy(post.updatedByName)}</p>{/if}

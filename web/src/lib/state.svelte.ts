@@ -207,12 +207,23 @@ export class RuumbleState {
     return true;
   }
 
+  /** tick or untick one task (A2); like reactions, the card shows the service's answer */
+  async toggleTask(post: Post, index: number, done: boolean): Promise<void> {
+    const r = await this.adapter.board.toggleTask(post.id, index, done);
+    if (!r.ok) return void this.boardFailed(r.error);
+    this.replacePost(r.value);
+  }
+
   /** toggle the own quick reaction (A1); the card shows the service's answer, the others reload */
   async react(post: Post, kind: ReactionKind): Promise<void> {
     const on = !post.reactions.some((r) => r.kind === kind && r.mine);
     const r = await this.adapter.board.react(post.id, kind, on);
     if (!r.ok) return void this.boardFailed(r.error);
-    if (this.board) this.board = { ...this.board, posts: this.board.posts.map((p) => (p.id === r.value.id ? r.value : p)) };
+    this.replacePost(r.value);
+  }
+
+  private replacePost(post: Post): void {
+    if (this.board) this.board = { ...this.board, posts: this.board.posts.map((p) => (p.id === post.id ? post : p)) };
   }
 
   private boardFailed(error: BoardErrorCode): false {

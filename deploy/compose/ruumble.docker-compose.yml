@@ -2,7 +2,7 @@
 # Accesses Mumble via Ice read-only. Reachable only in the home network (bound to the LAN address).
 services:
     ruumble:
-        image: ruumble:0.11.1
+        image: ruumble:0.12.0
         container_name: ruumble
         restart: unless-stopped
         deploy:

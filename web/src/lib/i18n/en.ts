@@ -164,6 +164,7 @@ export const en: Messages = {
     react: "React",
     reactHint: "Choose a symbol",
     reactionsLabel: "Reactions",
+    taskProgress: (done, total) => `${done} of ${total} tasks done`,
     reactionTitle: (label, names) => `${label}: ${names}`,
     reactionSummary: (details) => `Reactions – ${details}`,
     emptyFilter: "Nothing found.",

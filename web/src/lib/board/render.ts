@@ -103,6 +103,11 @@ export function renderMarkdown(text: string): string {
   return DOMPurify.sanitize(md.render(text), PURIFY) as string;
 }
 
+/** one line of Markdown without block elements (task of a task list, A2) → sanitised HTML */
+export function renderInline(text: string): string {
+  return DOMPurify.sanitize(md.renderInline(text), PURIFY) as string;
+}
+
 /** Code post → sanitised HTML (lines separately for line numbers via CSS) */
 export function renderCode(text: string, language?: string): { html: string; language: string } {
   const { html, language: detected } = highlight(text, language);

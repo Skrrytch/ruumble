@@ -6,13 +6,14 @@
  *   POST   /api/board/uploads         raw data up to 10 MB, headers X-File-Name (URI-encoded), X-File-Type (else Content-Type)
  *   PATCH  /api/board/posts/:id       edit (everyone present)
  *   DELETE /api/board/posts/:id       delete (author or Mumble admin)
+ *   PUT    /api/board/posts/:id/tasks/:index      tick or untick one task of a task list (A2, everyone present)
  *   PUT    /api/board/posts/:id/reactions/:kind   set a quick reaction (A1, everyone present)
  *   DELETE /api/board/posts/:id/reactions/:kind   take it back
  *   GET    /api/board/files/:id       attachment (images inline, everything else as download)
  */
 import { createReadStream } from "node:fs";
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { BOARD_LIMITS, NewPost, PostUpdate, REACTION_KINDS, ReactionKind, type BoardView, type Post, type Reaction } from "@ruumble/protocol";
+import { BOARD_LIMITS, NewPost, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, type BoardView, type Post, type Reaction } from "@ruumble/protocol";
 import type { Hub, Viewer } from "../hub.ts";
 import type { MumbleSource } from "../mumble.ts";
 import { detectImage, imageSize, safeFileName } from "./media.ts";
@@ -164,6 +165,26 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     o.store.delete(post.id);
     o.hub.boardChanged(post.channelId);
     return reply.code(204).send();
+  });
+
+  // task lists (A2): only "task N done / not done", the service changes exactly that line. Read, change and
+  // write run without an await in between, so two people ticking at the same time do not overwrite each other.
+  // Counts as an edit ("last edited by"), no Mumble notice.
+  app.put<{ Params: { id: string; index: string } }>("/api/board/posts/:id/tasks/:index", async (req, reply) => {
+    const r = room(req.headers.cookie);
+    if ("error" in r) return fail(reply, r.error);
+    const body = TaskToggle.safeParse(req.body);
+    if (!body.success || !/^\d{1,4}$/.test(req.params.index)) return fail(reply, "invalid");
+    const post = o.store.get(req.params.id);
+    if (!post) return fail(reply, "not-found");
+    if (post.channelId !== r.viewer.channelId) return fail(reply, "not-in-room");
+    if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
+    const text = post.kind === "text" ? setTask(post.text, Number(req.params.index), body.data.done) : null;
+    if (text === null) return fail(reply, "invalid"); // not a task list (any more) or no such task
+    // already in that state (e.g. two people ticked the same task): no edit
+    const updated = text === post.text ? post : o.store.update(post.id, { text, ...(post.language ? { language: post.language } : {}) }, r.viewer.name)!;
+    if (updated !== post) o.hub.boardChanged(post.channelId);
+    return toView(updated, r.viewer, await o.source.canWrite(r.viewer.session, post.channelId));
   });
 
   // quick reactions (A1): no Mumble notice and no "edited by"; those present reload the board

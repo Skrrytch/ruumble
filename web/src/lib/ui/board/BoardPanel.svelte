@@ -122,7 +122,7 @@
   {:else if board}
     <div class="list">
       {#each posts as post (post.id)}
-        <PostCard {post} {now} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} />
+        <PostCard {post} {now} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)} />
       {:else}
         <p class="empty">{board.posts.length ? t().board.emptyFilter : t().board.empty}</p>
       {/each}
@@ -142,6 +142,7 @@
     onclose={() => (openId = null)}
     onsave={(text, language) => app.editPost(openPost.id, text, language)}
     ondelete={() => app.deletePost(openPost.id)}
+    ontoggle={(index, done) => app.toggleTask(openPost, index, done)}
   />
 {/if}
 
