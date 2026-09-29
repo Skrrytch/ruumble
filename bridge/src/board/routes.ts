@@ -164,7 +164,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     if (!post?.attachment) return fail(reply, "not-found");
     const a = post.attachment;
     const inline = a.mime.startsWith("image/") && req.query.download === undefined;
-    const name = encodeURIComponent(a.name || "datei");
+    const name = encodeURIComponent(a.name || "file");
     return reply
       .header("Content-Type", a.mime)
       .header("Content-Length", a.size)

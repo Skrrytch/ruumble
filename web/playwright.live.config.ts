@@ -9,6 +9,6 @@ export default defineConfig({
   timeout: 90_000,
   workers: 1,
   reporter: [["list"]],
-  // Tests check the German texts (browser language de-DE); English is checked by e2e/i18n.spec.ts
-  use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, baseURL: "http://127.0.0.1:8080", locale: "de-DE" },
+  // Tests check the English texts (browser language en-US); German is checked by e2e/i18n.spec.ts
+  use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, baseURL: "http://127.0.0.1:8080", locale: "en-US" },
 });

@@ -5,14 +5,14 @@ import { BridgeToPlugin, BridgeToUi, Messages, PluginToBridge, Snapshot, UiToBri
 const fixture = (name: string) => readFileSync(new URL(`../fixtures/${name}`, import.meta.url), "utf8");
 const messages = JSON.parse(fixture("messages.json")) as Record<string, unknown[]>;
 
-describe("Snapshot-Fixtures", () => {
+describe("snapshot fixtures", () => {
   const files = readdirSync(new URL("../fixtures/", import.meta.url)).filter((f) => f !== "messages.json");
 
-  it.each(files)("%s ist ein gültiger Snapshot", (file) => {
+  it.each(files)("%s is a valid snapshot", (file) => {
     expect(parse(Snapshot, fixture(file))).not.toBeNull();
   });
 
-  it.each(files)("%s ist in sich stimmig (Root, Eltern, Links, Nutzer)", (file) => {
+  it.each(files)("%s is internally consistent (root, parents, links, users)", (file) => {
     const s = Snapshot.parse(JSON.parse(fixture(file)));
     const ids = new Set(s.channels.map((c) => c.id));
     expect(s.channels.filter((c) => c.parent === null).map((c) => c.id)).toEqual([0]);
@@ -25,7 +25,7 @@ describe("Snapshot-Fixtures", () => {
   });
 });
 
-describe("Nachrichten", () => {
+describe("messages", () => {
   const families = { PluginToBridge, BridgeToPlugin, UiToBridge, BridgeToUi } as const;
 
   for (const [name, schema] of Object.entries(families)) {
@@ -34,12 +34,12 @@ describe("Nachrichten", () => {
     });
   }
 
-  it.each(messages.invalid ?? [])("ungültig: %j", (msg) => {
+  it.each(messages.invalid ?? [])("invalid: %j", (msg) => {
     for (const schema of Object.values(Messages)) expect(parse(schema, JSON.stringify(msg))).toBeNull();
   });
 
-  it("parse wirft nie, auch nicht bei kaputtem JSON", () => {
-    expect(parse(PluginToBridge, "{kaputt")).toBeNull();
+  it("parse never throws, not even on broken JSON", () => {
+    expect(parse(PluginToBridge, "{broken")).toBeNull();
     expect(parse(PluginToBridge, "null")).toBeNull();
   });
 });

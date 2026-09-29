@@ -1,8 +1,8 @@
 {
   "name": "Ruumble",
   "short_name": "Ruumble",
-  "description": "Der Mumble-Server als Bürogebäude",
-  "lang": "de",
+  "description": "Your Mumble server as an office building",
+  "lang": "en",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

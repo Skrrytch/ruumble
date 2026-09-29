@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   interfaces:
-    name: Mumble-Schnittstellen unverändert
+    name: Mumble interfaces unchanged
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
       - run: pnpm build
 
   e2e:
-    name: Oberfläche im Browser (Playwright)
+    name: Web UI in the browser (Playwright)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -47,11 +47,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-ergebnisse
+          name: playwright-results
           path: web/test-results
 
   plugin:
-    name: Plugin bauen und testen (C++)
+    name: Build and test plugin (C++)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4

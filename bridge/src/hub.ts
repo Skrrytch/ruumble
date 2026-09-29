@@ -149,7 +149,7 @@ export class Hub {
         if (msg.type === "hello") {
           const verdict = await this.verify(msg.session, msg.certHash, remoteAddress);
           if (verdict !== "ok") {
-            this.log("Plugin abgelehnt", { reason: verdict, session: msg.session });
+            this.log("Plugin rejected", { reason: verdict, session: msg.session });
             conn.send({ v, type: "reject", reason: verdict });
             conn.close(4403, verdict);
             return;
@@ -162,7 +162,7 @@ export class Hub {
           this.plugins.set(msg.certHash, entry);
           const pairUrl = msg.paired ? undefined : `${this.opts.publicUrl}/pair?code=${this.opts.pairing.createCode(msg.certHash, name)}`;
           conn.send(pairUrl ? { v, type: "welcome", pairUrl } : { v, type: "welcome" });
-          this.log("Plugin verbunden", { session: msg.session, name, plugin: msg.pluginVersion, mumble: entry.mumbleVersion });
+          this.log("Plugin connected", { session: msg.session, name, plugin: msg.pluginVersion, mumble: entry.mumbleVersion });
           this.sessionsChanged();
           this.forUis(msg.certHash, (ui) => {
             ui.conn.send({ v, type: "status", plugin: "connected" });
@@ -220,7 +220,7 @@ export class Hub {
     if (!hash) return "no-certificate";
     if (hash !== certHash) return "hash-mismatch";
     if (this.opts.addressCheck !== "off" && normalize(remoteAddress) !== normalize(user.address)) {
-      this.log("Adresse des Plugins passt nicht zu Mumble", { session, plugin: remoteAddress, mumble: user.address });
+      this.log("Plugin address does not match Mumble's", { session, plugin: remoteAddress, mumble: user.address });
       if (this.opts.addressCheck === "enforce") return "address-mismatch";
     }
     return "ok";
@@ -235,7 +235,7 @@ export class Hub {
         p.ui.conn.send({ v, type: "result", id: p.id, result: "offline" });
       }
     }
-    this.log("Plugin getrennt", { session: entry.session });
+    this.log("Plugin disconnected", { session: entry.session });
     this.sessionsChanged();
     this.forUis(entry.certHash, (ui) => {
       ui.conn.send({ v, type: "status", plugin: "disconnected" });

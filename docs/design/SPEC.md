@@ -1,91 +1,91 @@
-> **Hinweis:** Das ist die ursprüngliche Designspezifikation (neutralisiert). Wo sie abweicht, gilt [`../PLANUNG.md`](../PLANUNG.md), vor allem bei tieferen Ebenen, Sortierung, Label „primary“, Schrift und Icons.
+> **Note:** This is the original design specification (neutralised). Where it differs, the [charter](../internal/charter.md) applies, above all for deeper levels, sorting, the "primary" label, font and icons.
 
-# Spezifikation: Mumble-Bürogebäude (Etagenansicht)
+# Specification: Mumble office building (floor view)
 
-Grafische Oberfläche für einen Mumble-Server, die den Kanalbaum als Bürogebäude darstellt. Nutzer sehen, wer wo sitzt, und wechseln den Kanal per Klick auf einen Raum.
+Graphical web UI for a Mumble server that shows the channel tree as an office building. Users see who is sitting where and switch channel by clicking a room.
 
-Visuelle Referenz: `prototype/index.html` (lauffähig, zum ursprünglichen Design). Kopfzeile und Raumbreiten haben sich seitdem geändert (Abschnitt 2, E31); der Layouttest vergleicht deshalb nur noch Lage und Höhe. Tokens: `tokens.css`.
+Visual reference: `prototype/index.html` (runnable, matches the original design). The header and room widths have changed since then (section 2, E31); the layout test therefore only compares position and height. Tokens: `tokens.css`.
 
 ---
 
-## 1. Abbildung Kanalbaum → Gebäude
+## 1. Mapping channel tree → building
 
-| Mumble                       | Gebäude                   | Regel                                                                                                                                                                   |
-| ---------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Root-Kanal (z. B. „Musterhaus“) | Gebäude                   | Name erscheint als Gebäudeschild im Aufzugskern                                                                                                                         |
-| Kanäle der 1. Ebene          | Etagen                    | Reihenfolge nach `position`, dann Name. Index 0 = „EG“ / „Erdgeschoss“, danach „1“ / „1. Obergeschoss“ usw.                                                             |
-| Kanäle der 2. Ebene          | Räume (Büros) einer Etage | Reihenfolge nach `position`, dann Name                                                                                                                                  |
-| Etagenkanal selbst           | **Flur**                  | Nutzer, die direkt im Etagenkanal sind (nicht in einem Unterraum), stehen im Flur. Der Flur ist **immer betretbar**. Ein Kanal namens „Flur“ hat keine Sonderbedeutung. |
-| Kanäle ab der 3. Ebene       | –                         | führen zu einer Sperre der Etage (siehe feinkonzeption)                                                                                                                 |
+| Mumble | Building | Rule |
+| --- | --- | --- |
+| Root channel (e.g. "Acme HQ") | Building | The name appears as the building sign in the elevator core |
+| First-level channels | Floors | Ordered by `position`, then name. Index 0 = "G" / "Ground floor", then "1" / "1st floor" and so on. |
+| Second-level channels | Rooms (offices) of a floor | Ordered by `position`, then name |
+| The floor channel itself | **Corridor** | Users who are directly in the floor channel (not in a sub-room) stand in the corridor. The corridor can **always be entered**. A channel named "Corridor" has no special meaning. |
+| Channels from the third level down | – | cause the floor to be locked (see the charter) |
 
-Sonderfälle:
+Special cases:
 
-- **Etage ohne Unterkanäle** (z. B. „Lobby“): wird als ein großer offener Raum dargestellt, der dem Etagenkanal entspricht.
-- **Raumname enthält „(stumm)“** (Groß-/Kleinschreibung egal): Lautsprecher-aus-Symbol neben dem Namen. Rein visuell.
+- **Floor without sub-channels** (e.g. "Lobby"): shown as one large open room that corresponds to the floor channel.
+- **Room name contains "(muted)"** (case-insensitive): speaker-off icon next to the name. Purely visual.
 
 ## 2. Layout
 
-Feste Referenzgröße 1440 × 900 px (Desktop). Aufbau von oben nach unten:
+Fixed reference size 1440 × 900 px (desktop). From top to bottom:
 
-1. **Kopfzeile** (kompakt, Änderung 28.09.2026): links nur der Etagenname (22 px, Bold), die Etage ist ja im Aufzug markiert. Rechts zwei Plaketten (Blau 100): Personen-Symbol mit der Zahl auf dieser Etage und „N online“ mit Punkt. Keine Geschossbezeichnung, keine Raumzahl, keine Bedienhinweise. Der Grundriss füllt die restliche Höhe.
-2. **Grundriss** (Höhe 670 px): Hintergrund Dunkelblau mit 4 px Padding und 4 px Gap. Die Lücken bilden die **Wände**.
-   - **Aufzugskern** links, 300 px breit, Hintergrund Grau (`--color-surface`). Hat eine 110 px hohe Öffnung zum Flur (auf Flurhöhe, `top: 276px`).
-   - **Etagenfläche** rechts: obere Raumreihe (272 px), Flur (110 px), untere Raumreihe (272 px).
+1. **Header** (compact, changed 28.09.2026): on the left only the floor name (22 px, bold), since the floor is already marked in the elevator. On the right two badges (Blue 100): a person icon with the number of people on this floor, and "N online" with a dot. No floor designation, no room count, no usage hints. The floor plan fills the remaining height.
+2. **Floor plan** (height 670 px): dark blue background with 4 px padding and 4 px gap. The gaps form the **walls**.
+   - **Elevator core** on the left, 300 px wide, grey background (`--color-surface`). Has a 110 px high opening to the corridor (at corridor height, `top: 276px`).
+   - **Floor area** on the right: top row of rooms (272 px), corridor (110 px), bottom row of rooms (272 px).
 
-### Raumaufteilung (dynamisch)
+### Room layout (dynamic)
 
-- Räume der Etage (ohne Etagenkanal) werden geteilt: `top = rooms[0 .. ceil(n/2)]`, `bottom = Rest`.
-- Breite je Raum nach seinem Rang in der Mumble-Reihenfolge (E31): Raum 1 und 2 `flex-grow` 1,3, danach schrittweise kleiner (1,1; 1,05; … bis 0,85). Die großen Räume stehen so immer oben links.
-- Aufteilung: oben `⌊n/2⌋` Räume (mindestens 1), der Rest unten. Die untere Reihe hat bei ungerader Anzahl also einen Raum mehr.
-- Etagen mit 1–2 Räumen: Ist die Pinnwand offen, teilen sich Grundriss und Pinnwand die Breite.
-- Jeder Raum hat eine **Tür** zum Flur: eine 48 px breite Lücke in der Wand (weißes 4 px-Element über der Wandfuge), 28 px vom linken Raumrand, plus Türbogen (Viertelkreis, 1,5 px, Blau 300). Die obere Reihe hat die Tür unten, die untere Reihe oben (gespiegelt). Die untere Reihe hat `padding-top: 56px`, damit der Bogen den Text nicht überdeckt.
-- Flur: Hintergrundraster (Punkte `#E3E3E3`, Radius 2 px, Abstand 10 px auf Weiß).
+- The rooms of the floor (without the floor channel) are split: `top = rooms[0 .. ceil(n/2)]`, `bottom = rest`.
+- Width of each room by its rank in the Mumble order (E31): rooms 1 and 2 `flex-grow` 1.3, then gradually smaller (1.1; 1.05; … down to 0.85). The large rooms are therefore always at the top left.
+- Split: `⌊n/2⌋` rooms at the top (at least 1), the rest at the bottom. With an odd number, the bottom row therefore has one room more.
+- Floors with 1–2 rooms: when the board is open, the floor plan and the board share the width.
+- Every room has a **door** to the corridor: a 48 px wide gap in the wall (white 4 px element over the wall joint), 28 px from the left edge of the room, plus a door arc (quarter circle, 1.5 px, Blue 300). The top row has the door at the bottom, the bottom row at the top (mirrored). The bottom row has `padding-top: 56px` so that the arc does not cover the text.
+- Corridor: background grid (dots `#E3E3E3`, radius 2 px, spacing 10 px on white).
 
-## 3. Aufzugskern (Navigation + Benutzermenü)
+## 3. Elevator core (navigation + user menu)
 
-Von oben nach unten:
+From top to bottom:
 
-1. **Gebäudeschild**: Servername (20 px Bold), darunter „Mumble-Server · <Label>“.
-2. **Aufzug-Panel** (`<nav aria-label="Aufzug – Etagen">`): Verlauf (`--gradient-elevator`), 4 px Radius. Kopf mit Aufzug-Icon, „Aufzug“ und „Etage <Badge>“ der angezeigten Etage.
-   - Eine Taste pro Etage, **höchste Etage oben** (umgekehrte Reihenfolge).
-   - Taste: runder Badge (40 px) mit „EG“/Zahl, Etagenname, „N online“.
-   - Die angezeigte Etage wird hervorgehoben (weißer Hintergrund, gefüllter Badge) und hat `aria-current="page"`.
-   - **Kein** Marker „Du“ für die eigene Etage.
-3. **Benutzermenü** (unten, `margin-top: auto`):
-   - Eigener Avatar + Name + „<Raumname> · Etage <Badge>“.
-   - Werkzeugleiste (`role="toolbar"`), 44 × 44 px Knöpfe:
-     - **Mikrofon stumm** (Toggle, `aria-pressed`)
-     - **Taub** (Toggle, `aria-pressed`): Taub schaltet auch stumm. Wird „stumm“ bei aktivem „taub“ gedrückt, heben sich beide auf (Mumble-Verhalten).
-     - **Zu meiner Etage**: springt mit der Ansicht auf die Etage des eigenen Kanals.
-     - **Einstellungen**: Platzhalter, noch ohne Funktion.
-   - Aktiv-Zustand eines Toggles: Dunkelblau gefüllt, Icon weiß mit Durchstrich.
-   - Versionszeile: „Server <Version>“ links, „Oberfläche <Version>“ rechts (12 px).
+1. **Building sign**: server name (20 px bold), below it "Mumble server · <label>".
+2. **Elevator panel** (`<nav aria-label="Elevator – floors">`): gradient (`--gradient-elevator`), 4 px radius. Header with elevator icon, "Elevator" and "Floor <badge>" of the floor shown.
+   - One button per floor, **highest floor at the top** (reverse order).
+   - Button: round badge (40 px) with "G"/number, floor name, "N online".
+   - The floor shown is highlighted (white background, filled badge) and has `aria-current="page"`.
+   - **No** "you" marker for your own floor.
+3. **User menu** (at the bottom, `margin-top: auto`):
+   - Your own avatar + name + "<room name> · Floor <badge>".
+   - Toolbar (`role="toolbar"`), 44 × 44 px buttons:
+     - **Mute microphone** (toggle, `aria-pressed`)
+     - **Deafen** (toggle, `aria-pressed`): deafening also mutes. If "mute" is pressed while "deafen" is active, both are lifted (Mumble behaviour).
+     - **Go to my floor**: moves the view to the floor of your own channel.
+     - **Settings**: placeholder, no function yet.
+   - Active state of a toggle: filled dark blue, white icon with a strike-through.
+   - Version line: "Server <version>" on the left, "Interface <version>" on the right (12 px).
 
-## 4. Räume & Personen
+## 4. Rooms & people
 
-- Raum = `<button>` mit Titel (16 px Bold), Belegung („frei“ / „1 Person“ / „N Personen“, 13 px Blau 700) und Avataren.
-- Avatar: Kreis 44 px, Initialen = die ersten 2 Zeichen des Namens, Name darunter (13 px). Fremde Nutzer: Blau 500 (#0078BE) mit weißer Schrift. **Eigener Nutzer**: Dunkelblau mit 3 px **gelbem Ring**. Das ist das einzige gelbe Element (Regel: Gelb sparsam).
-- Ist ein Nutzer stumm oder taub, zeigt ein kleines weißes Badge unten rechts am Avatar ein durchgestrichenes Mikrofon.
-- **Eigener Raum**: Hintergrund Blau 100 (#CEE4F8), kein Hover, `cursor: default`. **Kein** Label „Du bist hier“ (nur im `aria-label`).
-- Hover auf fremde Räume: Grau. Fokus: 3 px Ring in Mittelblau, nach innen versetzt.
+- Room = `<button>` with title (16 px bold), occupancy ("free" / "1 person" / "N people", 13 px Blue 700) and avatars.
+- Avatar: 44 px circle, initials = the first 2 characters of the name, name below (13 px). Other users: Blue 500 (#0078BE) with white text. **Own user**: dark blue with a 3 px **yellow ring**. This is the only yellow element (rule: use yellow sparingly).
+- If a user is muted or deafened, a small white badge at the bottom right of the avatar shows a crossed-out microphone.
+- **Own room**: background Blue 100 (#CEE4F8), no hover, `cursor: default`. **No** "you are here" label (only in the `aria-label`).
+- Hover on other rooms: grey. Focus: 3 px ring in mid blue, inset.
 
-## 5. Interaktionen
+## 5. Interactions
 
-| Aktion                               | Wirkung                                                                      |
-| ------------------------------------ | ---------------------------------------------------------------------------- |
-| Klick auf Raum / Flur / offene Etage | eigener Nutzer wechselt in diesen Kanal (Klick auf den eigenen Raum: nichts) |
-| Klick auf Etagentaste                | nur die **Ansicht** wechselt, der Kanal bleibt                               |
-| „Zu meiner Etage“                    | Ansicht → Etage des eigenen Kanals                                           |
-| Stumm / Taub                         | Self-Mute / Self-Deaf setzen                                                 |
-| Beim Start                           | Es wird die Etage des eigenen Kanals angezeigt                               |
+| Action | Effect |
+| --- | --- |
+| Click on room / corridor / open floor | your own user moves to this channel (click on your own room: nothing) |
+| Click on floor button | only the **view** changes, the channel stays |
+| "Go to my floor" | view → floor of your own channel |
+| Mute / Deafen | set self-mute / self-deaf |
+| On start | the floor of your own channel is shown |
 
-Live-Updates: Kanal- und Nutzeränderungen (Join/Leave/Move/Mute, neue oder umbenannte Kanäle) müssen sofort neu gerendert werden. Die Aufteilung der Räume ergibt sich aus den Daten und wird nie gespeichert.
+Live updates: channel and user changes (join/leave/move/mute, new or renamed channels) must be rendered again immediately. The room layout follows from the data and is never stored.
 
-Motion: Übergänge 160 ms, `cubic-bezier(0.22, 1, 0.36, 1)`. Keine Bounces.
+Motion: transitions 160 ms, `cubic-bezier(0.22, 1, 0.36, 1)`. No bounces.
 
-## 6. Datenmodell (Frontend)
+## 6. Data model (frontend)
 
-Siehe `prototype/mock-data.json`. Minimal benötigt:
+See `prototype/mock-data.json`. Minimum required:
 
 ```ts
 type Channel = { id: number; parent: number | null; name: string; position: number };
@@ -93,28 +93,28 @@ type User = { session: number; name: string; channel: number; selfMute: boolean;
 type Snapshot = { server: { name: string; label: string; version: string }; self: { session: number }; channels: Channel[]; users: User[] };
 ```
 
-Die Ableitungen (Etagen, Räume, Belegung, Breiten) sind reine Funktionen. Sie stammen aus dem Prototyp („Ableitung Gebäude aus Kanalbaum“) und liegen heute in `web/src/lib/model/building.ts`; die Breiten folgen inzwischen dem Rang statt dem Namen (E31).
+The derivations (floors, rooms, occupancy, widths) are pure functions. They come from the prototype ("Deriving the building from the channel tree") and now live in `web/src/lib/model/building.ts`; the widths now follow the rank instead of the name (E31).
 
-## 7. Barrierefreiheit
+## 7. Accessibility
 
-- Alle klickbaren Flächen sind echte `<button>` mit sprechendem `aria-label` („Büro von Clara betreten“, „Flur ENTWICKLUNG betreten“, „… – du bist hier“).
-- Etagennavigation als `<nav>`, aktive Etage mit `aria-current="page"`. Toggles mit `aria-pressed`.
-- Kontrast: Sekundärtext in Blau 700 (#00508C) auf Weiß/Grau ≥ 4,5:1. Keine Information nur über Farbe.
-- Touch-Ziele ≥ 44 px.
+- All clickable areas are real `<button>` elements with a meaningful `aria-label` ("Clara's office – enter", "Corridor DEVELOPMENT – enter", "… – you are here").
+- Floor navigation as `<nav>`, active floor with `aria-current="page"`. Toggles with `aria-pressed`.
+- Contrast: secondary text in Blue 700 (#00508C) on white/grey ≥ 4.5:1. No information conveyed by colour alone.
+- Touch targets ≥ 44 px.
 
-## 8. Design-Regeln
+## 8. Design rules
 
-- Schrift: Inter, Fallback Arial. Überschriften Bold, keine Versalien, keine Emojis.
-- Farben nur aus `tokens.css`. Gelb nur für den Ring um den eigenen Avatar.
-- Radien: 0 für Räume/Wände, 4 px für Panels/Knöpfe, rund nur für Avatare/Badges.
-- Icons: Linien-Icons, 2 px Strich. Die Icons im Prototyp sind Platzhalter nach Spezifikation und werden durch Lucide ersetzt.
+- Font: Inter, fallback Arial. Headings bold, no all caps, no emojis.
+- Colours only from `tokens.css`. Yellow only for the ring around your own avatar.
+- Radii: 0 for rooms/walls, 4 px for panels/buttons, round only for avatars/badges.
+- Icons: line icons, 2 px stroke. The icons in the prototype are placeholders following the specification and will be replaced by Lucide.
 
-## 9. Offene Entscheidungen (vor der Umsetzung klären)
+## 9. Open decisions (to be settled before implementation)
 
-1. **Anbindung an Mumble**: Die Oberfläche braucht Live-Daten und muss den eigenen Nutzer verschieben können. Mögliche Wege: ein eigener Mumble-Client im Browser (Web-Client mit WebSocket-Proxy) oder ein Backend, das über die Server-Admin-Schnittstelle von Murmur/Mumble-Server Zustand liest und setzt. Dazu kommt die Frage, ob die Oberfläche **selbst Audio** macht oder nur den Desktop-Client „fernsteuert“.
-2. **Identität**: Woher kennt die Oberfläche den eigenen Nutzer (`self.session`)? Das hängt von 1. ab.
-3. **Tech-Stack** des Frontends (Framework, Build).
-4. **Responsiveness**: Das Design ist für 1440 × 900 ausgelegt. Es fehlt ein Verhalten für kleinere Fenster und für Etagen mit vielen Räumen (z. B. > 10: Reihen scrollen oder mehrere Flure).
-5. **Kanäle ab der 3. Ebene**: aktuell ignoriert. Optionen: als Nutzer des übergeordneten Raums zählen oder als Unterbereich im Raum zeigen.
-6. **Einstellungen**: Inhalt des Menüs.
-7. **Versionsnummern**: Quelle für die Server-Version (aus dem Handshake) und die UI-Version (aus dem Build).
+1. **Connection to Mumble**: the web UI needs live data and must be able to move your own user. Possible approaches: a separate Mumble client in the browser (web client with WebSocket proxy) or a backend that reads and sets state via the server admin interface of Murmur/Mumble server. There is also the question of whether the web UI **handles audio itself** or only "remote-controls" the desktop client.
+2. **Identity**: how does the web UI know your own user (`self.session`)? This depends on 1.
+3. **Tech stack** of the frontend (framework, build).
+4. **Responsiveness**: the design is laid out for 1440 × 900. Behaviour is missing for smaller windows and for floors with many rooms (e.g. > 10: scrolling rows or several corridors).
+5. **Channels from the third level down**: currently ignored. Options: count them as users of the parent room, or show them as a sub-area within the room.
+6. **Settings**: content of the menu.
+7. **Version numbers**: source of the server version (from the handshake) and the UI version (from the build).

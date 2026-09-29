@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ruumble – Pinnwand im Raum: Varianten</title>
+<title>Ruumble – Board in the room: variants</title>
 <link rel="stylesheet" href="tokens.css">
 <style>
   * { box-sizing: border-box; }
@@ -24,39 +24,39 @@
 </style>
 </head>
 <body>
-<h1>Pinnwand im Raum: drei Varianten</h1>
-<p class="lead">Jede Zeile zeigt denselben Ausschnitt: Räume mit 0, 1, 3 und 12 Beiträgen, rechts der eigene Raum (hellblau) mit 2 Beiträgen.
-Die Grafik ersetzt den Zähler. Sie deutet die Menge nur an (1, 2 oder 3 und mehr Zettel), exakte Zahlen stehen in der Seitenleiste.
-Leere Räume zeigen nichts, außer der eigene Raum: Dort lädt eine leere Wand zum Anheften ein.</p>
+<h1>Board in the room: three variants</h1>
+<p class="lead">Each row shows the same section: rooms with 0, 1, 3 and 12 posts, and on the right your own room (light blue) with 2 posts.
+The graphic replaces the counter. It only hints at the amount (1, 2, or 3 or more notes); exact numbers are in the sidebar.
+Empty rooms show nothing, except your own room: there an empty wall invites you to pin something.</p>
 
-<!-- Variante A: Korkbrett an der Wand -->
+<!-- Variant A: cork board on the wall -->
 <section>
-  <h2>A · Korkbrett an der Wand</h2>
-  <p class="desc">Ein kleines Brett mit Rahmen hängt oben rechts an der Wand. Zettel in Weiß und Hellblau sind mit einer Nadel befestigt.
-  Neues Token <code>--color-cork</code> (warmes Beige), sonst nur Farben aus den Tokens. Am deutlichsten als „Pinnwand“ zu erkennen.</p>
+  <h2>A · Cork board on the wall</h2>
+  <p class="desc">A small framed board hangs on the wall at the top right. White and light blue notes are held by a pin.
+  New token <code>--color-cork</code> (warm beige), otherwise only colours from the tokens. The most clearly recognised as a “board”.</p>
   <div class="plan" id="a"></div>
 </section>
 
-<!-- Variante B: Zettel an der Wand (ohne Brett) -->
+<!-- Variant B: notes on the wall (no board) -->
 <section>
-  <h2>B · Zettel direkt an der Wand</h2>
-  <p class="desc">Ohne Brett, nur leicht schräge Zettel mit farbigen Nadeln, wie an eine Bürowand geheftet.
-  Sehr leicht, passt am besten zum reduzierten Grundriss. Nur Farben aus den Tokens.</p>
+  <h2>B · Notes directly on the wall</h2>
+  <p class="desc">No board, just slightly tilted notes with coloured pins, as if pinned to an office wall.
+  Very light, fits the reduced floor plan best. Only colours from the tokens.</p>
   <div class="plan" id="b"></div>
 </section>
 
-<!-- Variante C: Whiteboard / Tafel -->
+<!-- Variant C: whiteboard / chalkboard -->
 <section>
-  <h2>C · Tafel mit Magneten</h2>
-  <p class="desc">Eine schlanke Tafel in Dunkelblau mit Rahmen, darauf kleine Karten mit runden Magneten.
-  Wirkt „technischer“ und ruhiger, lehnt sich an das Aufzug-Panel an. Nur Farben aus den Tokens.</p>
+  <h2>C · Chalkboard with magnets</h2>
+  <p class="desc">A slim dark blue framed board with small cards held by round magnets.
+  Looks more “technical” and calmer, and echoes the elevator panel. Only colours from the tokens.</p>
   <div class="plan" id="c"></div>
 </section>
 
 <script>
 const rooms = [
-  { t: "Büro von Anna", n: 0 }, { t: "Büro von Ben", n: 1 }, { t: "Büro von Clara", n: 3 },
-  { t: "Teeküche", n: 12 }, { t: "Büro von Eva", n: 2, mine: true },
+  { t: "Anna's office", n: 0 }, { t: "Ben's office", n: 1 }, { t: "Clara's office", n: 3 },
+  { t: "Kitchen", n: 12 }, { t: "Eva's office", n: 2, mine: true },
 ];
 const notes = (n) => Math.min(n, 3);
 const tokens = getComputedStyle(document.documentElement);
@@ -73,7 +73,7 @@ function variantA(n, mine) {
   }).join("");
   return `<svg width="64" height="44" viewBox="0 0 64 44" aria-hidden="true">
     <rect x="1" y="1" width="62" height="42" rx="3" fill="${C("--color-cork") || "#e4cfa4"}" stroke="${C("--color-navy")}" stroke-width="2"/>
-    ${slips || `<text x="32" y="27" text-anchor="middle" font-size="9" fill="${C("--color-blue-700")}">leer</text>`}</svg>`;
+    ${slips || `<text x="32" y="27" text-anchor="middle" font-size="9" fill="${C("--color-blue-700")}">empty</text>`}</svg>`;
 }
 
 function variantB(n, mine) {
@@ -105,9 +105,9 @@ function variantC(n, mine) {
 for (const [id, fn] of [["a", variantA], ["b", variantB], ["c", variantC]]) {
   document.getElementById(id).innerHTML = rooms.map((r) => `
     <div class="room ${r.mine ? "mine" : ""}">
-      <div class="t">${r.t}</div><div class="c">${r.mine ? "1 Person" : "frei"}</div>
+      <div class="t">${r.t}</div><div class="c">${r.mine ? "1 person" : "free"}</div>
       <div class="deco">${fn(r.n, r.mine)}</div>
-      <div class="n">${r.n === 0 ? "keine Beiträge" : r.n + " Beitr" + (r.n === 1 ? "ag" : "äge")}</div>
+      <div class="n">${r.n === 0 ? "no posts" : r.n + " post" + (r.n === 1 ? "" : "s")}</div>
     </div>`).join("");
 }
 </script>

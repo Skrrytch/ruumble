@@ -178,7 +178,7 @@ export class BoardStore {
   }
 
   filePath(id: string): string {
-    if (!/^[0-9a-f]{64}$/.test(id)) throw new Error("ungültige Anhang-ID");
+    if (!/^[0-9a-f]{64}$/.test(id)) throw new Error("invalid attachment ID");
     return join(this.dir, id.slice(0, 2), id);
   }
 

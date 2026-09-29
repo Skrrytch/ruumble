@@ -4,7 +4,7 @@ import { de } from "../src/lib/i18n/de.ts";
 import { en } from "../src/lib/i18n/en.ts";
 import { detectLocale, intlLocale, locale, setLocale, t } from "../src/lib/i18n/index.svelte.ts";
 import { countText, floorLabels } from "../src/lib/model/building.ts";
-import { relativeTime } from "../src/lib/board/model.ts";
+import { formatSize, pastedName, relativeTime } from "../src/lib/board/model.ts";
 
 /** all entries as path → value, functions called with sample values */
 function flatten(o: object, path = ""): Record<string, string> {
@@ -19,10 +19,10 @@ function flatten(o: object, path = ""): Record<string, string> {
   return out;
 }
 
-describe("Sprache der Oberfläche", () => {
-  afterEach(() => setLocale("de", false));
+describe("UI language", () => {
+  afterEach(() => setLocale("en", false));
 
-  it("Deutsch, sonst Englisch: erste unterstützte Sprache des Browsers", () => {
+  it("German, otherwise English: first supported browser language", () => {
     expect(detectLocale(["de-DE", "en"])).toBe("de");
     expect(detectLocale(["de-AT"])).toBe("de");
     expect(detectLocale(["en-US", "de"])).toBe("en");
@@ -31,20 +31,37 @@ describe("Sprache der Oberfläche", () => {
     expect(detectLocale([])).toBe("en");
   });
 
-  it("beide Wörterbücher haben dieselben Einträge, keiner ist leer", () => {
+  it("both dictionaries have the same entries, none empty", () => {
     const d = flatten(de);
     const e = flatten(en);
     expect(Object.keys(e).sort()).toEqual(Object.keys(d).sort());
     for (const [k, v] of Object.entries({ ...d, ...e })) expect(v.trim(), k).not.toBe("");
   });
 
-  it("Umschalten wirkt auf Texte, Zahlenformat und <html lang>, und wird gemerkt", () => {
+  it("switching affects texts, number format and <html lang>, and is remembered", () => {
+    setLocale("de");
+    expect(locale()).toBe("de");
+    expect(document.documentElement.lang).toBe("de");
+    expect(localStorage.getItem("ruumble.locale")).toBe("de");
+    expect(intlLocale()).toBe("de-DE");
+    expect(t().board.title).toBe("Pinnwand");
+    expect([0, 1, 2].map((n) => t().board.count(n))).toEqual(["Noch keine Beiträge", "1 Beitrag", "2 Beiträge"]);
+    expect([0, 1, 2].map(countText)).toEqual(["frei", "1 Person", "2 Personen"]);
+    expect(floorLabels(0)).toEqual({ level: "Erdgeschoss", badge: "EG" });
+    expect(floorLabels(2)).toEqual({ level: "2. Obergeschoss", badge: "2" });
+    expect(formatSize(1.25 * 1024 * 1024)).toBe("1,3 MB");
+    expect(pastedName({ name: "", type: "image/png" }, new Date(2026, 8, 28, 9, 5))).toBe("bild-2026-09-28-0905.png");
+    const now = 10 * 24 * 3600_000;
+    expect([20_000, 5 * 60_000, 3 * 3600_000, 26 * 3600_000, 4 * 24 * 3600_000].map((ago) => relativeTime(now - ago, now))).toEqual([
+      "Gerade eben", "vor 5 Min.", "vor 3 Std.", "gestern", "vor 4 Tagen",
+    ]);
     setLocale("en");
-    expect(locale()).toBe("en");
-    expect(document.documentElement.lang).toBe("en");
-    expect(localStorage.getItem("ruumble.locale")).toBe("en");
-    expect(intlLocale()).toBe("en-GB");
     expect(t().board.title).toBe("Board");
+    expect(intlLocale()).toBe("en-GB");
+    expect(localStorage.getItem("ruumble.locale")).toBe("en");
+  });
+
+  it("English ordinals and plurals", () => {
     expect(countText(0)).toBe("free");
     expect(countText(3)).toBe("3 people");
     expect(floorLabels(0)).toEqual({ level: "Ground floor", badge: "G" });
@@ -54,8 +71,5 @@ describe("Sprache der Oberfläche", () => {
     const now = 10 * 24 * 3600_000;
     expect(relativeTime(now - 3 * 3600_000, now)).toBe("3 hours ago");
     expect(relativeTime(now - 3600_000, now)).toBe("1 hour ago");
-    setLocale("de");
-    expect(t().board.title).toBe("Pinnwand");
-    expect(intlLocale()).toBe("de-DE");
   });
 });

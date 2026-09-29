@@ -2,7 +2,7 @@
   "name": "@ruumble/bridge",
   "version": "0.7.2",
   "private": true,
-  "description": "Ruumble-Dienst: liest den Mumble-Server per Ice (nur lesend) und vermittelt zwischen Oberfl\u00e4che und Plugin",
+  "description": "Ruumble service: reads the Mumble server via Ice (read-only) and mediates between web UI and plugin",
   "license": "BSD-3-Clause",
   "type": "module",
   "scripts": {

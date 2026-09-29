@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ruumble – Referenzprototyp</title>
+<title>Ruumble – reference prototype</title>
 <link rel="stylesheet" href="../tokens.css">
 <style>
   * { box-sizing: border-box; }
@@ -94,26 +94,26 @@
 <script>
 /* ---------- Mock data (identical to mock-data.json, inline for file://) ---------- */
 const DATA = {
-  server: { name: "Musterhaus", label: "primary", version: "[VERSION]" },
+  server: { name: "Acme HQ", label: "primary", version: "[VERSION]" },
   uiVersion: "[VERSION]",
   self: { session: 4 },
   channels: [
-    { id: 0, parent: null, name: "Musterhaus", position: 0 },
+    { id: 0, parent: null, name: "Acme HQ", position: 0 },
     { id: 1, parent: 0, name: "Lobby", position: 0 },
-    { id: 2, parent: 0, name: "ENTWICKLUNG", position: 1 },
-    { id: 3, parent: 2, name: "Büro von Anna", position: 0 },
-    { id: 4, parent: 2, name: "Büro von Ben", position: 1 },
-    { id: 5, parent: 2, name: "Büro von Clara", position: 2 },
-    { id: 6, parent: 2, name: "Büro von David", position: 3 },
-    { id: 7, parent: 2, name: "Büro von Eva", position: 4 },
-    { id: 8, parent: 2, name: "Büro von Felix", position: 5 },
-    { id: 9, parent: 0, name: "VERTRIEB", position: 2 },
-    { id: 10, parent: 9, name: "Abwesend", position: 0 },
-    { id: 11, parent: 9, name: "Fokusraum (stumm)", position: 1 },
-    { id: 12, parent: 9, name: "Teeküche", position: 2 },
-    { id: 13, parent: 9, name: "Raucherecke", position: 3 },
-    { id: 14, parent: 9, name: "Gregors Büro", position: 4 },
-    { id: 15, parent: 9, name: "Projektraum", position: 5 }
+    { id: 2, parent: 0, name: "DEVELOPMENT", position: 1 },
+    { id: 3, parent: 2, name: "Anna's office", position: 0 },
+    { id: 4, parent: 2, name: "Ben's office", position: 1 },
+    { id: 5, parent: 2, name: "Clara's office", position: 2 },
+    { id: 6, parent: 2, name: "David's office", position: 3 },
+    { id: 7, parent: 2, name: "Eva's office", position: 4 },
+    { id: 8, parent: 2, name: "Felix's office", position: 5 },
+    { id: 9, parent: 0, name: "SALES", position: 2 },
+    { id: 10, parent: 9, name: "Away", position: 0 },
+    { id: 11, parent: 9, name: "Focus room (muted)", position: 1 },
+    { id: 12, parent: 9, name: "Kitchen", position: 2 },
+    { id: 13, parent: 9, name: "Coffee corner", position: 3 },
+    { id: 14, parent: 9, name: "Gregor's office", position: 4 },
+    { id: 15, parent: 9, name: "Project room", position: 5 }
   ],
   users: [
     { session: 1, name: "Ben", channel: 1, selfMute: false, selfDeaf: false },
@@ -126,7 +126,7 @@ const DATA = {
 };
 
 /* ---------- Deriving the building from the channel tree (pure functions) ---------- */
-const byPos = (a, b) => a.position - b.position || a.name.localeCompare(b.name, "de");
+const byPos = (a, b) => a.position - b.position || a.name.localeCompare(b.name, "en");
 const rootId = () => DATA.channels.find(c => c.parent === null).id;
 const childrenOf = id => DATA.channels.filter(c => c.parent === id).sort(byPos);
 const usersIn = id => DATA.users.filter(u => u.channel === id);
@@ -136,8 +136,8 @@ const me = () => DATA.users.find(u => u.session === DATA.self.session);
 function buildBuilding() {
   return childrenOf(rootId()).map((f, i) => ({
     id: f.id, name: f.name, index: i,
-    level: i === 0 ? "Erdgeschoss" : `${i}. Obergeschoss`,
-    badge: i === 0 ? "EG" : String(i),
+    level: i === 0 ? "Ground floor" : `${i}${i === 1 ? "st" : i === 2 ? "nd" : i === 3 ? "rd" : "th"} floor`,
+    badge: i === 0 ? "G" : String(i),
     rooms: childrenOf(f.id)
   }));
 }
@@ -150,10 +150,10 @@ function roomGrow(name) {
   let s = 0; for (const ch of name) s += ch.codePointAt(0);
   return (0.85 + (s % 5) * 0.1).toFixed(2);
 }
-const countText = n => n === 0 ? "frei" : n === 1 ? "1 Person" : `${n} Personen`;
-const isMutedRoom = name => /\(stumm\)/i.test(name);
+const countText = n => n === 0 ? "free" : n === 1 ? "1 person" : `${n} people`;
+const isMutedRoom = name => /\(muted\)/i.test(name);
 
-/* ---------- UI-State ---------- */
+/* ---------- UI state ---------- */
 const state = { viewFloor: null };
 
 /* ---------- Actions (later here: real Mumble connection) ---------- */
@@ -180,7 +180,7 @@ const ICON = {
   headset: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/><path class="slash" d="M3 3l18 18"/></svg>',
   target: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>',
   gear: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
-  roomMuted: '<svg aria-label="stumm" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M23 9l-6 6M17 9l6 6"/></svg>',
+  roomMuted: '<svg aria-label="muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M23 9l-6 6M17 9l6 6"/></svg>',
   userMuted: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#003869" stroke-width="2.5" stroke-linecap="round"><path d="M2 2l20 20M9 9v3a3 3 0 0 0 5 2.2M15 9.3V5a3 3 0 0 0-6-.6M19 11a7 7 0 0 1-1.2 3.9M5 11a7 7 0 0 0 12 5M12 18v4"/></svg>',
   arcTop: '<svg class="arc" aria-hidden="true" width="48" height="48" viewBox="0 0 48 48"><path d="M1 48 V1 A47 47 0 0 1 48 48" fill="none" stroke="#9CCAF1" stroke-width="1.5"/></svg>',
   arcBottom: '<svg class="arc" aria-hidden="true" width="48" height="48" viewBox="0 0 48 48"><path d="M1 0 V47 A47 47 0 0 0 48 0" fill="none" stroke="#9CCAF1" stroke-width="1.5"/></svg>'
@@ -190,7 +190,7 @@ function personHTML(u) {
   const self = u.session === DATA.self.session;
   const muted = u.selfMute || u.selfDeaf;
   return `<span class="person"><span class="av ${self ? "me" : ""}">${esc(u.name.slice(0, 2))}${
-    muted ? `<span class="flag" aria-label="stumm">${ICON.userMuted}</span>` : ""}</span>${esc(u.name)}</span>`;
+    muted ? `<span class="flag" aria-label="muted">${ICON.userMuted}</span>` : ""}</span>${esc(u.name)}</span>`;
 }
 function peopleHTML(chId) { return `<span class="people">${usersIn(chId).map(personHTML).join("")}</span>`; }
 
@@ -198,7 +198,7 @@ function roomHTML(r, row) {
   const mine = me().channel === r.id;
   const n = usersIn(r.id).length;
   return `<button type="button" class="room ${mine ? "mine" : ""}" style="flex-grow:${roomGrow(r.name)}"
-      data-join="${r.id}" aria-label="${esc(r.name)}${mine ? " – du bist hier" : " betreten"}">
+      data-join="${r.id}" aria-label="${esc(r.name)}${mine ? " – you are here" : " – enter"}">
     <span class="door" aria-hidden="true"></span>${row === "top" ? ICON.arcTop : ICON.arcBottom}
     <span><span class="title">${esc(r.name)}${isMutedRoom(r.name) ? ICON.roomMuted : ""}</span>
     <span class="count">${countText(n)}</span></span>
@@ -216,8 +216,8 @@ function render() {
 
   const pop = floorPopulation(floor);
   const summary = floor.rooms.length
-    ? `${pop === 0 ? "Niemand" : countText(pop)} auf dieser Etage · ${floor.rooms.length} Räume`
-    : `${countText(pop)} auf dieser Etage`;
+    ? `${pop === 0 ? "Nobody" : countText(pop)} on this floor · ${floor.rooms.length} rooms`
+    : `${countText(pop)} on this floor`;
 
   const half = Math.ceil(floor.rooms.length / 2);
   const top = floor.rooms.slice(0, half), bottom = floor.rooms.slice(half);
@@ -226,15 +226,15 @@ function render() {
   const plan = floor.rooms.length ? `
       <div class="row top">${top.map(r => roomHTML(r, "top")).join("")}</div>
       <button type="button" class="room corridor raster ${corridorMine ? "mine" : ""}" data-join="${floor.id}"
-        aria-label="Flur ${esc(floor.name)}${corridorMine ? " – du bist hier" : " betreten"}">
-        <span class="label"><span class="title">Flur</span><span class="count">Etagenkanal · ${countText(usersIn(floor.id).length)}</span></span>
+        aria-label="Corridor ${esc(floor.name)}${corridorMine ? " – you are here" : " – enter"}">
+        <span class="label"><span class="title">Corridor</span><span class="count">Floor channel · ${countText(usersIn(floor.id).length)}</span></span>
         ${peopleHTML(floor.id)}
       </button>
       <div class="row bottom">${bottom.map(r => roomHTML(r, "bottom")).join("")}</div>`
     : `
       <button type="button" class="room open ${corridorMine ? "mine" : ""}" data-join="${floor.id}"
-        aria-label="${esc(floor.name)}${corridorMine ? " – du bist hier" : " betreten"}">
-        <span><span class="title">${esc(floor.name)}</span><span class="count">Offene Etage ohne Büros · ${countText(pop)}</span></span>
+        aria-label="${esc(floor.name)}${corridorMine ? " – you are here" : " – enter"}">
+        <span><span class="title">${esc(floor.name)}</span><span class="count">Open floor without offices · ${countText(pop)}</span></span>
         ${peopleHTML(floor.id)}
       </button>`;
 
@@ -249,26 +249,26 @@ function render() {
   <div class="app">
     <header class="head">
       <div><div class="kicker">${floor.level}</div><h1>${esc(floor.name)}</h1><div class="summary">${summary}</div></div>
-      <div class="hint">Klick auf einen Raum wechselt den Kanal.<br>Etagenwechsel über den Aufzug · ${DATA.users.length} online</div>
+      <div class="hint">Click a room to switch channel.<br>Change floors with the elevator · ${DATA.users.length} online</div>
     </header>
     <div class="plan">
       <aside class="core">
         <span class="opening" aria-hidden="true"></span>
-        <div><div class="sign-title">${esc(DATA.server.name)}</div><div class="sign-sub">Mumble-Server · ${esc(DATA.server.label)}</div></div>
-        <nav class="elevator" aria-label="Aufzug – Etagen">
-          <div class="elevator-head"><span class="t">${ICON.elevator}Aufzug</span><span class="cur">Etage ${floor.badge}</span></div>
+        <div><div class="sign-title">${esc(DATA.server.name)}</div><div class="sign-sub">Mumble server · ${esc(DATA.server.label)}</div></div>
+        <nav class="elevator" aria-label="Elevator – floors">
+          <div class="elevator-head"><span class="t">${ICON.elevator}Elevator</span><span class="cur">Floor ${floor.badge}</span></div>
           ${nav}
         </nav>
         <div class="usermenu">
           <div class="me-row"><span class="av me">${esc(u.name.slice(0, 2))}</span>
-            <span><span class="n">${esc(u.name)}</span><span class="l">${esc(myRoom.name)} · Etage ${myFloor.badge}</span></span></div>
-          <div class="tools" role="toolbar" aria-label="Benutzermenü">
-            <button type="button" class="tool" data-act="mute" aria-pressed="${u.selfMute || u.selfDeaf}" aria-label="Mikrofon stummschalten" title="Mikrofon stumm">${ICON.mic}</button>
-            <button type="button" class="tool" data-act="deaf" aria-pressed="${u.selfDeaf}" aria-label="Taub schalten" title="Taub">${ICON.headset}</button>
-            <button type="button" class="tool" data-act="home" aria-label="Zu meiner Etage" title="Zu meiner Etage">${ICON.target}</button>
-            <button type="button" class="tool" data-act="settings" aria-label="Einstellungen" title="Einstellungen">${ICON.gear}</button>
+            <span><span class="n">${esc(u.name)}</span><span class="l">${esc(myRoom.name)} · Floor ${myFloor.badge}</span></span></div>
+          <div class="tools" role="toolbar" aria-label="User menu">
+            <button type="button" class="tool" data-act="mute" aria-pressed="${u.selfMute || u.selfDeaf}" aria-label="Mute microphone" title="Mute microphone">${ICON.mic}</button>
+            <button type="button" class="tool" data-act="deaf" aria-pressed="${u.selfDeaf}" aria-label="Deafen" title="Deafen">${ICON.headset}</button>
+            <button type="button" class="tool" data-act="home" aria-label="Go to my floor" title="Go to my floor">${ICON.target}</button>
+            <button type="button" class="tool" data-act="settings" aria-label="Settings" title="Settings">${ICON.gear}</button>
           </div>
-          <div class="versions"><span>Server ${esc(DATA.server.version)}</span><span>Oberfläche ${esc(DATA.uiVersion)}</span></div>
+          <div class="versions"><span>Server ${esc(DATA.server.version)}</span><span>Interface ${esc(DATA.uiVersion)}</span></div>
         </div>
       </aside>
       <div class="floorplan">${plan}</div>

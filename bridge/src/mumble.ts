@@ -87,7 +87,7 @@ export class IceMumbleSource implements MumbleSource {
       let id = opts.serverId;
       if (id === undefined) {
         const booted = await meta.getBootedServers();
-        if (booted.length === 0) throw new Error("Kein laufender virtueller Server");
+        if (booted.length === 0) throw new Error("No running virtual server");
         // The proxy carries the endpoint as seen by the server (e.g. container IP): take over only the identity (S1)
         id = Number(booted[0].ice_getIdentity().name);
       }
