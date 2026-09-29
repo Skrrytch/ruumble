@@ -62,6 +62,6 @@ The Docker image (`deploy/Dockerfile`) bundles service, built web UI and the plu
 ## Conventions
 
 - **i18n** (German + English): web `web/src/lib/i18n/de.ts` is the template defining the `Messages` shape, `en.ts` must match exactly (checked by `test/i18n.test.ts`); plugin texts in `plugin/src/messages.cpp`; board notices in `bridge/src/board/notify.ts`. Playwright configs pin locale `de-DE`, so e2e tests assert German texts.
-- Code comments are German; commit messages, PRs and docs are English.
+- Everything in the repo is English: code comments, commit messages, PRs and docs. German appears only as the German translation of UI and plugin texts and in tests that assert them.
 - Versioning: `bridge/package.json` and `web/package.json` share one version and are bumped together, noted in the commit subject, e.g. `(0.7.2)`; the plugin version lives in `plugin/CMakeLists.txt` (`project(... VERSION ...)`).
 - Work on a branch from `main` and open a PR. Decisions with wider impact get an ADR in `docs/decisions/` (short MADR; ADRs Claude decides are marked "proposed"). When code diverges from an ADR, add a "Current state" note instead of rewriting it.
