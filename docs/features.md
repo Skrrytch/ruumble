@@ -88,7 +88,7 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 | Mumble server | 1.5 or later with Ice enabled (official Docker image) |
 | Mumble client | 1.4 or later on **Linux** (x64), from the distribution packages |
 | Plugin API | 1.0.x, so the plugin also runs on Mumble 1.4 |
-| Service | Docker container next to the Mumble server; `/healthz`, `/download` (plugin bundle) |
+| Service | Docker container next to the Mumble server; `/healthz`, `/download` (plugin bundle), `/api/version` (service and plugin version, shown on the notice pages) |
 
 **Tested versions**
 

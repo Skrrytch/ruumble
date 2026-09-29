@@ -7,7 +7,7 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, type Attachment, type CommandBody, type CommandResult, type NewPost, type Post, type PostUpdate, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
@@ -217,6 +217,10 @@ export class MockAdapter implements MumbleAdapter {
     if (this.talkTimer) clearInterval(this.talkTimer);
     if (this.pendingJoin) clearTimeout(this.pendingJoin.timer);
     this.events = null;
+  }
+
+  async versions(): Promise<Versions> {
+    return { service: __UI_VERSION__, plugin: __PLUGIN_VERSION__ };
   }
 
   command(body: CommandBody): Promise<CommandResult> {

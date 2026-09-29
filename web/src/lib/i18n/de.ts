@@ -99,6 +99,7 @@ export const de = {
     step1: ["In Mumble: ", "Konfigurieren → Einstellungen → Plugins → „Installiere Plugin …“", ", die Datei wählen und mit ", "Ja", " bestätigen."],
     step2: ["Bei ", "Ruumble", " den Haken ", "„Aktivieren“", " setzen und mit OK schließen."],
     step3: "Mit dem Server verbinden. Beim ersten Mal öffnet sich diese Seite mit einem Kopplungslink.",
+    versions: (service: string, plugin: string | null) => `Ruumble-Dienst ${service}` + (plugin ? ` · Plugin ${plugin}` : ""),
   },
   notices: {
     joinFailed: (name: string) => `Wechsel nach „${name}“ nicht möglich.`,

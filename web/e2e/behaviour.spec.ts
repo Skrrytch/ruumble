@@ -144,6 +144,7 @@ test("without a paired plugin: notice instead of the building", async ({ page })
   await expect(page.getByText("Mumble is not connected.")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Elevator – floors" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Download the Ruumble plugin" })).toHaveAttribute("href", "/download");
+  await expect(page.getByText(/^Ruumble service \d+\.\d+\.\d+ · plugin \d+\.\d+\.\d+$/)).toBeVisible();
 });
 
 test("talking indicator in the user's own room", async ({ page }) => {

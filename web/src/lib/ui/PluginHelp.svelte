@@ -1,6 +1,9 @@
 <script lang="ts">
   import Download from "@lucide/svelte/icons/download";
+  import type { Versions } from "@ruumble/protocol";
   import { t } from "../i18n/index.svelte.ts";
+
+  let { versions = null }: { versions?: Versions | null } = $props();
 
   const h = $derived(t().pluginHelp);
 </script>
@@ -16,6 +19,7 @@
     <li>{h.step2[0]}<strong>{h.step2[1]}</strong>{h.step2[2]}<em>{h.step2[3]}</em>{h.step2[4]}</li>
     <li>{h.step3}</li>
   </ol>
+  {#if versions}<p class="versions">{h.versions(versions.service, versions.plugin)}</p>{/if}
 </section>
 
 <style>
@@ -27,5 +31,6 @@
   }
   .download:hover { background: var(--color-navy-light); }
   .download:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
+  .versions { margin: 0; font-size: 12px; color: var(--color-blue-700); }
   ol { margin: 0; padding-left: 20px; text-align: left; font-size: 14px; line-height: 1.6; color: var(--color-blue-700); }
 </style>

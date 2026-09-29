@@ -2,7 +2,7 @@
  * LiveAdapter: WebSocket to the Ruumble service (`/ws/ui`, ADR-0007).
  * Reconnects with increasing delay after a drop. Results are matched to commands by ID.
  */
-import { BoardError, BoardView, BridgeToUi, PROTOCOL_VERSION, Post, Uploaded, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import { BoardError, BoardView, BridgeToUi, PROTOCOL_VERSION, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
 import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, MumbleAdapter } from "./types.ts";
 
 /** REST of the board; the pairing cookie is sent automatically (same-origin) */
@@ -87,6 +87,11 @@ export class LiveAdapter implements MumbleAdapter {
     this.events = null;
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.socket?.close();
+  }
+
+  async versions(): Promise<Versions | null> {
+    const r = await call(Versions, "/api/version");
+    return r.ok ? r.value : null;
   }
 
   command(body: CommandBody): Promise<CommandResult> {

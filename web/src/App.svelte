@@ -28,7 +28,7 @@
       <Unplug size={40} />
       <strong>{t().screens.notPairedTitle}</strong>
       <span>{t().screens.notPairedText}</span>
-      <PluginHelp />
+      <PluginHelp versions={app.versions} />
     </div>
   {:else if !building}
     <div class="screen" role="status">{t().screens.connecting}</div>
@@ -37,7 +37,7 @@
       <Unplug size={40} />
       <strong>{t().common.mumbleOffline}</strong>
       <span>{t().screens.mumbleOfflineText(building.name)}</span>
-      <PluginHelp />
+      <PluginHelp versions={app.versions} />
     </div>
   {:else}
     <!-- title bar, space-saving: the floor is marked in the elevator, here only name and numbers -->

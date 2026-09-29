@@ -104,6 +104,7 @@ export const en: Messages = {
     step1: ["In Mumble: ", "Configure → Settings → Plugins → “Install plugin…”", ", choose the file and confirm with ", "Yes", "."],
     step2: ["Tick ", "Ruumble", " in the column ", "“Enable”", " and close with OK."],
     step3: "Connect to the server. The first time, this page opens with a pairing link.",
+    versions: (service, plugin) => `Ruumble service ${service}` + (plugin ? ` · plugin ${plugin}` : ""),
   },
   notices: {
     joinFailed: (name) => `Cannot move to “${name}”.`,

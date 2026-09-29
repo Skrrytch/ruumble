@@ -190,6 +190,10 @@ export type Post = z.infer<typeof Post>;
 export const BoardView = z.object({ channelId, channelName: z.string(), posts: z.array(Post) });
 export type BoardView = z.infer<typeof BoardView>;
 
+/** GET /api/version: version of the service and of the plugin offered under /download (null: none) */
+export const Versions = z.object({ service: z.string(), plugin: z.string().nullable() });
+export type Versions = z.infer<typeof Versions>;
+
 /** POST /api/board/posts */
 export const NewPost = z.object({
   kind: PostKind,

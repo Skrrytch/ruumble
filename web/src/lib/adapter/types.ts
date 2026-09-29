@@ -2,7 +2,7 @@
  * Interface between web UI and Mumble (ADR-0007).
  * Implementations: MockAdapter (fixtures, simulated Mumble) and LiveAdapter (WebSocket and REST to the service).
  */
-import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, CommandBody, CommandResult, NewPost, Post, PostUpdate, Snapshot, TalkingState, Uploaded } from "@ruumble/protocol";
+import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, CommandBody, CommandResult, NewPost, Post, PostUpdate, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
 
 export type BoardErrorCode = ServerBoardError | "offline";
 export type BoardResult<T> = { ok: true; value: T } | { ok: false; error: BoardErrorCode };
@@ -42,6 +42,8 @@ export interface MumbleAdapter {
   /** Runs a command in the own Mumble client. The result only arrives after confirmation (ADR-0003). */
   command(body: CommandBody): Promise<CommandResult>;
   board: BoardApi;
+  /** versions of service and offered plugin (notice pages); null if unknown */
+  versions(): Promise<Versions | null>;
   /** optional: custom address for avatar images (mock), otherwise /avatar/<id>?v=<version> */
   avatarUrl?(userId: number, version: string): string;
 }

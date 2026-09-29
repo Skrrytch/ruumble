@@ -22,7 +22,9 @@ import { basename, resolve } from "node:path";
 import fastifyStatic from "@fastify/static";
 import fastifyWebsocket from "@fastify/websocket";
 import Fastify from "fastify";
+import type { Versions } from "@ruumble/protocol";
 import type { WebSocket } from "ws";
+import pkg from "../package.json" with { type: "json" };
 import { AvatarCache } from "./avatars.ts";
 import { notifyRoom } from "./board/notify.ts";
 import { boardRoutes } from "./board/routes.ts";
@@ -230,6 +232,13 @@ app.get("/healthz", async (_req, reply) => {
     board: { usedMB: Math.round(store.usedBytes() / 1024 / 1024), quotaMB },
   });
 });
+
+// shown on the notice pages of the web UI; the plugin version comes from the bundle's file name (ruumble-<version>.mumble_plugin)
+const versions: Versions = {
+  service: pkg.version,
+  plugin: config.pluginBundle && existsSync(config.pluginBundle) ? (/-(\d+\.\d+\.\d+)\.mumble_plugin$/.exec(config.pluginBundle)?.[1] ?? null) : null,
+};
+app.get("/api/version", async () => versions);
 
 if (config.pluginBundle && existsSync(config.pluginBundle)) {
   const file = config.pluginBundle;

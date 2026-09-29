@@ -61,6 +61,13 @@ describe("UI language", () => {
     expect(localStorage.getItem("ruumble.locale")).toBe("en");
   });
 
+  it("versions on the notice pages, plugin only if one is offered", () => {
+    expect(en.pluginHelp.versions("0.8.3", "0.4.1")).toBe("Ruumble service 0.8.3 · plugin 0.4.1");
+    expect(en.pluginHelp.versions("0.8.3", null)).toBe("Ruumble service 0.8.3");
+    expect(de.pluginHelp.versions("0.8.3", "0.4.1")).toBe("Ruumble-Dienst 0.8.3 · Plugin 0.4.1");
+    expect(de.pluginHelp.versions("0.8.3", null)).toBe("Ruumble-Dienst 0.8.3");
+  });
+
   it("English ordinals and plurals", () => {
     expect(countText(0)).toBe("free");
     expect(countText(3)).toBe("3 people");

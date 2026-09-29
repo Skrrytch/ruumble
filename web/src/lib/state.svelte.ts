@@ -2,7 +2,7 @@
  * State of the web UI: holds the latest snapshot, derives the building and runs commands.
  * No optimistic switching: the own channel only changes with the next snapshot (ADR-0003).
  */
-import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Snapshot, type TalkingState, type Uploaded } from "@ruumble/protocol";
+import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PluginStatus } from "./adapter/types.ts";
 import { formatSize, type BoardFilter } from "./board/model.ts";
 import { t } from "./i18n/index.svelte.ts";
@@ -22,6 +22,8 @@ export class RuumbleState {
   /** read-only, without own user (service preview) */
   preview = $state(false);
   connection = $state<ConnectionState>("connected");
+  /** versions of service and offered plugin, shown on the notice pages */
+  versions = $state<Versions | null>(null);
   /** session → currently talking (only what the own client hears) */
   talking = $state<Record<number, boolean>>({});
   /** channel switch in progress (transitional state) */
@@ -68,6 +70,7 @@ export class RuumbleState {
   constructor(private readonly adapter: MumbleAdapter) {}
 
   start(): void {
+    void this.adapter.versions().then((v) => (this.versions = v));
     this.adapter.start({
       snapshot: (s) => this.onSnapshot(s),
       talking: (session, state) => this.onTalking(session, state),
