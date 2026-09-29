@@ -1,8 +1,8 @@
 name: Live-Tests
 
-# Echte Mumble-Server und headless Mumble-Clients mit dem Ruumble-Plugin (web/e2e-live).
-# Fängt Verhaltensänderungen neuer Mumble-Versionen ab, die ein Diff der Schnittstellendateien nicht zeigt.
-# Läuft wöchentlich, von Hand und nach einem neuen Mumble-Release (angestoßen von mumble-release-watch).
+# Real Mumble servers and headless Mumble clients with the Ruumble plugin (web/e2e-live).
+# Catches behavioural changes in new Mumble versions that a diff of the interface files does not show.
+# Runs weekly, manually and after a new Mumble release (triggered by mumble-release-watch).
 on:
   schedule:
     - cron: "43 5 * * 2"
@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # von Hand oder nach einem neuen Release: nur die angegebene Version, sonst die Standardliste
+        # manually or after a new release: only the given version, otherwise the default list
         server: ${{ fromJSON(inputs.mumble != '' && format('["{0}"]', inputs.mumble) || '["v1.5.735","v1.6.870","latest"]') }}
         client: [ubuntu]
         include:
@@ -38,7 +38,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Ice-Stubs des Dienstes: nutzt auch web/e2e-live/mumble-admin.ts (Registrieren, Texturen)
+      # Ice stubs of the service: also used by web/e2e-live/mumble-admin.ts (registering, textures)
       - run: pnpm -F @ruumble/bridge gen
       - name: Plugin bauen
         run: |

@@ -19,7 +19,7 @@ test.describe("englischer Browser", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "de");
     await expect(page.getByRole("complementary", { name: "Pinnwand" }).getByText("4 Beiträge")).toBeVisible();
     await page.reload();
-    await expect(page.getByRole("navigation", { name: "Aufzug – Etagen" })).toBeVisible(); // gemerkt
+    await expect(page.getByRole("navigation", { name: "Aufzug – Etagen" })).toBeVisible(); // remembered
   });
 
   test("ohne Kopplung: englischer Hinweis mit englischen Mumble-Bezeichnungen", async ({ page }) => {

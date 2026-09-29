@@ -30,7 +30,7 @@
   const other = $derived(locale() === "de" ? "en" : "de");
   const muted = $derived(me ? me.selfMute || me.selfDeaf : false);
   const myAvatar = $derived(me ? app.avatarOf(me.name) : null);
-  let avatarBroken = $state<string | null>(null); // URL, die nicht geladen werden konnte → Initialen
+  let avatarBroken = $state<string | null>(null); // URL that could not be loaded → initials
   const deaf = $derived(me?.selfDeaf ?? false);
 </script>
 
@@ -102,7 +102,7 @@
       <button type="button" class="tool" aria-label={t().core.home} title={t().core.home} disabled={!myFloor} onclick={() => app.goHome()}>
         <LocateFixed size={20} />
       </button>
-      <!-- Sprache: Deutsch oder Englisch (Browser-Einstellung), hier umschaltbar und gemerkt -->
+      <!-- language: German or English (browser setting), switchable here and remembered -->
       <button type="button" class="tool lang" aria-label={t().core.switchLanguage(t().core.languageName[other])} title={t().core.switchLanguage(t().core.languageName[other])} onclick={() => setLocale(other)}>
         <Languages size={16} /><span>{locale().toUpperCase()}</span>
       </button>
@@ -116,7 +116,7 @@
     position: relative; width: 300px; flex-shrink: 0; padding: 18px; background: var(--color-surface);
     display: flex; flex-direction: column; gap: 14px; min-height: 0;
   }
-  /* Öffnung zum Flur: Der Flur (110 px) liegt mittig zwischen zwei gleich hohen Raumreihen */
+  /* opening to the corridor: the corridor (110 px) sits centred between two equally tall rows of rooms */
   .opening { position: absolute; right: calc(-1 * var(--wall)); top: calc(50% - 55px); width: var(--wall); height: 110px; background: var(--color-white); }
   .sign-title { font-size: 20px; font-weight: 700; }
   .sign-sub { font-size: 13px; color: var(--color-blue-700); }

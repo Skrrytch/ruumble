@@ -1,4 +1,4 @@
-/** Adresse von Anhängen für die Pinnwand-Komponenten (gesetzt von BoardPanel, AP11.3) */
+/** Address of attachments for the board components (set by BoardPanel, AP11.3) */
 import type { Attachment } from "@ruumble/protocol";
 import { getContext, setContext } from "svelte";
 

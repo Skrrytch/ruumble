@@ -1,7 +1,7 @@
 /**
- * Darstellung von Beiträgen (ADR-0011): Markdown ohne rohes HTML (markdown-it, html: false),
- * danach DOMPurify. Code mit highlight.js (nur gängige Sprachen, damit das Bündel klein bleibt).
- * Der Dienst liefert nur Rohtext; HTML entsteht ausschließlich hier und immer bereinigt.
+ * Rendering of posts (ADR-0011): Markdown without raw HTML (markdown-it, html: false),
+ * then DOMPurify. Code with highlight.js (only common languages, so the bundle stays small).
+ * The service only delivers raw text; HTML is produced exclusively here and always sanitised.
  */
 import DOMPurify from "dompurify";
 import hljs from "highlight.js/lib/core";
@@ -30,14 +30,14 @@ import MarkdownIt from "markdown-it";
 const LANGUAGES = { bash, cpp, csharp, css, diff, dockerfile, go, ini, java, javascript, json, kotlin, markdown, php, python, rust, sql, typescript, xml, yaml };
 for (const [name, lang] of Object.entries(LANGUAGES)) hljs.registerLanguage(name, lang);
 
-/** Auswahl im Code-Modus (leer = automatisch erkennen) */
+/** Selection in code mode (empty = detect automatically) */
 export const CODE_LANGUAGES = Object.keys(LANGUAGES).sort();
 
 const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 /**
- * Sprache an typischen Merkmalen erkennen. Die Auto-Erkennung von highlight.js ist dafür zu unzuverlässig:
- * Die CSS-Grammatik gewinnt oft sogar bei eindeutigem Python (getestet mit highlight.js 11.12).
+ * Detect the language by typical features. highlight.js auto-detection is too unreliable for this:
+ * the CSS grammar often wins even for unambiguous Python (tested with highlight.js 11.12).
  */
 function guessLanguage(code: string): string | null {
   const t = code.trim();
@@ -46,7 +46,7 @@ function guessLanguage(code: string): string | null {
       JSON.parse(t);
       return "json";
     } catch {
-      /* kein JSON */
+      /* not JSON */
     }
   }
   if (/^\s*<(\?xml|!doctype|[a-z][\w-]*[\s>])/i.test(t) && /<\/[a-z]/i.test(t)) return "xml";
@@ -55,7 +55,7 @@ function guessLanguage(code: string): string | null {
   if (/^\s*(FROM|RUN|COPY|CMD|ENTRYPOINT|WORKDIR)\s/m.test(t) && /^FROM\s/m.test(t)) return "dockerfile";
   if (/^\s*[$#] \S/m.test(t) || /^#!\/(usr\/)?bin\/(env )?(ba)?sh/.test(t)) return "bash";
   if (/^(diff --git|--- |\+\+\+ |@@ )/m.test(t)) return "diff";
-  // Go und Rust vor TypeScript/JavaScript: `let`, `const` und `=>` kommen dort auch vor
+  // Go and Rust before TypeScript/JavaScript: `let`, `const` and `=>` occur there too
   if (/^\s*package\s+\w+/m.test(t) && /\bfunc\s/.test(t)) return "go";
   if (/\bfn\s+\w+\s*\(|\blet\s+mut\b|println!/.test(t)) return "rust";
   if (/\b(interface|type)\s+\w+.*[{=]|:\s*(string|number|boolean)\b/.test(t) && /\b(const|let|function|export|import)\b/.test(t)) return "typescript";
@@ -66,10 +66,10 @@ function guessLanguage(code: string): string | null {
   return null;
 }
 
-/** Sprachen, die bei der Auto-Erkennung zu oft fälschlich gewinnen (nur über guessLanguage oder Auswahl) */
+/** Languages that win auto-detection wrongly too often (only via guessLanguage or selection) */
 const AUTO_EXCLUDED = new Set(["css", "markdown", "ini"]);
 
-/** Code hervorheben; liefert HTML (von highlight.js maskiert) und die erkannte Sprache */
+/** Highlight code; returns HTML (escaped by highlight.js) and the detected language */
 export function highlight(code: string, language?: string): { html: string; language: string } {
   const chosen = language && hljs.getLanguage(language) ? language : guessLanguage(code);
   if (chosen) return { html: hljs.highlight(code, { language: chosen }).value, language: chosen };
@@ -78,13 +78,13 @@ export function highlight(code: string, language?: string): { html: string; lang
 }
 
 const md = new MarkdownIt({
-  html: false, // rohes HTML im Markdown bleibt Text
+  html: false, // raw HTML in Markdown stays text
   linkify: true,
   breaks: true,
   highlight: (code, lang) => `<pre class="hljs"><code>${highlight(code, lang || undefined).html}</code></pre>`,
 });
 
-// Links immer in neuem Tab und ohne Zugriff auf dieses Fenster
+// Links always in a new tab and without access to this window
 DOMPurify.addHook("afterSanitizeAttributes", (node) => {
   if (node.tagName === "A") {
     node.setAttribute("target", "_blank");
@@ -95,15 +95,15 @@ DOMPurify.addHook("afterSanitizeAttributes", (node) => {
 const PURIFY = {
   ALLOWED_TAGS: ["p", "br", "strong", "em", "s", "del", "code", "pre", "blockquote", "ul", "ol", "li", "a", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "table", "thead", "tbody", "tr", "th", "td", "span"],
   ALLOWED_ATTR: ["href", "class", "target", "rel"],
-  ALLOWED_URI_REGEXP: /^(?:https?:|mailto:)/i, // kein javascript:, data:, vbscript:
+  ALLOWED_URI_REGEXP: /^(?:https?:|mailto:)/i, // no javascript:, data:, vbscript:
 };
 
-/** Markdown → bereinigtes HTML */
+/** Markdown → sanitised HTML */
 export function renderMarkdown(text: string): string {
   return DOMPurify.sanitize(md.render(text), PURIFY) as string;
 }
 
-/** Code-Beitrag → bereinigtes HTML (Zeilen einzeln für Zeilennummern per CSS) */
+/** Code post → sanitised HTML (lines separately for line numbers via CSS) */
 export function renderCode(text: string, language?: string): { html: string; language: string } {
   const { html, language: detected } = highlight(text, language);
   return { html: DOMPurify.sanitize(html, { ALLOWED_TAGS: ["span"], ALLOWED_ATTR: ["class"] }) as string, language: detected };

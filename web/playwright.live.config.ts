@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Live-Test gegen deploy/local (echter Mumble-Server, Ruumble-Dienst, headless Clients mit Plugin).
+// Live test against deploy/local (real Mumble server, Ruumble service, headless clients with plugin).
 //   docker compose -f deploy/local/docker-compose.yml up -d --build && (cd tools/live-test && node src/setup.cjs)
 //   pnpm -F @ruumble/web exec playwright test -c playwright.live.config.ts
 export default defineConfig({
@@ -9,6 +9,6 @@ export default defineConfig({
   timeout: 90_000,
   workers: 1,
   reporter: [["list"]],
-  // Tests prüfen die deutschen Texte (Browser-Sprache de-DE); Englisch prüft e2e/i18n.spec.ts
+  // Tests check the German texts (browser language de-DE); English is checked by e2e/i18n.spec.ts
   use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, baseURL: "http://127.0.0.1:8080", locale: "de-DE" },
 });

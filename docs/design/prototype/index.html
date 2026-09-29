@@ -18,10 +18,10 @@
   .head .summary, .head .hint { font-size: 15px; color: var(--color-blue-700); }
   .head .hint { font-size: 13px; text-align: right; line-height: 1.5; }
 
-  /* Grundriss: Wände = 4px Dunkelblau als gap/padding */
+  /* Floor plan: walls = 4px dark blue as gap/padding */
   .plan { height: 670px; padding: var(--wall); background: var(--color-navy); display: flex; gap: var(--wall); }
 
-  /* Aufzugskern */
+  /* Elevator core */
   .core { position: relative; width: 300px; flex-shrink: 0; padding: 18px; background: var(--color-surface); display: flex; flex-direction: column; gap: 14px; }
   .core .opening { position: absolute; right: calc(-1 * var(--wall)); top: 276px; width: var(--wall); height: 110px; background: var(--color-white); }
   .sign-title { font-size: 20px; font-weight: 700; }
@@ -55,7 +55,7 @@
   .tool[aria-pressed="true"] .slash { display: inline; }
   .versions { display: flex; justify-content: space-between; font-size: 12px; color: var(--color-blue-700); }
 
-  /* Etagenfläche */
+  /* Floor area */
   .floorplan { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--wall); }
   .row { display: flex; gap: var(--wall); height: 272px; }
 
@@ -92,7 +92,7 @@
 <div id="app"></div>
 
 <script>
-/* ---------- Mock-Daten (identisch mit mock-data.json, inline für file://) ---------- */
+/* ---------- Mock data (identical to mock-data.json, inline for file://) ---------- */
 const DATA = {
   server: { name: "Musterhaus", label: "primary", version: "[VERSION]" },
   uiVersion: "[VERSION]",
@@ -125,14 +125,14 @@ const DATA = {
   ]
 };
 
-/* ---------- Ableitung Gebäude aus Kanalbaum (reine Funktionen) ---------- */
+/* ---------- Deriving the building from the channel tree (pure functions) ---------- */
 const byPos = (a, b) => a.position - b.position || a.name.localeCompare(b.name, "de");
 const rootId = () => DATA.channels.find(c => c.parent === null).id;
 const childrenOf = id => DATA.channels.filter(c => c.parent === id).sort(byPos);
 const usersIn = id => DATA.users.filter(u => u.channel === id);
 const me = () => DATA.users.find(u => u.session === DATA.self.session);
 
-/** Etagen = Kanäle der 1. Ebene, Räume = deren Kinder. Tiefere Ebenen werden ignoriert. */
+/** Floors = first-level channels, rooms = their children. Deeper levels are ignored. */
 function buildBuilding() {
   return childrenOf(rootId()).map((f, i) => ({
     id: f.id, name: f.name, index: i,
@@ -145,7 +145,7 @@ const floorPopulation = f => usersIn(f.id).length + f.rooms.reduce((n, r) => n +
 const floorOfChannel = (building, chId) =>
   building.find(f => f.id === chId || f.rooms.some(r => r.id === chId));
 
-/** Deterministische Breitenvariation 0.85–1.25, damit Büros nicht wie ein starres Raster wirken. */
+/** Deterministic width variation 0.85–1.25 so that offices do not look like a rigid grid. */
 function roomGrow(name) {
   let s = 0; for (const ch of name) s += ch.codePointAt(0);
   return (0.85 + (s % 5) * 0.1).toFixed(2);
@@ -156,10 +156,10 @@ const isMutedRoom = name => /\(stumm\)/i.test(name);
 /* ---------- UI-State ---------- */
 const state = { viewFloor: null };
 
-/* ---------- Aktionen (hier später: echte Mumble-Anbindung) ---------- */
+/* ---------- Actions (later here: real Mumble connection) ---------- */
 function joinChannel(chId) {
   const u = me(); if (u.channel === chId) return;
-  u.channel = chId;              // TODO: an Server senden (UserState.channel_id)
+  u.channel = chId;              // TODO: send to server (UserState.channel_id)
   render();
 }
 function toggleMute() {

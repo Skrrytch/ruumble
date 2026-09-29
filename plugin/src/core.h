@@ -1,9 +1,9 @@
-// Ruumble-Plugin: Kern ohne Abhängigkeit zu Mumble oder zum Netzwerk (testbar mit Fakes).
+// Ruumble plugin: core without dependency on Mumble or the network (testable with fakes).
 //
-// Ein Worker-Thread arbeitet alle Ereignisse der Reihe nach ab: Mumble-Callbacks, Nachrichten des Dienstes,
-// Zeitgeber. Callbacks legen nur Ereignisse ab und warten nie (Analyse 2.3).
-// Befehle folgen ADR-0003: der Reihe nach, der letzte Wechsel gewinnt, mindestens 1 s Abstand zwischen
-// Statusänderungen, Bestätigung per channelEntered, eine Wiederholung.
+// A worker thread processes all events in order: Mumble callbacks, messages from the service,
+// timers. Callbacks only queue events and never wait (Analyse 2.3).
+// Commands follow ADR-0003: in order, the last move wins, at least 1 s between
+// state changes, confirmation via channelEntered, one retry.
 #pragma once
 
 #include "messages.h"
@@ -21,14 +21,14 @@
 
 namespace ruumble {
 
-/** Beschreibung eines Kanals: Mumble lädt den Text erst, wenn ein Nutzer ihn ansieht (ADR-0010). */
+/** Description of a channel: Mumble only loads the text once a user views it (ADR-0010). */
 struct Description {
 	enum class Status { Ok, Pending, Error };
 	Status status = Status::Error;
 	std::string text;
 };
 
-/** Zugriff auf Mumble (umgesetzt in plugin.cpp, im Test gefälscht). Aufrufe nur aus dem Worker. */
+/** Access to Mumble (implemented in plugin.cpp, faked in the test). Calls only from the worker. */
 class MumbleApi {
 public:
 	virtual ~MumbleApi() = default;
@@ -36,24 +36,24 @@ public:
 	virtual std::optional< uint32_t > localSession() = 0;
 	virtual std::string userHash(uint32_t session) = 0;
 	virtual std::optional< int32_t > channelOf(uint32_t session) = 0;
-	/** true = Anfrage an den Server gesendet (heißt nicht: verschoben) */
+	/** true = request sent to the server (does not mean: moved) */
 	virtual bool requestMove(uint32_t session, int32_t channel) = 0;
 	virtual bool setMute(bool on)   = 0;
 	virtual bool setDeaf(bool on)   = 0;
 	virtual bool isMuted()          = 0;
 	virtual bool isDeafened()       = 0;
-	/** Beschreibung des Root-Kanals (ID 0) */
+	/** description of the root channel (ID 0) */
 	virtual Description rootDescription() = 0;
-	/** Name des Root-Kanals, wie ihn der Client zeigt (registername des Servers, sonst „Root“) */
+	/** name of the root channel as the client shows it (the server's registername, otherwise "Root") */
 	virtual std::string rootName() = 0;
 	virtual void log(const std::string &message) = 0;
 };
 
-/** Verbindung zum Dienst (umgesetzt in net.cpp). Aufrufe nur aus dem Worker. */
+/** Connection to the service (implemented in net.cpp). Calls only from the worker. */
 class Transport {
 public:
 	virtual ~Transport()                               = default;
-	/** Basis-URL des Dienstes, z. B. http://ruumble.example:8080 (verbindet mit …/ws/plugin) */
+	/** base URL of the service, e.g. http://ruumble.example:8080 (connects to …/ws/plugin) */
 	virtual void connect(const std::string &baseUrl) = 0;
 	virtual void disconnect()                        = 0;
 	virtual void send(const std::string &json)       = 0;
@@ -61,19 +61,19 @@ public:
 
 struct Settings {
 	std::string pluginVersion = "0.0.0";
-	/** Version des Mumble-Clients aus mumble_setMumbleInfo, leer wenn unbekannt */
+	/** version of the Mumble client from mumble_setMumbleInfo, empty if unknown */
 	std::string mumbleVersion;
-	/** Sprache der eigenen Meldungen und der Hinweise des Dienstes */
+	/** language of the plugin's own messages and of the service's notices */
 	Locale locale = Locale::en;
 	bool autoOpen             = true;
-	/** feste Adresse aus plugin.json; ohne sie gilt die Root-Beschreibung (ADR-0010) */
+	/** fixed address from plugin.json; without it, the root description applies (ADR-0010) */
 	std::optional< std::string > bridgeUrl;
 	std::chrono::milliseconds spacing{ 1000 };
 	std::chrono::milliseconds confirmTimeout{ 3000 };
 	std::chrono::milliseconds discoveryRetry{ 3000 };
 };
 
-/** Mumble_TalkingState als Protokoll-Text; nullopt für INVALID */
+/** Mumble_TalkingState as protocol text; nullopt for INVALID */
 std::optional< std::string > talkingStateName(int state);
 
 class Core {
@@ -89,7 +89,7 @@ public:
 	void start();
 	void stop();
 
-	// Ereignisse (thread-sicher, blockieren nie)
+	// events (thread-safe, never block)
 	void onSynchronized();
 	void onDisconnected();
 	void onChannelEntered(uint32_t user, int32_t channel);
@@ -98,7 +98,7 @@ public:
 	void onTransportClosed();
 	void onTransportMessage(std::string json);
 
-	// für Tests
+	// for tests
 	bool helloAcknowledged() const;
 
 private:
@@ -160,7 +160,7 @@ private:
 	bool running_ = false;
 	std::thread worker_;
 
-	// nur im Worker
+	// worker only
 	bool transportOpen_ = false;
 	bool helloAcked_    = false;
 	std::optional< uint32_t > session_;
@@ -169,8 +169,8 @@ private:
 	std::deque< Command > commands_;
 	std::optional< ActiveJoin > active_;
 	std::optional< std::chrono::steady_clock::time_point > lastChange_;
-	bool helloAckedShared_ = false; // für helloAcknowledged(), unter mutex_
-	std::string bridgeUrl_;         // aktuell verbundene Basis-URL
+	bool helloAckedShared_ = false; // for helloAcknowledged(), under mutex_
+	std::string bridgeUrl_;         // currently connected base URL
 	std::optional< std::chrono::steady_clock::time_point > discoveryAt_;
 	bool hintShown_ = false;
 };

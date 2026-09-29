@@ -9,7 +9,7 @@ namespace ruumble {
 
 using json   = nlohmann::json;
 using Clock  = std::chrono::steady_clock;
-constexpr int V = 1; // Protokollversion (protocol/src/index.ts)
+constexpr int V = 1; // protocol version (protocol/src/index.ts)
 
 std::optional< std::string > talkingStateName(int state) {
 	switch (state) {
@@ -105,13 +105,13 @@ void Core::handle(const Event &event) {
 				channel_  = session_ ? api_.channelOf(*session_).value_or(-1) : -1;
 				helloAcked_ = false;
 				hintShown_  = false;
-				resolveBridge(Clock::now()); // verbindet (neu) oder schickt hello auf bestehender Verbindung
+				resolveBridge(Clock::now()); // (re)connects or sends hello on the existing connection
 			} else if constexpr (std::is_same_v< T, Disconnected >) {
 				failAll("offline");
 				if (transportOpen_ && helloAcked_) transport_.send(json{ { "v", V }, { "type", "bye" } }.dump());
 				session_.reset();
 				helloAcked_ = false;
-				disconnectBridge(); // nächster Server kann einen anderen Dienst nennen
+				disconnectBridge(); // next server may name a different service
 			} else if constexpr (std::is_same_v< T, Entered >) {
 				if (session_ && e.user == *session_) {
 					channel_ = e.channel;
@@ -130,7 +130,7 @@ void Core::handle(const Event &event) {
 			} else if constexpr (std::is_same_v< T, TransportClosed >) {
 				transportOpen_ = false;
 				helloAcked_    = false;
-				// Ergebnisse hätten keinen Empfänger mehr; offene Befehle verwerfen
+				// results would have no recipient any more; discard pending commands
 				commands_.clear();
 				active_.reset();
 			} else if constexpr (std::is_same_v< T, Message >) {
@@ -140,7 +140,7 @@ void Core::handle(const Event &event) {
 		event);
 }
 
-// Meldungen an api_.log: ohne „Ruumble:“ davor, das setzt Mumble selbst.
+// Messages to api_.log: without a "Ruumble:" prefix, Mumble adds that itself.
 void Core::sendHello() {
 	if (!transportOpen_ || !session_ || certHash_.empty()) {
 		if (session_ && certHash_.empty()) api_.log(text::noCertificate(settings_.locale));
@@ -172,7 +172,7 @@ void Core::handleMessage(const std::string &text) {
 		helloAcked_ = false;
 		api_.log(text::rejected(settings_.locale, msg.value("reason", std::string("?"))));
 	} else if (type == "notify" && helloAcked_) {
-		// Hinweis ins Mumble-Protokoll (Pinnwand, AP11.4); Mumble maskiert HTML und setzt „Ruumble:“ davor
+		// notice in the Mumble log (board, AP11.4); Mumble escapes HTML and prefixes "Ruumble:"
 		const std::string note = msg.value("text", "");
 		if (!note.empty()) api_.log(note.substr(0, 300));
 	} else if (type == "command" && helloAcked_) {
@@ -190,7 +190,7 @@ void Core::handleMessage(const std::string &text) {
 void Core::enqueueCommand(Command command) {
 	if (!session_ || !api_.connected()) return reply(command.id, "offline");
 	if (command.cmd == "join") {
-		// der letzte Wechsel gewinnt (ADR-0003)
+		// the last move wins (ADR-0003)
 		if (active_) {
 			reply(active_->command.id, "superseded");
 			active_.reset();
@@ -215,21 +215,21 @@ void Core::resolveBridge(Clock::time_point now) {
 		const Description d = api_.rootDescription();
 		if (d.status == Description::Status::Ok) url = findBridgeUrl(d.text);
 		if (!url) {
-			// noch nicht geladen, leer oder ohne Zeile: später erneut prüfen (Beschreibung kann sich ändern)
+			// not loaded yet, empty or without the line: check again later (description may change)
 			const bool pending = d.status == Description::Status::Pending;
 			if (pending && !hintShown_) {
 				api_.log(text::hoverRoot(settings_.locale, api_.rootName()));
 				hintShown_ = true;
 			}
 			discoveryAt_ = now + (pending ? settings_.discoveryRetry : settings_.discoveryRetry * 10);
-			if (!bridgeUrl_.empty() && d.status == Description::Status::Ok) disconnectBridge(); // Zeile entfernt
+			if (!bridgeUrl_.empty() && d.status == Description::Status::Ok) disconnectBridge(); // line removed
 			return;
 		}
 	}
 	if (*url != bridgeUrl_) {
 		disconnectBridge();
 		bridgeUrl_ = *url;
-		transport_.connect(bridgeUrl_); // hello folgt mit TransportOpen
+		transport_.connect(bridgeUrl_); // hello follows with TransportOpen
 	} else {
 		sendHello();
 	}
@@ -245,7 +245,7 @@ void Core::disconnectBridge() {
 
 void Core::step(Clock::time_point now) {
 	if (discoveryAt_ && now >= *discoveryAt_) resolveBridge(now);
-	// Bestätigung ausgeblieben: einmal wiederholen (vermutlich Rate-Limit), dann aufgeben
+	// no confirmation: retry once (probably rate limit), then give up
 	if (active_ && now >= active_->deadline) {
 		if (active_->attempts < 2) {
 			if (lastChange_ && now < *lastChange_ + settings_.spacing) {
@@ -262,7 +262,7 @@ void Core::step(Clock::time_point now) {
 	while (!active_ && !commands_.empty()) {
 		const Command &next = commands_.front();
 		const bool changes   = !(next.cmd == "join" && next.channel == channel_);
-		if (changes && lastChange_ && now < *lastChange_ + settings_.spacing) return; // Abstand halten
+		if (changes && lastChange_ && now < *lastChange_ + settings_.spacing) return; // keep the spacing
 		Command c = next;
 		commands_.pop_front();
 		execute(c, now);
@@ -276,7 +276,7 @@ void Core::execute(const Command &c, Clock::time_point now) {
 	}
 	if (c.cmd == "join") {
 		if (c.channel == channel_) {
-			reply(c.id, "ok"); // Mumble würde nichts senden und nichts bestätigen (S2)
+			reply(c.id, "ok"); // Mumble would send nothing and confirm nothing (S2)
 			return;
 		}
 		active_ = ActiveJoin{ c, 1, now };
@@ -300,7 +300,7 @@ void Core::sendMove(ActiveJoin &join, Clock::time_point now) {
 	lastChange_   = now;
 	join.deadline = now + settings_.confirmTimeout;
 	if (!api_.requestMove(*session_, join.command.channel) && !api_.requestMove(*session_, join.command.channel)) {
-		reply(join.command.id, "timeout"); // zweimal kein Durchkommen zum Main-Thread (800 ms)
+		reply(join.command.id, "timeout"); // twice no way through to the main thread (800 ms)
 		active_.reset();
 	}
 }

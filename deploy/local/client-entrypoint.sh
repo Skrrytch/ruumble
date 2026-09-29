@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Headless Mumble-Client mit Ruumble-Plugin für Live-Tests (Images: tools/live-test/clients).
-# Umgebung: SERVER_HOST, SERVER_PORT, SERVER_DIGEST, USERNAME, BRIDGE_URL, OUT (Verzeichnis für Protokolle)
+# Headless Mumble client with the Ruumble plugin for live tests (images: tools/live-test/clients).
+# Environment: SERVER_HOST, SERVER_PORT, SERVER_DIGEST, USERNAME, BRIDGE_URL, OUT (directory for logs)
 set -eu
 export DISPLAY=:99 XDG_RUNTIME_DIR=/tmp/xdg
 mkdir -p "$XDG_RUNTIME_DIR" "$OUT" && chmod 700 "$XDG_RUNTIME_DIR"
@@ -11,8 +11,8 @@ plugin="$data/Plugins/libruumble.so"
 cp /plugin/libruumble.so "$plugin"
 hash=$(printf '%s' "$plugin" | sha1sum | cut -d' ' -f1)
 
-# Plugin-Konfiguration (ohne BRIDGE_URL: Adresse aus der Root-Beschreibung) und ein xdg-open,
-# das den Kopplungslink nur festhält (kein Browser im Container)
+# Plugin configuration (without BRIDGE_URL: address from the root description) and an xdg-open
+# that only records the pairing link (no browser in the container)
 if [ -n "${BRIDGE_URL:-}" ]; then
   printf '{ "bridgeUrl": "%s", "autoOpen": true }\n' "$BRIDGE_URL" > ~/.config/ruumble/plugin.json
 else

@@ -16,8 +16,8 @@ test.describe("Pinnwand (AP11.2)", () => {
   });
 
   test("fremde Räume zeigen keine Zettel, auch wenn dort etwas hängt", async ({ page }) => {
-    await expect(page.locator('.wrap:has(.room[data-channel="5"]) .notes')).toHaveCount(0); // Clara, mit Beiträgen
-    await expect(page.locator("svg.notes")).toHaveCount(1); // nur der Schalter im eigenen Raum
+    await expect(page.locator('.wrap:has(.room[data-channel="5"]) .notes')).toHaveCount(0); // Clara, with posts
+    await expect(page.locator("svg.notes")).toHaveCount(1); // only the toggle in the user's own room
   });
 
   test("Karten: Code hervorgehoben, lange Texte gekürzt, Popup zeigt alles und speichert Änderungen", async ({ page }) => {
@@ -59,7 +59,7 @@ test.describe("Pinnwand (AP11.2)", () => {
     await board.getByRole("button", { name: "Code", exact: true }).click();
     await expect(board.getByRole("article")).toHaveCount(1);
     await board.getByRole("button", { name: "Alle" }).click();
-    // eigenen Beitrag löschen
+    // delete own post
     page.once("dialog", (d) => d.accept());
     await board.getByRole("article").first().getByRole("button", { name: "Öffnen · bearbeiten" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Löschen" }).click();
@@ -205,5 +205,5 @@ test("Avatarbild im Benutzerbereich und auf eigenen Pinnwand-Karten (sonst Initi
   const board = page.getByRole("complementary", { name: "Pinnwand" });
   await expect(board.getByRole("heading", { name: "Pinnwand" })).toBeVisible();
   await expect(board.getByRole("article", { name: "Beitrag von Anna" }).locator(".av img")).toBeVisible();
-  await expect(board.getByRole("article", { name: "Beitrag von Clara" }).locator(".av img")).toHaveCount(0); // Clara ohne Bild
+  await expect(board.getByRole("article", { name: "Beitrag von Clara" }).locator(".av img")).toHaveCount(0); // Clara without an image
 });

@@ -1,6 +1,6 @@
 /**
- * Vermittlung zwischen Plugins und Oberflächen (ADR-0001, -0003, -0004, -0005, -0007).
- * Unabhängig vom Transport: Verbindungen sind nur Objekte mit `send` und `close`.
+ * Mediation between plugins and web UIs (ADR-0001, -0003, -0004, -0005, -0007).
+ * Transport-independent: connections are just objects with `send` and `close`.
  */
 import { randomUUID } from "node:crypto";
 import {
@@ -29,20 +29,20 @@ export type AddressCheck = "off" | "warn" | "enforce";
 export interface HubOptions {
   source: MumbleSource;
   pairing: Pairing;
-  /** öffentliche Basis-URL für Kopplungslinks, z. B. https://ruumble.example */
+  /** public base URL for pairing links, e.g. https://ruumble.example */
   publicUrl: string;
   addressCheck: AddressCheck;
-  /** Vorschau: Oberflächen ohne Kopplung sehen das Gebäude nur lesend */
+  /** preview: web UIs without pairing see the building read-only */
   preview: boolean;
   log?: (msg: string, extra?: Record<string, unknown>) => void;
   onSessionsChanged?: (sessions: number[]) => void;
-  /** sofort neu abfragen, z. B. wenn ein Plugin eine Session meldet, die das Polling noch nicht kennt */
+  /** re-query immediately, e.g. when a plugin reports a session the polling does not know yet */
   refresh?: () => Promise<void>;
-  /** Version des Avatarbilds eines registrierten Nutzers (AP9) */
+  /** version of a registered user's avatar image (AP9) */
   avatarVersion?: (userId: number | null) => string | null;
 }
 
-/** Wer steht hinter einem Geräte-Token gerade wo? (Pinnwand, ADR-0011) */
+/** Who is behind a device token and where are they right now? (board, ADR-0011) */
 export interface Viewer {
   certHash: string;
   session: number;
@@ -54,13 +54,13 @@ interface PluginEntry {
   conn: Conn<BridgeToPlugin>;
   certHash: string;
   session: number;
-  /** Mumble-Client und Plugin, wie das Plugin sie meldet (Betrieb, Kompatibilität) */
+  /** Mumble client and plugin as reported by the plugin (operations, compatibility) */
   mumbleVersion: string;
   pluginVersion: string;
   locale: Locale;
 }
 
-/** Missbrauchsschutz je Nutzer; die Mumble-Grenzen behandelt das Plugin (ADR-0003) */
+/** abuse protection per user; the plugin handles the Mumble limits (ADR-0003) */
 const MAX_COMMANDS_PER_SECOND = 5;
 
 interface UiEntry {
@@ -76,33 +76,33 @@ export class Hub {
   private state: ServerState | null = null;
   private readonly plugins = new Map<string, PluginEntry>();
   private readonly uis = new Set<UiEntry>();
-  /** Befehls-ID im Plugin → Oberfläche und deren ID */
+  /** command ID in the plugin → web UI and its ID */
   private readonly pending = new Map<string, { ui: UiEntry; id: string; certHash: string }>();
 
   constructor(opts: HubOptions) {
     this.opts = opts;
   }
 
-  // ---------------------------------------------------------------- Server-Stand
+  // ---------------------------------------------------------------- Server state
 
   setState(state: ServerState): void {
     this.state = state;
     this.rebroadcast();
   }
 
-  /** Snapshots erneut senden, z. B. nach einem neuen Avatarbild */
+  /** resend snapshots, e.g. after a new avatar image */
   rebroadcast(): void {
     for (const ui of this.uis) this.sendSnapshot(ui);
   }
 
-  /** gekoppelter Nutzer mit verbundenem Plugin und seinem aktuellen Kanal; sonst `null` */
+  /** paired user with a connected plugin and their current channel; otherwise `null` */
   whoIs(certHash: string | null): Viewer | null {
     const plugin = certHash ? this.plugins.get(certHash) : undefined;
     const user = plugin && this.state?.users.find((u) => u.session === plugin.session);
     return plugin && user ? { certHash: plugin.certHash, session: plugin.session, name: user.name, channelId: user.channel } : null;
   }
 
-  /** Ist dieser Kanal ein Raum mit Pinnwand? 2. Ebene, nicht temporär (ADR-0011) */
+  /** Is this channel a room with a board? 2nd level, not temporary (ADR-0011) */
   isBoardRoom(channelId: number): boolean {
     const channels = this.state?.channels ?? [];
     const c = channels.find((x) => x.id === channelId);
@@ -114,26 +114,26 @@ export class Hub {
     return this.state?.channels.find((c) => c.id === channelId)?.name ?? "";
   }
 
-  /** Anwesende eines Raums über eine Änderung an der Pinnwand informieren (ohne Inhalt, die Oberfläche lädt neu) */
+  /** inform those present in a room about a board change (without content, the web UI reloads) */
   boardChanged(channelId: number): void {
     for (const ui of this.uis) {
       if (this.whoIs(ui.certHash)?.channelId === channelId) ui.conn.send({ v, type: "board", channelId });
     }
   }
 
-  /** Plugins der Anwesenden eines Raums (außer `except`) – für Hinweise im Mumble-Protokoll */
+  /** plugins of those present in a room (except `except`) – for notices in the Mumble log */
   pluginsIn(channelId: number, except?: string): { send: (msg: BridgeToPlugin) => void; locale: Locale }[] {
     return [...this.plugins.values()]
       .filter((p) => p.certHash !== except && this.state?.users.find((u) => u.session === p.session)?.channel === channelId)
       .map((p) => ({ send: (msg: BridgeToPlugin) => p.conn.send(msg), locale: p.locale }));
   }
 
-  /** Darf diese Oberfläche Bilder und Daten sehen? (gekoppelt oder Vorschau, ADR-0004) */
+  /** May this web UI see images and data? (paired or preview, ADR-0004) */
   canView(certHash: string | null): boolean {
     return certHash !== null || this.opts.preview;
   }
 
-  /** Virtueller Server neu gestartet: Sessions sind neu vergeben, Plugins melden sich neu an (S2). */
+  /** Virtual server restarted: sessions are reassigned, plugins register again (S2). */
   serverRestarted(): void {
     for (const p of [...this.plugins.values()]) p.conn.close(4000, "server-restart");
   }
@@ -170,7 +170,7 @@ export class Hub {
           });
           return;
         }
-        if (!entry) return; // alles andere erst nach erfolgreichem hello
+        if (!entry) return; // everything else only after a successful hello
         const certHash = entry.certHash;
         switch (msg.type) {
           case "result": {
@@ -182,7 +182,7 @@ export class Hub {
             break;
           }
           case "selfState": {
-            // sofortige Rückmeldung, ohne auf den nächsten Ice-Abgleich zu warten
+            // immediate feedback without waiting for the next Ice sync
             const u = this.state?.users.find((x) => x.session === entry!.session);
             if (u && (u.selfMute !== msg.selfMute || u.selfDeaf !== msg.selfDeaf)) {
               u.selfMute = msg.selfMute;
@@ -192,7 +192,7 @@ export class Hub {
             break;
           }
           case "talking":
-            // nur an die eigenen Oberflächen (ADR-0005)
+            // only to the user's own web UIs (ADR-0005)
             this.forUis(certHash, (ui) => ui.conn.send({ v, type: "talking", session: msg.session, state: msg.state }));
             break;
           case "bye":
@@ -211,7 +211,7 @@ export class Hub {
   private async verify(session: number, certHash: string, remoteAddress: string): Promise<"ok" | "unknown-session" | "hash-mismatch" | "address-mismatch" | "no-certificate"> {
     let user = this.state?.users.find((u) => u.session === session);
     if (!user && this.opts.refresh) {
-      // Das Plugin meldet sich direkt nach dem Sync, oft vor der nächsten Abfrage (Live-Test)
+      // The plugin registers right after the sync, often before the next query (live test)
       await this.opts.refresh().catch(() => {});
       user = this.state?.users.find((u) => u.session === session);
     }
@@ -243,9 +243,9 @@ export class Hub {
     });
   }
 
-  // ---------------------------------------------------------------- Oberfläche
+  // ---------------------------------------------------------------- Web UI
 
-  /** `certHash = null`: ungekoppelt (nur in der Vorschau erlaubt) */
+  /** `certHash = null`: unpaired (only allowed in preview) */
   uiConnected(conn: Conn<BridgeToUi>, certHash: string | null) {
     if (!certHash && !this.opts.preview) {
       conn.close(4401, "not-paired");
@@ -286,7 +286,7 @@ export class Hub {
     plugin.conn.send({ v, type: "command", id: pluginId, body });
   }
 
-  // ---------------------------------------------------------------- intern
+  // ---------------------------------------------------------------- internal
 
   private sendSnapshot(ui: UiEntry): void {
     const s = this.state;
@@ -299,7 +299,7 @@ export class Hub {
       server: s.info,
       self: session ? { session } : null,
       channels: s.channels,
-      // Adressen verlassen den Dienst nie
+      // addresses never leave the service
       users: s.users.map(({ address: _address, ...u }) => ({ ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null })),
       listeners: s.listeners,
       canEnter: session ? (s.canEnter.get(session) ?? {}) : {},
@@ -319,7 +319,7 @@ export class Hub {
     this.opts.log?.(msg, extra);
   }
 
-  /** verbundene Clients je Version, z. B. `{ "mumble 1.5.735 / plugin 0.4.0": 2 }` (für /healthz) */
+  /** connected clients per version, e.g. `{ "mumble 1.5.735 / plugin 0.4.0": 2 }` (for /healthz) */
   clientVersions(): Record<string, number> {
     const counts: Record<string, number> = {};
     for (const p of this.plugins.values()) {
@@ -329,7 +329,7 @@ export class Hub {
     return counts;
   }
 
-  /** Version des Mumble-Servers (Ice), sobald bekannt */
+  /** version of the Mumble server (Ice), once known */
   get serverVersion(): string | null {
     return this.state?.info.version ?? null;
   }
@@ -339,7 +339,7 @@ export class Hub {
   }
 }
 
-/** IPv4-in-IPv6 angleichen (::ffff:1.2.3.4 → 1.2.3.4); Ports kommen in beiden Quellen nicht vor */
+/** normalise IPv4-in-IPv6 (::ffff:1.2.3.4 → 1.2.3.4); neither source includes ports */
 function normalize(address: string): string {
   return address.replace(/^::ffff:/, "").trim().toLowerCase();
 }

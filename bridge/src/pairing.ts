@@ -1,6 +1,6 @@
 /**
- * Kopplung Oberfläche ↔ Plugin (ADR-0004): Einmal-Link (60 s) → langlebiges Geräte-Token, gebunden an den
- * Zertifikats-Hash. Gespeichert wird nur der SHA-256 des Tokens.
+ * Pairing web UI ↔ plugin (ADR-0004): one-time link (60 s) → long-lived device token, bound to the
+ * certificate hash. Only the SHA-256 of the token is stored.
  */
 import { createHash, randomBytes } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
@@ -20,7 +20,7 @@ export class Pairing {
   private readonly codes = new Map<string, { certHash: string; name: string; expires: number }>();
   private tokens: Record<string, TokenEntry> = {};
 
-  /** `file = null`: nur im Speicher (Tests) */
+  /** `file = null`: in memory only (tests) */
   constructor(file: string | null, codeTtlMs = 60_000) {
     this.file = file;
     this.codeTtlMs = codeTtlMs;
@@ -40,7 +40,7 @@ export class Pairing {
     return code;
   }
 
-  /** Einmal-Code gegen ein Geräte-Token tauschen; `null`, wenn unbekannt oder abgelaufen */
+  /** exchange a one-time code for a device token; `null` if unknown or expired */
   redeem(code: string, now = Date.now()): string | null {
     const entry = this.codes.get(code);
     this.codes.delete(code);

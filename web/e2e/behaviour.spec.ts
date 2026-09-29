@@ -44,7 +44,7 @@ test.describe("Musterhaus", () => {
     await deaf.click();
     await expect(deaf).toHaveAttribute("aria-pressed", "true");
     await expect(mute).toHaveAttribute("aria-pressed", "true");
-    await mute.click(); // Unmute hebt Taub mit auf
+    await mute.click(); // unmute also lifts deaf
     await expect(mute).toHaveAttribute("aria-pressed", "false");
     await expect(deaf).toHaveAttribute("aria-pressed", "false");
     await expect(page.getByRole("img", { name: "Anna (du)" })).toBeVisible();
@@ -57,7 +57,7 @@ test.describe("Sonderfälle", () => {
   test("gesperrte Etagen sind sichtbar, aber nicht wählbar", async ({ page }) => {
     const archiv = page.getByRole("button", { name: "3. Obergeschoss: ARCHIV – gesperrt: Kanalstruktur zu tief" });
     await expect(archiv).toHaveAttribute("aria-disabled", "true");
-    await archiv.click({ force: true }); // aria-disabled: Playwright klickt sonst gar nicht
+    await archiv.click({ force: true }); // aria-disabled: otherwise Playwright does not click at all
     await expect(page.getByRole("heading", { name: "ENTWICKLUNG" })).toBeVisible();
     await expect(page.getByRole("button", { name: "4. Obergeschoss: GROSSRAUM – gesperrt: Zu viele Räume" })).toBeVisible();
     await expect(page.getByRole("button", { name: /EXTERN|PARTNER/ })).toHaveCount(0);
@@ -67,7 +67,7 @@ test.describe("Sonderfälle", () => {
     await expect(page.getByRole("region", { name: "Eingang" }).getByRole("img")).toHaveCount(2);
     await expect(page.getByTitle("1 Person hört mit")).toBeVisible();
     await expect(page.getByRole("img", { name: "Nils, vom Server stummgeschaltet" })).toBeVisible();
-    await expect(page.getByTitle("Vom Server stummgeschaltet", { exact: true })).toHaveCount(2); // Nils (unterdrückt), Mia (Server-Mute)
+    await expect(page.getByTitle("Vom Server stummgeschaltet", { exact: true })).toHaveCount(2); // Nils (suppressed), Mia (server mute)
     await page.getByRole("button", { name: "Erdgeschoss: Lobby" }).click();
     await expect(page.locator(".floorplan").getByTitle("Stumm", { exact: true })).toHaveCount(1); // Ben
     await expect(page.locator(".floorplan").getByTitle("Taub", { exact: true })).toHaveCount(1); // Felix
@@ -114,7 +114,7 @@ test("Unterkanal anlegen sperrt die eigene Etage live", async ({ page }) => {
 
 test("Avatare, Anwesenheit und Aufnahme (AP9/AP10)", async ({ page }) => {
   await page.goto("/?fixture=sonderfaelle&talking=0");
-  await expect(page.locator(".floorplan img").first()).toBeVisible(); // Annas Avatar (Mock-SVG)
+  await expect(page.locator(".floorplan img").first()).toBeVisible(); // Anna's avatar (mock SVG)
   await page.getByRole("button", { name: "Erdgeschoss: Lobby" }).click();
   await expect(page.getByRole("img", { name: "Ben, stumm, seit 20 Min. still" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Felix, taub, abwesend" })).toBeVisible();

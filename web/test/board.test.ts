@@ -13,8 +13,8 @@ describe("Pinnwand-Modell", () => {
     expect(looksLikeCode("$ docker compose up -d\n$ docker ps")).toBe(true);
     expect(looksLikeCode("Hallo zusammen,\nwir treffen uns um 10 Uhr.\nBis dann!")).toBe(false);
     expect(looksLikeCode("- Einkaufen\n- Aufräumen\n- Mumble testen")).toBe(false);
-    expect(looksLikeCode("const x = 1;")).toBe(false); // einzeilig
-    expect(looksLikeCode("```js\nconst a = 1;\nlet b = 2;\n```")).toBe(false); // schon Markdown
+    expect(looksLikeCode("const x = 1;")).toBe(false); // single line
+    expect(looksLikeCode("```js\nconst a = 1;\nlet b = 2;\n```")).toBe(false); // already Markdown
   });
 
   it("relative Zeit", () => {

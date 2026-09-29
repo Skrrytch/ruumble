@@ -6,7 +6,7 @@ import { detectLocale, intlLocale, locale, setLocale, t } from "../src/lib/i18n/
 import { countText, floorLabels } from "../src/lib/model/building.ts";
 import { relativeTime } from "../src/lib/board/model.ts";
 
-/** alle Einträge als Pfad → Wert, Funktionen mit Beispielwerten aufgerufen */
+/** all entries as path → value, functions called with sample values */
 function flatten(o: object, path = ""): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(o)) {

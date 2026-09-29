@@ -1,21 +1,21 @@
 /**
- * Ruumble-Dienst (AP5). Konfiguration über Umgebungsvariablen (ADR-0008):
+ * Ruumble service (AP5). Configuration via environment variables (ADR-0008):
  *
- *   ICE_HOST, ICE_PORT (6502), ICE_SECRET_READ   Ice des Mumble-Servers, nur das Read-Secret
- *   ICE_SECRET_READ_FILE                         alternativ: Datei mit dem Read-Secret (Docker-Secret)
- *   SERVER_ID                                    optional, sonst erster laufender Server
- *   PUBLIC_URL                                   Basis-URL für Kopplungslinks (https://…)
+ *   ICE_HOST, ICE_PORT (6502), ICE_SECRET_READ   Ice of the Mumble server, only the read secret
+ *   ICE_SECRET_READ_FILE                         alternatively: file containing the read secret (Docker secret)
+ *   SERVER_ID                                    optional, else the first running server
+ *   PUBLIC_URL                                   base URL for pairing links (https://…)
  *   PORT (8080), HOST (0.0.0.0)                  HTTP/WebSocket
- *   WEB_DIST                                     gebaute Oberfläche (web/dist)
- *   DATA_DIR (./data)                            Geräte-Tokens und Pinnwand (board.sqlite, board/)
- *   PLUGIN_BUNDLE, PLUGIN_BUNDLE_DIR             optional: .mumble_plugin für /download (Datei oder Verzeichnis)
- *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004, P7 offen)
- *   TRUST_PROXY (false)                          true hinter Nginx Proxy Manager
- *   PREVIEW (false)                              true: Gebäude ohne Kopplung nur lesend sichtbar
- *   RETENTION_DAYS (30), BOARD_QUOTA_MB (2048)    Pinnwand: Aufbewahrung und Kontingent (ADR-0011)
- *   LOG_LEVEL (info)                             Protokoll von Fastify/pino
+ *   WEB_DIST                                     built web UI (web/dist)
+ *   DATA_DIR (./data)                            device tokens and board (board.sqlite, board/)
+ *   PLUGIN_BUNDLE, PLUGIN_BUNDLE_DIR             optional: .mumble_plugin for /download (file or directory)
+ *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004, P7 open)
+ *   TRUST_PROXY (false)                          true behind Nginx Proxy Manager
+ *   PREVIEW (false)                              true: building visible read-only without pairing
+ *   RETENTION_DAYS (30), BOARD_QUOTA_MB (2048)    board: retention and quota (ADR-0011)
+ *   LOG_LEVEL (info)                             Fastify/pino logging
  *
- * Sicherung der Pinnwand:  node dist/main.mjs backup <zielverzeichnis>  (braucht nur DATA_DIR, kein Ice)
+ * Board backup:  node dist/main.mjs backup <target-directory>  (needs only DATA_DIR, no Ice)
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
@@ -40,7 +40,7 @@ const required = (key: string) => {
 };
 const bool = (key: string) => env[key] === "true" || env[key] === "1";
 
-// Pinnwand-Speicher (ADR-0011); die Sicherung braucht nichts anderes, deshalb vor der übrigen Konfiguration
+// board storage (ADR-0011); the backup needs nothing else, hence before the rest of the configuration
 const dataDir = resolve(env.DATA_DIR ?? "data");
 const quotaMB = Number(env.BOARD_QUOTA_MB ?? 2048);
 const store = new BoardStore(dataDir, { retentionDays: Number(env.RETENTION_DAYS ?? 30), quotaBytes: quotaMB * 1024 * 1024 });
@@ -100,7 +100,7 @@ const hub: Hub = new Hub({
   addressCheck: config.addressCheck,
   preview: config.preview,
   log,
-  // Zutrittsrechte nur für gekoppelte Sessions (ADR-0003)
+  // access permissions only for paired sessions (ADR-0003)
   onSessionsChanged: (sessions) => poller.watchSessions(sessions),
   refresh: () => poller.poll(),
   avatarVersion: (id) => avatars.version(id),
@@ -130,7 +130,7 @@ poller.start();
 
 await app.register(fastifyWebsocket, { options: { maxPayload: 64 * 1024 } });
 
-// Content-Security-Policy für die Oberfläche (ADR-0011): keine fremden Quellen, keine Inline-Skripte
+// Content-Security-Policy for the web UI (ADR-0011): no foreign sources, no inline scripts
 app.addHook("onSend", async (_req, reply, payload) => {
   const type = String(reply.getHeader("content-type") ?? "");
   if (type.startsWith("text/html")) {
@@ -169,7 +169,7 @@ app.get("/ws/ui", { websocket: true }, (socket, req) => {
 app.get<{ Querystring: { code?: string } }>("/pair", async (req, reply) => {
   const token = req.query.code ? pairing.redeem(req.query.code) : null;
   if (!token) {
-    // Sprache wie die Oberfläche: Deutsch, wenn der Browser es vorzieht, sonst Englisch
+    // language like the web UI: German if the browser prefers it, otherwise English
     const de = /^\s*de\b/i.test(String(req.headers["accept-language"] ?? "").split(",").find((l) => /^\s*(de|en)\b/i.test(l)) ?? "");
     const text = de
       ? "Der Kopplungslink ist ungültig oder abgelaufen. Verbinde Mumble neu, um einen neuen zu erhalten."
@@ -188,7 +188,7 @@ app.post("/logout", async (req, reply) => {
   return { ok: true };
 });
 
-// Avatarbilder (AP9): nur für gekoppelte Oberflächen bzw. in der Vorschau; URL ist versioniert (?v=)
+// avatar images (AP9): only for paired web UIs or in preview; URL is versioned (?v=)
 app.get<{ Params: { userId: string } }>("/avatar/:userId", async (req, reply) => {
   if (!hub.canView(pairing.certHashOf(cookieOf(req.headers.cookie, TOKEN_COOKIE)))) return reply.code(401).send();
   const avatar = /^\d+$/.test(req.params.userId) ? avatars.get(Number(req.params.userId)) : null;
@@ -205,14 +205,14 @@ await app.register(boardRoutes, {
   hub,
   source,
   certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)),
-  // Hinweis im Mumble-Protokoll der übrigen Anwesenden (AP11.4)
+  // notice in the Mumble log of the other people present (AP11.4)
   onNewPost: (post, viewer) => void notifyRoom(hub, post, viewer),
 });
 const cleanupTimer = setInterval(() => {
   const { removed, channels } = store.cleanup();
   if (removed) {
     log("Pinnwand aufgeräumt", { removed });
-    for (const channelId of channels) hub.boardChanged(channelId); // offene Pinnwände laden neu
+    for (const channelId of channels) hub.boardChanged(channelId); // open boards reload
   }
 }, 60 * 60_000);
 
