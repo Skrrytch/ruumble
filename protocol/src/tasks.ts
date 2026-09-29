@@ -19,10 +19,10 @@ export interface TaskList {
   tasks: TaskItem[];
 }
 
-/** `[ ] Task`, `- [ ] Task`, `* [x] Task`, `+ [X] Task`; the task needs text */
-const TASK_LINE = /^\s*(?:[-*+]\s+)?\[([ xX])\]\s+(\S.*)$/;
+/** `[ ] Task`, `[] Task`, `- [ ] Task`, `* [x] Task`, `+ [X] Task`; the task needs text */
+const TASK_LINE = /^\s*(?:[-*+]\s+)?\[([ xX]?)\]\s+(\S.*)$/;
 /** anything that looks like a task, even without text: from the first such line on, only real tasks may follow */
-const TASK_LIKE = /^\s*(?:[-*+]\s+)?\[[ xX]\](\s|$)/;
+const TASK_LIKE = /^\s*(?:[-*+]\s+)?\[[ xX]?\](\s|$)/;
 const FENCE = /^\s*(```|~~~)/gm;
 
 export function parseTaskList(text: string): TaskList | null {
@@ -38,7 +38,7 @@ export function parseTaskList(text: string): TaskList | null {
     if (!line.trim()) continue;
     const m = TASK_LINE.exec(line);
     if (!m) return null;
-    tasks.push({ index: tasks.length, line: i, done: m[1] !== " ", text: m[2]!.trim() });
+    tasks.push({ index: tasks.length, line: i, done: m[1] === "x" || m[1] === "X", text: m[2]!.trim() });
   }
   return { intro: intro.trim(), tasks };
 }
@@ -48,6 +48,6 @@ export function setTask(text: string, index: number, done: boolean): string | nu
   const task = parseTaskList(text)?.tasks[index];
   if (!task) return null;
   const lines = text.split("\n");
-  lines[task.line] = lines[task.line]!.replace(/\[[ xX]\]/, done ? "[x]" : "[ ]");
+  lines[task.line] = lines[task.line]!.replace(/\[[ xX]?\]/, done ? "[x]" : "[ ]");
   return lines.join("\n");
 }

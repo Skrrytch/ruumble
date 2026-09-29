@@ -12,6 +12,8 @@ describe("task lists (A2)", () => {
       { index: 3, line: 7, done: false, text: "Announce" },
     ]);
     expect(parseTaskList("[ ] only a task")).toEqual({ intro: "", tasks: [{ index: 0, line: 0, done: false, text: "only a task" }] });
+    // empty brackets count as open
+    expect(parseTaskList("[] one\n- [] two\n* [x] three")?.tasks.map((t) => [t.text, t.done])).toEqual([["one", false], ["two", false], ["three", true]]);
   });
 
   it("strict: anything after the first task, a task without text or an open code block → no task list", () => {
@@ -20,6 +22,7 @@ describe("task lists (A2)", () => {
     expect(parseTaskList("- [ ] one\n```\ncode\n```")).toBeNull();
     expect(parseTaskList("- [ ] one\n- normal item")).toBeNull();
     expect(parseTaskList("- [ ]\n- [x] two")).toBeNull(); // "- [ ]" without text is no task
+    expect(parseTaskList("- []\n- [x] two")).toBeNull();
     expect(parseTaskList("```\n- [ ] inside code")).toBeNull();
     expect(parseTaskList("```\nclosed\n```\n- [ ] after code")?.tasks).toHaveLength(1);
     expect(parseTaskList("[y] no marker")).toBeNull();
@@ -30,6 +33,8 @@ describe("task lists (A2)", () => {
     expect(setTask(text, 0, true)).toBe("Intro\r\n\r\n- [x] a\r\n  * [X] b");
     expect(setTask(text, 1, false)).toBe("Intro\r\n\r\n- [ ] a\r\n  * [ ] b");
     expect(setTask("- [ ] [ ] brackets in the text", 0, true)).toBe("- [x] [ ] brackets in the text");
+    expect(setTask("- [] empty", 0, true)).toBe("- [x] empty");
+    expect(setTask("- [] empty", 0, false)).toBe("- [ ] empty"); // untick normalises the marker
     expect(setTask(text, 2, true)).toBeNull();
     expect(setTask("no tasks", 0, true)).toBeNull();
   });
