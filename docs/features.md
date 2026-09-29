@@ -114,7 +114,7 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 
 | Item | Status |
 |---|---|
-| HTTPS via a reverse proxy | supported; domain and certificate on the home server open (O10) |
+| HTTPS via a reverse proxy | supported; running on the home server with Let's Encrypt (O10) |
 | Windows and macOS plugin | later option (E3) |
 | B – Status line | idea, decision open |
 | C – Knocking | idea, decision open |
@@ -122,9 +122,9 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 | G – "Door closed" | idea, after B and C |
 | A1–A9 – Board for developers | planned, in this order |
 | Report the Mumble avatar bug | open (O16) |
-| Address check over proxy and VPN | to be checked on a real deployment (P7) |
+| Address check over proxy and VPN | proxy: needs `ADDRESS_CHECK=warn` with hairpin NAT; VPN not tested (P7) |
 
-**HTTPS via a reverse proxy (O10).** Ruumble runs over plain HTTP or behind a reverse proxy with HTTPS; the setup is described in [operations](operations.md#https-behind-a-reverse-proxy-optional). HTTPS is needed for a full PWA and the Clipboard API. The service pings every WebSocket connection every 30 s, so idle connections survive the proxy's timeout. Still open for the home server: the domain, and the certificate (recommended: Let's Encrypt via DNS challenge; alternative: internal CA, which every client must trust in the browser and in the system).
+**HTTPS via a reverse proxy (O10).** Ruumble runs over plain HTTP or behind a reverse proxy with HTTPS; the setup is described in [operations](operations.md#https-behind-a-reverse-proxy-optional). HTTPS is needed for a full PWA and the Clipboard API. The service pings every WebSocket connection every 30 s, so idle connections survive the proxy's timeout. On the home server it runs behind Nginx Proxy Manager with a Let's Encrypt certificate (O10, 2026-09-29).
 
 **Windows and macOS plugin.** The plugin is Linux-only today (`os="linux" arch="x64"`). Other platforms need their own builds and tests.
 

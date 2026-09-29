@@ -105,7 +105,7 @@ pnpm -F @ruumble/web exec playwright test -c playwright.live.config.ts
 RUUMBLE_CLIENT=fedora pnpm -F @ruumble/web exec playwright test -c playwright.live.config.ts   # other client
 ```
 
-Prerequisites: the local stack is running, `plugin/build` is built, the client images exist. Another server version: `MUMBLE_VERSION=v1.5.735 docker compose -f deploy/local/docker-compose.yml up -d` (run `down -v` first; older servers cannot read the database of newer ones).
+Prerequisites: the local stack is running, `plugin/build` is built, the client images exist. `setup.cjs` creates channels but never deletes them: if a local Mumble database still has channels from an older setup (the tests then fail looking for a floor), reset it with `docker compose -f deploy/local/docker-compose.yml down -v`. Another server version: `MUMBLE_VERSION=v1.5.735 docker compose -f deploy/local/docker-compose.yml up -d` (run `down -v` first; older servers cannot read the database of newer ones).
 
 On GitHub the live tests run as the workflow `.github/workflows/live.yml`: weekly against servers 1.5.735, 1.6.870 and `latest` (Ubuntu client) and 1.6.870 with Debian and Fedora clients; also manually with any server tag, and after a new Mumble release (triggered by `mumble-release-watch.yml`).
 

@@ -212,6 +212,25 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     await stranger.close();
   });
 
+  test("pairing with a code from the Mumble log (ADR-0012)", async ({ browser }) => {
+    const stranger = await browser.newPage();
+    await stranger.goto("/");
+    // the browser comes from the Docker gateway, not from Anna's container: no plugin at its address
+    await stranger.getByRole("button", { name: "Pair this browser" }).click();
+    await expect(stranger.getByRole("alert")).toContainText("No Mumble with the Ruumble plugin is connected on this computer.");
+    // request from Anna's network namespace, i.e. from "her computer"
+    const raw = execFileSync("docker", ["run", "--rm", "--network", "container:ruumble-client-Anna", "alpine", "wget", "-qO-", "--header=Content-Type: text/plain", "--post-data=", "http://ruumble:64080/api/pair/request"]);
+    const { request } = JSON.parse(String(raw)) as { request: string };
+    // Anna's client runs in German: the plugin passes the notice on in her language
+    let code = "";
+    await expect.poll(() => (code = /Kopplungscode für einen Browser: (\d{3}) (\d{3})/.exec(mumbleLog("Anna"))?.slice(1).join("") ?? ""), { timeout: 5000 }).toMatch(/^\d{6}$/);
+    expect((await stranger.request.post("/api/pair/confirm", { data: { request, code: "000000" === code ? "000001" : "000000" } })).status()).toBe(400);
+    expect((await stranger.request.post("/api/pair/confirm", { data: { request, code } })).status()).toBe(200);
+    await stranger.reload();
+    await expect(stranger.getByRole("img", { name: /Anna \(you\)/ })).toBeVisible({ timeout: 10_000 });
+    await stranger.close();
+  });
+
   test("Mumble quit: web UI reports “not connected”", async () => {
     stopClient("Anna");
     await expect(page.getByText("Mumble is not connected.")).toBeVisible({ timeout: 10_000 });

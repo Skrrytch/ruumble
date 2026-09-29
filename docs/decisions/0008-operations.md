@@ -16,11 +16,12 @@ Status: accepted for Docker, proposed for the rest (2026-09-28)
 
 ## Open points
 - Domain and certificate (internal CA or Let's Encrypt via DNS challenge) are not yet decided, see question O10.
+  Current state: the home server uses its own domain with a Let's Encrypt certificate from Nginx Proxy Manager (2026-09-29).
 - The existing Mumble configuration on the home server (version, Ice, secrets, network) is reviewed before the deployment work package, read-only and after consultation.
 
 ## Current state (code and `deploy/`)
 - The compose templates in `deploy/compose/` are split into `mumble.docker-compose.yml` and `ruumble.docker-compose.yml`. The Mumble template uses `mumblevoip/mumble-server:v1.5.735` (the version on the home server); the interface files in `third_party/mumble/` stay at v1.6.870. The local test setup (`deploy/local/`) uses v1.6.870.
 - The Ice read secret reaches the service as a Docker secret (`ICE_SECRET_READ_FILE=/run/secrets/ice_read`).
-- In the template the service is bound directly to the LAN address (`<LAN-IP>:64080`) over HTTP; HTTPS behind a reverse proxy is prepared as commented lines (`PUBLIC_URL=https://…`, `TRUST_PROXY=true`) and described in [operations](../operations.md#https-behind-a-reverse-proxy-optional). Plugin (`wss://`, system certificates), web UI and service support it without further changes; the service pings WebSocket connections every 30 s so that the proxy does not close idle ones. Domain and certificate on the home server (O10) are still open.
+- In the template the service is bound directly to the LAN address (`<LAN-IP>:64080`) over HTTP; HTTPS behind a reverse proxy is prepared as commented lines (`PUBLIC_URL=https://…`, `TRUST_PROXY=true`) and described in [operations](../operations.md#https-behind-a-reverse-proxy-optional). Plugin (`wss://`, system certificates), web UI and service support it without further changes; the service pings WebSocket connections every 30 s so that the proxy does not close idle ones. On the home server this is in operation since 2026-09-29 (O10).
 - `/healthz` also reports the Mumble server version (`mumbleServer`), the connected clients per Mumble and plugin version (`clients`), the last error and the board fill level (`board.usedMB`, `board.quotaMB`). It answers 503 if the last successful poll is older than 10 s.
 - All environment variables are listed in [operations](../operations.md).

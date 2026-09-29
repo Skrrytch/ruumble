@@ -27,7 +27,7 @@ Status: accepted (2026-09-28)
 - Device tokens can be revoked: they are deleted on logout in the web UI or by the admin.
 
 Current state (code):
-- The IP check is configurable with `ADDRESS_CHECK` = `off` / `warn` / `enforce`, default `warn` (only logs a mismatch). The home network compose template sets `enforce`. Open question P7 (does the check work behind VPN or proxy) is still open. Reject reasons: `unknown-session`, `hash-mismatch`, `address-mismatch`, `no-certificate` (`protocol/src/index.ts`).
+- The IP check is configurable with `ADDRESS_CHECK` = `off` / `warn` / `enforce`, default `warn` (only logs a mismatch). The home network compose template sets `enforce`. Question P7: Behind the reverse proxy on the home server (2026-09-29), browser and plugin reach the service through the router's public address (hairpin NAT, `TRUST_PROXY=true`), while Mumble sees the LAN address of the client. The addresses never match, so `enforce` rejects every plugin there and `warn` is required. VPN not tested. Reject reasons: `unknown-session`, `hash-mismatch`, `address-mismatch`, `no-certificate` (`protocol/src/index.ts`).
 - The configuration key for opening the browser is `autoOpen` in `plugin.json`; the pairing is stored per service in `pairedWith` (ADR-0010).
 - The service can optionally run in preview mode (`PREVIEW=true`): then an unpaired web UI sees the building read-only. See [operations](../operations.md).
 - Further browsers, profiles and web apps can pair at any time with a code that the service writes to the Mumble log ([ADR-0012](0012-pairing-with-a-code.md)).

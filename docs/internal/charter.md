@@ -147,15 +147,15 @@ Feasibility studies S1 (Ice from Node.js) and S2 (minimal plugin) passed: [feasi
 | O2 | If a first-level channel is linked, does the **whole floor** with its rooms disappear? | Resolved as assumed: yes, without the floor channel there is no corridor. Implemented. |
 | O3 | Do subchannels of a hidden (linked) room still lock the floor (L4)? | Resolved as assumed: no, only visible subchannels count. Implemented. |
 | O4 | Do users in hidden channels count towards "N online"? What does a user in a linked channel see? | Resolved as assumed: they count in the total; the user sees "You are in an area that cannot be shown here". Implemented. |
-| O10 | Domain and certificate for the service in the internal network: internal CA or Let's Encrypt via DNS challenge? | Open. Today the service runs over plain HTTP in the local network; HTTPS is planned via a reverse proxy (`TRUST_PROXY=true`, ADR-0008). |
+| O10 | Domain and certificate for the service in the internal network: internal CA or Let's Encrypt via DNS challenge? | Resolved (2026-09-29): own domain, Let's Encrypt certificate from Nginx Proxy Manager, service behind the proxy (`TRUST_PROXY=true`, ADR-0008). |
 | O15 | Board storage (retention, limits, visibility). | Resolved by ADR-0011 (SQLite) and implemented. |
 | O16 | Report the Mumble bug: from 1.6, Ice `getTexture`/`setTexture` reject exactly the registered users (inverted condition `!getRegisteredUserName(id).isEmpty()`, was `!isUserId(id)` in 1.5.735). Open an issue at mumble-voip/mumble (no PR, only a report with the code location)? | Open. Ruumble falls back to initials on 1.6.x. |
-| P7 | Address check (Mumble `User.address` vs. WebSocket source IP) through a real network, proxy and VPN. | Open; passes in the Docker network with `ADDRESS_CHECK=enforce`. To be checked on the home server. |
+| P7 | Address check (Mumble `User.address` vs. WebSocket source IP) through a real network, proxy and VPN. | Proxy answered (2026-09-29): behind the reverse proxy on the home server (2026-09-29), browser and plugin reach the service through the router's public address (hairpin NAT, `TRUST_PROXY=true`), while Mumble sees the LAN address of the client. The addresses never match, so `enforce` rejects every plugin there and `warn` is required. VPN not tested. |
 
 Other assumptions: password-protected channels are not supported (ADR-0003). Where the design handover differs from this charter, the charter wins.
 
 ## 7. Remaining rollout items
 
-- Deploy on the home server behind Nginx Proxy Manager (ADR-0008) and check P7 there.
+- Done (2026-09-29): deployed on the home server behind Nginx Proxy Manager (ADR-0008), P7 checked for the proxy.
 - Small pilot with 2–3 users; collect feedback as issues.
 - Branch protection for `main` (PR with green CI) is set by the repository owner.
