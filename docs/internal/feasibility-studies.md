@@ -144,7 +144,7 @@ The service is written in Node.js/TypeScript as planned. Read-only polling via I
 |---|---|
 | P5: 800 ms timeout of API calls from a foreign thread never observed | Not reproduced; calls take 0–4 ms. The plugin keeps its retry after a timeout. |
 | P6: plugin side of the hash comparison | Resolved in S2 (see above). |
-| P7: does the IP comparison (`User.address` vs. source IP of the plugin) work behind a reverse proxy and VPN? (study S3) | Deferred. The check is implemented as `ADDRESS_CHECK=off|warn|enforce` (default `warn`) and passes with `enforce` in the Docker network. Proxy (2026-09-29): behind the reverse proxy on the home server (2026-09-29), browser and plugin reach the service through the router's public address (hairpin NAT, `TRUST_PROXY=true`), while Mumble sees the LAN address of the client. The addresses never match, so `enforce` rejects every plugin there and `warn` is required. VPN not tested. |
+| P7: does the IP comparison (`User.address` vs. source IP of the plugin) work behind a reverse proxy and VPN? (study S3) | Deferred. The check is implemented as `ADDRESS_CHECK=off|warn|enforce` (default `warn`) and passes with `enforce` in the Docker network. Proxy (2026-09-29): proxy with hairpin NAT: `warn` required, VPN untested (see [P7](../mumble-interfaces.md#5-checkpoints-of-the-feasibility-studies)). |
 | Change into the current channel, silent drops by the rate limit | Resolved by the ADR-0003 extension (see S2 conclusions). |
 | SIGTERM skips `mumble_shutdown` | Accepted; the service detects the lost connection itself. |
 | GPL licence of Ice (O13) | Resolved by decision E26 (see S1). |

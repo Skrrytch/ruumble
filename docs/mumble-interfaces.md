@@ -69,7 +69,7 @@ The results of the feasibility studies S1 and S2 mentioned below are summarised 
 | `isLocalUserMuted` / `isLocalUserDeafened` | right after `mute`/`deaf` | report the result to the service so the web UI reacts immediately, without waiting for the next Ice poll | `API_v_1_x_x.cpp:615-659` | The audio wizard sets `bMute` temporarily. The state from Ice therefore remains authoritative. |
 | `getChannelDescription(conn, 0)` | on sync, then every 3 s while needed | address of the service from the root channel description ([ADR-0010](decisions/0010-address-from-root-description.md)) | `API_v_1_x_x.cpp` (`getChannelDescription_v_1_0_x`) | From 128 characters on, the server only sends a hash (`Server::hashAssign`); the call then returns `MUMBLE_EC_UNSYNCHRONIZED_BLOB` until a user looks at the tooltip. If the description is loaded but has no address line, the plugin checks again after 30 s. |
 | `getChannelName(conn, 0)` | for the hint | name of the top channel as the client shows it (`registername`) | `API_v_1_x_x.cpp:344-362` | – |
-| `log` | on connect, rejection, missing certificate, and for the "hover over the root channel" hint | messages in the Mumble log window | `API_v_1_x_x.cpp` (`log_v_1_0_x`) | Mumble prefixes the plugin name itself. |
+| `log` | connect, connection problems and retries (from 0.4.1), rejection, missing certificate, the "hover over the root channel" hint, and `notify` texts from the service (board notices, pairing codes) | messages in the Mumble log window | `API_v_1_x_x.cpp` (`log_v_1_0_x`) | Mumble prefixes the plugin name itself. |
 | `freeMemory` | after every getter | release memory | `API_v_1_x_x.cpp:165-197` | – |
 
 **Deliberately not used:**
@@ -175,7 +175,7 @@ Minimum requirements: server 1.5 (Ice module `MumbleServer`, see 3.1), client 1.
 
 - **Release watch** (`.github/workflows/mumble-release-watch.yml`, weekly on Mondays and on demand): compares the latest Mumble release with `third_party/mumble/VERSION`. If there is a newer one, it opens an issue with a diff of the two interface files (produced with `tools/update-mumble-interfaces.sh`) and starts the live tests against that release.
 - **Live tests** (`.github/workflows/live.yml`, weekly on Tuesdays, on demand, and triggered by the release watch): start a real Mumble server and headless Mumble clients with the Ruumble plugin, and run the Playwright tests in `web/e2e-live`. The standard matrix is server v1.5.735, v1.6.870 and `latest` with the Ubuntu client, plus server v1.6.870 with the Debian and Fedora clients. These catch behaviour changes that a diff of the interface files does not show. The client images and test tools are in `tools/live-test/`.
-- **Client versions in operation:** the plugin reports the Mumble client version (from `mumble_setMumbleInfo`) and its own version in its `hello`. The service counts connected plugins per version and shows them under `"clients"` in `/healthz`, e.g. `{ "mumble 1.5.735 / plugin 0.4.0": 2 }`.
+- **Client versions in operation:** the plugin reports the Mumble client version (from `mumble_setMumbleInfo`) and its own version in its `hello`. The service counts connected plugins per version and shows them under `"clients"` in `/healthz`, e.g. `{ "mumble 1.5.735 / plugin 0.4.1": 2 }`.
 
 ---
 

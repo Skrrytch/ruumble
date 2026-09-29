@@ -55,7 +55,7 @@ The plugin's messages in the Mumble log follow the system language (`LC_ALL`, th
 - Everyone **who is currently in the room** can see and edit it. The author and Mumble admins can delete posts.
 - **Text** with Markdown (`**bold**`, lists, links), **code** via the `<>` icon (Ruumble suggests this itself when you paste source code), **images and files** up to 10 MB via the paper clip, with Ctrl+V or by dragging them in.
 - Send with the paper plane or **Ctrl+Enter**. The others in the room see a short notice in the Mumble log.
-- **Checklists**: a text whose lines after an optional introduction are all tasks (`- [ ] Task` or `- [] Task`, `- [x] Done`) becomes a list that everyone in the room can tick. The card shows the progress, e.g. "2/5".
+- **Task lists** (checklists): a text whose lines after an optional introduction are all tasks (`- [ ] Task` or `- [] Task`, `- [x] Done`) becomes a list that everyone in the room can tick. The card shows the progress, e.g. "2/5".
 - **Reactions**: the smiley with the plus under a post; the summary at the top right of the card shows who reacted.
 - **Keep on top**: click the small dot at the top of a post (it turns into a pin), adjust the title and press Enter. The post then sits in a slim row above the list, e.g. the checklist of the day; a click unfolds it. There is one per room; keeping another post on top replaces it.
 - **Search and filter** in the header of the board.

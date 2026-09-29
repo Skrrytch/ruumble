@@ -40,7 +40,7 @@ const STATUS: Record<ErrorCode, number> = {
 const fail = (reply: FastifyReply, error: ErrorCode) => reply.code(STATUS[error]).send({ error });
 
 /** per kind in the fixed order: count, names at the time (oldest first) and whether the viewer is among them */
-export function aggregate(post: StoredPost, viewerHash: string): Reaction[] {
+function aggregate(post: StoredPost, viewerHash: string): Reaction[] {
   return REACTION_KINDS.flatMap((kind) => {
     const of = post.reactions.filter((r) => r.kind === kind);
     return of.length ? [{ kind, count: of.length, names: of.map((r) => r.authorName), mine: of.some((r) => r.authorHash === viewerHash) }] : [];

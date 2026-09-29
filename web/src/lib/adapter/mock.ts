@@ -124,7 +124,7 @@ export interface MockOptions {
 }
 
 /** code that pairs in the mock */
-export const MOCK_PAIR_CODE = "123456";
+const MOCK_PAIR_CODE = "123456";
 
 const clone = <T>(v: T): T => structuredClone(v);
 

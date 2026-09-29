@@ -4,13 +4,13 @@
  *   ICE_HOST, ICE_PORT (6502), ICE_SECRET_READ   Ice of the Mumble server, only the read secret
  *   ICE_SECRET_READ_FILE                         alternatively: file containing the read secret (Docker secret)
  *   SERVER_ID                                    optional, else the first running server
- *   PUBLIC_URL                                   base URL for pairing links (https://…)
+ *   PUBLIC_URL (http://localhost:64080)          base URL for pairing links (https://… behind a proxy)
  *   PORT (64080), HOST (0.0.0.0)                 HTTP/WebSocket
  *   WEB_DIST                                     built web UI (web/dist)
  *   DATA_DIR (./data)                            device tokens and board (board.sqlite, board/)
  *   PLUGIN_BUNDLE, PLUGIN_BUNDLE_DIR             optional: .mumble_plugin for /download (file or directory)
- *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004, P7 open)
- *   TRUST_PROXY (false)                          true behind Nginx Proxy Manager
+ *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004; behind hairpin NAT only warn works, P7)
+ *   TRUST_PROXY (false)                          true behind a reverse proxy (X-Forwarded-For)
  *   PREVIEW (false)                              true: building visible read-only without pairing
  *   RETENTION_DAYS (30), BOARD_QUOTA_MB (2048)    board: retention and quota (ADR-0011)
  *   LOG_LEVEL (info)                             Fastify/pino logging

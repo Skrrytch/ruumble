@@ -128,7 +128,7 @@ Feasibility studies S1 (Ice from Node.js) and S2 (minimal plugin) passed: [feasi
 | E18 | Identity | Plausibility check, residual risk accepted (ADR-0004). |
 | E19 | Talking indicator | Only what the user's own client hears (ADR-0005). |
 | E20 | Service language | TypeScript/Node.js, fallback Python (ADR-0006). |
-| E21 | Opening the UI | Automatically on first connect via the pairing link (ADR-0004). |
+| E21 | Opening the UI | Automatically on first connect via the pairing link (ADR-0004); further browsers by code (ADR-0012). |
 | E22 | Repository | Standalone as `Skrrytch/ruumble` instead of a fork; plugin name "Ruumble" (ADR-0009). |
 | E23 | License | BSD-3-Clause. |
 | E24 | Publication | Public repo; design handover neutralised (no company tokens, internal names or people). |
@@ -150,7 +150,7 @@ Feasibility studies S1 (Ice from Node.js) and S2 (minimal plugin) passed: [feasi
 | O10 | Domain and certificate for the service in the internal network: internal CA or Let's Encrypt via DNS challenge? | Resolved (2026-09-29): own domain, Let's Encrypt certificate from Nginx Proxy Manager, service behind the proxy (`TRUST_PROXY=true`, ADR-0008). |
 | O15 | Board storage (retention, limits, visibility). | Resolved by ADR-0011 (SQLite) and implemented. |
 | O16 | Report the Mumble bug: from 1.6, Ice `getTexture`/`setTexture` reject exactly the registered users (inverted condition `!getRegisteredUserName(id).isEmpty()`, was `!isUserId(id)` in 1.5.735). Open an issue at mumble-voip/mumble (no PR, only a report with the code location)? | Open. Ruumble falls back to initials on 1.6.x. |
-| P7 | Address check (Mumble `User.address` vs. WebSocket source IP) through a real network, proxy and VPN. | Proxy answered (2026-09-29): behind the reverse proxy on the home server (2026-09-29), browser and plugin reach the service through the router's public address (hairpin NAT, `TRUST_PROXY=true`), while Mumble sees the LAN address of the client. The addresses never match, so `enforce` rejects every plugin there and `warn` is required. VPN not tested. |
+| P7 | Address check (Mumble `User.address` vs. WebSocket source IP) through a real network, proxy and VPN. | Proxy answered (2026-09-29): proxy with hairpin NAT: `warn` required, VPN untested (see [P7](../mumble-interfaces.md#5-checkpoints-of-the-feasibility-studies)). |
 
 Other assumptions: password-protected channels are not supported (ADR-0003). Where the design handover differs from this charter, the charter wins.
 
@@ -158,4 +158,4 @@ Other assumptions: password-protected channels are not supported (ADR-0003). Whe
 
 - Done (2026-09-29): deployed on the home server behind Nginx Proxy Manager (ADR-0008), P7 checked for the proxy.
 - Small pilot with 2–3 users; collect feedback as issues.
-- Branch protection for `main` (PR with green CI) is set by the repository owner.
+- CI must stay green on `main`; changes are committed directly to `main`.

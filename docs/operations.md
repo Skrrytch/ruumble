@@ -68,7 +68,7 @@ Template: [`deploy/compose/ruumble.docker-compose.yml`](../deploy/compose/ruumbl
    docker save ruumble:<version> | gzip | ssh <server> 'gunzip | docker load'
    ```
 2. **Adjust the Compose file** (image tag, `PUBLIC_URL`, port binding to `<LAN-IP>`) and start it: `docker compose up -d`.
-3. **Check:** `curl http://<LAN-IP>:64080/healthz` → `{"ice":"ok",…}`. The response also shows the Mumble server version (`mumbleServer`) and the connected clients per Mumble and plugin version (`clients`, for example `{"mumble 1.5.735 / plugin 0.4.0": 2}`; reported by plugin 0.4 or newer).
+3. **Check:** `curl http://<LAN-IP>:64080/healthz` → `{"ice":"ok",…}`. The response also shows the Mumble server version (`mumbleServer`) and the connected clients per Mumble and plugin version (`clients`, for example `{"mumble 1.5.735 / plugin 0.4.1": 2}`; reported by plugin 0.4 or newer). `/api/version` returns the service and bundled plugin version, e.g. `{"service":"0.13.1","plugin":"0.4.1"}`.
 
 If the Mumble server is older than 1.5, the service stops with: `No MumbleServer Meta object at … Ruumble needs Mumble server 1.5 or later (up to 1.4 the Ice interface was called "Murmur").`
 
@@ -85,7 +85,7 @@ The image contains the plugin (built on Debian 12, glibc 2.36, so it also runs o
 | `PUBLIC_URL` | `http://localhost:64080` | Address where users reach Ruumble (used for pairing links) |
 | `PORT`, `HOST` | `64080`, `0.0.0.0` | HTTP and WebSocket |
 | `DATA_DIR` | `./data` (`/data` in the image) | Device tokens and board |
-| `ADDRESS_CHECK` | `warn` | `off` / `warn` / `enforce`: compare the IP addresses of the plugin and the Mumble connection (ADR-0004). Use `enforce` on a home network; check first when running over VPN or a proxy. |
+| `ADDRESS_CHECK` | `warn` | `off` / `warn` / `enforce`: compare the IP addresses of the plugin and the Mumble connection (ADR-0004). The LAN template sets `enforce`. Behind a reverse proxy with hairpin NAT keep `warn`: the addresses never match there (P7). |
 | `TRUST_PROXY` | `false` | `true` behind a reverse proxy: client addresses come from `X-Forwarded-For` ([HTTPS](#https-behind-a-reverse-proxy-optional)) |
 | `PREVIEW` | `false` | `true`: show the building read-only without pairing |
 | `RETENTION_DAYS` | `30` | Retention of board posts |
@@ -103,8 +103,8 @@ Ruumble works over plain HTTP; HTTPS is optional. With HTTPS the browser offers 
 
 1. **DNS:** `ruumble.example.com` points to the address of the proxy, e.g. via a local DNS entry or a public record with the private IP.
 2. **Proxy host:** forward to `ruumble:64080` (the container must be in a network the proxy can reach, e.g. `homeserver-network` in the template), enable **Websockets Support** (otherwise `/ws/*` fails), request the certificate with a DNS challenge and enable **Force SSL**. Uploads to the board go up to 10 MB: if they fail with `413`, add `client_max_body_size 20m;` in the proxy host's Advanced tab.
-3. **Service:** set `PUBLIC_URL: https://ruumble.example.com` and `TRUST_PROXY: "true"` (see the commented lines in the template). Remove the port binding to `<LAN-IP>:64080` so that the unencrypted path is closed, unless you want to keep it (see below).
-4. **Address check:** behind the proxy the service takes the client address from `X-Forwarded-For` and compares it with the address Mumble sees (ADR-0004). Start with `ADDRESS_CHECK: warn` and watch the log for `Plugin address does not match Mumble's`; switch back to `enforce` once there are no mismatches.
+3. **Service:** set `PUBLIC_URL: https://ruumble.example.com`, `ADDRESS_CHECK: warn` and `TRUST_PROXY: "true"` (see the commented lines in the template). Remove the port binding to `<LAN-IP>:64080` so that the unencrypted path is closed, unless you want to keep it (see below).
+4. **Address check:** behind the proxy the service takes the client address from `X-Forwarded-For` and compares it with the address Mumble sees (ADR-0004). Keep `ADDRESS_CHECK: warn`. `enforce` only works if the proxy sees the same client address as Mumble (no hairpin NAT, P7); check the log for `Plugin address does not match Mumble's` first.
 5. **Root channel description:** change the line to `ruumble: https://ruumble.example.com` (section 3). Users who set a fixed `bridgeUrl` in `~/.config/ruumble/plugin.json` change it too. Change the link in the Mumble welcome message (`MUMBLE_CONFIG_WELCOMETEXT`) as well; it is plain Mumble config and takes effect after restarting the Mumble container.
 6. **Pair again:** the device cookie belongs to the old address, so every browser pairs once more: on the "not paired" page with **Pair this browser** and the code from the Mumble log (ADR-0012). From now on the cookie is sent only over HTTPS (`Secure`).
 7. **Check:** `curl https://ruumble.example.com/healthz`, then open the web UI; the browser's developer tools show the WebSocket as `wss://…/ws/ui`.

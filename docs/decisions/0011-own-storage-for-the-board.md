@@ -41,4 +41,4 @@ The board (idea A in the [feature list](../features.md)) is the first part of Ru
 - The text limit is enforced as 100,000 characters (`BOARD_LIMITS.textChars` in `protocol/src/index.ts`); `BOARD_QUOTA_MB` defaults to 2048.
 - Images are recognised by their bytes (PNG, JPEG, GIF, WebP). SVG and everything else is treated as a file and never shown inline.
 - Uploaded attachments that are not used by any post are removed by the hourly cleanup once they are older than 60 minutes.
-- The `notify` text is localised (German or English, from the plugin's `locale`).
+- The `notify` text is localised (German or English, from the plugin's `locale`) and reads `<name> pinned a text/code/an image/a file to the board.`, without the room name.

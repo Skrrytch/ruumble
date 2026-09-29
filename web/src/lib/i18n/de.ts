@@ -163,7 +163,6 @@ export const de = {
     },
     react: "Reagieren",
     reactHint: "Symbol wählen",
-    reactionsLabel: "Reaktionen",
     /** kept on top (A3); "anheften" already means posting, hence "oben festhalten" */
     pinOnTop: "Oben festhalten",
     pinTitle: "Titel oben",

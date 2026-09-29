@@ -164,7 +164,6 @@ export const en: Messages = {
     },
     react: "React",
     reactHint: "Choose a symbol",
-    reactionsLabel: "Reactions",
     pinOnTop: "Keep on top",
     pinTitle: "Title on top",
     pinReplaces: (title) => `Replaces “${title}”, which is on top now.`,

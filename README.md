@@ -17,14 +17,14 @@ An alternative web UI for [Mumble](https://www.mumble.info/): Ruumble shows the 
 - Top-level channels become **floors**, the floor channel itself is the **corridor**, second-level channels are **rooms**. The order follows the channels' **position** in Mumble; the first channel is the ground floor.
 - Floors nested deeper or with more than 8 rooms are locked in the elevator; linked channels are hidden.
 - **Presence**: talking indicator, mute and deafen, quiet and away, listeners, recording, Mumble avatars.
-- **Board** in every room: text (Markdown), source code with highlighting, images with full-screen zoom, files up to 10 MB. Everyone in the room can read and edit it; the others get a short notice in their Mumble log.
+- **Board** in every room: text (Markdown), source code with highlighting, images with full-screen zoom, files up to 10 MB, quick reactions, shared task lists, one post kept on top, search and filter. Everyone in the room can read and edit it; the others get a short notice in their Mumble log.
 - **Languages**: German if the browser prefers German, otherwise English.
 
 Full list and plans: [docs/features.md](docs/features.md).
 
 **Requirements:** Mumble server 1.5 or later with Ice enabled, Mumble client 1.4 or later on Linux. Details: [docs/operations.md](docs/operations.md#requirements).
 
-> **Status:** service and web UI 0.8, plugin 0.4.
+> **Status:** service and web UI 0.13, plugin 0.4.
 
 ## Architecture
 

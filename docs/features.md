@@ -1,6 +1,6 @@
 # Ruumble – Features
 
-As of 2026-09-29: service and web UI 0.8, plugin 0.4.
+As of 2026-09-29: service and web UI 0.13, plugin 0.4.
 
 How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.md](operations.md). Architecture: [decisions/](decisions/README.md).
 
@@ -20,7 +20,7 @@ How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.m
 - A **lock icon** marks rooms you may not enter (Mumble ACLs).
 - "(stumm)" or "(muted)" in the channel name shows a speaker-off icon.
 - **Vacant** message when no floor can be shown; a notice when you are in a part of the tree that cannot be shown.
-- Freely licensed font and icons (Inter, Lucide); installable as a PWA.
+- Freely licensed font and icons (Inter, Lucide); installable as a PWA with its own window (see the [user guide](user-guide.md)).
 
 ### Presence
 
@@ -45,7 +45,7 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 
 ### Board
 
-Every room has a board next to the floor plan. It shows the board of the room you are in; the board graphic in your room opens and closes it.
+Every room has a board next to the floor plan. It shows the board of the room you are in; the board graphic in your room or the **B** key opens and closes it.
 
 - **Text** with Markdown (headings, lists, links, tables).
 - **Source code** with syntax highlighting, language detected or chosen, line numbers in the full view, copy button. Pasting multi-line code suggests pinning it as code.
@@ -95,11 +95,9 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 | Mumble client | 1.4 or later on **Linux** (x64), from the distribution packages |
 | Plugin API | 1.0.x, so the plugin also runs on Mumble 1.4 |
 | Service | Docker container next to the Mumble server; `/healthz`, `/download` (plugin bundle), `/api/version` (service and plugin version, shown on the notice pages) |
+| HTTPS | optional, behind a reverse proxy ([operations](operations.md#https-behind-a-reverse-proxy-optional)) |
 
-**Tested versions**
-
-- Server: 1.5.735 and 1.6.870 (the pinned interface version).
-- Clients: 1.4.287 (Fedora), 1.5.517 (Ubuntu 24.04), 1.5.735 (Debian 13).
+Tested versions: see [operations](operations.md#requirements).
 
 **CI**
 
@@ -119,7 +117,6 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 
 | Item | Status |
 |---|---|
-| HTTPS via a reverse proxy | supported; running on the home server with Let's Encrypt (O10) |
 | Windows and macOS plugin | later option (E3) |
 | B – Status line | idea, decision open |
 | C – Knocking | idea, decision open |
@@ -130,9 +127,7 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 | A3 – Kept on top | done (0.13.0) |
 | A4–A9 – Board for developers | planned, in this order |
 | Report the Mumble avatar bug | open (O16) |
-| Address check over proxy and VPN | proxy: needs `ADDRESS_CHECK=warn` with hairpin NAT; VPN not tested (P7) |
-
-**HTTPS via a reverse proxy (O10).** Ruumble runs over plain HTTP or behind a reverse proxy with HTTPS; the setup is described in [operations](operations.md#https-behind-a-reverse-proxy-optional). HTTPS is needed for a full PWA and the Clipboard API. The service pings every WebSocket connection every 30 s, so idle connections survive the proxy's timeout. On the home server it runs behind Nginx Proxy Manager with a Let's Encrypt certificate (O10, 2026-09-29).
+| Address check over proxy and VPN | proxy with hairpin NAT: `warn` required, VPN untested (see [P7](mumble-interfaces.md#5-checkpoints-of-the-feasibility-studies)). |
 
 **Windows and macOS plugin.** The plugin is Linux-only today (`os="linux" arch="x64"`). Other platforms need their own builds and tests.
 
@@ -179,17 +174,11 @@ Extensions of the board (idea A) for the everyday exchange between developers: s
 | coffee cup | break |
 | beer mug | time to call it a day |
 
-Work reactions come first, then social ones; the order is fixed. The picker shows the symbols as a grid and the meaning of the one under the mouse or keyboard focus in words; the label is also the tooltip. Everyone present can set each reaction once per post and take it back; the card shows the symbols with a count, the tooltip also the names. Reactions do not send a Mumble notice, so they stay quiet. They are stored with the post (author hash, name at the time) and deleted together with it.
+Done (0.10.0), see *Board* above: work reactions first, then social ones, in a fixed order; the picker shows the meaning of each symbol in words.
 
-**A2 – Shared task lists.** A text post becomes a task list automatically, without a button or special mode, but the detection is **strict**. It applies only if the post consists of an optional introductory text followed **exclusively** by task lines. A task line starts with `[ ]`, `[]` or `[x]` (also `[X]`), with or without a list marker in front (`[ ] Task`, `- [ ] Task`, `* [x] Task`). Blank lines are allowed between the tasks. As soon as anything else follows the first task, for example a paragraph or a code block, the post stays ordinary Markdown and the brackets are shown as text. This way a checklist is never detected by accident in the middle of a longer text.
+**A2 – Shared task lists.** Done (0.12.0), see *Board* above. The detection is strict: after an optional introduction only task lines (`[ ]`, `[]`, `[x]`, with or without a list marker) and blank lines, otherwise the post stays ordinary Markdown. A tick changes exactly that line in the service (`protocol/src/tasks.ts`), so two people ticking at the same time do not overwrite each other.
 
-In a task list, the tasks appear as checkboxes that **everyone present** can tick, for example the TODOs of a pairing session or a deployment checklist. The introductory text is rendered as Markdown above them. The card header shows the progress ("3/7").
-
-A tick does not send the whole text as an edit does, but only "task N done / not done" to its own endpoint; the service changes exactly that line. Two people ticking at the same time therefore do not overwrite each other. Ticking counts as an edit ("last edited by …") but sends no Mumble notice. Together with A3, a checklist can stay visible above the list.
-
-**A3 – Pinned on top.** Current state: instead of switching the sidebar, the chip unfolds the post right below it; the pin dot of each card sets it, with the title field in the place of the chip; the UI term is "keep on top" ("oben festhalten"); the post kept on top still expires after 30 days like any other (ADR-0011 unchanged). **Exactly one** post per room can be pinned on top. It then appears above the list as a chip with a short title (suggested from the first heading or line, max. 40 characters, editable). A click on the chip switches the sidebar between the list of posts and the pinned post; another click switches back. Pinning another post replaces the previous one after a confirmation. Everyone present may pin and unpin, like editing.
-
-Typical uses: the checklist of the day (A2), the link to the current ticket, the commands for the local setup. Open points: whether a pinned post is exempt from the 30-day retention while it is pinned (then ADR-0011 has to be extended), and a UI term that cannot be confused with "pin something to the board" (posting).
+**A3 – Kept on top.** Done (0.13.0), see *Board* above. The post kept on top expires after 30 days like any other (ADR-0011 unchanged).
 
 **A4 – Clickable links everywhere.** Text posts already turn URLs into links (Markdown with linkify). Code posts, stack traces and image or file captions do not: there a URL is plain text today. Links in these posts become clickable too, and in addition every post shows the links it contains as a compact list below its content: duplicates removed, at most three entries, then "+ N more". That way a ticket link in a code comment or log is one click away without searching the text.
 
