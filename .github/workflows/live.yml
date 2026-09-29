@@ -1,4 +1,4 @@
-name: Live-Tests
+name: Live tests
 
 # Real Mumble servers and headless Mumble clients with the Ruumble plugin (web/e2e-live).
 # Catches behavioural changes in new Mumble versions that a diff of the interface files does not show.
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       mumble:
-        description: "nur diese Server-Version testen (Docker-Tag von mumblevoip/mumble-server, z. B. v1.6.870); leer = Standardliste"
+        description: "test only this server version (Docker tag of mumblevoip/mumble-server, e.g. v1.6.870); empty = default list"
         required: false
         default: ""
 
@@ -40,17 +40,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Ice stubs of the service: also used by web/e2e-live/mumble-admin.ts (registering, textures)
       - run: pnpm -F @ruumble/bridge gen
-      - name: Plugin bauen
+      - name: Build plugin
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake g++ libssl-dev
           cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release
           cmake --build plugin/build -j
-      - name: Client-Image
+      - name: Client image
         run: docker build -t ruumble-client-${{ matrix.client }} -f tools/live-test/clients/Dockerfile.${{ matrix.client }} tools/live-test/clients
-      - name: Test-Werkzeuge (Ice-Stubs, Mumble.proto)
+      - name: Test tools (Ice stubs, Mumble.proto)
         working-directory: tools/live-test
         run: pnpm install --frozen-lockfile && pnpm gen
-      - name: Lokaler Stack
+      - name: Local stack
         env:
           MUMBLE_VERSION: ${{ matrix.server }}
         run: |
@@ -59,11 +59,11 @@ jobs:
           curl -s http://127.0.0.1:8080/healthz
           (cd tools/live-test && node src/setup.cjs)
       - run: pnpm -F @ruumble/web exec playwright install --with-deps chromium
-      - name: Live-Tests
+      - name: Live tests
         env:
           RUUMBLE_CLIENT: ${{ matrix.client }}
         run: pnpm -F @ruumble/web exec playwright test -c playwright.live.config.ts
-      - name: Protokolle bei Fehler
+      - name: Logs on failure
         if: failure()
         run: docker compose -f deploy/local/docker-compose.yml logs --no-color > deploy/local/out/compose.log || true
       - uses: actions/upload-artifact@v4

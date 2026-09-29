@@ -1,7 +1,7 @@
 {
   "name": "ruumble",
   "private": true,
-  "description": "Gebäude-Oberfläche für Mumble",
+  "description": "Office-building web UI for Mumble",
   "license": "BSD-3-Clause",
   "packageManager": "pnpm@11.28.1",
   "engines": {

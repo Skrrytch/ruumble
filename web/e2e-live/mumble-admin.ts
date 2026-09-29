@@ -76,7 +76,7 @@ export function loadBot(): { Bot: new (name: string) => any } {
 export async function kick(name: string): Promise<void> {
   await withServer(async (server) => {
     const users = await server.getUsers();
-    for (const u of users.values()) if (u.name === name) await server.kickUser(u.session, "Test: neu verbinden");
+    for (const u of users.values()) if (u.name === name) await server.kickUser(u.session, "Test: reconnect");
   });
 }
 

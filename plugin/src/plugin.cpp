@@ -195,7 +195,7 @@ MumbleStringWrapper mumble_getAuthor() {
 }
 
 MumbleStringWrapper mumble_getDescription() {
-	static const char desc[] = "Zeigt den Mumble-Server als Bürogebäude (Ruumble-Oberfläche im Browser)";
+	static const char desc[] = "Shows the Mumble server as an office building (Ruumble web UI in the browser)";
 	return { desc, std::strlen(desc), false };
 }
 

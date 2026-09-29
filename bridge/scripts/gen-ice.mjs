@@ -9,7 +9,7 @@ const out = new URL("../gen/", import.meta.url).pathname;
 mkdirSync(out, { recursive: true });
 compile(["--output-dir", out, ice], { stdio: "inherit" }).on("exit", (code) => {
   if (code !== 0 || !existsSync(out + "MumbleServer.js")) {
-    console.error("slice2js fehlgeschlagen");
+    console.error("slice2js failed");
     process.exit(1);
   }
   renameSync(out + "MumbleServer.js", out + "MumbleServer.cjs"); // CommonJS in the ESM package

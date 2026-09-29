@@ -2,22 +2,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { copyText } from "../src/lib/board/clipboard.ts";
 
-describe("Kopieren", () => {
+describe("Copying", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it("ohne sicheren Kontext (http://<LAN-IP>): Rückfall auf execCommand, Hilfsfeld wird entfernt", async () => {
+  it("without a secure context (http://<LAN-IP>): falls back to execCommand, helper field is removed", async () => {
     vi.stubGlobal("isSecureContext", false);
     let copied = "";
     document.execCommand = vi.fn(() => {
       copied = (document.activeElement as HTMLTextAreaElement | null)?.value ?? (document.querySelector("textarea")?.value ?? "");
       return true;
     });
-    expect(await copyText("Hallo")).toBe(true);
-    expect(copied).toBe("Hallo");
+    expect(await copyText("Hello")).toBe(true);
+    expect(copied).toBe("Hello");
     expect(document.querySelector("textarea")).toBeNull();
   });
 
-  it("mit sicherem Kontext: Clipboard-API", async () => {
+  it("with a secure context: Clipboard API", async () => {
     vi.stubGlobal("isSecureContext", true);
     const writeText = vi.fn(async () => {});
     vi.stubGlobal("navigator", { clipboard: { writeText } });

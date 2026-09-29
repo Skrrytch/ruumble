@@ -35,7 +35,7 @@ import { Poller } from "./poller.ts";
 const env = process.env;
 const required = (key: string) => {
   const value = env[key];
-  if (!value) throw new Error(`Umgebungsvariable ${key} fehlt`);
+  if (!value) throw new Error(`Environment variable ${key} is missing`);
   return value;
 };
 const bool = (key: string) => env[key] === "true" || env[key] === "1";
@@ -47,7 +47,7 @@ const store = new BoardStore(dataDir, { retentionDays: Number(env.RETENTION_DAYS
 if (process.argv[2] === "backup") {
   const target = resolve(process.argv[3] ?? "backup");
   await store.backup(target);
-  console.log(`Pinnwand gesichert nach ${target}`);
+  console.log(`Board backed up to ${target}`);
   process.exit(0);
 }
 
@@ -81,11 +81,11 @@ async function connectIce(): Promise<IceMumbleSource> {
   for (let attempt = 1; ; attempt++) {
     try {
       const source = await IceMumbleSource.connect({ host: config.iceHost, port: config.icePort, secret: config.iceSecret, serverId: config.serverId });
-      log("Ice verbunden", { host: config.iceHost, port: config.icePort });
+      log("Ice connected", { host: config.iceHost, port: config.icePort });
       return source;
     } catch (e) {
       lastError = String(e);
-      app.log.warn({ attempt, error: lastError }, "Ice nicht erreichbar, neuer Versuch in 5 s");
+      app.log.warn({ attempt, error: lastError }, "Ice unreachable, retrying in 5 s");
       await new Promise((r) => setTimeout(r, 5000));
     }
   }
@@ -116,12 +116,12 @@ const poller: Poller = new Poller(source, {
     lastError = null;
   },
   onRestart: () => {
-    log("Mumble-Server neu gestartet");
+    log("Mumble server restarted");
     hub.serverRestarted();
   },
   onError: (e) => {
     lastError = String(e);
-    app.log.warn({ error: lastError }, "Abfrage fehlgeschlagen");
+    app.log.warn({ error: lastError }, "Query failed");
   },
 });
 poller.start();
@@ -211,7 +211,7 @@ await app.register(boardRoutes, {
 const cleanupTimer = setInterval(() => {
   const { removed, channels } = store.cleanup();
   if (removed) {
-    log("Pinnwand aufgeräumt", { removed });
+    log("Board cleaned up", { removed });
     for (const channelId of channels) hub.boardChanged(channelId); // open boards reload
   }
 }, 60 * 60_000);
@@ -239,7 +239,7 @@ if (config.pluginBundle && existsSync(config.pluginBundle)) {
 if (existsSync(config.webDist)) {
   await app.register(fastifyStatic, { root: config.webDist, wildcard: false });
 } else {
-  app.log.warn({ webDist: config.webDist }, "Oberfläche nicht gefunden (pnpm -F @ruumble/web build)");
+  app.log.warn({ webDist: config.webDist }, "Web UI not found (pnpm -F @ruumble/web build)");
 }
 
 await app.listen({ port: config.port, host: config.host });

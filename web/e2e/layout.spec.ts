@@ -46,10 +46,10 @@ async function boxes(page: Page, attr: "data-join" | "data-channel") {
   }, attr);
 }
 
-test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ page }, info) => {
+test("layout matches the prototype (sample building, DEVELOPMENT floor)", async ({ page }, info) => {
   await page.goto(PROTOTYPE);
   const reference = await boxes(page, "data-join");
-  await page.screenshot({ path: info.outputPath("prototyp.png") });
+  await page.screenshot({ path: info.outputPath("prototype.png") });
 
   // The sample building no longer matches the prototype: the service is simulated and sends its layout
   await page.routeWebSocket("**/ws/ui", (ws) => {
@@ -70,7 +70,7 @@ test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ 
   const deviations: string[] = [];
   for (const [key, ref] of Object.entries(reference) as [string, Box][]) {
     const box = ours[key] as Box | undefined;
-    if (!box) { deviations.push(`${key}: fehlt`); continue; }
+    if (!box) { deviations.push(`${key}: missing`); continue; }
     // Floor buttons are deliberately more compact than in the prototype (room for more floors and the entrance):
     // for them only x and width, for the elevator panel everything except the height
     // Since the floor layout, room widths follow the Mumble order (rooms 1 and 2 large), no longer the name
@@ -83,7 +83,7 @@ test("Layout entspricht dem Prototyp (Musterhaus, Etage ENTWICKLUNG)", async ({ 
         ? (["x", "y", "width"] as const)
         : (["x", "y", "width", "height"] as const);
     for (const k of keys) {
-      if (Math.abs(box[k] - ref[k]) > TOLERANCE) deviations.push(`${key}.${k}: ${box[k].toFixed(1)} statt ${ref[k].toFixed(1)}`);
+      if (Math.abs(box[k] - ref[k]) > TOLERANCE) deviations.push(`${key}.${k}: ${box[k].toFixed(1)} instead of ${ref[k].toFixed(1)}`);
     }
   }
   expect(deviations, deviations.join("\n")).toEqual([]);

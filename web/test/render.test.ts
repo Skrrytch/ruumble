@@ -2,23 +2,23 @@
 import { describe, expect, it } from "vitest";
 import { highlight, renderCode, renderMarkdown } from "../src/lib/board/render.ts";
 
-describe("Darstellung: Markdown und Code ohne XSS (ADR-0011)", () => {
-  it("rendert gängiges Markdown", () => {
-    const html = renderMarkdown("## Titel\n\n- **fett** und *kursiv*\n- `code`\n\n| a | b |\n|---|---|\n| 1 | 2 |");
-    expect(html).toContain("<h2>Titel</h2>");
-    expect(html).toContain("<strong>fett</strong>");
+describe("Rendering: Markdown and code without XSS (ADR-0011)", () => {
+  it("renders common Markdown", () => {
+    const html = renderMarkdown("## Title\n\n- **bold** and *italic*\n- `code`\n\n| a | b |\n|---|---|\n| 1 | 2 |");
+    expect(html).toContain("<h2>Title</h2>");
+    expect(html).toContain("<strong>bold</strong>");
     expect(html).toContain("<code>code</code>");
     expect(html).toContain("<table>");
   });
 
   it.each([
-    ["rohes HTML", "<script>alert(1)</script><img src=x onerror=alert(1)>"],
-    ["HTML-Link", '<a href="javascript:alert(1)">x</a>'],
-    ["Markdown-Link mit javascript:", "[klick](javascript:alert(1))"],
-    ["Markdown-Link mit data:", "[klick](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)"],
-    ["Bild mit onerror", '![x](x" onerror="alert(1))'],
+    ["raw HTML", "<script>alert(1)</script><img src=x onerror=alert(1)>"],
+    ["HTML link", '<a href="javascript:alert(1)">x</a>'],
+    ["Markdown link with javascript:", "[click](javascript:alert(1))"],
+    ["Markdown link with data:", "[click](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)"],
+    ["image with onerror", '![x](x" onerror="alert(1))'],
     ["iframe", "<iframe src=//evil></iframe>"],
-  ])("%s wird entschärft", (_name, input) => {
+  ])("%s is defused", (_name, input) => {
     const html = renderMarkdown(input);
     const doc = new DOMParser().parseFromString(html, "text/html");
     // what matters is what the browser sees as elements and attributes (escaped text is harmless)
@@ -29,24 +29,24 @@ describe("Darstellung: Markdown und Code ohne XSS (ADR-0011)", () => {
     for (const a of doc.querySelectorAll("a")) expect(a.getAttribute("href") ?? "").toMatch(/^(https?:|mailto:|$)/);
   });
 
-  it("Links öffnen in neuem Tab ohne Zugriff auf das Fenster", () => {
+  it("links open in a new tab without access to the window", () => {
     const html = renderMarkdown("https://example.org");
     expect(html).toContain('target="_blank"');
     expect(html).toContain('rel="noopener noreferrer nofollow"');
   });
 
-  it("Code wird hervorgehoben und maskiert, Sprache erkannt", () => {
+  it("code is highlighted and escaped, language detected", () => {
     const r = renderCode('<script>alert("x")</script>', "xml");
     expect(r.html).not.toContain("<script>");
     expect(r.html).toContain("&lt;");
     // auto-detection needs some context; for short snippets code mode offers the language selection
     expect(highlight("import os\n\ndef main():\n    print(os.getcwd())\n\nif __name__ == '__main__':\n    main()", undefined).language).toBe("python");
     expect(highlight("SELECT name FROM users WHERE id = 1;", "sql").language).toBe("sql");
-    expect(highlight("x", "gibt-es-nicht").language).not.toBe("gibt-es-nicht");
+    expect(highlight("x", "does-not-exist").language).not.toBe("does-not-exist");
   });
 
   it.each([
-    ["python", "def main():\n    print('hallo')"],
+    ["python", "def main():\n    print('hello')"],
     ["json", '{"a": [1, 2], "b": true}'],
     ["xml", "<svg><rect width=\"1\"/></svg>"],
     ["sql", "SELECT id, name FROM users WHERE active = 1"],
@@ -54,16 +54,16 @@ describe("Darstellung: Markdown und Code ohne XSS (ADR-0011)", () => {
     ["typescript", "export interface User { name: string }\nconst u: User = { name: 'x' };"],
     ["javascript", "const add = (a, b) => a + b;\nconsole.log(add(1, 2));"],
     ["css", ".room { color: red; margin: 0; }"],
-    ["diff", "--- a/x\n+++ b/x\n@@ -1 +1 @@\n-alt\n+neu"],
-  ])("erkennt %s", (lang, code) => {
+    ["diff", "--- a/x\n+++ b/x\n@@ -1 +1 @@\n-old\n+new"],
+  ])("detects %s", (lang, code) => {
     expect(highlight(code).language).toBe(lang);
   });
 });
 
-describe("Spracherkennung", () => {
+describe("Language detection", () => {
   it.each([
     ['{ "a": 1, "b": [2, 3] }', "json"],
-    ['<div class="x">\n  <p>Hallo</p>\n</div>', "xml"],
+    ['<div class="x">\n  <p>Hello</p>\n</div>', "xml"],
     ["def greet(name):\n    return name", "python"],
     ["SELECT id, name\nFROM users\nWHERE id = 1", "sql"],
     ["FROM node:22\nRUN npm ci\nCMD [\"node\", \"main.js\"]", "dockerfile"],
@@ -80,10 +80,10 @@ describe("Spracherkennung", () => {
     expect(highlight(code).language).toBe(language);
   });
 
-  it("ungültiges JSON ist kein JSON, gewählte Sprache hat Vorrang, Unbekanntes bleibt maskierter Text", () => {
-    expect(highlight("{ kaputt").language).not.toBe("json");
+  it("invalid JSON is not JSON, chosen language wins, unknown stays escaped text", () => {
+    expect(highlight("{ broken").language).not.toBe("json");
     expect(highlight("x = 1", "python").language).toBe("python");
-    expect(highlight("x = 1", "gibt-es-nicht").language).not.toBe("gibt-es-nicht");
-    expect(highlight("Hallo <Welt>")).toEqual({ html: "Hallo &lt;Welt&gt;", language: "" });
+    expect(highlight("x = 1", "does-not-exist").language).not.toBe("does-not-exist");
+    expect(highlight("Hello <World>")).toEqual({ html: "Hello &lt;World&gt;", language: "" });
   });
 });

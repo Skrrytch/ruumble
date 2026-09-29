@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Ruumble-Protokoll v1",
-  "description": "Erzeugt aus protocol/src/index.ts – nicht von Hand ändern (pnpm -F @ruumble/protocol gen:schema).",
+  "title": "Ruumble protocol v1",
+  "description": "Generated from protocol/src/index.ts – do not edit by hand (pnpm -F @ruumble/protocol gen:schema).",
   "$defs": {
     "PluginToBridge": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Neuestes Release mit third_party/mumble/VERSION vergleichen
+      - name: Compare latest release with third_party/mumble/VERSION
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -53,5 +53,5 @@ jobs:
           } > /tmp/body.md
           gh issue create --title "$title" --body-file /tmp/body.md
           # Check behaviour, not just the interfaces: live tests against the new release
-          gh workflow run live.yml -f mumble="$latest" || echo "Live-Tests konnten nicht gestartet werden"
+          gh workflow run live.yml -f mumble="$latest" || echo "Could not start the live tests"
 

@@ -32,7 +32,7 @@ async function pairUrl(name: string): Promise<string> {
 const distro = process.env.RUUMBLE_CLIENT ?? "ubuntu";
 const frames: string[] = [];
 
-test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
+test.describe.serial(`Live with Mumble client (${distro})`, () => {
   let page: Page;
   let ben: BrowserContext | null = null;
   let benPage: Page;
@@ -58,109 +58,109 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     try { stopClient("Ben"); } catch { /* not started */ }
   });
 
-  test("Kopplungslink des Plugins koppelt den Browser", async () => {
+  test("the plugin's pairing link pairs the browser", async () => {
     const url = await pairUrl("Anna");
     expect(url).toMatch(/\/pair\?code=/);
     await page.goto(url);
     await expect(page).toHaveURL("http://127.0.0.1:8080/");
-    await expect(page.getByRole("navigation", { name: "Aufzug – Etagen" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Elevator – floors" })).toBeVisible();
     // freshly connected, Anna is in the root channel: entrance
-    await expect(page.getByRole("region", { name: "Eingang" }).getByRole("img", { name: /Anna \(du\)/ })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Entrance" }).getByRole("img", { name: /Anna \(you\)/ })).toBeVisible();
     // the same link a second time: invalid
     const again = await page.request.get(url, { maxRedirects: 0 });
     expect(again.status()).toBe(400);
   });
 
-  test("Klick auf einen Raum verschiebt den echten Mumble-Client", async () => {
-    await page.getByRole("button", { name: "1. Obergeschoss: ENTWICKLUNG" }).click();
-    await page.getByRole("button", { name: "Büro von Anna betreten" }).click();
-    await expect(page.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible({ timeout: 5000 });
-    await page.getByRole("button", { name: "Flur ENTWICKLUNG betreten" }).click();
-    await expect(page.getByRole("button", { name: "Flur ENTWICKLUNG – du bist hier" })).toBeVisible({ timeout: 5000 });
-    await page.getByRole("button", { name: "Büro von Anna betreten" }).click();
-    await expect(page.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible({ timeout: 5000 });
+  test("clicking a room moves the real Mumble client", async () => {
+    await page.getByRole("button", { name: "1st floor: DEVELOPMENT" }).click();
+    await page.getByRole("button", { name: "Anna's office – enter" }).click();
+    await expect(page.getByRole("button", { name: "Anna's office – you are here" })).toBeVisible({ timeout: 5000 });
+    await page.getByRole("button", { name: "Corridor DEVELOPMENT – enter" }).click();
+    await expect(page.getByRole("button", { name: "Corridor DEVELOPMENT – you are here" })).toBeVisible({ timeout: 5000 });
+    await page.getByRole("button", { name: "Anna's office – enter" }).click();
+    await expect(page.getByRole("button", { name: "Anna's office – you are here" })).toBeVisible({ timeout: 5000 });
   });
 
-  test("Pinnwand: im eigenen Raum ist der Schalter da, anheften geht über den echten Dienst", async () => {
-    const toggle = page.getByRole("button", { name: "Pinnwand einblenden" });
+  test("board: the toggle is there in the own room, pinning works through the real service", async () => {
+    const toggle = page.getByRole("button", { name: "Show board" });
     await expect(toggle).toBeVisible();
     await toggle.click();
-    const board = page.getByRole("complementary", { name: "Pinnwand" });
-    await expect(board.getByRole("heading", { name: "Pinnwand" })).toBeVisible();
-    await board.getByRole("textbox", { name: "Neuer Beitrag" }).fill("Live **Test**");
-    await board.getByRole("button", { name: "Senden" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    await expect(board.getByRole("heading", { name: "Board" })).toBeVisible();
+    await board.getByRole("textbox", { name: "New post" }).fill("Live **Test**");
+    await board.getByRole("button", { name: "Send" }).click();
     await expect(board.getByRole("article").first().locator("strong", { hasText: "Test" })).toBeVisible();
     page.once("dialog", (d) => d.accept());
-    await board.getByRole("article").first().getByRole("button", { name: "Öffnen · bearbeiten" }).click();
-    await page.getByRole("dialog").getByRole("button", { name: "Löschen" }).click();
-    await expect(board.getByText("Noch keine Beiträge")).toBeVisible();
-    await page.getByRole("button", { name: "Pinnwand ausblenden" }).first().click();
+    await board.getByRole("article").first().getByRole("button", { name: "Open · edit" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
+    await expect(board.getByText("No posts yet")).toBeVisible();
+    await page.getByRole("button", { name: "Hide board" }).first().click();
   });
 
-  test("Sprechanzeige kommt vom echten Client", async () => {
+  test("talking indicator comes from the real client", async () => {
     await expect(page.locator(".av.me.talking")).toBeVisible({ timeout: 10_000 });
   });
 
-  test("Stumm und Taub schalten den echten Client", async () => {
-    const mute = page.getByRole("button", { name: "Mikrofon stummschalten" });
-    const deaf = page.getByRole("button", { name: "Taub schalten" });
+  test("mute and deafen switch the real client", async () => {
+    const mute = page.getByRole("button", { name: "Mute microphone" });
+    const deaf = page.getByRole("button", { name: "Deafen" });
     await mute.click();
     await expect(mute).toHaveAttribute("aria-pressed", "true", { timeout: 5000 });
-    await expect(page.getByRole("img", { name: "Anna (du), stumm" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Anna (you), muted" })).toBeVisible();
     await deaf.click();
     await expect(deaf).toHaveAttribute("aria-pressed", "true", { timeout: 5000 });
-    await expect(page.getByRole("img", { name: "Anna (du), taub" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Anna (you), deafened" })).toBeVisible();
     await mute.click(); // unmute also lifts deaf (Mumble semantics)
     await expect(deaf).toHaveAttribute("aria-pressed", "false", { timeout: 5000 });
     await expect(mute).toHaveAttribute("aria-pressed", "false");
   });
 
-  test("Zutrittsrecht aus Mumble: Gregors Büro ist gesperrt", async () => {
-    await page.getByRole("button", { name: "2. Obergeschoss: VERTRIEB" }).click();
-    await expect(page.getByRole("button", { name: "Gregors Büro – kein Zutritt" })).toHaveAttribute("aria-disabled", "true");
-    await page.getByRole("button", { name: "Zu meiner Etage" }).click();
+  test("access rights from Mumble: Gregor's office is locked", async () => {
+    await page.getByRole("button", { name: "2nd floor: SALES" }).click();
+    await expect(page.getByRole("button", { name: "Gregor's office – no access" })).toHaveAttribute("aria-disabled", "true");
+    await page.getByRole("button", { name: "Go to my floor" }).click();
   });
 
-  test("zweiter Client im selben Raum: sichtbar und hörbar", async () => {
+  test("second client in the same room: visible and audible", async () => {
     runClient(distro, "Ben", undefined, "en_US.UTF-8"); // Ben with an English system
     const benUrl = await pairUrl("Ben");
     ben = await page.context().browser()!.newContext();
     benPage = await ben.newPage();
     await benPage.goto(benUrl);
-    await expect(benPage.getByRole("region", { name: "Eingang" }).getByRole("img", { name: /Ben \(du\)/ })).toBeVisible({ timeout: 10_000 });
-    await benPage.getByRole("button", { name: "1. Obergeschoss: ENTWICKLUNG" }).click();
-    await benPage.getByRole("button", { name: "Büro von Anna betreten" }).click();
-    await expect(benPage.getByRole("button", { name: "Büro von Anna – du bist hier" })).toBeVisible({ timeout: 5000 });
+    await expect(benPage.getByRole("region", { name: "Entrance" }).getByRole("img", { name: /Ben \(you\)/ })).toBeVisible({ timeout: 10_000 });
+    await benPage.getByRole("button", { name: "1st floor: DEVELOPMENT" }).click();
+    await benPage.getByRole("button", { name: "Anna's office – enter" }).click();
+    await expect(benPage.getByRole("button", { name: "Anna's office – you are here" })).toBeVisible({ timeout: 5000 });
     // Anna's web UI: Ben is in her room and talking (Anna's client hears him)
     await expect(page.getByRole("img", { name: /^Ben/ })).toBeVisible({ timeout: 5000 });
     // Ben's headless client sends the sine tone in bursts (~250 ms "talking" every ~2 s), so poll tightly:
     // the ring must appear at least once.
     await page.waitForFunction(
-      () => [...document.querySelectorAll('[role="img"]')].some((e) => e.getAttribute("aria-label") === "Ben, spricht"),
+      () => [...document.querySelectorAll('[role="img"]')].some((e) => e.getAttribute("aria-label") === "Ben, talking"),
       null,
       { polling: 50, timeout: 10_000 },
     );
   });
 
-  test("Pinnwand zu zweit: Beitrag erscheint beim anderen, Hinweis in seinem Mumble-Protokoll (AP11.4)", async () => {
-    await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
-    await benPage.getByRole("button", { name: "Pinnwand einblenden" }).click();
-    const annaBoard = page.getByRole("complementary", { name: "Pinnwand" });
-    const benBoard = benPage.getByRole("complementary", { name: "Pinnwand" });
-    await expect(benBoard.getByRole("heading", { name: "Pinnwand" })).toBeVisible();
+  test("board for two: a post appears for the other, notice in their Mumble log (AP11.4)", async () => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    await benPage.getByRole("button", { name: "Show board" }).click();
+    const annaBoard = page.getByRole("complementary", { name: "Board" });
+    const benBoard = benPage.getByRole("complementary", { name: "Board" });
+    await expect(benBoard.getByRole("heading", { name: "Board" })).toBeVisible();
     // Anna pins code: Ben sees it without reloading, his Mumble reports it, Anna's does not
-    await annaBoard.getByRole("button", { name: "Als Code anheften" }).click();
-    await annaBoard.getByRole("textbox", { name: "Neuer Beitrag" }).fill("const live = true;\nconsole.log(live);");
-    await annaBoard.getByRole("button", { name: "Senden" }).click();
-    await expect(benBoard.getByRole("article", { name: "Beitrag von Anna" }).locator(".hljs")).toBeVisible({ timeout: 5000 });
+    await annaBoard.getByRole("button", { name: "Pin as code" }).click();
+    await annaBoard.getByRole("textbox", { name: "New post" }).fill("const live = true;\nconsole.log(live);");
+    await annaBoard.getByRole("button", { name: "Send" }).click();
+    await expect(benBoard.getByRole("article", { name: "Post by Anna" }).locator(".hljs")).toBeVisible({ timeout: 5000 });
     await expect.poll(() => mumbleLog("Ben"), { timeout: 5000 }).toContain("ruumble-log: Anna pinned code to the board.");
     expect(mumbleLog("Anna")).not.toContain("an die Pinnwand geheftet");
     // Ben uploads a real image (XMLHttpRequest with progress, byte check in the service)
-    const [chooser] = await Promise.all([benPage.waitForEvent("filechooser"), benBoard.getByRole("button", { name: "Bild oder Datei anhängen" }).click()]);
-    await chooser.setFiles({ name: "punkt.png", mimeType: "image/png", buffer: Buffer.from(solidPng(40, [0, 120, 190])) });
-    await expect(benBoard.getByText(/· bereit$/)).toBeVisible({ timeout: 5000 });
-    await benBoard.getByRole("button", { name: "Senden" }).click();
-    const image = annaBoard.getByRole("article", { name: "Beitrag von Ben" }).locator("img");
+    const [chooser] = await Promise.all([benPage.waitForEvent("filechooser"), benBoard.getByRole("button", { name: "Attach image or file" }).click()]);
+    await chooser.setFiles({ name: "dot.png", mimeType: "image/png", buffer: Buffer.from(solidPng(40, [0, 120, 190])) });
+    await expect(benBoard.getByText(/· ready$/)).toBeVisible({ timeout: 5000 });
+    await benBoard.getByRole("button", { name: "Send" }).click();
+    const image = annaBoard.getByRole("article", { name: "Post by Ben" }).locator("img");
     await expect(image).toBeVisible({ timeout: 5000 });
     // visible does not mean loaded yet: wait for the finished image
     await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.naturalWidth), { timeout: 5000 }).toBe(40);
@@ -169,17 +169,17 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     const posts = (await (await page.request.get("/api/board")).json()).posts as { id: string; authorName: string }[];
     const annas = posts.find((p) => p.authorName === "Anna")!;
     expect((await benPage.request.delete(`/api/board/posts/${posts.find((p) => p.authorName === "Ben")!.id}`)).status()).toBe(204);
-    await benPage.getByRole("button", { name: "Büro von Ben betreten" }).click();
-    await expect(benPage.getByRole("button", { name: "Büro von Ben – du bist hier" })).toBeVisible({ timeout: 5000 });
+    await benPage.getByRole("button", { name: "Ben's office – enter" }).click();
+    await expect(benPage.getByRole("button", { name: "Ben's office – you are here" })).toBeVisible({ timeout: 5000 });
     expect((await benPage.request.delete(`/api/board/posts/${annas.id}`)).status()).toBe(403);
-    expect((await benPage.request.patch(`/api/board/posts/${annas.id}`, { data: { text: "fremd" } })).status()).toBe(403);
+    expect((await benPage.request.patch(`/api/board/posts/${annas.id}`, { data: { text: "foreign" } })).status()).toBe(403);
     expect((await page.request.delete(`/api/board/posts/${annas.id}`)).status()).toBe(204);
-    await page.getByRole("button", { name: "Pinnwand ausblenden" }).first().click();
+    await page.getByRole("button", { name: "Hide board" }).first().click();
   });
 
-  test("Avatar aus Mumble erscheint (AP9)", async () => {
+  test("avatar from Mumble appears (AP9)", async () => {
     const [major, minor] = await serverVersion();
-    test.skip(major > 1 || minor >= 6, "Mumble ≥ 1.6: Ice getTexture wirft für registrierte Nutzer (Fehler in Mumble); Ruumble zeigt Initialen");
+    test.skip(major > 1 || minor >= 6, "Mumble ≥ 1.6: Ice getTexture throws for registered users (bug in Mumble); Ruumble shows initials");
     // registered test bot sets its avatar itself (like a Mumble client via "Change avatar")
     const { Bot } = loadBot();
     const first = new Bot("Robo");
@@ -191,7 +191,7 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     await robo.connect();
     robo.send("UserState", { session: robo.session, texture: solidPng(64, [230, 120, 20]) });
     try {
-      const img = page.getByRole("region", { name: "Eingang" }).locator("img");
+      const img = page.getByRole("region", { name: "Entrance" }).locator("img");
       await expect(img).toBeVisible({ timeout: 20_000 }); // poll 1 s + avatar fetch
       await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth), { timeout: 5000 }).toBe(64);
       const res = await page.request.get((await img.getAttribute("src")) as string);
@@ -205,32 +205,32 @@ test.describe.serial(`Live mit Mumble-Client (${distro})`, () => {
     }
   });
 
-  test("ohne Kopplung: Hinweis statt Gebäude", async ({ browser }) => {
+  test("without pairing: notice instead of the building", async ({ browser }) => {
     const stranger = await browser.newPage();
     await stranger.goto("/");
-    await expect(stranger.getByText("Dieses Gerät ist noch nicht gekoppelt.")).toBeVisible();
+    await expect(stranger.getByText("This device is not paired yet.")).toBeVisible();
     await stranger.close();
   });
 
-  test("Mumble beendet: Oberfläche meldet „nicht verbunden“", async () => {
+  test("Mumble quit: web UI reports “not connected”", async () => {
     stopClient("Anna");
-    await expect(page.getByText("Mumble ist nicht verbunden.")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Mumble is not connected.")).toBeVisible({ timeout: 10_000 });
   });
 });
 
-test.describe.serial(`Adresse aus der Root-Beschreibung (${distro})`, () => {
+test.describe.serial(`Address from the root description (${distro})`, () => {
   test.afterAll(() => {
     for (const name of ["Dora", "Emil"]) try { stopClient(name); } catch { /* not started */ }
     setRootDescription(false);
   });
 
-  test("kurze Beschreibung: das Plugin findet die Adresse sofort", async () => {
+  test("short description: the plugin finds the address at once", async () => {
     setRootDescription(false);
     runClient(distro, "Dora", "");
     expect(await pairUrl("Dora")).toMatch(/\/pair\?code=/);
   });
 
-  test("lange Beschreibung: erst nach einmaligem Hover über den obersten Kanal", async () => {
+  test("long description: only after hovering once over the top channel", async () => {
     setRootDescription(true);
     runClient(distro, "Emil", "");
     const file = `${root}deploy/local/out/Emil/pair-url.txt`;

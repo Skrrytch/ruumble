@@ -8,6 +8,6 @@ const KEY = Symbol("ruumble-board-files");
 export const setFileUrl = (fn: FileUrl): void => void setContext(KEY, fn);
 export function getFileUrl(): FileUrl {
   const fn = getContext<FileUrl | undefined>(KEY);
-  if (!fn) throw new Error("getFileUrl: nur innerhalb von BoardPanel verfügbar");
+  if (!fn) throw new Error("getFileUrl: only available inside BoardPanel");
   return fn;
 }

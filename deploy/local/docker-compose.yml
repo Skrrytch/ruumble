@@ -10,7 +10,7 @@ services:
       MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'
       MUMBLE_CONFIG_ICESECRETREAD: s1-read-secret
       MUMBLE_CONFIG_ICESECRETWRITE: s1-write-secret-only-for-setup
-      MUMBLE_CONFIG_REGISTERNAME: Musterhaus
+      MUMBLE_CONFIG_REGISTERNAME: Acme HQ
       MUMBLE_CONFIG_AUTOBANATTEMPTS: "0"
     ports:
       - "127.0.0.1:64738:64738/tcp"
