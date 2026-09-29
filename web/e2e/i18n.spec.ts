@@ -10,8 +10,10 @@ test("English browser: switch to German and back, the choice is remembered", asy
   await expect(page.getByRole("button", { name: "1. Obergeschoss: Development" })).toHaveAttribute("aria-current", "page");
   await page.getByRole("button", { name: "Pinnwand einblenden" }).click();
   const board = page.getByRole("complementary", { name: "Pinnwand" });
-  await expect(board.getByText("4 Beiträge")).toBeVisible();
-  await expect(board.getByRole("button", { name: "Bilder" })).toBeVisible();
+  await expect(board.getByRole("searchbox", { name: "Pinnwand durchsuchen" })).toHaveAttribute("placeholder", "4 Beiträge durchsuchen …");
+  await board.getByRole("button", { name: "Beiträge filtern" }).click();
+  await expect(board.getByRole("menuitemradio", { name: "Bilder" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(board.getByRole("textbox", { name: "Neuer Beitrag" })).toHaveAttribute("placeholder", "Etwas an die Pinnwand heften …");
   await page.reload();
   await expect(page.getByRole("navigation", { name: "Aufzug – Etagen" })).toBeVisible(); // remembered

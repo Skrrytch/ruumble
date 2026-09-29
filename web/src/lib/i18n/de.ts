@@ -124,13 +124,17 @@ export const de = {
   },
   board: {
     title: "Pinnwand",
-    count: (n: number) => (n === 0 ? "Noch keine Beiträge" : plural(n, "1 Beitrag", `${n} Beiträge`)),
     show: "Pinnwand einblenden",
     hide: "Pinnwand ausblenden",
     dropHere: "Loslassen zum Anheften",
     onlyRooms: "Pinnwände gibt es nur in Räumen. Geh in einen Raum, um dort etwas anzuheften.",
     unavailable: "Die Pinnwand ist gerade nicht erreichbar.",
     filterLabel: "Beiträge filtern",
+    search: "Pinnwand durchsuchen",
+    searchPlaceholder: (n: number) => (n === 0 ? "Durchsuchen …" : n === 1 ? "1 Beitrag durchsuchen …" : `${n} Beiträge durchsuchen …`),
+    /** line under the header while a filter or search is active */
+    shown: (shown: number, total: number) => `${shown} von ${total} ${total === 1 ? "Beitrag" : "Beiträgen"}`,
+    clearFilter: "Filter und Suche zurücksetzen",
     filters: { all: "Alle", text: "Text", code: "Code", image: "Bilder", file: "Dateien" },
     kinds: { text: "Text", code: "Code", image: "Bild", file: "Datei" },
     /** quick reactions (A1): fixed meaning, shown as tooltip */
@@ -160,10 +164,12 @@ export const de = {
     reactionsLabel: "Reaktionen",
     /** tooltip and screen reader: meaning, then who */
     reactionTitle: (label: string, names: string) => `${label}: ${names}`,
-    emptyFilter: "Nichts in diesem Filter.",
+    /** summary in the card header: all reactions with names */
+    reactionSummary: (details: string) => `Reaktionen – ${details}`,
+    emptyFilter: "Nichts gefunden.",
     empty: "Noch hängt hier nichts. Heft den ersten Zettel an!",
     postBy: (name: string) => `Beitrag von ${name}`,
-    open: "Öffnen · bearbeiten",
+    open: "Öffnen",
     editedBy: (name: string) => `zuletzt bearbeitet von ${name}`,
     confirmDelete: "Diesen Beitrag wirklich löschen?",
     editPost: "Beitrag bearbeiten",

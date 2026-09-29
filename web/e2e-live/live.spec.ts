@@ -91,9 +91,9 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     await board.getByRole("button", { name: "Send" }).click();
     await expect(board.getByRole("article").first().locator("strong", { hasText: "Test" })).toBeVisible();
     page.once("dialog", (d) => d.accept());
-    await board.getByRole("article").first().getByRole("button", { name: "Open · edit" }).click();
+    await board.getByRole("article").first().getByRole("button", { name: "Open", exact: true }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
-    await expect(board.getByText("No posts yet")).toBeVisible();
+    await expect(board.getByText("Nothing pinned here yet.", { exact: false })).toBeVisible();
     await page.getByRole("button", { name: "Hide board" }).first().click();
   });
 
@@ -149,6 +149,7 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     const benBoard = benPage.getByRole("complementary", { name: "Board" });
     await expect(benBoard.getByRole("heading", { name: "Board" })).toBeVisible();
     // Anna pins code: Ben sees it without reloading, his Mumble reports it, Anna's does not
+    await annaBoard.getByRole("textbox", { name: "New post" }).click(); // the tools appear once the input has focus
     await annaBoard.getByRole("button", { name: "Pin as code" }).click();
     await annaBoard.getByRole("textbox", { name: "New post" }).fill("const live = true;\nconsole.log(live);");
     await annaBoard.getByRole("button", { name: "Send" }).click();
@@ -156,6 +157,7 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     await expect.poll(() => mumbleLog("Ben"), { timeout: 5000 }).toContain("ruumble-log: Anna pinned code to the board.");
     expect(mumbleLog("Anna")).not.toContain("an die Pinnwand geheftet");
     // Ben uploads a real image (XMLHttpRequest with progress, byte check in the service)
+    await benBoard.getByRole("textbox", { name: "New post" }).click();
     const [chooser] = await Promise.all([benPage.waitForEvent("filechooser"), benBoard.getByRole("button", { name: "Attach image or file" }).click()]);
     await chooser.setFiles({ name: "dot.png", mimeType: "image/png", buffer: Buffer.from(solidPng(40, [0, 120, 190])) });
     await expect(benBoard.getByText(/· ready$/)).toBeVisible({ timeout: 5000 });

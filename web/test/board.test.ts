@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { Post } from "@ruumble/protocol";
+import type { Post, Reaction } from "@ruumble/protocol";
 import { t } from "../src/lib/i18n/index.svelte.ts";
-import { fileKind, filterPosts, formatSize, isLong, looksLikeCode, pastedName, relativeTime } from "../src/lib/board/model.ts";
+import { fileKind, filterPosts, formatSize, isLong, looksLikeCode, pastedName, relativeTime, summarizeReactions } from "../src/lib/board/model.ts";
 
 const post = (kind: Post["kind"], id: string = kind): Post => ({ id, channelId: 3, kind, text: "x", authorName: "A", mine: false, canDelete: false, createdAt: 0, updatedAt: 0, reactions: [] });
 
@@ -27,11 +27,37 @@ describe("Board model", () => {
     expect(relativeTime(now + 5000, now)).toBe("Just now");
   });
 
-  it("filter, count text, long posts", () => {
+  it("filter, count text", () => {
     const posts = [post("text"), post("code"), post("image"), post("text", "t2")];
     expect(filterPosts(posts, "all")).toHaveLength(4);
     expect(filterPosts(posts, "text").map((p) => p.id)).toEqual(["text", "t2"]);
-    expect([0, 1, 2].map((n) => t().board.count(n))).toEqual(["No posts yet", "1 post", "2 posts"]);
+    expect([0, 1, 2].map((n) => t().board.searchPlaceholder(n))).toEqual(["Search …", "Search 1 post …", "Search 2 posts …"]);
+    expect([t().board.shown(1, 1), t().board.shown(0, 3)]).toEqual(["1 of 1 post", "0 of 3 posts"]);
+  });
+
+  it("search: all words, not case-sensitive, over text, file name, language and author, combined with the filter", () => {
+    const posts: Post[] = [
+      { ...post("text", "a"), text: "Deploy the **release** today", authorName: "Anna" },
+      { ...post("code", "b"), text: "x = 1", language: "python", authorName: "Ben" },
+      { ...post("file", "c"), text: "", attachment: { id: "0".repeat(64), name: "Server.log", mime: "text/plain", size: 1 }, authorName: "Clara" },
+    ];
+    expect(filterPosts(posts, "all", "").map((p) => p.id)).toEqual(["a", "b", "c"]);
+    expect(filterPosts(posts, "all", "  RELEASE  deploy ").map((p) => p.id)).toEqual(["a"]);
+    expect(filterPosts(posts, "all", "python").map((p) => p.id)).toEqual(["b"]);
+    expect(filterPosts(posts, "all", "server.LOG").map((p) => p.id)).toEqual(["c"]);
+    expect(filterPosts(posts, "all", "ben").map((p) => p.id)).toEqual(["b"]);
+    expect(filterPosts(posts, "text", "python")).toEqual([]);
+    expect(filterPosts(posts, "all", "release python")).toEqual([]);
+  });
+
+  it("reaction summary: three most frequent, ties in the fixed order, total and own", () => {
+    const r = (kind: Reaction["kind"], count: number, mine = false): Reaction => ({ kind, count, names: [], mine });
+    expect(summarizeReactions([])).toEqual({ top: [], total: 0, mine: false });
+    expect(summarizeReactions([r("agree", 1), r("unclear", 3), r("done", 1), r("cheers", 2, true)])).toEqual({ top: ["unclear", "cheers", "agree"], total: 7, mine: true });
+    expect(summarizeReactions([r("birthday", 1), r("agree", 1)], 1).top).toEqual(["agree"]);
+  });
+
+  it("long posts", () => {
     expect(isLong("a\n".repeat(9))).toBe(true);
     expect(isLong("short")).toBe(false);
     expect(isLong("x".repeat(700))).toBe(true);

@@ -58,6 +58,9 @@
   let suggestCode = $state(false);
   let busy = $state(false);
   const canSend = $derived(pending ? !!pending.uploaded : !!text.trim());
+  /** one line until someone starts writing: the list gets the space (tools and a taller field only then) */
+  let focused = $state(false);
+  const expanded = $derived(focused || !!text || !!pending || codeMode || suggestCode);
 
   function onpaste(e: ClipboardEvent) {
     const file = e.clipboardData?.files?.[0];
@@ -88,7 +91,12 @@
   }
 </script>
 
-<form class="composer" onsubmit={(e) => { e.preventDefault(); void submit(); }}>
+<form
+  class="composer" class:collapsed={!expanded}
+  onsubmit={(e) => { e.preventDefault(); void submit(); }}
+  onfocusin={() => (focused = true)}
+  onfocusout={(e) => { if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)) focused = false; }}
+>
   {#if suggestCode}
     <div class="suggest" role="status">
       {t().board.looksLikeCode}
@@ -144,6 +152,8 @@
   .composer { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-top: 1px solid var(--color-blue-300); background: transparent; }
   textarea { width: 100%; min-height: 64px; max-height: 40vh; resize: vertical; padding: 8px 10px; font: inherit; font-size: 14px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); }
   textarea.short { min-height: 44px; }
+  .collapsed textarea { min-height: 38px; height: 38px; resize: none; overflow: hidden; }
+  .collapsed .bar { display: none; }
   textarea.mono { font-family: var(--font-mono); font-size: 13px; }
   textarea:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
   .bar { display: flex; align-items: center; gap: 8px; }

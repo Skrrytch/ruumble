@@ -1,13 +1,18 @@
 <script lang="ts">
   import { copyText } from "../../board/clipboard.ts";
+  import Check from "@lucide/svelte/icons/check";
+  import Copy from "@lucide/svelte/icons/copy";
+  import Download from "@lucide/svelte/icons/download";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
+  import Plus from "@lucide/svelte/icons/plus";
   import type { Post, ReactionKind } from "@ruumble/protocol";
-  import { PREVIEW_LINES, isLong, relativeTime } from "../../board/model.ts";
+  import { PREVIEW_LINES, isLong, relativeTime, summarizeReactions } from "../../board/model.ts";
   import { intlLocale, t } from "../../i18n/index.svelte.ts";
   import { initials } from "../../model/building.ts";
   import { getFileUrl } from "../../board/context.ts";
   import PostBody from "./PostBody.svelte";
-  import Reactions from "./Reactions.svelte";
+  import ReactionPicker from "./ReactionPicker.svelte";
+  import { REACTION_ICONS } from "./reactionIcons.ts";
 
   /** `avatar`: the author's image if they are currently connected and registered; otherwise initials */
   let { post, now, avatar = null, onopen, onreact }: { post: Post; now: number; avatar?: string | null; onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void } = $props();
@@ -15,11 +20,22 @@
 
   const fileUrl = getFileUrl();
   let copied = $state(false);
+  let picking = $state(false);
   const long = $derived(!post.attachment && isLong(post.text));
+  // reactions only as a summary with a fixed width, however many kinds there are
+  const summary = $derived(summarizeReactions(post.reactions));
+  const summaryLabel = $derived(
+    t().board.reactionSummary(post.reactions.map((r) => t().board.reactionTitle(t().board.reactions[r.kind], r.names.join(", "))).join("; ")),
+  );
 
   async function copy() {
     copied = await copyText(post.text);
     setTimeout(() => (copied = false), 1500);
+  }
+
+  function pick(kind: ReactionKind): void {
+    picking = false;
+    onreact(post, kind);
   }
 </script>
 
@@ -33,7 +49,17 @@
       <strong>{post.authorName}</strong>
       <span class="when" title={new Date(post.createdAt).toLocaleString(intlLocale())}>{relativeTime(post.createdAt, now)}</span>
     </span>
-    <span class="kind">{t().board.kinds[post.kind]}</span>
+    {#if summary.total}
+      <button type="button" class="summary" class:mine={summary.mine} aria-expanded={picking} aria-label={summaryLabel} title={summaryLabel} onclick={() => (picking = !picking)}>
+        <span class="icons">
+          {#each summary.top as kind (kind)}
+            {@const Icon = REACTION_ICONS[kind]}
+            <span class="icon"><Icon size={12} aria-hidden="true" /></span>
+          {/each}
+        </span>
+        <span>{summary.total}</span>
+      </button>
+    {/if}
   </header>
   <div class="body" class:clamped={long} style:--lines={PREVIEW_LINES}>
     <PostBody {post} />
@@ -41,33 +67,59 @@
   {#if post.updatedByName}
     <div class="edited">{t().board.editedBy(post.updatedByName)} · {relativeTime(post.updatedAt, now)}</div>
   {/if}
-  <Reactions reactions={post.reactions} onreact={(kind) => onreact(post, kind)} />
+  <!-- one row, whatever the post: open left, react in the middle, the main action for the content right -->
   <footer>
-    <button type="button" class="link" onclick={() => onopen(post)}><Maximize2 size={13} /> {t().board.open}</button>
-    {#if post.kind === "file"}
-      <span></span>
-    {:else if post.attachment}
-      <a class="link strong" href={fileUrl(post.attachment, true)} download={post.attachment.name || t().board.fallbackName}>{t().common.download}</a>
-    {:else}
-      <button type="button" class="link strong" onclick={copy}>{copied ? t().common.copied : t().common.copy}</button>
-    {/if}
+    <button type="button" class="link" onclick={() => onopen(post)}><Maximize2 size={13} aria-hidden="true" /> {t().board.open}</button>
+    <button type="button" class="icon-btn react" aria-expanded={picking} aria-label={t().board.react} title={t().board.react} onclick={() => (picking = !picking)}>
+      <Plus size={16} aria-hidden="true" />
+    </button>
+    <span class="end">
+      {#if post.kind === "file"}
+        <!-- files have their download in the body -->
+      {:else if post.attachment}
+        <a class="icon-btn" href={fileUrl(post.attachment, true)} download={post.attachment.name || t().board.fallbackName} aria-label={t().common.download} title={t().common.download}><Download size={16} aria-hidden="true" /></a>
+      {:else}
+        <button type="button" class="icon-btn" aria-label={copied ? t().common.copied : t().common.copy} title={copied ? t().common.copied : t().common.copy} onclick={copy}>
+          {#if copied}<Check size={16} aria-hidden="true" />{:else}<Copy size={16} aria-hidden="true" />{/if}
+        </button>
+      {/if}
+    </span>
   </footer>
+  {#if picking}
+    <ReactionPicker reactions={post.reactions} onpick={pick} onclose={() => (picking = false)} />
+  {/if}
 </article>
 
 <style>
-  .card { position: relative; background: var(--color-white); border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); padding: 12px 12px 10px; display: flex; flex-direction: column; gap: 8px; }
+  .card { position: relative; background: var(--color-white); border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); padding: 12px 12px 8px; display: flex; flex-direction: column; gap: 8px; }
   .pin { position: absolute; top: -5px; left: 50%; width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; background: var(--color-navy); }
   header { display: flex; align-items: center; gap: 8px; }
   .av { width: 26px; height: 26px; border-radius: 50%; background: var(--color-blue-500); color: var(--color-white); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
   .av img { width: 100%; height: 100%; object-fit: cover; }
   .av.me { background: var(--color-navy); box-shadow: 0 0 0 2px var(--color-accent); }
-  .who { display: flex; flex-direction: column; line-height: 1.2; font-size: 13px; }
+  .who { display: flex; flex-direction: column; line-height: 1.2; font-size: 13px; min-width: 0; }
   .when { font-size: 12px; color: var(--color-blue-700); }
-  .kind { margin-left: auto; font-size: 12px; color: var(--color-blue-500); }
+  .summary {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 26px; padding: 0 8px 0 4px; flex-shrink: 0;
+    border: 1px solid var(--color-blue-300); border-radius: 999px; background: var(--color-white); color: var(--color-navy);
+    font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .summary:hover { background: var(--color-blue-100); }
+  .summary.mine { border-color: var(--color-navy); background: var(--color-blue-100); }
+  .icons { display: inline-flex; }
+  /* slightly overlapping, like a stack */
+  .icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--color-white); border: 1px solid var(--color-blue-100); }
+  .icon + .icon { margin-left: -5px; }
   .body.clamped { max-height: calc(var(--lines) * 1.5em); overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent); mask-image: linear-gradient(to bottom, #000 70%, transparent); }
   .edited { font-size: 11px; color: var(--color-blue-700); }
-  footer { display: flex; justify-content: space-between; }
-  .link { text-decoration: none; border: 0; background: none; padding: 4px 0; min-height: 28px; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--color-blue-500); cursor: pointer; }
-  .link.strong { font-weight: 700; }
-  .link:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
+  footer { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+  .end { justify-self: end; display: inline-flex; }
+  .link { justify-self: start; text-decoration: none; border: 0; background: none; padding: 4px 0; min-height: 28px; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--color-blue-500); cursor: pointer; }
+  .icon-btn {
+    width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md);
+    background: none; color: var(--color-blue-500); cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--color-blue-100); color: var(--color-navy); }
+  .react[aria-expanded="true"] { background: var(--color-blue-100); color: var(--color-navy); }
+  .link:focus-visible, .icon-btn:focus-visible, .summary:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
 </style>

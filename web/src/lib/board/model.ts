@@ -1,5 +1,5 @@
 /** Board: pure helper functions without DOM (ADR-0011, AP11.2). */
-import type { Post, PostKind } from "@ruumble/protocol";
+import { REACTION_KINDS, type Post, type PostKind, type Reaction, type ReactionKind } from "@ruumble/protocol";
 import { intlLocale, t } from "../i18n/index.svelte.ts";
 
 export type BoardFilter = "all" | PostKind;
@@ -7,8 +7,22 @@ export type BoardFilter = "all" | PostKind;
 /** Sidebar filters; the labels are in `t().board.filters` */
 export const FILTERS: readonly BoardFilter[] = ["all", "text", "code", "image", "file"];
 
-export function filterPosts(posts: readonly Post[], filter: BoardFilter): Post[] {
-  return filter === "all" ? [...posts] : posts.filter((p) => p.kind === filter);
+/** kind filter and free-text search (not case-sensitive) over text, caption, file name, code language and author */
+export function filterPosts(posts: readonly Post[], filter: BoardFilter, query = ""): Post[] {
+  const words = query.toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  return posts.filter((p) => {
+    if (filter !== "all" && p.kind !== filter) return false;
+    if (!words.length) return true;
+    const haystack = [p.text, p.attachment?.name, p.language, p.authorName].filter(Boolean).join("\n").toLocaleLowerCase();
+    return words.every((w) => haystack.includes(w));
+  });
+}
+
+/** compact summary for the card header: the `max` most frequent kinds (ties in the fixed order), total, own among them */
+export function summarizeReactions(reactions: readonly Reaction[], max = 3): { top: ReactionKind[]; total: number; mine: boolean } {
+  const order = (k: ReactionKind) => REACTION_KINDS.indexOf(k);
+  const top = [...reactions].sort((a, b) => b.count - a.count || order(a.kind) - order(b.kind)).slice(0, max).map((r) => r.kind);
+  return { top, total: reactions.reduce((n, r) => n + r.count, 0), mine: reactions.some((r) => r.mine) };
 }
 
 /**

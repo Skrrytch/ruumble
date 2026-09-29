@@ -38,6 +38,8 @@ export class RuumbleState {
   board = $state<BoardView | null>(null);
   boardError = $state<BoardErrorCode | null>(null);
   boardFilter = $state<BoardFilter>("all");
+  /** free-text search over the loaded posts of the room (simple form of A7) */
+  boardQuery = $state("");
   private boardChannel: number | null = null;
 
   /** displayed floor; `null` = own or first displayable one */

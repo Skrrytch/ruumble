@@ -52,7 +52,8 @@ Every room has a board next to the floor plan. It shows the board of the room yo
 - **Images**: paste, drag and drop or paper clip. Preview in the card, full-screen view with zoom, pan and download.
 - **Files** as downloads.
 - Long posts are shortened to 8 lines and open in a dialog to read, edit, copy or delete.
-- **Quick reactions** with a fixed meaning (19 symbols, from "agreed" and "does not work for me" to "happy birthday" and "time to call it a day"): once per person and kind, with count and names in the tooltip, without a Mumble notice (A1).
+- **Quick reactions** with a fixed meaning (19 symbols, from "agreed" and "does not work for me" to "happy birthday" and "time to call it a day"): once per person and kind, without a Mumble notice (A1). The card header shows a summary of fixed width (the three most frequent symbols and the total, all of them with names in the tooltip); the picker shows every symbol with its count.
+- **Compact layout**: one slim header row with a search field (text, caption, file name, code language and author; the simple form of A7) and a filter menu by kind. While a search or filter is active, a line shows "N of M posts" with a reset. Each card has a single toolbar row: open on the left, react in the middle, copy or download as an icon on the right. The input stays one line until it has focus.
 - **Mumble notice**: when someone pins something, the others in the room get a short line in their Mumble log, e.g. "Anna pinned code to the board." (in each recipient's language).
 
 | Rule | Value |
@@ -208,7 +209,7 @@ Symbols come from Lucide (no brand logos). The recognition is a pure function in
 
 The display is tailored to reading: the exception type and message become the headline of the card, the preview shows them together with the first frame outside libraries. Frames from well-known library and runtime paths (`java.`, `jdk.`, `org.springframework.`, `node_modules/`, `site-packages/`, `runtime/` …) are dimmed and collapsed into "… 38 frames in libraries". `Caused by` chains become their own sections, with the root cause emphasised. Lines never wrap; copy and download always return the original text unchanged.
 
-**A7 – Full-text search.** A search field in the board header searches the text, captions, file names, code language and author names of all posts of the room, combined with the existing filter by kind. Matches are highlighted, and posts shortened to 8 lines open where the match is. The search runs in the web UI over the posts that are already loaded; with one room and 30 days that is enough. A full-text index in SQLite (FTS5) only comes if a measurement makes it necessary. No export for now.
+**A7 – Full-text search.** Current state: the search field and the plain search are there (all words, not case-sensitive); highlighting and opening at the match are still open. A search field in the board header searches the text, captions, file names, code language and author names of all posts of the room, combined with the existing filter by kind. Matches are highlighted, and posts shortened to 8 lines open where the match is. The search runs in the web UI over the posts that are already loaded; with one room and 30 days that is enough. A full-text index in SQLite (FTS5) only comes if a measurement makes it necessary. No export for now.
 
 **A8 – Several images in one post.** Pasting or dropping several images at once creates **one** post with all of them, for example before and after, or several steps of a bug. The card shows them as a small gallery; the full-screen view pages through them with the arrow keys. One caption applies to the whole post; when editing, single images can be removed or added.
 

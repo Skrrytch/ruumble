@@ -45,7 +45,7 @@ describe("UI language", () => {
     expect(localStorage.getItem("ruumble.locale")).toBe("de");
     expect(intlLocale()).toBe("de-DE");
     expect(t().board.title).toBe("Pinnwand");
-    expect([0, 1, 2].map((n) => t().board.count(n))).toEqual(["Noch keine Beiträge", "1 Beitrag", "2 Beiträge"]);
+    expect([0, 1, 2].map((n) => t().board.searchPlaceholder(n))).toEqual(["Durchsuchen …", "1 Beitrag durchsuchen …", "2 Beiträge durchsuchen …"]);
     expect([0, 1, 2].map(countText)).toEqual(["frei", "1 Person", "2 Personen"]);
     expect(floorLabels(0)).toEqual({ level: "Erdgeschoss", badge: "EG" });
     expect(floorLabels(2)).toEqual({ level: "2. Obergeschoss", badge: "2" });
@@ -66,6 +66,11 @@ describe("UI language", () => {
     expect(en.pluginHelp.versions("0.8.3", null)).toBe("Ruumble service 0.8.3");
     expect(de.pluginHelp.versions("0.8.3", "0.4.1")).toBe("Ruumble-Dienst 0.8.3 · Plugin 0.4.1");
     expect(de.pluginHelp.versions("0.8.3", null)).toBe("Ruumble-Dienst 0.8.3");
+  });
+
+  it("board search in German: singular and plural", () => {
+    expect([0, 1, 4].map((n) => de.board.searchPlaceholder(n))).toEqual(["Durchsuchen …", "1 Beitrag durchsuchen …", "4 Beiträge durchsuchen …"]);
+    expect([de.board.shown(1, 1), de.board.shown(2, 4)]).toEqual(["1 von 1 Beitrag", "2 von 4 Beiträgen"]);
   });
 
   it("English ordinals and plurals", () => {

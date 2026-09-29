@@ -1,4 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+/** choose a kind in the filter menu of the board header */
+async function filter(board: Locator, name: string): Promise<void> {
+  await board.getByRole("button", { name: "Filter posts" }).click();
+  await board.getByRole("menuitemradio", { name }).click();
+}
 
 test.describe("Board (AP11.2)", () => {
   test.beforeEach(async ({ page }) => page.goto("/?fixture=sample&talking=0"));
@@ -10,28 +16,58 @@ test.describe("Board (AP11.2)", () => {
     await toggle.click();
     const board = page.getByRole("complementary", { name: "Board" });
     await expect(board.getByRole("heading", { name: "Board" })).toBeVisible();
-    await expect(board.getByText("4 posts")).toBeVisible();
+    await expect(board.getByRole("searchbox", { name: "Search the board" })).toHaveAttribute("placeholder", "Search 4 posts …");
     await page.getByRole("button", { name: "Hide board" }).first().click();
     await expect(board).toHaveCount(0);
   });
 
-  test("quick reactions: count and names in the tooltip, set and take back (A1)", async ({ page }) => {
+  test("quick reactions: summary in the header, picker with counts, set and take back (A1)", async ({ page }) => {
     await page.getByRole("button", { name: "Show board" }).click();
     const code = page.getByRole("complementary", { name: "Board" }).getByRole("article", { name: "Post by Ben" }).filter({ has: page.locator(".hljs") });
-    const reactions = code.getByRole("group", { name: "Reactions" });
-    const agree = reactions.getByRole("button", { name: "Agreed / fine by me: Clara, Anna" });
-    await expect(agree).toHaveText("2");
+    const summary = code.getByRole("button", { name: /^Reactions – / });
+    await expect(summary).toHaveAccessibleName("Reactions – Agreed / fine by me: Clara, Anna; Unclear, let's talk: David");
+    await expect(summary).toHaveText("3");
+    // the summary opens the picker too; the own reaction is pressed, with who in the name
+    await summary.click();
+    const picker = code.getByRole("group", { name: "React" });
+    const agree = picker.getByRole("button", { name: "Agreed / fine by me: Clara, Anna" });
     await expect(agree).toHaveAttribute("aria-pressed", "true");
-    await agree.click(); // Anna takes hers back
-    await expect(reactions.getByRole("button", { name: "Agreed / fine by me: Clara" })).toHaveAttribute("aria-pressed", "false");
-    await reactions.getByRole("button", { name: "React" }).click();
-    await reactions.getByRole("button", { name: "I'm looking at it" }).click();
-    await expect(reactions.getByRole("button", { name: "I'm looking at it: Anna" })).toHaveText("1");
-    await expect(reactions.getByRole("button", { name: "Does not work for me" })).toHaveCount(0); // picker closed again
-    // the order stays fixed: agree, looking, unclear
-    expect(await reactions.locator(".chip").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).toEqual([
-      "Agreed / fine by me: Clara", "I'm looking at it: Anna", "Unclear, let's talk: David",
-    ]);
+    await expect(agree).toBeFocused(); // keyboard: focus on the first symbol
+    await agree.click(); // Anna takes hers back, the picker closes
+    await expect(picker).toHaveCount(0);
+    await expect(summary).toHaveAccessibleName("Reactions – Agreed / fine by me: Clara; Unclear, let's talk: David");
+    // the button in the toolbar, then a social reaction; Escape closes without choosing
+    await code.getByRole("button", { name: "React", exact: true }).click();
+    await picker.getByRole("button", { name: "Happy birthday" }).click();
+    await expect(summary).toHaveText("3");
+    await expect(summary).toHaveAccessibleName("Reactions – Agreed / fine by me: Clara; Unclear, let's talk: David; Happy birthday: Anna");
+    await code.getByRole("button", { name: "React", exact: true }).click();
+    await page.keyboard.press("Escape");
+    await expect(picker).toHaveCount(0);
+  });
+
+  test("search and filter in the header: status line with count, reset", async ({ page }) => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    await board.getByRole("searchbox", { name: "Search the board" }).fill("GREET");
+    await expect(board.getByRole("article")).toHaveCount(1);
+    await expect(board.getByText("1 of 4 posts")).toBeVisible();
+    await filter(board, "Images");
+    await expect(board.getByText("0 of 4 posts · Images")).toBeVisible();
+    await expect(board.getByText("Nothing found.")).toBeVisible();
+    await board.getByRole("button", { name: "Clear filter and search" }).click();
+    await expect(board.getByRole("article")).toHaveCount(4);
+    await expect(board.getByRole("searchbox")).toHaveValue("");
+  });
+
+  test("input: one line until it has focus, then the tools", async ({ page }) => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    await expect(board.getByRole("button", { name: "Attach image or file" })).toBeHidden();
+    await board.getByRole("textbox", { name: "New post" }).click();
+    await expect(board.getByRole("button", { name: "Attach image or file" })).toBeVisible();
+    await board.getByRole("searchbox").click(); // focus elsewhere, nothing typed: one line again
+    await expect(board.getByRole("button", { name: "Attach image or file" })).toBeHidden();
   });
 
   test("other rooms show no notes, even when something is pinned there", async ({ page }) => {
@@ -46,7 +82,7 @@ test.describe("Board (AP11.2)", () => {
     const notes = board.getByRole("article", { name: "Post by Anna" });
     await expect(notes.locator(".body.clamped")).toHaveCount(1);
     await expect(notes.getByText("last edited by Ben")).toBeVisible();
-    await notes.getByRole("button", { name: "Open · edit" }).click();
+    await notes.getByRole("button", { name: "Open", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Post by Anna" });
     await expect(dialog.getByText("Tag the release")).toBeVisible();
     await dialog.getByRole("button", { name: "Edit" }).click();
@@ -62,7 +98,7 @@ test.describe("Board (AP11.2)", () => {
     const code = page.getByRole("complementary", { name: "Board" }).getByRole("article", { name: "Post by Ben" }).filter({ has: page.locator(".hljs") });
     await expect(code.locator(".hljs")).toBeVisible();
     await expect(code.locator(".gutter")).toHaveCount(0);
-    await code.getByRole("button", { name: "Open · edit" }).click();
+    await code.getByRole("button", { name: "Open", exact: true }).click();
     await expect(page.getByRole("dialog").locator(".gutter")).toBeVisible();
   });
 
@@ -72,17 +108,17 @@ test.describe("Board (AP11.2)", () => {
     const input = board.getByRole("textbox", { name: "New post" });
     await input.fill("Quick **note**");
     await input.press("Control+Enter");
-    await expect(board.getByText("5 posts")).toBeVisible();
+    await expect(board.getByRole("searchbox", { name: "Search the board" })).toHaveAttribute("placeholder", "Search 5 posts …");
     await expect(board.getByRole("article").first().locator("strong", { hasText: "note" })).toBeVisible();
     await expect(input).toHaveValue("");
-    await board.getByRole("button", { name: "Code", exact: true }).click();
+    await filter(board, "Code");
     await expect(board.getByRole("article")).toHaveCount(1);
-    await board.getByRole("button", { name: "All" }).click();
+    await filter(board, "All");
     // delete own post
     page.once("dialog", (d) => d.accept());
-    await board.getByRole("article").first().getByRole("button", { name: "Open · edit" }).click();
+    await board.getByRole("article").first().getByRole("button", { name: "Open", exact: true }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
-    await expect(board.getByText("4 posts")).toBeVisible();
+    await expect(board.getByRole("searchbox", { name: "Search the board" })).toHaveAttribute("placeholder", "Search 4 posts …");
   });
 
   test("pasted code: suggestion “pin as code”", async ({ page }) => {
@@ -136,6 +172,7 @@ test.describe("Board: images and files (AP11.3)", () => {
 
   test("paper clip: upload a file, pin it with a description, download link", async ({ page }) => {
     const board = page.getByRole("complementary", { name: "Board" });
+    await board.getByRole("textbox", { name: "New post" }).click(); // the tools appear once the input has focus
     const [chooser] = await Promise.all([page.waitForEvent("filechooser"), board.getByRole("button", { name: "Attach image or file" }).click()]);
     await chooser.setFiles({ name: "report.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 test") });
     await expect(board.getByText("13 B · ready")).toBeVisible();
@@ -146,8 +183,8 @@ test.describe("Board: images and files (AP11.3)", () => {
     await expect(card.getByText("report.pdf")).toBeVisible();
     await expect(card.locator("strong", { hasText: "reading" })).toBeVisible();
     await expect(card.getByRole("link", { name: /report\.pdf/ })).toHaveAttribute("download", "report.pdf");
-    await expect(board.getByText("5 posts")).toBeVisible();
-    await board.getByRole("button", { name: "Files" }).click();
+    await expect(board.getByRole("searchbox", { name: "Search the board" })).toHaveAttribute("placeholder", "Search 5 posts …");
+    await filter(board, "Files");
     await expect(board.getByRole("article")).toHaveCount(2);
   });
 
@@ -168,7 +205,7 @@ test.describe("Board: images and files (AP11.3)", () => {
     await expect(board.getByText(/· ready$/)).toBeVisible();
     await input.press("Control+Enter");
     const card = board.getByRole("article").first();
-    await expect(card.getByText("Image", { exact: true })).toBeVisible();
+    await expect(card.getByRole("link", { name: "Download" })).toHaveAttribute("download", /^image-.*\.png$/); // images: download icon in the toolbar
     await card.getByRole("button", { name: /full size/ }).click();
     const lightbox = page.getByRole("dialog", { name: /^Image: image-/ });
     await expect(lightbox.getByText("100 %")).toBeVisible();
@@ -198,6 +235,7 @@ test.describe("Board: images and files (AP11.3)", () => {
 
   test("file too large: clear error, nothing is sent", async ({ page }) => {
     const board = page.getByRole("complementary", { name: "Board" });
+    await board.getByRole("textbox", { name: "New post" }).click(); // the tools appear once the input has focus
     const [chooser] = await Promise.all([page.waitForEvent("filechooser"), board.getByRole("button", { name: "Attach image or file" }).click()]);
     await chooser.setFiles({ name: "large.bin", mimeType: "application/octet-stream", buffer: Buffer.alloc(10 * 1024 * 1024 + 1) });
     await expect(board.getByRole("alert")).toHaveText("The file is too large (at most 10 MB).");
@@ -208,7 +246,7 @@ test.describe("Board: images and files (AP11.3)", () => {
 
   test("edit an image's description in the popup", async ({ page }) => {
     const board = page.getByRole("complementary", { name: "Board" });
-    await board.getByRole("article", { name: "Post by Clara" }).getByRole("button", { name: "Open · edit" }).click();
+    await board.getByRole("article", { name: "Post by Clara" }).getByRole("button", { name: "Open", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Post by Clara" });
     await dialog.getByRole("button", { name: "Edit description" }).click();
     await dialog.getByRole("textbox", { name: "Edit description" }).fill("New sketch");
