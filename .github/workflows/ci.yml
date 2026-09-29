@@ -63,3 +63,19 @@ jobs:
         with:
           name: ruumble-plugin
           path: plugin/build/*.mumble_plugin
+
+  plugin-windows:
+    name: Cross-build and test plugin for Windows (MinGW, Wine)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake g++-mingw-w64-x86-64-posix wine wine64
+      - run: cmake -S plugin -B plugin/build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64.cmake -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build plugin/build-win -j
+      - run: wine plugin/build-win/ruumble_tests.exe
+        env:
+          WINEDEBUG: -all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ruumble-plugin-windows
+          path: plugin/build-win/*.mumble_plugin

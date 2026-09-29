@@ -8,9 +8,10 @@
 | pnpm | via corepack (`corepack enable`), version from `package.json` | package management (workspace) |
 | CMake, g++ | CMake ≥ 3.20, C++17 | plugin |
 | OpenSSL headers | e.g. `libssl-dev` | plugin (WebSocket over TLS) |
+| MinGW-w64, Wine | optional: `g++-mingw-w64-x86-64-posix`, `wine` | Windows plugin (cross build, tests) |
 | Docker | current | local stack with a real Mumble, live tests, image |
 
-On the first CMake run the plugin downloads its dependencies (nlohmann/json, IXWebSocket, doctest).
+On the first CMake run the plugin downloads its dependencies (nlohmann/json, IXWebSocket, doctest; for Windows also Mbed TLS).
 
 ## Layout
 
@@ -43,6 +44,17 @@ cmake --build plugin/build -j
 # → plugin/build/ruumble-<version>.mumble_plugin
 ```
 
+Windows plugin, cross-compiled on Linux ([ADR-0013](decisions/0013-windows-plugin.md)):
+
+```sh
+cmake -S plugin -B plugin/build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64.cmake -DCMAKE_BUILD_TYPE=Release
+cmake --build plugin/build-win -j
+wine plugin/build-win/ruumble_tests.exe
+# → plugin/build-win/ruumble.dll; with -DRUUMBLE_BUNDLE_EXTRA=<path>/ruumble.dll the Linux build puts both into one bundle
+```
+
+The Docker image does this itself: its bundle contains `libruumble.so` and `ruumble.dll`. The live tests only cover Linux, so test changes to `plugin.cpp`, `net.cpp` or `config.cpp` by hand in a Mumble client on Windows.
+
 Service image (contains the web UI and the plugin):
 
 ```sh
@@ -71,7 +83,7 @@ In the dev server the web UI runs against the **mock** by default (a simulated M
 The web UI, the plugin and the board notices speak German and English.
 
 - **Web UI:** `web/src/lib/i18n/`. `de.ts` is the template and defines the shape (`Messages`); `en.ts` must have exactly the same shape. `t()` from `index.svelte.ts` returns the dictionary of the current language (reactive). Detection: the first of the browser's languages (`navigator.languages`) that is German or English wins, otherwise English; a choice made with the language button in the user menu overrides this and is stored in the browser. The unit test `web/test/i18n.test.ts` checks that both dictionaries match.
-- **Plugin:** messages in `plugin/src/messages.cpp`. The language comes from `LC_ALL`, then `LC_MESSAGES`, then `LANG`: `de…` gives German, anything else English.
+- **Plugin:** messages in `plugin/src/messages.cpp`. The language comes from `LC_ALL`, then `LC_MESSAGES`, then `LANG` (on Windows, if none is set, the Windows display language): `de…` gives German, anything else English.
 - **Board notices** in the Mumble log: `bridge/src/board/notify.ts`, in the language each recipient's plugin reports (German if none is reported). The same applies to the pairing-code notice (`bridge/src/pairing.ts`); the error page of an invalid pairing link (`bridge/src/main.ts`) follows the browser's language.
 - **Browser tests:** `web/playwright.config.ts` and `web/playwright.live.config.ts` pin the browser locale to `en-US`, so tests match English texts. `web/e2e/i18n.spec.ts` covers the German UI (with a `de-DE` browser) and the language switch in both directions.
 

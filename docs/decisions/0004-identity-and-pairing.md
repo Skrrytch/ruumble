@@ -15,7 +15,7 @@ Status: accepted (2026-09-28)
    If a check fails, the connection is rejected.
 2. **The stable key is the certificate hash**, not the session ID, because session IDs are reassigned.
 3. **Pairing the web UI:**
-   - After the first successful `hello` without an existing pairing, the plugin receives a **one-time link** (valid for 60 s) and opens it with `xdg-open`.
+   - After the first successful `hello` without an existing pairing, the plugin receives a **one-time link** (valid for 60 s) and opens it with `xdg-open` (on Windows `ShellExecute`, ADR-0013).
    - The web UI exchanges the link for a long-lived **device token** (HttpOnly cookie) bound to the hash.
    - The plugin remembers in `~/.config/ruumble/plugin.json` that pairing has happened and no longer opens the browser automatically afterwards. This can be changed in the configuration.
 4. **Access:** a web UI only gets data if its token is valid **and** a plugin with the same hash is currently connected. Otherwise it shows "Mumble is not connected".

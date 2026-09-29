@@ -4,14 +4,26 @@
 # Licence: the service uses Ice for JavaScript (GPL-2.0). The image as a combined work is GPL-2.0 (E26);
 # the Ruumble source code itself is under BSD-3-Clause.
 
-# Plugin: built on Debian 12 (glibc 2.36) so that it also runs on older distributions
+# Plugin for Windows: cross-compiled with MinGW-w64 (ruumble.dll, TLS via Mbed TLS)
+FROM debian:bookworm-slim AS plugin-windows
+RUN apt-get update && apt-get install -y --no-install-recommends cmake make g++-mingw-w64-x86-64-posix git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY third_party third_party
+COPY plugin plugin
+RUN cmake -S plugin -B plugin/build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64.cmake -DCMAKE_BUILD_TYPE=Release -DRUUMBLE_TESTS=OFF \
+    && cmake --build plugin/build-win -j"$(nproc)" --target ruumble
+
+# Plugin for Linux: built on Debian 12 (glibc 2.36) so that it also runs on older distributions.
+# The bundle carries both libraries; Mumble installs the one for its platform.
 FROM debian:bookworm-slim AS plugin
 RUN apt-get update && apt-get install -y --no-install-recommends cmake g++ make libssl-dev git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY third_party third_party
 COPY plugin plugin
-RUN cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release -DRUUMBLE_TESTS=OFF \
+COPY --from=plugin-windows /src/plugin/build-win/ruumble.dll /windows/ruumble.dll
+RUN cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release -DRUUMBLE_TESTS=OFF -DRUUMBLE_BUNDLE_EXTRA=/windows/ruumble.dll \
     && cmake --build plugin/build -j"$(nproc)" \
     && mkdir -p /out && cp plugin/build/*.mumble_plugin /out/
 

@@ -22,9 +22,9 @@ An alternative web UI for [Mumble](https://www.mumble.info/): Ruumble shows the 
 
 Full list and plans: [docs/features.md](docs/features.md).
 
-**Requirements:** Mumble server 1.5 or later with Ice enabled, Mumble client 1.4 or later on Linux. Details: [docs/operations.md](docs/operations.md#requirements).
+**Requirements:** Mumble server 1.5 or later with Ice enabled, Mumble client 1.4 or later on Linux or Windows. Details: [docs/operations.md](docs/operations.md#requirements).
 
-> **Status:** service and web UI 0.13, plugin 0.4.
+> **Status:** service and web UI 0.14, plugin 0.5.
 
 ## Architecture
 

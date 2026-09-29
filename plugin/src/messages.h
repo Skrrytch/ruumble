@@ -1,5 +1,6 @@
 // Language of the plugin messages in the Mumble log: German, otherwise English (like the web UI).
-// The plugin API does not reveal Mumble's own language; the system environment therefore decides.
+// The plugin API does not reveal Mumble's own language; the system environment therefore decides
+// (on Windows, where LANG is usually unset, the display language via systemLanguage()).
 #pragma once
 
 #include <string>

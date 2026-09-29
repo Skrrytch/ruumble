@@ -1,5 +1,7 @@
-// Configuration: ~/.config/ruumble/plugin.json (or $XDG_CONFIG_HOME, $RUUMBLE_CONFIG).
+// Configuration: ~/.config/ruumble/plugin.json (or $XDG_CONFIG_HOME, $RUUMBLE_CONFIG),
+// on Windows %APPDATA%\ruumble\plugin.json (or %RUUMBLE_CONFIG%).
 #pragma once
+#include <filesystem>
 #include <optional>
 #include <set>
 #include <string>
@@ -14,12 +16,15 @@ struct Config {
 	/** services already paired with */
 	std::set< std::string > pairedWith;
 
-	static std::string path();
+	static std::filesystem::path path();
 	static Config load();
 	void save() const;
 };
 
-/** opens a URL in the default browser (xdg-open, without shell interpolation) */
+/** opens a URL in the default browser (xdg-open or ShellExecute, without shell interpolation) */
 void openUrl(const std::string &url);
+
+/** Windows display language as a tag like "de-DE"; empty on Linux, where the environment decides */
+std::string systemLanguage();
 
 } // namespace ruumble

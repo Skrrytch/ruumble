@@ -16,7 +16,7 @@ Placeholders in this guide: `<LAN-IP>` (address of the server), `<compose-dir>` 
 | | Requirement |
 |---|---|
 | Mumble server | **1.5 or newer** (up to 1.4 the Ice interface was called `Murmur`; Ruumble speaks `MumbleServer`). Ice must be enabled. |
-| Users' Mumble client | 1.4 or newer, **Linux** (the plugin exists only as `.so`) |
+| Users' Mumble client | 1.4 or newer, **Linux** or **Windows** (x64); one bundle contains both |
 | Service | Docker; the container needs network access to the Mumble server's Ice port |
 | Network | The users' clients must reach the service (plugin and browser) |
 
@@ -95,7 +95,7 @@ The image contains the plugin (built on Debian 12, glibc 2.36, so it also runs o
 
 ### HTTPS behind a reverse proxy (optional)
 
-Ruumble works over plain HTTP; HTTPS is optional. With HTTPS the browser offers the Clipboard API, the web UI can be fully installed as a PWA, and device tokens and board content no longer travel over the network in plain text. Nothing changes in the plugin or the service code: the plugin turns an `https://` address into `wss://` and checks the certificate against the **system certificates**, and the web UI uses `wss://` when it was loaded over HTTPS.
+Ruumble works over plain HTTP; HTTPS is optional. With HTTPS the browser offers the Clipboard API, the web UI can be fully installed as a PWA, and device tokens and board content no longer travel over the network in plain text. Nothing changes in the plugin or the service code: the plugin turns an `https://` address into `wss://` and checks the certificate against the **system certificates** (on Windows the certificate store, including CAs rolled out via group policy), and the web UI uses `wss://` when it was loaded over HTTPS.
 
 **Certificate:** Let's Encrypt with a **DNS challenge** is the simplest choice. It works even though the service is only reachable in the home network; it needs a domain whose DNS provider offers an API (Nginx Proxy Manager supports many). An internal CA also works, but its certificate must then be trusted on every client twice: in the browser (Firefox has its own store) and in the system (`update-ca-certificates` or similar), because the plugin uses the system certificates.
 
@@ -105,7 +105,7 @@ Ruumble works over plain HTTP; HTTPS is optional. With HTTPS the browser offers 
 2. **Proxy host:** forward to `ruumble:64080` (the container must be in a network the proxy can reach, e.g. `homeserver-network` in the template), enable **Websockets Support** (otherwise `/ws/*` fails), request the certificate with a DNS challenge and enable **Force SSL**. Uploads to the board go up to 10 MB: if they fail with `413`, add `client_max_body_size 20m;` in the proxy host's Advanced tab.
 3. **Service:** set `PUBLIC_URL: https://ruumble.example.com`, `ADDRESS_CHECK: warn` and `TRUST_PROXY: "true"` (see the commented lines in the template). Remove the port binding to `<LAN-IP>:64080` so that the unencrypted path is closed, unless you want to keep it (see below).
 4. **Address check:** behind the proxy the service takes the client address from `X-Forwarded-For` and compares it with the address Mumble sees (ADR-0004). Keep `ADDRESS_CHECK: warn`. `enforce` only works if the proxy sees the same client address as Mumble (no hairpin NAT, P7); check the log for `Plugin address does not match Mumble's` first.
-5. **Root channel description:** change the line to `ruumble: https://ruumble.example.com` (section 3). Users who set a fixed `bridgeUrl` in `~/.config/ruumble/plugin.json` change it too. Change the link in the Mumble welcome message (`MUMBLE_CONFIG_WELCOMETEXT`) as well; it is plain Mumble config and takes effect after restarting the Mumble container.
+5. **Root channel description:** change the line to `ruumble: https://ruumble.example.com` (section 3). Users who set a fixed `bridgeUrl` in `plugin.json` change it too. Change the link in the Mumble welcome message (`MUMBLE_CONFIG_WELCOMETEXT`) as well; it is plain Mumble config and takes effect after restarting the Mumble container.
 6. **Pair again:** the device cookie belongs to the old address, so every browser pairs once more: on the "not paired" page with **Pair this browser** and the code from the Mumble log (ADR-0012). From now on the cookie is sent only over HTTPS (`Secure`).
 7. **Check:** `curl https://ruumble.example.com/healthz`, then open the web UI; the browser's developer tools show the WebSocket as `wss://…/ws/ui`.
 

@@ -31,7 +31,7 @@ The results of the feasibility studies S1 and S2 mentioned below are summarised 
 | Ruumble is a **standalone repository** ([ADR-0009](decisions/0009-standalone-repository.md)). | Only the two interface files are taken from Mumble, unchanged and pinned to a release tag, with checksums and the BSD-3 licence (`third_party/mumble/`). |
 | The interfaces are never edited by hand. | They are updated only with `tools/update-mumble-interfaces.sh <tag>`. CI checks `SHA256SUMS`. |
 | Ruumble does not build Mumble. | The plugin has its **own CMake project** with the include path `third_party/mumble/plugins`. The service generates Ice stubs from `third_party/mumble/src/murmur/MumbleServer.ice`. |
-| The runtime does not depend on our own build of Mumble. | The plugin runs in the **Mumble client of the Linux distribution**, the service next to the **official server image**. Neither Mumble part is built by us. |
+| The runtime does not depend on our own build of Mumble. | The plugin runs in the **Mumble client of the Linux distribution** or the official Windows client, the service next to the **official server image**. Neither Mumble part is built by us. |
 | The server state is never changed. | The service only gets `icesecretread`. Callbacks and write methods are therefore technically blocked (see 3.1). |
 | Actions run only in the user's own client. | Channel changes, mute and deafen are carried out by the plugin in the user's client. The server's ACL and rate limit apply exactly as for a click in Mumble. |
 
@@ -48,10 +48,10 @@ The results of the feasibility studies S1 and S2 mentioned below are summarised 
 | **Optional exports** | Ruumble also exports `mumble_setMumbleInfo` (Mumble calls it first, before `mumble_init`, with the client version; the plugin sends that version in its `hello`, see section 4), plus `mumble_getVersion`, `mumble_getAuthor` and `mumble_getDescription` for the plugin list. | `plugins/MumblePlugin.h` |
 | **API struct** | **Copy** it on registration. Mumble passes a pointer to the stack. | `plugins/MumblePlugin.h:735-738` |
 | **Header** | Include it without extras in **one** translation unit only. All others set `MUMBLE_PLUGIN_NO_DEFAULT_FUNCTION_DEFINITIONS`, otherwise a duplicate symbol results. | `plugins/MumblePlugin.h:12-16, 1187-1192` |
-| **Loading** | Mumble loads the `.so` with `dlopen` while scanning, even if the plugin is disabled. So the thread is only started in `mumble_init`. `mumble_shutdown` must stop it with `join`, because Mumble unloads the library afterwards. | `src/mumble/Plugin.cpp:36, 54-56`; `docs/dev/plugins/PluginLifecycle.md:17-19` |
+| **Loading** | Mumble loads the library (`dlopen`, `LoadLibrary`) while scanning, even if the plugin is disabled. So the thread is only started in `mumble_init`. `mumble_shutdown` must stop it with `join`, because Mumble unloads the library afterwards. | `src/mumble/Plugin.cpp:36, 54-56`; `docs/dev/plugins/PluginLifecycle.md:17-19` |
 | **Threading** | All API calls run on Mumble's main thread. A call from another thread is queued and waits **at most 800 ms**, then `MUMBLE_EC_API_REQUEST_TIMEOUT` is returned. | `src/mumble/API_v_1_x_x.cpp:1654-1676` |
 | **Memory** | Strings and arrays returned by the API must be released with `freeMemory`. | `src/mumble/API_v_1_x_x.cpp:165-197` |
-| **Installation** | A zip with the extension `.mumble_plugin` and a `manifest.xml` (`os="linux"`, `arch="x64"`). There is **no signature**. The user must **enable the plugin by hand**; the default is `enabled=false`. | `src/mumble/PluginInstaller.cpp:38-133`; `src/mumble/PluginManifest.cpp:30-124`; `src/mumble/Settings.h:96-100` |
+| **Installation** | A zip with the extension `.mumble_plugin` and a `manifest.xml`; ours lists `libruumble.so` (`os="linux"`) and `ruumble.dll` (`os="windows"`), both `arch="x64"`, and Mumble installs the one for its platform (ADR-0013). There is **no signature**. The user must **enable the plugin by hand**; the default is `enabled=false`. | `src/mumble/PluginInstaller.cpp:38-133`; `src/mumble/PluginManifest.cpp:30-124`; `src/mumble/Settings.h:96-100` |
 | **Permissions** | We need neither "Positional data" nor "Keyboard monitoring". | `src/mumble/PluginConfig.cpp:99-113` |
 
 ### 2.2 Calls (plugin → Mumble)

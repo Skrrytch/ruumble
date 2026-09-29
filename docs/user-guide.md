@@ -4,7 +4,7 @@ Ruumble shows your Mumble server as an office building in the browser. You see w
 
 ## Requirements
 
-- **Linux** with the Mumble client **1.4 or newer** (from your distribution's package manager). The plugin is not yet available for Windows or macOS.
+- **Linux** or **Windows** (64-bit) with the Mumble client **1.4 or newer** (Linux: from your distribution's package manager; Windows: from mumble.info). The same plugin file works on both. The plugin is not available for macOS.
 - A Mumble server that has Ruumble set up. You can tell by a line `ruumble: …` in the description of the top channel, or by a link in the welcome message when you connect.
 - A current browser (Firefox, Chrome, Edge).
 
@@ -47,7 +47,7 @@ Links from Mumble (welcome message, pairing link) open in your default browser. 
 
 The web UI is in German if your browser prefers German, otherwise in English. You can switch it with the language button in the user menu (bottom left); the browser remembers your choice.
 
-The plugin's messages in the Mumble log follow the system language (`LC_ALL`, then `LC_MESSAGES`, then `LANG`): German for `de…`, English for everything else.
+The plugin's messages in the Mumble log follow the system language (Linux: `LC_ALL`, then `LC_MESSAGES`, then `LANG`; Windows: the display language): German for German, English for everything else.
 
 ### Board
 
@@ -68,13 +68,13 @@ The plugin's messages in the Mumble log follow the system language (`LC_ALL`, th
 | "This device is not paired yet." | The browser does not know you yet. Start Mumble with the plugin enabled and connect, then click **Pair this browser** and enter the code from the Mumble log. |
 | Pair **another browser**, profile or web app | Open Ruumble there, click **Pair this browser** and enter the code from the Mumble log (step 3). |
 | "Mumble is not connected." | Mumble is not running, not connected to the server, or the plugin is not enabled (step 2). |
-| The plugin cannot find the service | Check the Mumble log (lines starting with "Ruumble:"). It names the address the plugin connects to and, if that fails, the reason (e.g. a certificate that does not match the domain). You can set the address in `~/.config/ruumble/plugin.json` with `"bridgeUrl": "http://…"`. |
+| The plugin cannot find the service | Check the Mumble log (lines starting with "Ruumble:"). It names the address the plugin connects to and, if that fails, the reason (e.g. a certificate that does not match the domain). You can set the address in `plugin.json` (see below) with `"bridgeUrl": "http://…"`. |
 | Clicking a room does nothing | You lack the Mumble permission to enter that channel; Ruumble then shows a notice. |
 | Update the plugin | Download the new file and install it as in step 2 (overwrite the existing one). |
 
 ### Plugin settings
 
-`~/.config/ruumble/plugin.json` (or `$XDG_CONFIG_HOME/ruumble/plugin.json`):
+Linux: `~/.config/ruumble/plugin.json` (or `$XDG_CONFIG_HOME/ruumble/plugin.json`). Windows: `%APPDATA%\ruumble\plugin.json`.
 
 | Field | Meaning |
 |---|---|
