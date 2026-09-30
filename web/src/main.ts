@@ -8,9 +8,11 @@ import { FIXTURES, MockAdapter, type FixtureName } from "./lib/adapter/mock.ts";
 import { RuumbleState } from "./lib/state.svelte.ts";
 
 // Served by the service: LiveAdapter. Mock with ?fixture=<name> or ?mock, by default in the Vite dev server
-// (there ?live for the service via the proxy). Further parameters for the mock: ?debug, ?talking=0, ?paired=0
+// (there ?live for the service via the proxy) and always in the demo build (`build:demo`, GitHub Pages).
+// Further parameters for the mock: ?debug, ?talking=0, ?paired=0
 const params = new URLSearchParams(location.search);
-const useMock = params.has("fixture") || params.has("mock") || (import.meta.env.DEV && !params.has("live"));
+const useMock =
+  import.meta.env.MODE === "demo" || params.has("fixture") || params.has("mock") || (import.meta.env.DEV && !params.has("live"));
 const requested = params.get("fixture") ?? "sample";
 const fixture = (requested in FIXTURES ? requested : "sample") as FixtureName;
 const mock = useMock ? new MockAdapter(fixture, { talking: params.get("talking") !== "0", paired: params.get("paired") !== "0" }) : null;

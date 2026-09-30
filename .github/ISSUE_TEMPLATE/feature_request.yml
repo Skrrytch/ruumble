@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest an improvement or a new feature.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: Describe the situation and what is missing today. The why helps more than a finished solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How could Ruumble support it?
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: Screenshots, how other tools do it, how many people on your server would use it.

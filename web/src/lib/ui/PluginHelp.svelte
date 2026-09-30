@@ -6,12 +6,14 @@
   let { versions = null }: { versions?: Versions | null } = $props();
 
   const h = $derived(t().pluginHelp);
+  // the demo on GitHub Pages has no service that serves the plugin
+  const downloadUrl = import.meta.env.MODE === "demo" ? "https://github.com/Skrrytch/ruumble/releases/latest" : "/download";
 </script>
 
 <!-- Quick guide on the notice pages: plugins can show neither buttons nor links in Mumble (ADR-0010). -->
 <!-- Menu and button names as Mumble shows them in the respective language; highlighted: every second piece -->
 <section class="help" aria-label={h.label}>
-  <a class="download" href="/download" download>
+  <a class="download" href={downloadUrl} download>
     <Download size={18} /> {h.download}
   </a>
   <ol>

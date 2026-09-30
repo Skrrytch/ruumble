@@ -2,33 +2,46 @@
 
 [![CI](https://github.com/Skrrytch/ruumble/actions/workflows/ci.yml/badge.svg)](https://github.com/Skrrytch/ruumble/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/Skrrytch/ruumble)](https://github.com/Skrrytch/ruumble/releases/latest) [![License](https://img.shields.io/github/license/Skrrytch/ruumble)](LICENSE)
 
-An alternative web UI for [Mumble](https://www.mumble.info/): Ruumble shows the channels of a Mumble server as an **office building** in the browser. You see who is where, move to another room with a click, and pin notes, code, images and files to the room's board. Voice still runs through the regular Mumble client.
+**Your [Mumble](https://www.mumble.info/) server as an office building.** Ruumble is a web UI next to the regular Mumble client: the channels become floors and rooms, you see at a glance who sits where and who is talking, you move to another room with a click, and every room has a board for notes, code, images and files. Voice stays in Mumble, and Mumble itself stays unchanged.
 
-## Guides
+**[Try the demo](https://skrrytch.github.io/ruumble/)**: runs in the browser against a simulated server, no Mumble needed.
 
-| For | Guide |
-|---|---|
-| **Users**: install the plugin, pair, use Ruumble | [docs/user-guide.md](docs/user-guide.md) |
-| **Operators** of a Mumble server: set up Ruumble next to it | [docs/operations.md](docs/operations.md) |
-| **Developers**: build, test, contribute | [docs/development.md](docs/development.md) |
-
-![Ruumble: a floor with rooms, the elevator and the board](docs/images/ruumble.png)
+![Ruumble: moving between rooms, the board and the elevator](docs/images/ruumble-demo.gif)
 
 ## Features
 
-- Top-level channels become **floors**, the floor channel itself is the **corridor**, second-level channels are **rooms**. The order follows the channels' **position** in Mumble; the first channel is the ground floor.
-- Floors nested deeper or with more than 8 rooms are locked in the elevator; linked channels are hidden.
-- **Presence**: talking indicator, mute and deafen, quiet and away, listeners, recording, Mumble avatars.
-- **Board** in every room: text (Markdown), source code with highlighting, images with full-screen zoom, files up to 10 MB, quick reactions, shared task lists, one post kept on top, search and filter. Everyone in the room can read and edit it; the others get a short notice in their Mumble log.
-- **Languages**: German if the browser prefers German, otherwise English.
+- **Building view:** top-level channels become floors, second-level channels rooms, the floor channel itself the corridor. The order follows the channels' position in Mumble.
+- **Presence:** talking indicator, mute and deafen, quiet and away, listeners, recording, Mumble avatars.
+- **One click to move:** Ruumble moves your own Mumble client, and mute and deafen work from the browser too.
+- **Board in every room:** Markdown, source code with highlighting, images, files up to 10 MB, quick reactions, shared task lists, one post kept on top, search. The others in the room get a short notice in their Mumble log.
+- **German and English**, installable as a web app over HTTPS.
 
 Full list and plans: [docs/features.md](docs/features.md).
 
-**Requirements:** Mumble server 1.5 or later with Ice enabled, Mumble client 1.4 or later on Linux or Windows. Details: [docs/operations.md](docs/operations.md#requirements).
+## Quick start
 
-> **Download:** [latest release](https://github.com/Skrrytch/ruumble/releases/latest) with the Docker image `ghcr.io/skrrytch/ruumble` (linux/amd64, linux/arm64) and the plugin for Linux and Windows. Changes: [CHANGELOG.md](CHANGELOG.md).
+**For server operators** (Docker; details in the [operations guide](docs/operations.md)):
 
-## Architecture
+1. Enable Ice on the Mumble server (1.5 or newer) with separate read and write secrets.
+2. Take the Compose template from the [latest release](https://github.com/Skrrytch/ruumble/releases/latest), set `PUBLIC_URL`, the LAN address and the read secret, and run `docker compose up -d`. The image is `ghcr.io/skrrytch/ruumble` (linux/amd64, linux/arm64).
+3. Add a line `ruumble: http://<address>:64080` to the description of the root channel. That is how the plugins find the service.
+
+**For users** (details in the [user guide](docs/user-guide.md)):
+
+1. Download the plugin from the Ruumble address (`…/download`) and install it in Mumble under *Configure → Settings → Plugins*.
+2. Connect to the server: the plugin opens your browser with a pairing link.
+3. From then on, open Ruumble at its address. That's it.
+
+## Requirements
+
+| | |
+|---|---|
+| Mumble server | 1.5 or newer, with Ice enabled (tested: 1.5.735, 1.6.870) |
+| Mumble client | 1.4 or newer on **Linux** (x86_64) or **Windows** (x64); one plugin file for both. No macOS plugin yet. |
+| Service | Docker, network access to the Mumble server's Ice port |
+| Browser | a current Firefox, Chrome or Edge |
+
+## How it works
 
 ```
 Browser ──http(s)──▶ Ruumble service ──Ice (read-only)──▶ Mumble server
@@ -37,24 +50,30 @@ Browser ──http(s)──▶ Ruumble service ──Ice (read-only)──▶ Mu
                      Ruumble plugin ──plugin API──▶ Mumble client (audio unchanged)
 ```
 
-- **Mumble stays unchanged.** Ruumble uses the regular Mumble client and the official server image.
-- **Plugin** (`plugin/`): provides the user's identity and talking state, and performs moves, mute and deafen in the user's own client.
-- **Service** (`bridge/`): reads the channel tree and user state via Ice **read-only**, serves the web UI, forwards commands to the plugin and stores the boards.
-- **Web UI** (`web/`): Svelte. It derives the building from the channel tree.
+- The **service** (`bridge/`) reads the channel tree and user state via Ice, **read-only**. It serves the web UI, forwards commands to the plugin and stores the boards.
+- The **plugin** (`plugin/`) tells the service who you are and when you talk, and carries out moves, mute and deafen in your own client. It only opens an outgoing connection.
+- The **web UI** (`web/`, Svelte) derives the building from the channel tree.
+- Talking state goes only to your own browser and is never stored. More in the [architecture decisions](docs/decisions/README.md).
 
-## More documentation
+## Documentation
 
-| Document | Content |
+| For | Guide |
 |---|---|
-| [docs/features.md](docs/features.md) | What Ruumble supports today and what is planned |
-| [docs/decisions/](docs/decisions/README.md) | Architecture decision records |
-| [docs/mumble-interfaces.md](docs/mumble-interfaces.md) | Every Mumble interface Ruumble uses, with references into the Mumble source |
-| [third_party/mumble/](third_party/mumble/README.md) | The two interface files taken from Mumble |
+| Users | [docs/user-guide.md](docs/user-guide.md): install the plugin, pair, use Ruumble |
+| Operators | [docs/operations.md](docs/operations.md): set up Ruumble next to a Mumble server, HTTPS, backups, updates |
+| Developers | [docs/development.md](docs/development.md): build, test, release |
+| Everyone | [CHANGELOG.md](CHANGELOG.md), [features and plans](docs/features.md), [Mumble interfaces used](docs/mumble-interfaces.md) |
+
+## Support and contributing
+
+- Questions and ideas: [Discussions](https://github.com/Skrrytch/ruumble/discussions). Bugs and feature requests: [issues](https://github.com/Skrrytch/ruumble/issues).
+- Security problems: please report them privately, see [SECURITY.md](SECURITY.md).
+- Contributions are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
 [BSD-3-Clause](LICENSE). The files in `third_party/mumble/` are under Mumble's BSD-3 license (© The Mumble Developers).
 
-The service uses Ice for JavaScript (GPL-2.0). A distributed Docker image of the service is therefore GPL-2.0 as a whole (ADR-0006); this does not apply to the web UI or the plugin. Third-party components: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The service uses Ice for JavaScript (GPL-2.0), so the distributed Docker image is GPL-2.0 as a whole (ADR-0006). This does not apply to the web UI or the plugin. Third-party components: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Ruumble is not affiliated with or endorsed by the Mumble project.

@@ -1,0 +1,59 @@
+name: Bug report
+description: Something does not work as described.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! Most problems depend on the versions involved, so please fill them in.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Ruumble …
+        2. Click …
+  - type: dropdown
+    id: area
+    attributes:
+      label: Part
+      options:
+        - Web UI (building, rooms, elevator)
+        - Board
+        - Plugin / pairing
+        - Service / setup
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: ruumble
+    attributes:
+      label: Ruumble version
+      description: Shown at the bottom left of the web UI ("Interface …") or at `/api/version`.
+      placeholder: "0.14.0, plugin 0.5.0"
+    validations:
+      required: true
+  - type: input
+    id: mumble
+    attributes:
+      label: Mumble server and client version
+      placeholder: "server 1.6.870, client 1.5.735"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and browser
+      placeholder: "Windows 11, Firefox 140"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of `/healthz`, the service log (`docker logs ruumble`) or Ruumble lines from the Mumble log, if relevant. Remove anything private.
+      render: text

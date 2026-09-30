@@ -4,6 +4,12 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 0.14.0 is the first published release. Earlier versions were only run by the author and are listed for reference.
 
+## [Unreleased]
+
+### Added
+- Demo of the web UI against the mock on GitHub Pages: <https://skrrytch.github.io/ruumble/>.
+- README with a quick start, security policy, contribution guide, issue templates.
+
 ## [0.14.0] - 2026-09-30
 
 Plugin 0.5.0.

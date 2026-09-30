@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:demo": "vite build --mode demo --base=./ --outDir dist-demo",
     "preview": "vite preview",
     "lint": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "test": "vitest run --coverage",

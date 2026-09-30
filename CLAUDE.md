@@ -13,6 +13,7 @@ pnpm install
 pnpm lint && pnpm test && pnpm build        # all packages (what CI runs)
 pnpm -F @ruumble/web e2e                     # Playwright against the mock (builds + previews on :4173)
 pnpm -F @ruumble/web dev                     # http://localhost:5173, mock adapter by default
+pnpm -F @ruumble/web build:demo              # static demo against the mock (web/dist-demo), deployed to GitHub Pages by pages.yml
 pnpm -F @ruumble/bridge dev                  # service with --watch (needs ICE_* env, see bridge/src/main.ts header)
 pnpm -F @ruumble/protocol gen:schema         # regenerate protocol/schema/protocol.schema.json after changing protocol/src/index.ts
 ```

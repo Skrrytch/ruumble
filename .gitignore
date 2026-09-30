@@ -7,3 +7,4 @@ build-win/
 .DS_Store
 coverage/
 .idea/
+dist-demo/
