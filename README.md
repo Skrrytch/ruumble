@@ -30,7 +30,7 @@ Full list and plans: [docs/features.md](docs/features.md).
 **For server operators** (Docker; details in the [operations guide](docs/operations.md)):
 
 1. Enable Ice on the Mumble server (1.5 or newer) with separate read and write secrets.
-2. Take the Compose template from the [latest release](https://github.com/Skrrytch/ruumble/releases/latest), set `PUBLIC_URL`, the LAN address and the read secret, and run `docker compose up -d`. The image is `ghcr.io/skrrytch/ruumble` (linux/amd64, linux/arm64).
+2. Add the Ruumble container next to it: one Compose file in which you set the server address and the path to the read secret, then `docker compose up -d`. For a new setup there is a [template with Mumble and Ruumble together](deploy/compose/mumble-with-ruumble.docker-compose.yml). The image is `ghcr.io/skrrytch/ruumble` (linux/amd64, linux/arm64).
 3. Add a line `ruumble: http://<address>:64080` to the description of the root channel. That is how the plugins find the service.
 
 **For users** (details in the [user guide](docs/user-guide.md)):

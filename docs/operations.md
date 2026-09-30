@@ -1,6 +1,6 @@
 # Operations guide: running Ruumble next to a Mumble server
 
-Ruumble consists of a **service** (Docker container, which also serves the web UI) and a **plugin** for the users' Mumble clients. The service reads the Mumble server through its Ice interface, **read-only**; Mumble itself stays unchanged.
+Ruumble has two parts: a **service** (one Docker container, which also serves the web UI) that runs next to your Mumble server, and a **plugin** that users install in their Mumble client. This guide is about the service. The service reads the Mumble server through its Ice interface, **read-only**; Mumble itself stays unchanged.
 
 ```
 Browser ──http(s)──▶ Ruumble service ──Ice (read-only)──▶ Mumble server
@@ -9,90 +9,118 @@ Browser ──http(s)──▶ Ruumble service ──Ice (read-only)──▶ Mu
                      Ruumble plugin in the Mumble client
 ```
 
-Placeholders in this guide: `<LAN-IP>` (address of the server), `<compose-dir>` (where the Compose files live, for example one folder `mumble/` and one `ruumble/`), `<backup-dir>` (backups).
+The [quick setup](#quick-setup) gets Ruumble running on a LAN in four steps; everything after it is optional.
 
 ## Requirements
 
 | | Requirement |
 |---|---|
-| Mumble server | **1.5 or newer** (up to 1.4 the Ice interface was called `Murmur`; Ruumble speaks `MumbleServer`). Ice must be enabled. |
-| Users' Mumble client | 1.4 or newer, **Linux** or **Windows** (x64); one bundle contains both |
-| Service | Docker; the container needs network access to the Mumble server's Ice port |
-| Network | The users' clients must reach the service (plugin and browser) |
+| Mumble server | **1.5 or newer** with Ice (up to 1.4 the Ice interface was called `Murmur`; Ruumble speaks `MumbleServer`). The quick setup assumes the official Docker image `mumblevoip/mumble-server`; [without Docker](#mumble-without-docker) works too. |
+| Service | Docker with Compose, on the same machine as the Mumble container (or with network access to its Ice port) |
+| Network | The users' computers must reach the service (browser and plugin) |
+| Users' Mumble client | 1.4 or newer, **Linux** (x86_64) or **Windows** (x64) |
 
-**Tested with:**
-
-| Component | Versions |
-|---|---|
-| Mumble server | 1.5.735, 1.6.870 (official image `mumblevoip/mumble-server`) |
-| Mumble client | 1.4.287 (Fedora), 1.5.517 (Ubuntu 24.04), 1.5.735 (Debian 13) |
+**Tested with:** Mumble server 1.5.735 and 1.6.870 (official image); Mumble client 1.4.287 (Fedora), 1.5.517 (Ubuntu 24.04), 1.5.735 (Debian 13).
 
 Known limitation: from Mumble server 1.6 on, Ice does not deliver avatar images of registered users (a bug in Mumble); Ruumble then shows initials.
 
-## 1. Prepare the Mumble server
+## Quick setup
 
-Ruumble needs Ice with **two different secrets**. The service gets only the **read secret**; the write secret stays with the operator (for example for one-time setup).
+Below, `<LAN-IP>` is the address of your server in the local network, e.g. `192.168.1.10`.
 
-### With Docker (official image)
+> **Setting up a new Mumble server?** Use the combined template [`deploy/compose/mumble-with-ruumble.docker-compose.yml`](../deploy/compose/mumble-with-ruumble.docker-compose.yml) instead of steps 1 and 2: it starts the Mumble server and Ruumble together. Create the two secrets as in step 1, replace `<LAN-IP>`, run `docker compose up -d`, then continue with [step 3](#3-tell-the-plugins-where-ruumble-is).
+>
+> The steps below add Ruumble to an **existing** Mumble container.
 
-Template: [`deploy/compose/mumble.docker-compose.yml`](../deploy/compose/mumble.docker-compose.yml)
+> **If your Mumble container is already in use,** back up its data first: `docker cp mumble-server:/data/. <backup-dir>/mumble-data/`. If the data lives in an anonymous volume, `docker compose down` discards it, so move it into a named volume first (the template uses `mumble-data`).
 
-1. **Back up:** `docker cp mumble-server:/data/. <backup-dir>/mumble-data/` and copy the existing Compose file.
-2. **Named volume:** if the data lives in an anonymous volume, `docker compose down` discards it. The template uses the named volume `mumble-data` (copy the data into it first).
-3. **Ice:** `MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'`. Port 6502 is **not** published; Ruumble reaches it through the shared Docker network `mumble-network`.
-4. **Secrets:** two different random values in `secrets/ice_read` and `secrets/ice_write` (mode 600), mounted as Docker secrets `MUMBLE_CONFIG_ICESECRETREAD` and `MUMBLE_CONFIG_ICESECRETWRITE`.
-5. **SuperUser password** (optional): Docker secret `MUMBLE_SUPERUSER_PASSWORD` in `secrets/superuser_password`.
-6. **Welcome message with a link to Ruumble** (optional, recommended): `MUMBLE_CONFIG_WELCOMETEXT`. Plugins cannot show links in Mumble, but the server's welcome message can. Put the whole value in double quotes (otherwise a comma splits it), the link in single quotes, and non-ASCII characters as HTML entities.
+### 1. Enable Ice in Mumble
 
-The additional external network `homeserver-network` in the template is only an example for an existing reverse proxy and can be dropped.
+Ice needs **two different secrets**: Ruumble only ever gets the read secret, the write secret stays with you. Create both next to Mumble's Compose file:
 
-### Without Docker (distribution package)
-
-In `mumble-server.ini` (or `murmur.ini`):
-
-```ini
-ice="tcp -h 127.0.0.1 -p 6502"
-icesecretread=<random-value-1>
-icesecretwrite=<random-value-2>
+```sh
+mkdir -p secrets
+openssl rand -hex 24 > secrets/ice_read
+openssl rand -hex 24 > secrets/ice_write
+chmod 600 secrets/*
 ```
 
-Then restart the server. If the Ruumble container runs on the same machine, set `-h` to an address the container can reach (for example the Docker bridge) and restrict the port to that path with a firewall.
+Add this to the Mumble service in its Compose file (complete template: [`deploy/compose/mumble.docker-compose.yml`](../deploy/compose/mumble.docker-compose.yml)):
 
-## 2. Set up the service
+```yaml
+services:
+  mumble-server:
+    # … your existing settings …
+    environment:
+      MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'
+    secrets:
+      - { source: ice_read, target: MUMBLE_CONFIG_ICESECRETREAD }
+      - { source: ice_write, target: MUMBLE_CONFIG_ICESECRETWRITE }
+    networks: [mumble-network]
 
-Template: [`deploy/compose/ruumble.docker-compose.yml`](../deploy/compose/ruumble.docker-compose.yml)
+secrets:
+  ice_read: { file: ./secrets/ice_read }
+  ice_write: { file: ./secrets/ice_write }
 
-1. **Image:** the published image `ghcr.io/skrrytch/ruumble:<version>` (linux/amd64 and linux/arm64) is already set in the template; the versions are listed on the [releases page](https://github.com/Skrrytch/ruumble/releases). To build it yourself instead, in the repository:
-   ```sh
-   docker build -f deploy/Dockerfile -t ruumble:<version> .
-   docker save ruumble:<version> | gzip | ssh <server> 'gunzip | docker load'
-   ```
-   and set `image: ruumble:<version>` in the Compose file.
-2. **Adjust the Compose file** (`PUBLIC_URL`, port binding to `<LAN-IP>`, the path to the read secret) and start it: `docker compose up -d`.
-3. **Check:** `curl http://<LAN-IP>:64080/healthz` → `{"ice":"ok",…}`. The response also shows the Mumble server version (`mumbleServer`) and the connected clients per Mumble and plugin version (`clients`, for example `{"mumble 1.5.735 / plugin 0.4.1": 2}`; reported by plugin 0.4 or newer). `/api/version` returns the service and bundled plugin version, e.g. `{"service":"0.13.1","plugin":"0.4.1"}`.
+networks:
+  mumble-network: { name: mumble-network }
+```
 
-If the Mumble server is older than 1.5, the service stops with: `No MumbleServer Meta object at … Ruumble needs Mumble server 1.5 or later (up to 1.4 the Ice interface was called "Murmur").`
+Do **not** publish port 6502: Ruumble reaches Ice through the shared Docker network `mumble-network`. Restart Mumble with `docker compose up -d`.
 
-The image contains the plugin for Linux x86_64 and Windows x64 (the Linux library is built on Debian 12, glibc 2.36, so it also runs on older distributions). Users download it at `http://<LAN-IP>:64080/download`; each [release](https://github.com/Skrrytch/ruumble/releases) also has it attached.
+### 2. Start Ruumble
 
-### Environment variables
+In a folder next to Mumble's (e.g. `ruumble/` beside `mumble/`), save this as `docker-compose.yml` and replace `<LAN-IP>` twice. A commented version with the HTTPS options is [`deploy/compose/ruumble.docker-compose.yml`](../deploy/compose/ruumble.docker-compose.yml), also attached to every [release](https://github.com/Skrrytch/ruumble/releases/latest).
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `ICE_HOST` | – (required) | Host of the Mumble server |
-| `ICE_PORT` | `6502` | Ice port |
-| `ICE_SECRET_READ` / `ICE_SECRET_READ_FILE` | – (required) | Read secret, directly or as a file (Docker secret). **Never the write secret.** |
-| `SERVER_ID` | first running | Server ID, if the Mumble process runs several virtual servers |
-| `PUBLIC_URL` | `http://localhost:64080` | Address where users reach Ruumble (used for pairing links) |
-| `PORT`, `HOST` | `64080`, `0.0.0.0` | HTTP and WebSocket |
-| `DATA_DIR` | `./data` (`/data` in the image) | Device tokens and board |
-| `ADDRESS_CHECK` | `warn` | `off` / `warn` / `enforce`: compare the IP addresses of the plugin and the Mumble connection (ADR-0004). The LAN template sets `enforce`. Behind a reverse proxy with hairpin NAT keep `warn`: the addresses never match there (P7). |
-| `TRUST_PROXY` | `false` | `true` behind a reverse proxy: client addresses come from `X-Forwarded-For` ([HTTPS](#https-behind-a-reverse-proxy-optional)) |
-| `PREVIEW` | `false` | `true`: show the building read-only without pairing |
-| `RETENTION_DAYS` | `30` | Retention of board posts |
-| `BOARD_QUOTA_MB` | `2048` | Storage for attachments; when full, the oldest posts with attachments are deleted |
-| `LOG_LEVEL` | `info` | Log level |
-| `WEB_DIST`, `PLUGIN_BUNDLE`, `PLUGIN_BUNDLE_DIR` | set in the image | Paths to the web UI and the plugin file |
+```yaml
+services:
+  ruumble:
+    image: ghcr.io/skrrytch/ruumble:0.14.0
+    container_name: ruumble
+    restart: unless-stopped
+    environment:
+      ICE_HOST: mumble-server                    # name of the Mumble container
+      ICE_SECRET_READ_FILE: /run/secrets/ice_read
+      PUBLIC_URL: http://<LAN-IP>:64080          # the address users open
+      ADDRESS_CHECK: enforce
+    secrets: [ice_read]
+    volumes: [ruumble-data:/data]
+    networks: [mumble-network]
+    ports: ["<LAN-IP>:64080:64080"]
+
+secrets:
+  ice_read: { file: ../mumble/secrets/ice_read } # the read secret from step 1
+
+volumes:
+  ruumble-data: { name: ruumble-data }
+
+networks:
+  mumble-network: { external: true }
+```
+
+Start it with `docker compose up -d`. The image is available for linux/amd64 and linux/arm64.
+
+### 3. Tell the plugins where Ruumble is
+
+The plugin finds the service through the description of the **root channel**. In Mumble, edit the top channel and add a line of its own:
+
+```
+ruumble: http://<LAN-IP>:64080
+```
+
+Keep the whole description **under 128 characters** (measured on the stored HTML), otherwise clients only receive it after hovering over the top channel once; see [Root channel description](#root-channel-description).
+
+### 4. Check and invite users
+
+```sh
+curl http://<LAN-IP>:64080/healthz      # → {"ice":"ok",…}
+```
+
+Then send users to `http://<LAN-IP>:64080`: the page offers the plugin download (`/download`), and the [user guide](user-guide.md) explains the rest.
+
+If it does not work, see [Troubleshooting](#troubleshooting).
+
+## Optional
 
 ### HTTPS behind a reverse proxy (optional)
 
@@ -103,10 +131,10 @@ Ruumble works over plain HTTP; HTTPS is optional. With HTTPS the browser offers 
 **Steps** (example: Nginx Proxy Manager, address `ruumble.example.com`):
 
 1. **DNS:** `ruumble.example.com` points to the address of the proxy, e.g. via a local DNS entry or a public record with the private IP.
-2. **Proxy host:** forward to `ruumble:64080` (the container must be in a network the proxy can reach, e.g. `homeserver-network` in the template), enable **Websockets Support** (otherwise `/ws/*` fails), request the certificate with a DNS challenge and enable **Force SSL**. Uploads to the board go up to 10 MB: if they fail with `413`, add `client_max_body_size 20m;` in the proxy host's Advanced tab.
+2. **Proxy host:** forward to `ruumble:64080` (the container must be in a network the proxy can reach; add the proxy's network to `networks` of the Ruumble service), enable **Websockets Support** (otherwise `/ws/*` fails), request the certificate with a DNS challenge and enable **Force SSL**. Uploads to the board go up to 10 MB: if they fail with `413`, add `client_max_body_size 20m;` in the proxy host's Advanced tab.
 3. **Service:** set `PUBLIC_URL: https://ruumble.example.com`, `ADDRESS_CHECK: warn` and `TRUST_PROXY: "true"` (see the commented lines in the template). Remove the port binding to `<LAN-IP>:64080` so that the unencrypted path is closed, unless you want to keep it (see below).
 4. **Address check:** behind the proxy the service takes the client address from `X-Forwarded-For` and compares it with the address Mumble sees (ADR-0004). Keep `ADDRESS_CHECK: warn`. `enforce` only works if the proxy sees the same client address as Mumble (no hairpin NAT, P7); check the log for `Plugin address does not match Mumble's` first.
-5. **Root channel description:** change the line to `ruumble: https://ruumble.example.com` (section 3). Users who set a fixed `bridgeUrl` in `plugin.json` change it too. Change the link in the Mumble welcome message (`MUMBLE_CONFIG_WELCOMETEXT`) as well; it is plain Mumble config and takes effect after restarting the Mumble container.
+5. **Root channel description:** change the line to `ruumble: https://ruumble.example.com`. Users who set a fixed `bridgeUrl` in `plugin.json` change it too. Change the link in the Mumble welcome message as well, if you have one.
 6. **Pair again:** the device cookie belongs to the old address, so every browser pairs once more: on the "not paired" page with **Pair this browser** and the code from the Mumble log (ADR-0012). From now on the cookie is sent only over HTTPS (`Secure`).
 7. **Check:** `curl https://ruumble.example.com/healthz`, then open the web UI; the browser's developer tools show the WebSocket as `wss://…/ws/ui`.
 
@@ -114,28 +142,56 @@ Idle WebSocket connections stay open behind the proxy: the service sends a ping 
 
 **HTTP and HTTPS side by side** is possible, e.g. HTTPS for everyday use and `http://<LAN-IP>:64080` for development. Keep the port binding for that. The plugins connect to whatever address the root channel description names (a single client can use `bridgeUrl` instead); pairing links always use `PUBLIC_URL`, and a browser has to pair separately for each address.
 
-## 3. Publish the address for the plugin
+### Welcome message with a link
 
-There is **one** plugin for all servers (ADR-0010). It reads the service's address from the **root channel description**, from a line of its own that ends with `ruumble: <address>`:
+Plugins cannot show links in Mumble, but the server's welcome message can. In Mumble's Compose file:
 
+```yaml
+      MUMBLE_CONFIG_WELCOMETEXT: >-
+        "Welcome! <a href='http://<LAN-IP>:64080'><b>Open the building (Ruumble)</b></a>"
 ```
-A few important settings for Ruumble:
 
-- ruumble: http://<LAN-IP>:64080
+Put the whole value in double quotes (otherwise a comma splits it), the link in single quotes, and non-ASCII characters as HTML entities. It takes effect after restarting the Mumble container.
+
+### SuperUser password as a secret
+
+In the template, the SuperUser password comes from the Docker secret `MUMBLE_SUPERUSER_PASSWORD` (file `secrets/superuser_password`). This is unrelated to Ruumble.
+
+### Mumble without Docker
+
+In `mumble-server.ini` (or `murmur.ini`):
+
+```ini
+ice="tcp -h 127.0.0.1 -p 6502"
+icesecretread=<random-value-1>
+icesecretwrite=<random-value-2>
 ```
 
-Keep the description **under 128 characters**, measured on the stored HTML; then all clients receive it immediately. With a longer description, every user has to hover the mouse over the top channel once (the plugin says so). Mumble's editor adds a lot of formatting; three lines easily become 400 characters. It stays short if you set it once via Ice with the write secret, in a short-lived helper container, not through Ruumble.
+Then restart the server. Set `ICE_HOST` in Ruumble's Compose file to the host's address and drop the `mumble-network` lines. If the Ruumble container runs on the same machine, set `-h` to an address the container can reach (for example the Docker bridge) and restrict the port to that path with a firewall.
+
+### Floors and rooms
 
 The order of floors and rooms comes from the channels' **Position** field (in Mumble: edit channel → Position; lower numbers first, ties sorted alphabetically). The first top-level channel is the ground floor.
 
-## 4. Board
+### Board
 
 - **Storage:** in the volume `ruumble-data`: `/data/board.sqlite` (SQLite, WAL) and attachments under `/data/board/<xx>/<sha256>`. Identical files are stored only once.
 - **Limits** (ADR-0011): files up to 10 MB, retention `RETENTION_DAYS`, storage `BOARD_QUOTA_MB`. Posts of deleted channels are kept for 7 days. Cleanup runs hourly.
 - **Usage:** `/healthz` → `"board":{"usedMB":…,"quotaMB":…}`
 - **Notice in Mumble** when something is pinned requires plugin 0.3.0 or newer; older plugins ignore it.
 
-## 5. Back up, update, roll back
+### Building the image yourself
+
+Instead of the published image, in the repository:
+
+```sh
+docker build -f deploy/Dockerfile -t ruumble:<version> .
+docker save ruumble:<version> | gzip | ssh <server> 'gunzip | docker load'
+```
+
+and set `image: ruumble:<version>` in the Compose file.
+
+## Back up, update, roll back
 
 **Back up the board while running** (SQLite backup API, then the attachments):
 
@@ -145,19 +201,28 @@ docker cp ruumble:/data/backup <backup-dir>/board-$(date +%Y%m%d)
 docker exec ruumble rm -rf /data/backup
 ```
 
-**Update:** back up the whole volume first, then change the image tag in the Compose file and run `docker compose up -d`:
+**Update:** back up the whole volume first, then change the image tag in the Compose file (versions: [releases](https://github.com/Skrrytch/ruumble/releases)) and run `docker compose up -d`:
 
 ```sh
 docker run --rm -v ruumble-data:/d -v <backup-dir>:/b alpine tar czf /b/ruumble-data-$(date +%Y%m%d-%H%M%S).tgz -C /d .
 ```
 
-> **Updating from 0.7 to 0.8: the port changes from 8080 to 64080.** Change the port binding (`<LAN-IP>:64080:64080`) and `PUBLIC_URL` in the Compose file, the `ruumble:` line in the root channel description (section 3), the link in the welcome message and, behind a reverse proxy, its forward target (`ruumble:64080`). Browsers that used the old address pair once more; users with a fixed `bridgeUrl` in `plugin.json` change it too. To keep the old address instead, set `PORT: 8080` in the Compose file.
+Users update the plugin by downloading it again from `/download` when the release notes mention a new plugin version.
+
+> **Updating from 0.7 to 0.8: the port changes from 8080 to 64080.** Change the port binding (`<LAN-IP>:64080:64080`) and `PUBLIC_URL` in the Compose file, the `ruumble:` line in the root channel description, the link in the welcome message and, behind a reverse proxy, its forward target (`ruumble:64080`). Browsers that used the old address pair once more; users with a fixed `bridgeUrl` in `plugin.json` change it too. To keep the old address instead, set `PORT: 8080` in the Compose file.
 
 > **Caution: upgrading the Mumble server from 1.5 to 1.6.** Back up the Mumble data first (`docker cp mumble-server:/data/. <backup-dir>/mumble-data/`). The database migration of Mumble 1.6.870 fails if `channel_info` contains NULL values, with an error like `Failed at migrating table channel_properties from schema version 9 to 11 … NOT NULL constraint failed`. Check before upgrading; the result must be `0`:
 >
 > ```sh
 > sqlite3 mumble-server.sqlite "select count(*) from channel_info where value is null"
 > ```
+
+**Roll back:** set the previous image tag, restore the volume backup made before the update, and start again:
+
+```sh
+docker compose down
+docker run --rm -v ruumble-data:/d -v <backup-dir>:/b alpine sh -c 'rm -rf /d/* && tar xzf /b/<backup>.tgz -C /d'
+```
 
 **Remove Ruumble:**
 
@@ -167,7 +232,61 @@ cd <compose-dir>/ruumble && docker compose down
 
 Mumble keeps running unchanged. If you changed Mumble for Ruumble, you can restore the backed-up Compose file; if the data used to live in an anonymous volume, mount that volume as `/data` again (`volumes: { <volume>: { external: true } }`).
 
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| `/healthz` does not show `"ice":"ok"`, log: `Ice unreachable` with `ConnectionRefused` or a DNS error | Ruumble cannot reach Ice: both containers in `mumble-network`? `ICE_HOST` is the Mumble container's name? `MUMBLE_CONFIG_ICE` set and Mumble restarted? |
+| Log: `No MumbleServer Meta object at …` | The Mumble server is older than 1.5. Ruumble needs 1.5 or newer. |
+| Log: `Ice unreachable` with `InvalidSecretException` | The read secret Ruumble got does not match Mumble's `MUMBLE_CONFIG_ICESECRETREAD`. Both must come from the same file; restart both containers after changing it. |
+| Users see "not paired" and no pairing link opens | Plugin installed **and enabled** in Mumble? The `ruumble:` line in the root channel description correct and reachable from the user's computer? |
+| Plugin says "Hover once over the top channel …" | The root channel description is longer than 128 characters, see below. |
+| Log: `Plugin address does not match Mumble's` | Browser/plugin and Mumble see different client addresses (proxy, NAT). Use `ADDRESS_CHECK: warn`. |
+
+`/healthz` also reports the Mumble server version (`mumbleServer`) and the connected clients per Mumble and plugin version (`clients`); `/api/version` returns the service and bundled plugin version.
+
+### Root channel description
+
+There is **one** plugin for all servers (ADR-0010). It reads the service's address from a line of its own in the root channel description that ends with `ruumble: <address>`, for example:
+
+```
+A few important settings for Ruumble:
+
+- ruumble: http://<LAN-IP>:64080
+```
+
+Keep the description **under 128 characters**, measured on the stored HTML; then all clients receive it immediately. With a longer description, every user has to hover the mouse over the top channel once (the plugin says so). Mumble's editor adds a lot of formatting; three lines easily become 400 characters. It stays short if you set it once via Ice with the write secret, in a short-lived helper container, not through Ruumble.
+
+## Configuration reference
+
+All settings are environment variables of the Ruumble container.
+
+**You always set these** (the quick setup does):
+
+| Variable | Meaning |
+|---|---|
+| `ICE_HOST` | Host of the Mumble server; with Docker the name of the Mumble container |
+| `ICE_SECRET_READ_FILE` or `ICE_SECRET_READ` | Ice read secret, as a file (Docker secret) or directly. **Never the write secret.** |
+| `PUBLIC_URL` | Address where users reach Ruumble (default `http://localhost:64080`); used for pairing links |
+
+**Optional:**
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `ADDRESS_CHECK` | `warn` | `off` / `warn` / `enforce`: compare the IP addresses of the plugin and the Mumble connection (ADR-0004). The template sets `enforce` for a LAN. Behind a reverse proxy with hairpin NAT keep `warn`: the addresses never match there (P7). |
+| `TRUST_PROXY` | `false` | `true` behind a reverse proxy: client addresses come from `X-Forwarded-For` ([HTTPS](#https-behind-a-reverse-proxy-optional)) |
+| `ICE_PORT` | `6502` | Ice port |
+| `SERVER_ID` | first running | Server ID, if the Mumble process runs several virtual servers |
+| `PORT`, `HOST` | `64080`, `0.0.0.0` | HTTP and WebSocket |
+| `PREVIEW` | `false` | `true`: show the building read-only without pairing |
+| `RETENTION_DAYS` | `30` | Retention of board posts |
+| `BOARD_QUOTA_MB` | `2048` | Storage for attachments; when full, the oldest posts with attachments are deleted |
+| `LOG_LEVEL` | `info` | Log level |
+
+**Set by the image**, normally not changed: `DATA_DIR` (`/data`, device tokens and board), `WEB_DIST`, `PLUGIN_BUNDLE`, `PLUGIN_BUNDLE_DIR` (paths to the web UI and the plugin file).
+
 ## Notes
 
+- **Plugin in the image:** the image contains the plugin for Linux x86_64 and Windows x64 (the Linux library is built on Debian 12, glibc 2.36, so it also runs on older distributions), also on arm64 servers. Each [release](https://github.com/Skrrytch/ruumble/releases) also has it attached.
 - **Copying without HTTPS:** over `http://<LAN-IP>` the browser offers no Clipboard API; the web UI then copies through a fallback ([HTTPS](#https-behind-a-reverse-proxy-optional)).
 - **License:** the service uses Ice for JavaScript (GPL-2.0). A distributed image is, as a whole, GPL-2.0 (ADR-0006).

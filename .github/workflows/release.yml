@@ -43,6 +43,9 @@ jobs:
             echo "::error::tag $GITHUB_REF_NAME does not match the service version $service"; exit 1
           fi
           grep -q "^## \[$service\]" CHANGELOG.md || { echo "::error::CHANGELOG.md has no section for $service"; exit 1; }
+          for f in deploy/compose/ruumble.docker-compose.yml deploy/compose/mumble-with-ruumble.docker-compose.yml docs/operations.md; do
+            grep -q "ghcr.io/skrrytch/ruumble:$service" "$f" || { echo "::error::$f does not use the image tag $service"; exit 1; }
+          done
           echo "service=$service" >> "$GITHUB_OUTPUT"
           echo "plugin=$plugin" >> "$GITHUB_OUTPUT"
           echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/ruumble" >> "$GITHUB_OUTPUT"
@@ -110,7 +113,7 @@ jobs:
           set -euo pipefail
           mkdir -p assets
           cp "out/ruumble-$PLUGIN.mumble_plugin" assets/
-          cp deploy/compose/ruumble.docker-compose.yml assets/
+          cp deploy/compose/ruumble.docker-compose.yml deploy/compose/mumble-with-ruumble.docker-compose.yml assets/
           cp THIRD_PARTY_NOTICES.md assets/
           (cd assets && sha256sum * > SHA256SUMS)
           cat assets/SHA256SUMS
@@ -119,7 +122,7 @@ jobs:
             echo
             echo "## Install"
             echo
-            echo "- **Service and web UI:** \`docker pull $IMAGE:$SERVICE\` (linux/amd64, linux/arm64). Setup: [docs/operations.md](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/operations.md), Compose template attached."
+            echo "- **Service and web UI:** \`docker pull $IMAGE:$SERVICE\` (linux/amd64, linux/arm64). Setup: [docs/operations.md](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/operations.md), Compose templates attached (`mumble-with-ruumble` for a new setup, `ruumble` next to an existing Mumble container)."
             echo "- **Plugin $PLUGIN** for Mumble 1.4+ on Linux x86_64 and Windows x64: \`ruumble-$PLUGIN.mumble_plugin\`, attached and also served by the service under \`/download\`. Guide: [docs/user-guide.md](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/user-guide.md)."
             echo
             echo "The Docker image is GPL-2.0 as a whole because the service uses Ice for JavaScript; Ruumble's own code is BSD-3-Clause. See THIRD_PARTY_NOTICES.md."

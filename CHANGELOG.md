@@ -9,6 +9,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 ### Added
 - Demo of the web UI against the mock on GitHub Pages: <https://skrrytch.github.io/ruumble/>.
 - README with a quick start, security policy, contribution guide, issue templates.
+- Compose template with Mumble server and Ruumble together for a new setup; the operations guide starts with a four-step quick setup.
+
+### Fixed
+- The Mumble Compose template no longer requires the external network `homeserver-network`.
 
 ## [0.14.0] - 2026-09-30
 

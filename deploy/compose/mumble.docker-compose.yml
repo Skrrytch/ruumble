@@ -4,6 +4,7 @@ services:
             resources:
                 limits:
                     memory: 128M
+        # keep the version you run today (upgrading 1.5 → 1.6: see the caution in docs/operations.md)
         image: mumblevoip/mumble-server:v1.5.735
         container_name: mumble-server
         hostname: mumble-server
@@ -26,7 +27,7 @@ services:
             - mumble-data:/data
         networks:
             - mumble-network
-            - homeserver-network # optional: existing network of a reverse proxy
+            # - homeserver-network # optional: existing network of a reverse proxy
         ports:
             - 64738:64738
             - 64738:64738/udp
@@ -49,5 +50,5 @@ networks:
     mumble-network:
         name: mumble-network
         driver: bridge
-    homeserver-network: # optional, see above
-        external: true
+    # homeserver-network: # optional, see above
+    #     external: true
