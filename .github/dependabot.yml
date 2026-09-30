@@ -12,6 +12,9 @@ updates:
       # Ice must match the Mumble interface (slice2js and ice are updated together, by hand)
       - dependency-name: ice
       - dependency-name: slice2js
+      # a new TypeScript major needs svelte-check support first: planned by hand
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -23,3 +26,8 @@ updates:
     directory: /deploy
     schedule:
       interval: weekly
+    ignore:
+      # the Node major goes together with .nvmrc and engines (CI tests that version), planned by hand;
+      # node:22-bookworm-slim is a floating tag, every image build gets the current 22.x anyway
+      - dependency-name: node
+        update-types: [version-update:semver-major]

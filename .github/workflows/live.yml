@@ -31,9 +31,9 @@ jobs:
           - { server: v1.6.870, client: debian }
           - { server: v1.6.870, client: fedora }
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -66,7 +66,7 @@ jobs:
       - name: Logs on failure
         if: failure()
         run: docker compose -f deploy/local/docker-compose.yml logs --no-color > deploy/local/out/compose.log || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: live-${{ matrix.server }}-${{ matrix.client }}
