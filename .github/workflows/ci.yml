@@ -14,16 +14,16 @@ jobs:
     name: Mumble interfaces unchanged
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: tools/update-mumble-interfaces.sh
 
   node:
     name: Lint, Test, Build (Node)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -36,16 +36,16 @@ jobs:
     name: Web UI in the browser (Playwright)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm -F @ruumble/web exec playwright install --with-deps chromium
       - run: pnpm -F @ruumble/web e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-results
@@ -55,12 +55,12 @@ jobs:
     name: Build and test plugin (C++)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake g++ libssl-dev
       - run: cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build plugin/build -j
       - run: plugin/build/ruumble_tests
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ruumble-plugin
           path: plugin/build/*.mumble_plugin
@@ -69,14 +69,14 @@ jobs:
     name: Cross-build and test plugin for Windows (MinGW, Wine)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake g++-mingw-w64-x86-64-posix wine wine64
       - run: cmake -S plugin -B plugin/build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64.cmake -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build plugin/build-win -j
       - run: wine plugin/build-win/ruumble_tests.exe
         env:
           WINEDEBUG: -all
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ruumble-plugin-windows
           path: plugin/build-win/*.mumble_plugin
