@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call: # from release.yml: a release is only built from a commit that passes CI
 
 permissions:
   contents: read

@@ -1,5 +1,7 @@
 # Ruumble
 
+[![CI](https://github.com/Skrrytch/ruumble/actions/workflows/ci.yml/badge.svg)](https://github.com/Skrrytch/ruumble/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/Skrrytch/ruumble)](https://github.com/Skrrytch/ruumble/releases/latest) [![License](https://img.shields.io/github/license/Skrrytch/ruumble)](LICENSE)
+
 An alternative web UI for [Mumble](https://www.mumble.info/): Ruumble shows the channels of a Mumble server as an **office building** in the browser. You see who is where, move to another room with a click, and pin notes, code, images and files to the room's board. Voice still runs through the regular Mumble client.
 
 ## Guides
@@ -24,7 +26,7 @@ Full list and plans: [docs/features.md](docs/features.md).
 
 **Requirements:** Mumble server 1.5 or later with Ice enabled, Mumble client 1.4 or later on Linux or Windows. Details: [docs/operations.md](docs/operations.md#requirements).
 
-> **Status:** service and web UI 0.14, plugin 0.5.
+> **Download:** [latest release](https://github.com/Skrrytch/ruumble/releases/latest) with the Docker image `ghcr.io/skrrytch/ruumble` (linux/amd64, linux/arm64) and the plugin for Linux and Windows. Changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Architecture
 
@@ -53,4 +55,6 @@ Browser ──http(s)──▶ Ruumble service ──Ice (read-only)──▶ Mu
 
 [BSD-3-Clause](LICENSE). The files in `third_party/mumble/` are under Mumble's BSD-3 license (© The Mumble Developers).
 
-The service uses Ice for JavaScript (GPL-2.0). A distributed Docker image of the service is therefore GPL-2.0 as a whole (ADR-0006); this does not apply to the web UI or the plugin.
+The service uses Ice for JavaScript (GPL-2.0). A distributed Docker image of the service is therefore GPL-2.0 as a whole (ADR-0006); this does not apply to the web UI or the plugin. Third-party components: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Ruumble is not affiliated with or endorsed by the Mumble project.

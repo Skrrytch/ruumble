@@ -59,6 +59,7 @@ Service image (contains the web UI and the plugin):
 
 ```sh
 docker build -f deploy/Dockerfile -t ruumble:<version> .
+docker buildx build -f deploy/Dockerfile --target plugin-bundle -o dist .   # only the plugin bundle, into dist/
 ```
 
 ## Developing the web UI
@@ -131,6 +132,19 @@ tools/update-mumble-interfaces.sh v1.6.870     # desired tag
 ```
 
 Then check the changes against [mumble-interfaces.md](mumble-interfaces.md) and run the live tests. The files under `third_party/mumble/` are never edited by hand; CI checks their checksums.
+
+## Releasing
+
+A release is a tag `v<service version>` on `main`; `.github/workflows/release.yml` does the rest:
+
+1. Bump the version in `bridge/package.json` and `web/package.json` (and the plugin in `plugin/CMakeLists.txt` if it changed), update the image tag in `deploy/compose/ruumble.docker-compose.yml`, and add a section `## [<version>] - <date>` with a link reference to `CHANGELOG.md`.
+2. Commit and push to `main`, wait for CI.
+3. Optional dry run: start the workflow **Release** manually (`gh workflow run release.yml`). It builds the image for both platforms and uploads the release assets as a workflow artifact, without publishing anything.
+4. `git tag v<version> && git push origin v<version>`.
+
+The workflow runs CI again, checks that the tag, both package versions and the changelog agree, pushes `ghcr.io/skrrytch/ruumble:<version>`, `:<major>.<minor>` and `:latest` (linux/amd64 and linux/arm64, with SBOM and provenance) and creates the GitHub release with the plugin bundle, the Compose template, `THIRD_PARTY_NOTICES.md` and `SHA256SUMS`. The release notes are the changelog section plus install notes.
+
+The plugin is x86_64 only (Linux and Windows), so the arm64 image serves the same bundle under `/download`.
 
 ## Contributing
 

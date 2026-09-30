@@ -12,7 +12,7 @@ Ruumble shows your Mumble server as an office building in the browser. You see w
 
 ### 1. Download the plugin
 
-Open the address of the Ruumble service in your browser and download the plugin there (`…/download`; the file is called `ruumble-<version>.mumble_plugin`, currently version 0.4.x). The address is in the description of the top channel, for example `ruumble: http://192.0.2.10:64080`, or you get it from the server operator.
+Open the address of the Ruumble service in your browser and download the plugin there (`…/download`; the file is called `ruumble-<version>.mumble_plugin`, currently version 0.5.x). The address is in the description of the top channel, for example `ruumble: http://192.0.2.10:64080`, or you get it from the server operator.
 
 ### 2. Install the plugin in Mumble
 

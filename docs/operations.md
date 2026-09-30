@@ -62,17 +62,18 @@ Then restart the server. If the Ruumble container runs on the same machine, set 
 
 Template: [`deploy/compose/ruumble.docker-compose.yml`](../deploy/compose/ruumble.docker-compose.yml)
 
-1. **Build the image** (in the repository) and copy it to the server:
+1. **Image:** the published image `ghcr.io/skrrytch/ruumble:<version>` (linux/amd64 and linux/arm64) is already set in the template; the versions are listed on the [releases page](https://github.com/Skrrytch/ruumble/releases). To build it yourself instead, in the repository:
    ```sh
    docker build -f deploy/Dockerfile -t ruumble:<version> .
    docker save ruumble:<version> | gzip | ssh <server> 'gunzip | docker load'
    ```
-2. **Adjust the Compose file** (image tag, `PUBLIC_URL`, port binding to `<LAN-IP>`) and start it: `docker compose up -d`.
+   and set `image: ruumble:<version>` in the Compose file.
+2. **Adjust the Compose file** (`PUBLIC_URL`, port binding to `<LAN-IP>`, the path to the read secret) and start it: `docker compose up -d`.
 3. **Check:** `curl http://<LAN-IP>:64080/healthz` → `{"ice":"ok",…}`. The response also shows the Mumble server version (`mumbleServer`) and the connected clients per Mumble and plugin version (`clients`, for example `{"mumble 1.5.735 / plugin 0.4.1": 2}`; reported by plugin 0.4 or newer). `/api/version` returns the service and bundled plugin version, e.g. `{"service":"0.13.1","plugin":"0.4.1"}`.
 
 If the Mumble server is older than 1.5, the service stops with: `No MumbleServer Meta object at … Ruumble needs Mumble server 1.5 or later (up to 1.4 the Ice interface was called "Murmur").`
 
-The image contains the plugin (built on Debian 12, glibc 2.36, so it also runs on older distributions). Users download it at `http://<LAN-IP>:64080/download`.
+The image contains the plugin for Linux x86_64 and Windows x64 (the Linux library is built on Debian 12, glibc 2.36, so it also runs on older distributions). Users download it at `http://<LAN-IP>:64080/download`; each [release](https://github.com/Skrrytch/ruumble/releases) also has it attached.
 
 ### Environment variables
 

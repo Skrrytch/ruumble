@@ -1,0 +1,145 @@
+name: Release
+
+# Pushing a tag v<service version> (e.g. v0.14.0) publishes a release (docs/development.md#releasing):
+#   - Docker image ghcr.io/<owner>/ruumble:<version> and :<major.minor>, :latest, for linux/amd64 and linux/arm64
+#   - GitHub release with the plugin bundle (Linux + Windows), the Compose template, the third-party
+#     notices and SHA256SUMS; the notes are the version's section in CHANGELOG.md
+# Started manually it is a dry run: it builds everything and uploads the assets as a workflow artifact,
+# but pushes no image and creates no release.
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: Image and GitHub release
+    needs: ci
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
+    env:
+      PUBLISH: ${{ github.ref_type == 'tag' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check versions
+        id: version
+        run: |
+          set -euo pipefail
+          service="$(node -p "require('./bridge/package.json').version")"
+          web="$(node -p "require('./web/package.json').version")"
+          plugin="$(sed -nE 's/^project\(ruumble_plugin VERSION ([0-9.]+).*/\1/p' plugin/CMakeLists.txt)"
+          echo "service $service, web $web, plugin $plugin"
+          [[ "$service" == "$web" ]] || { echo "::error::bridge ($service) and web ($web) versions differ"; exit 1; }
+          if [[ "$PUBLISH" == "true" && "$GITHUB_REF_NAME" != "v$service" ]]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match the service version $service"; exit 1
+          fi
+          grep -q "^## \[$service\]" CHANGELOG.md || { echo "::error::CHANGELOG.md has no section for $service"; exit 1; }
+          echo "service=$service" >> "$GITHUB_OUTPUT"
+          echo "plugin=$plugin" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/ruumble" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        if: env.PUBLISH == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+        with:
+          images: ${{ steps.version.outputs.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=dryrun,enable=${{ env.PUBLISH != 'true' }}
+          labels: |
+            org.opencontainers.image.title=Ruumble
+            org.opencontainers.image.description=Mumble server as an office building
+            org.opencontainers.image.licenses=GPL-2.0-only AND BSD-3-Clause
+          annotations: |
+            org.opencontainers.image.title=Ruumble
+            org.opencontainers.image.description=Mumble server as an office building
+            org.opencontainers.image.licenses=GPL-2.0-only AND BSD-3-Clause
+
+      - name: Build the plugin bundle
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          target: plugin-bundle
+          outputs: type=local,dest=out
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push the image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Assets and release notes
+        env:
+          SERVICE: ${{ steps.version.outputs.service }}
+          PLUGIN: ${{ steps.version.outputs.plugin }}
+          IMAGE: ${{ steps.version.outputs.image }}
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          cp "out/ruumble-$PLUGIN.mumble_plugin" assets/
+          cp deploy/compose/ruumble.docker-compose.yml assets/
+          cp THIRD_PARTY_NOTICES.md assets/
+          (cd assets && sha256sum * > SHA256SUMS)
+          cat assets/SHA256SUMS
+          {
+            awk -v v="$SERVICE" '$0 ~ "^## \\[" v "\\]" {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md
+            echo
+            echo "## Install"
+            echo
+            echo "- **Service and web UI:** \`docker pull $IMAGE:$SERVICE\` (linux/amd64, linux/arm64). Setup: [docs/operations.md](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/operations.md), Compose template attached."
+            echo "- **Plugin $PLUGIN** for Mumble 1.4+ on Linux x86_64 and Windows x64: \`ruumble-$PLUGIN.mumble_plugin\`, attached and also served by the service under \`/download\`. Guide: [docs/user-guide.md](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/user-guide.md)."
+            echo
+            echo "The Docker image is GPL-2.0 as a whole because the service uses Ice for JavaScript; Ruumble's own code is BSD-3-Clause. See THIRD_PARTY_NOTICES.md."
+          } > notes.md
+          cat notes.md
+
+      - uses: actions/upload-artifact@v4
+        if: env.PUBLISH != 'true'
+        with:
+          name: release-dryrun
+          path: |
+            assets
+            notes.md
+
+      - name: Create the GitHub release
+        if: env.PUBLISH == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SERVICE: ${{ steps.version.outputs.service }}
+          PLUGIN: ${{ steps.version.outputs.plugin }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" assets/* --verify-tag \
+            --title "Ruumble $SERVICE · Plugin $PLUGIN" --notes-file notes.md
