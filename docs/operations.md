@@ -28,7 +28,15 @@ Known limitation: from Mumble server 1.6 on, Ice does not deliver avatar images 
 
 Below, `<LAN-IP>` is the address of your server in the local network, e.g. `192.168.1.10`.
 
-> **Setting up a new Mumble server?** Use the combined template [`deploy/compose/mumble-with-ruumble.docker-compose.yml`](../deploy/compose/mumble-with-ruumble.docker-compose.yml) instead of steps 1 and 2: it starts the Mumble server and Ruumble together. Create the two secrets as in step 1, replace `<LAN-IP>`, run `docker compose up -d`, then continue with [step 3](#3-tell-the-plugins-where-ruumble-is).
+> **Setting up a new Mumble server?** Then steps 1 and 2 are three commands. In an empty folder:
+>
+> ```sh
+> curl -fsSLO https://raw.githubusercontent.com/Skrrytch/ruumble/main/deploy/compose/mumble-with-ruumble.docker-compose.yml
+> curl -fsSLO https://raw.githubusercontent.com/Skrrytch/ruumble/main/deploy/compose/setup.sh
+> sh setup.sh && docker compose up -d
+> ```
+>
+> `setup.sh` creates the two Ice secrets and prints the line for step 3; the Compose file starts the Mumble server and Ruumble together and needs no edits. Then continue with [step 3](#3-tell-the-plugins-where-ruumble-is).
 >
 > The steps below add Ruumble to an **existing** Mumble container.
 
@@ -39,10 +47,10 @@ Below, `<LAN-IP>` is the address of your server in the local network, e.g. `192.
 Ice needs **two different secrets**: Ruumble only ever gets the read secret, the write secret stays with you. Create both next to Mumble's Compose file:
 
 ```sh
-mkdir -p secrets
+mkdir -p secrets && chmod 700 secrets
 openssl rand -hex 24 > secrets/ice_read
 openssl rand -hex 24 > secrets/ice_write
-chmod 600 secrets/*
+chmod 644 secrets/*    # readable for the containers; the folder keeps other users out
 ```
 
 Add this to the Mumble service in its Compose file (complete template: [`deploy/compose/mumble.docker-compose.yml`](../deploy/compose/mumble.docker-compose.yml)):
@@ -70,23 +78,22 @@ Do **not** publish port 6502: Ruumble reaches Ice through the shared Docker netw
 
 ### 2. Start Ruumble
 
-In a folder next to Mumble's (e.g. `ruumble/` beside `mumble/`), save this as `docker-compose.yml` and replace `<LAN-IP>` twice. A commented version with the HTTPS options is [`deploy/compose/ruumble.docker-compose.yml`](../deploy/compose/ruumble.docker-compose.yml), also attached to every [release](https://github.com/Skrrytch/ruumble/releases/latest).
+In a folder next to Mumble's (e.g. `ruumble/` beside `mumble/`), save this as `docker-compose.yml`. A commented version with the HTTPS options is [`deploy/compose/ruumble.docker-compose.yml`](../deploy/compose/ruumble.docker-compose.yml), also attached to every [release](https://github.com/Skrrytch/ruumble/releases/latest).
 
 ```yaml
 services:
   ruumble:
-    image: ghcr.io/skrrytch/ruumble:0.14.0
+    image: ghcr.io/skrrytch/ruumble:0.15.0
     container_name: ruumble
     restart: unless-stopped
     environment:
       ICE_HOST: mumble-server                    # name of the Mumble container
       ICE_SECRET_READ_FILE: /run/secrets/ice_read
-      PUBLIC_URL: http://<LAN-IP>:64080          # the address users open
       ADDRESS_CHECK: enforce
     secrets: [ice_read]
     volumes: [ruumble-data:/data]
     networks: [mumble-network]
-    ports: ["<LAN-IP>:64080:64080"]
+    ports: ["64080:64080"]
 
 secrets:
   ice_read: { file: ../mumble/secrets/ice_read } # the read secret from step 1
@@ -99,6 +106,8 @@ networks:
 ```
 
 Start it with `docker compose up -d`. The image is available for linux/amd64 and linux/arm64.
+
+Ruumble belongs in a LAN or VPN, not on the internet (see [SECURITY.md](../SECURITY.md)). On a server with a public address, bind the port to the LAN or VPN address instead: `ports: ["192.168.1.10:64080:64080"]`.
 
 ### 3. Tell the plugins where Ruumble is
 
@@ -132,7 +141,7 @@ Ruumble works over plain HTTP; HTTPS is optional. With HTTPS the browser offers 
 
 1. **DNS:** `ruumble.example.com` points to the address of the proxy, e.g. via a local DNS entry or a public record with the private IP.
 2. **Proxy host:** forward to `ruumble:64080` (the container must be in a network the proxy can reach; add the proxy's network to `networks` of the Ruumble service), enable **Websockets Support** (otherwise `/ws/*` fails), request the certificate with a DNS challenge and enable **Force SSL**. Uploads to the board go up to 10 MB: if they fail with `413`, add `client_max_body_size 20m;` in the proxy host's Advanced tab.
-3. **Service:** set `PUBLIC_URL: https://ruumble.example.com`, `ADDRESS_CHECK: warn` and `TRUST_PROXY: "true"` (see the commented lines in the template). Remove the port binding to `<LAN-IP>:64080` so that the unencrypted path is closed, unless you want to keep it (see below).
+3. **Service:** set `ADDRESS_CHECK: warn` and `TRUST_PROXY: "true"` (see the commented lines in the template). The service then builds pairing links from the proxy's `X-Forwarded-Proto` and the host name the plugin used (Nginx Proxy Manager sends both); with another proxy that does not, also set `PUBLIC_URL: https://ruumble.example.com`. Remove the port binding (`64080:64080`) so that the unencrypted path is closed, unless you want to keep it (see below).
 4. **Address check:** behind the proxy the service takes the client address from `X-Forwarded-For` and compares it with the address Mumble sees (ADR-0004). Keep `ADDRESS_CHECK: warn`. `enforce` only works if the proxy sees the same client address as Mumble (no hairpin NAT, P7); check the log for `Plugin address does not match Mumble's` first.
 5. **Root channel description:** change the line to `ruumble: https://ruumble.example.com`. Users who set a fixed `bridgeUrl` in `plugin.json` change it too. Change the link in the Mumble welcome message as well, if you have one.
 6. **Pair again:** the device cookie belongs to the old address, so every browser pairs once more: on the "not paired" page with **Pair this browser** and the code from the Mumble log (ADR-0012). From now on the cookie is sent only over HTTPS (`Secure`).
@@ -140,7 +149,7 @@ Ruumble works over plain HTTP; HTTPS is optional. With HTTPS the browser offers 
 
 Idle WebSocket connections stay open behind the proxy: the service sends a ping every 30 s (nginx closes connections after 60 s without traffic by default) and closes connections that no longer answer.
 
-**HTTP and HTTPS side by side** is possible, e.g. HTTPS for everyday use and `http://<LAN-IP>:64080` for development. Keep the port binding for that. The plugins connect to whatever address the root channel description names (a single client can use `bridgeUrl` instead); pairing links always use `PUBLIC_URL`, and a browser has to pair separately for each address.
+**HTTP and HTTPS side by side** is possible, e.g. HTTPS for everyday use and `http://<LAN-IP>:64080` for development. Keep the port binding for that. The plugins connect to whatever address the root channel description names (a single client can use `bridgeUrl` instead); pairing links use the address the plugin connected to (or `PUBLIC_URL`, if set), and a browser has to pair separately for each address.
 
 ### Welcome message with a link
 
@@ -237,6 +246,7 @@ Mumble keeps running unchanged. If you changed Mumble for Ruumble, you can resto
 | Symptom | Cause and fix |
 |---|---|
 | `/healthz` does not show `"ice":"ok"`, log: `Ice unreachable` with `ConnectionRefused` or a DNS error | Ruumble cannot reach Ice: both containers in `mumble-network`? `ICE_HOST` is the Mumble container's name? `MUMBLE_CONFIG_ICE` set and Mumble restarted? |
+| Container stops: `ICE_SECRET_READ_FILE … cannot be read by uid 1000` | The secret file is not readable for the container user: `chmod 644 secrets/ice_read` (the `secrets` folder itself can stay `700`). |
 | Log: `No MumbleServer Meta object at …` | The Mumble server is older than 1.5. Ruumble needs 1.5 or newer. |
 | Log: `Ice unreachable` with `InvalidSecretException` | The read secret Ruumble got does not match Mumble's `MUMBLE_CONFIG_ICESECRETREAD`. Both must come from the same file; restart both containers after changing it. |
 | Users see "not paired" and no pairing link opens | Plugin installed **and enabled** in Mumble? The `ruumble:` line in the root channel description correct and reachable from the user's computer? |
@@ -261,18 +271,18 @@ Keep the description **under 128 characters**, measured on the stored HTML; then
 
 All settings are environment variables of the Ruumble container.
 
-**You always set these** (the quick setup does):
+**You always set these** (the templates do):
 
 | Variable | Meaning |
 |---|---|
 | `ICE_HOST` | Host of the Mumble server; with Docker the name of the Mumble container |
 | `ICE_SECRET_READ_FILE` or `ICE_SECRET_READ` | Ice read secret, as a file (Docker secret) or directly. **Never the write secret.** |
-| `PUBLIC_URL` | Address where users reach Ruumble (default `http://localhost:64080`); used for pairing links |
 
 **Optional:**
 
 | Variable | Default | Meaning |
 |---|---|---|
+| `PUBLIC_URL` | the address the plugin connected to | Address for the pairing links the plugin opens. Needed only if the plugins reach the service at a different address than the browsers should use, or behind a proxy that sends no `X-Forwarded-*` headers. |
 | `ADDRESS_CHECK` | `warn` | `off` / `warn` / `enforce`: compare the IP addresses of the plugin and the Mumble connection (ADR-0004). The template sets `enforce` for a LAN. Behind a reverse proxy with hairpin NAT keep `warn`: the addresses never match there (P7). |
 | `TRUST_PROXY` | `false` | `true` behind a reverse proxy: client addresses come from `X-Forwarded-For` ([HTTPS](#https-behind-a-reverse-proxy-optional)) |
 | `ICE_PORT` | `6502` | Ice port |

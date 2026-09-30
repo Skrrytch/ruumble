@@ -4,14 +4,22 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 0.14.0 is the first published release. Earlier versions were only run by the author and are listed for reference.
 
-## [Unreleased]
+## [0.15.0] - 2026-09-30
+
+Plugin 0.5.0 (unchanged). Easier setup: the Compose templates need no edits.
 
 ### Added
+- `deploy/compose/mumble-with-ruumble.docker-compose.yml`: Mumble server and Ruumble in one file for a new setup, and `setup.sh`, which creates the Ice secrets and prints the line for the root channel description.
+- The operations guide starts with a four-step quick setup; troubleshooting table with the typical log messages.
 - Demo of the web UI against the mock on GitHub Pages: <https://skrrytch.github.io/ruumble/>.
 - README with a quick start, security policy, contribution guide, issue templates.
-- Compose template with Mumble server and Ruumble together for a new setup; the operations guide starts with a four-step quick setup.
+
+### Changed
+- **`PUBLIC_URL` is optional.** Without it, pairing links use the address the plugin connected to (behind a reverse proxy with `TRUST_PROXY` including `X-Forwarded-Proto`), which is the address users open. Existing setups that set it keep working unchanged.
+- The Compose templates publish port 64080 on all interfaces instead of a `<LAN-IP>` placeholder; on a server with a public address, bind it to the LAN or VPN address (see the operations guide).
 
 ### Fixed
+- An unreadable `ICE_SECRET_READ_FILE` (e.g. owned by root with mode 600) now stops the service with a clear message; the guide recommends mode 644 for the files and 700 for the `secrets` folder.
 - The Mumble Compose template no longer requires the external network `homeserver-network`.
 
 ## [0.14.0] - 2026-09-30
@@ -157,4 +165,5 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.15.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.15.0
 [0.14.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.14.0

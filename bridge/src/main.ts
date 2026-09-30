@@ -4,7 +4,7 @@
  *   ICE_HOST, ICE_PORT (6502), ICE_SECRET_READ   Ice of the Mumble server, only the read secret
  *   ICE_SECRET_READ_FILE                         alternatively: file containing the read secret (Docker secret)
  *   SERVER_ID                                    optional, else the first running server
- *   PUBLIC_URL (http://localhost:64080)          base URL for pairing links (https://… behind a proxy)
+ *   PUBLIC_URL                                   optional base URL for pairing links; unset: the address the plugin connected to
  *   PORT (64080), HOST (0.0.0.0)                 HTTP/WebSocket
  *   WEB_DIST                                     built web UI (web/dist)
  *   DATA_DIR (./data)                            device tokens and board (board.sqlite, board/)
@@ -21,7 +21,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import fastifyStatic from "@fastify/static";
 import fastifyWebsocket from "@fastify/websocket";
-import Fastify, { type FastifyReply } from "fastify";
+import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { PairConfirm, type PairErrorCode, type Versions } from "@ruumble/protocol";
 import type { WebSocket } from "ws";
 import pkg from "../package.json" with { type: "json" };
@@ -42,6 +42,14 @@ const required = (key: string) => {
   return value;
 };
 const bool = (key: string) => env[key] === "true" || env[key] === "1";
+const readSecret = (file: string) => {
+  try {
+    return readFileSync(file, "utf8").trim();
+  } catch (e) {
+    const denied = (e as NodeJS.ErrnoException).code === "EACCES";
+    throw new Error(`ICE_SECRET_READ_FILE ${file} cannot be read${denied ? ` by uid ${process.getuid?.()}: make the file readable (chmod 644)` : `: ${e}`}`);
+  }
+};
 
 // board storage (ADR-0011); the backup needs nothing else, hence before the rest of the configuration
 const dataDir = resolve(env.DATA_DIR ?? "data");
@@ -57,9 +65,9 @@ if (process.argv[2] === "backup") {
 const config = {
   iceHost: required("ICE_HOST"),
   icePort: Number(env.ICE_PORT ?? 6502),
-  iceSecret: env.ICE_SECRET_READ_FILE ? readFileSync(env.ICE_SECRET_READ_FILE, "utf8").trim() : required("ICE_SECRET_READ"),
+  iceSecret: env.ICE_SECRET_READ_FILE ? readSecret(env.ICE_SECRET_READ_FILE) : required("ICE_SECRET_READ"),
   serverId: env.SERVER_ID ? Number(env.SERVER_ID) : undefined,
-  publicUrl: (env.PUBLIC_URL ?? "http://localhost:64080").replace(/\/$/, ""),
+  publicUrl: env.PUBLIC_URL ? env.PUBLIC_URL.replace(/\/$/, "") : undefined,
   port: Number(env.PORT ?? 64080),
   host: env.HOST ?? "0.0.0.0",
   webDist: resolve(env.WEB_DIST ?? new URL("../../web/dist", import.meta.url).pathname),
@@ -161,8 +169,12 @@ const conn = <T>(socket: WebSocket) => ({
   close: (code: number, reason: string) => socket.close(code, reason),
 });
 
+// The plugin reaches the service at the address from the root channel description, the same one users open.
+// Behind a reverse proxy, protocol and host come from X-Forwarded-Proto/-Host (TRUST_PROXY).
+const baseUrlOf = (req: FastifyRequest) => `${req.protocol}://${req.host}`;
+
 app.get("/ws/plugin", { websocket: true }, (socket, req) => {
-  wire(socket, hub.pluginConnected(conn(socket), req.ip));
+  wire(socket, hub.pluginConnected(conn(socket), req.ip, baseUrlOf(req)));
 });
 
 app.get("/ws/ui", { websocket: true }, (socket, req) => {
@@ -183,12 +195,12 @@ app.get<{ Querystring: { code?: string } }>("/pair", async (req, reply) => {
       .type("text/html; charset=utf-8")
       .send(`<!doctype html><html lang="${de ? "de" : "en"}"><meta charset="utf-8"><p>${text}</p><p><a href="/">Ruumble</a></p></html>`);
   }
-  setTokenCookie(reply, token);
+  setTokenCookie(req, reply, token);
   return reply.redirect("/");
 });
 
-function setTokenCookie(reply: FastifyReply, token: string): void {
-  const secure = config.publicUrl.startsWith("https://") ? "; Secure" : "";
+function setTokenCookie(req: FastifyRequest, reply: FastifyReply, token: string): void {
+  const secure = (config.publicUrl ?? baseUrlOf(req)).startsWith("https://") ? "; Secure" : "";
   reply.header("Set-Cookie", `${TOKEN_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${secure}`);
 }
 
@@ -203,7 +215,7 @@ app.post("/api/pair/confirm", async (req, reply) => {
   if (!body.success) return reply.code(400).send({ error: "invalid" });
   const result = pairing.confirmCode(body.data.request, body.data.code);
   if (result === "wrong-code" || result === "expired") return reply.code(PAIR_STATUS[result]).send({ error: result });
-  setTokenCookie(reply, result);
+  setTokenCookie(req, reply, result);
   return { ok: true };
 });
 

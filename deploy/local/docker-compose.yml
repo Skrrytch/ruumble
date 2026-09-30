@@ -28,6 +28,7 @@ services:
     environment:
       ICE_HOST: mumble
       ICE_SECRET_READ: s1-read-secret
+      # the test clients reach the service as ruumble:64080, the browser as 127.0.0.1: different addresses
       PUBLIC_URL: http://127.0.0.1:64080
       ADDRESS_CHECK: enforce
     ports:

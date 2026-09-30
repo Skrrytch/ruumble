@@ -29,8 +29,8 @@ export type AddressCheck = "off" | "warn" | "enforce";
 export interface HubOptions {
   source: MumbleSource;
   pairing: Pairing;
-  /** public base URL for pairing links, e.g. https://ruumble.example */
-  publicUrl: string;
+  /** public base URL for pairing links, e.g. https://ruumble.example; unset: the address the plugin connected to */
+  publicUrl?: string;
   addressCheck: AddressCheck;
   /** preview: web UIs without pairing see the building read-only */
   preview: boolean;
@@ -163,7 +163,8 @@ export class Hub {
 
   // ---------------------------------------------------------------- Plugin
 
-  pluginConnected(conn: Conn<BridgeToPlugin>, remoteAddress: string) {
+  /** `baseUrl`: the address the plugin reached the service at (the users' address), for pairing links without publicUrl */
+  pluginConnected(conn: Conn<BridgeToPlugin>, remoteAddress: string, baseUrl = "") {
     let entry: PluginEntry | null = null;
     return {
       onMessage: async (raw: string) => {
@@ -183,7 +184,7 @@ export class Hub {
           if (entry && entry.certHash !== msg.certHash) this.removePlugin(entry);
           entry = { conn, certHash: msg.certHash, session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unknown", pluginVersion: msg.pluginVersion, locale: msg.locale ?? "de", remoteAddress };
           this.plugins.set(msg.certHash, entry);
-          const pairUrl = msg.paired ? undefined : `${this.opts.publicUrl}/pair?code=${this.opts.pairing.createCode(msg.certHash, name)}`;
+          const pairUrl = msg.paired ? undefined : `${this.opts.publicUrl ?? baseUrl}/pair?code=${this.opts.pairing.createCode(msg.certHash, name)}`;
           conn.send(pairUrl ? { v, type: "welcome", pairUrl } : { v, type: "welcome" });
           this.log("Plugin connected", { session: msg.session, name, plugin: msg.pluginVersion, mumble: entry.mumbleVersion });
           this.sessionsChanged();

@@ -1,9 +1,7 @@
 # Mumble server and Ruumble in one Compose file, for a new setup (https://github.com/Skrrytch/ruumble).
-# Guide: docs/operations.md. Before the first start, in this folder:
-#   mkdir -p secrets && openssl rand -hex 24 > secrets/ice_read && openssl rand -hex 24 > secrets/ice_write
-#   chmod 600 secrets/*
-# Then replace <LAN-IP> (3 times) with the server's address in the local network and run: docker compose up -d
-# Last step: add a line "ruumble: http://<LAN-IP>:64080" to the description of the root channel in Mumble.
+# Nothing to edit. In this folder: ./setup.sh (creates the Ice secrets), then docker compose up -d.
+# Last step: add a line "ruumble: http://<address of this server>:64080" to the description of the
+# root channel in Mumble. Guide: docs/operations.md
 services:
     mumble-server:
         image: mumblevoip/mumble-server:v1.6.870
@@ -13,8 +11,8 @@ services:
             # Ice only inside the Compose network (port 6502 is not published); Ruumble only gets the read secret
             MUMBLE_CONFIG_ICE: '"tcp -h 0.0.0.0 -p 6502"'
             # optional: welcome message with a link to Ruumble (plugins cannot show links)
-            MUMBLE_CONFIG_WELCOMETEXT: >-
-                "Welcome! <a href='http://<LAN-IP>:64080'><b>Open the building (Ruumble)</b></a>"
+            # MUMBLE_CONFIG_WELCOMETEXT: >-
+            #     "Welcome! <a href='http://<address>:64080'><b>Open the building (Ruumble)</b></a>"
         secrets:
             - source: ice_read
               target: MUMBLE_CONFIG_ICESECRETREAD
@@ -27,7 +25,7 @@ services:
             - 64738:64738/udp
 
     ruumble:
-        image: ghcr.io/skrrytch/ruumble:0.14.0
+        image: ghcr.io/skrrytch/ruumble:0.15.0
         container_name: ruumble
         restart: unless-stopped
         depends_on:
@@ -35,14 +33,15 @@ services:
         environment:
             ICE_HOST: mumble-server
             ICE_SECRET_READ_FILE: /run/secrets/ice_read
-            PUBLIC_URL: http://<LAN-IP>:64080
             ADDRESS_CHECK: enforce
         secrets:
             - ice_read
         volumes:
             - ruumble-data:/data
         ports:
-            - <LAN-IP>:64080:64080
+            # Ruumble belongs in a LAN or VPN, not on the internet: on a server with a public address,
+            # bind it to the LAN/VPN address instead, e.g. "192.168.1.10:64080:64080"
+            - 64080:64080
 
 secrets:
     ice_read:

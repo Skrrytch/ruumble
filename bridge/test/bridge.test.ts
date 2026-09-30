@@ -138,6 +138,23 @@ describe("Hub: Plugin", () => {
     expect(hub.clientVersions()).toEqual({ "mumble unknown / plugin 0.1.0": 1 }); // old plugin without mumbleVersion
   });
 
+  it("without publicUrl the pairing link uses the address the plugin connected to", async () => {
+    const source = new FakeSource();
+    const hub = new Hub({ source, pairing: new Pairing(null), addressCheck: "off", preview: false });
+    const poller = new Poller(source, { onChange: (s) => hub.setState(s) });
+    await poller.poll();
+    const plugin = recorder<BridgeToPlugin>();
+    await hub.pluginConnected(plugin.conn, "10.0.0.7", "http://192.168.1.10:64080").onMessage(hello());
+    expect(plugin.last("welcome")?.pairUrl).toMatch(/^http:\/\/192\.168\.1\.10:64080\/pair\?code=/);
+  });
+
+  it("publicUrl wins over the address the plugin connected to", async () => {
+    const { hub } = await setup();
+    const plugin = recorder<BridgeToPlugin>();
+    await hub.pluginConnected(plugin.conn, "10.0.0.7", "http://ruumble:64080").onMessage(hello());
+    expect(plugin.last("welcome")?.pairUrl).toMatch(/^https:\/\/ruumble\.test\/pair\?code=/);
+  });
+
   it("plugin reports the Mumble version → visible in clientVersions", async () => {
     const { hub } = await setup();
     const plugin = recorder<BridgeToPlugin>();

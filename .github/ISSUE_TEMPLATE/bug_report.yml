@@ -36,7 +36,7 @@ body:
     attributes:
       label: Ruumble version
       description: Shown at the bottom left of the web UI ("Interface …") or at `/api/version`.
-      placeholder: "0.14.0, plugin 0.5.0"
+      placeholder: "0.15.0, plugin 0.5.0"
     validations:
       required: true
   - type: input
