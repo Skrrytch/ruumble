@@ -33,7 +33,7 @@ RUN cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release -DRUUMBLE_TESTS=O
     && cmake --build plugin/build -j"$(nproc)" \
     && mkdir -p /out && cp plugin/build/*.mumble_plugin /out/
 
-FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS build
+FROM --platform=$BUILDPLATFORM node:26-bookworm-slim AS build
 WORKDIR /src
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
@@ -48,7 +48,7 @@ COPY bridge bridge
 RUN pnpm -F @ruumble/web build && pnpm -F @ruumble/bridge build
 
 # only the runtime dependencies of the service (fastify, ice, better-sqlite3), for the target platform
-FROM node:22-bookworm-slim AS deps
+FROM node:26-bookworm-slim AS deps
 WORKDIR /src
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -60,7 +60,7 @@ RUN pnpm install --frozen-lockfile --prod --filter @ruumble/bridge... \
 FROM scratch AS plugin-bundle
 COPY --from=plugin /out /
 
-FROM node:22-bookworm-slim
+FROM node:26-bookworm-slim
 LABEL org.opencontainers.image.title="Ruumble" \
       org.opencontainers.image.description="Mumble server as an office building" \
       org.opencontainers.image.source="https://github.com/Skrrytch/ruumble" \
