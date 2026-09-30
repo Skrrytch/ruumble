@@ -27,11 +27,15 @@ Full list and plans: [docs/features.md](docs/features.md).
 
 ## Quick start
 
-**For server operators** (Docker; details in the [operations guide](docs/operations.md)):
+**For server operators** (Docker; details and the setup next to an existing Mumble container in the [operations guide](docs/operations.md)). A new Mumble server with Ruumble, in an empty folder:
 
-1. Enable Ice on the Mumble server (1.5 or newer) with separate read and write secrets.
-2. Add the Ruumble container next to it: one Compose file in which you set the server address and the path to the read secret, then `docker compose up -d`. For a new setup there is a [template with Mumble and Ruumble together](deploy/compose/mumble-with-ruumble.docker-compose.yml). The image is `ghcr.io/skrrytch/ruumble` (linux/amd64, linux/arm64).
-3. Add a line `ruumble: http://<address>:64080` to the description of the root channel. That is how the plugins find the service.
+```sh
+curl -fsSLO https://raw.githubusercontent.com/Skrrytch/ruumble/main/deploy/compose/mumble-with-ruumble.docker-compose.yml
+curl -fsSLO https://raw.githubusercontent.com/Skrrytch/ruumble/main/deploy/compose/setup.sh
+sh setup.sh && docker compose up -d
+```
+
+Then add the line `setup.sh` prints, e.g. `ruumble: http://192.168.1.10:64080`, to the description of the root channel in Mumble. That is how the plugins find Ruumble.
 
 **For users** (details in the [user guide](docs/user-guide.md)):
 
@@ -67,7 +71,7 @@ Browser ──http(s)──▶ Ruumble service ──Ice (read-only)──▶ Mu
 | For | Guide |
 |---|---|
 | Users | [docs/user-guide.md](docs/user-guide.md): install the plugin, pair, use Ruumble |
-| Operators | [docs/operations.md](docs/operations.md): set up Ruumble next to a Mumble server, HTTPS, backups, updates |
+| Operators | [docs/operations.md](docs/operations.md): set up Ruumble next to a Mumble server; from there HTTPS, backups and updates, troubleshooting |
 | Developers | [docs/development.md](docs/development.md): build, test, release |
 | Everyone | [CHANGELOG.md](CHANGELOG.md), [features and plans](docs/features.md), [Mumble interfaces used](docs/mumble-interfaces.md) |
 

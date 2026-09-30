@@ -13,7 +13,7 @@ services:
             ICE_HOST: mumble-server
             ICE_SECRET_READ_FILE: /run/secrets/ice_read
             ADDRESS_CHECK: enforce
-            # HTTPS behind a reverse proxy (docs/operations.md): instead of the line above
+            # HTTPS behind a reverse proxy (docs/operations/https.md): instead of the line above
             # ADDRESS_CHECK: warn
             # TRUST_PROXY: "true"
         secrets:

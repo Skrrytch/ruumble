@@ -4,7 +4,7 @@ services:
             resources:
                 limits:
                     memory: 128M
-        # keep the version you run today (upgrading 1.5 → 1.6: see the caution in docs/operations.md)
+        # keep the version you run today (upgrading 1.5 → 1.6: see docs/operations/mumble.md)
         image: mumblevoip/mumble-server:v1.5.735
         container_name: mumble-server
         hostname: mumble-server

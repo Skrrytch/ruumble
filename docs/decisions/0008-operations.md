@@ -22,7 +22,7 @@ Status: accepted for Docker, proposed for the rest (2026-09-28)
 ## Current state (code and `deploy/`)
 - The compose templates in `deploy/compose/` are split into `mumble.docker-compose.yml` and `ruumble.docker-compose.yml`. The Mumble template uses `mumblevoip/mumble-server:v1.5.735` (the version on the home server); the interface files in `third_party/mumble/` stay at v1.6.870. The local test setup (`deploy/local/`) uses v1.6.870.
 - The Ice read secret reaches the service as a Docker secret (`ICE_SECRET_READ_FILE=/run/secrets/ice_read`).
-- In the template the service is bound directly to the LAN address (`<LAN-IP>:64080`) over HTTP; HTTPS behind a reverse proxy is prepared as commented lines and described in [operations](../operations.md#https-behind-a-reverse-proxy-optional). On the home server this is in operation since 2026-09-29 (O10).
+- In the template the service is bound directly to the LAN address (`<LAN-IP>:64080`) over HTTP; HTTPS behind a reverse proxy is prepared as commented lines and described in [HTTPS](../operations/https.md). On the home server this is in operation since 2026-09-29 (O10).
 - `/healthz` also reports the Mumble server version (`mumbleServer`), the connected clients per Mumble and plugin version (`clients`), the last error and the board fill level (`board.usedMB`, `board.quotaMB`). It answers 503 if the last successful poll is older than 10 s.
-- All environment variables are listed in [operations](../operations.md).
+- All environment variables are listed in the [configuration reference](../operations/reference.md).
 - Distribution (2026-09-30): releases publish the image as `ghcr.io/skrrytch/ruumble` for linux/amd64 and linux/arm64 and attach the plugin bundle (Linux and Windows since ADR-0013) to a GitHub release (`.github/workflows/release.yml`, [development](../development.md#releasing)). The Compose template uses the published image; building it locally still works.

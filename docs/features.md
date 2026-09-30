@@ -95,7 +95,7 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 | Mumble client | 1.4 or later on **Linux** (x64), from the distribution packages |
 | Plugin API | 1.0.x, so the plugin also runs on Mumble 1.4 |
 | Service | Docker container next to the Mumble server; `/healthz`, `/download` (plugin bundle), `/api/version` (service and plugin version, shown on the notice pages) |
-| HTTPS | optional, behind a reverse proxy ([operations](operations.md#https-behind-a-reverse-proxy-optional)) |
+| HTTPS | optional, behind a reverse proxy ([HTTPS](operations/https.md)) |
 
 Tested versions: see [operations](operations.md#requirements).
 

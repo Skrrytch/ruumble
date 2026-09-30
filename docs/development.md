@@ -141,7 +141,7 @@ Then check the changes against [mumble-interfaces.md](mumble-interfaces.md) and 
 
 A release is a tag `v<service version>` on `main`; `.github/workflows/release.yml` does the rest:
 
-1. Bump the version in `bridge/package.json` and `web/package.json` (and the plugin in `plugin/CMakeLists.txt` if it changed), update the image tag in `deploy/compose/ruumble.docker-compose.yml`, `deploy/compose/mumble-with-ruumble.docker-compose.yml` and the quick setup in `docs/operations.md` (the workflow checks all three), and add a section `## [<version>] - <date>` with a link reference to `CHANGELOG.md`.
+1. Bump the version in `bridge/package.json` and `web/package.json` (and the plugin in `plugin/CMakeLists.txt` if it changed), update the image tag in `deploy/compose/ruumble.docker-compose.yml`, `deploy/compose/mumble-with-ruumble.docker-compose.yml` and the Compose snippet in `docs/operations.md` (the workflow checks all three), and add a section `## [<version>] - <date>` with a link reference to `CHANGELOG.md`.
 2. Commit and push to `main`, wait for CI.
 3. Optional dry run: start the workflow **Release** manually (`gh workflow run release.yml`). It builds the image for both platforms and uploads the release assets as a workflow artifact, without publishing anything.
 4. `git tag v<version> && git push origin v<version>`.

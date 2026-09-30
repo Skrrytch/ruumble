@@ -6,4 +6,4 @@
 | `ruumble.docker-compose.yml` | Adding Ruumble to an **existing** Mumble container (joins its network `mumble-network`) |
 | `mumble.docker-compose.yml` | Example of an existing Mumble container prepared for Ruumble: Ice only inside the Docker network, two secrets, a named volume |
 
-The guide for these: [docs/operations.md](../../docs/operations.md#quick-setup).
+The guide for these: [docs/operations.md](../../docs/operations.md).

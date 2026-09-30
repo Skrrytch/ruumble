@@ -4,6 +4,11 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 0.14.0 is the first published release. Earlier versions were only run by the author and are listed for reference.
 
+## [Unreleased]
+
+### Changed
+- The operations guide is split into short pages: setting up (`docs/operations.md`), and under `docs/operations/` HTTPS, backup and updates, troubleshooting, Mumble tips and the configuration reference. Upgrade notes for old versions are in this changelog.
+
 ## [0.15.0] - 2026-09-30
 
 Plugin 0.5.0 (unchanged). Easier setup: the Compose templates need no edits.
@@ -109,7 +114,7 @@ Plugin 0.4.1.
 ## [0.8.0] - 2026-09-29
 
 ### Changed
-- **Port 64080 instead of 8080.** See the update notes in `docs/operations.md`.
+- **Port 64080 instead of 8080.** When updating from 0.7, change the port binding (`64080:64080`) and `PUBLIC_URL` in the Compose file, the `ruumble:` line in the root channel description, the link in the welcome message and, behind a reverse proxy, its forward target (`ruumble:64080`). Browsers that used the old address pair once more; users with a fixed `bridgeUrl` in `plugin.json` change it too. To keep the old address instead, set `PORT: 8080`.
 - HTTPS behind a reverse proxy: WebSocket keepalive and a setup guide.
 
 ## [0.7.2] - 2026-09-28
