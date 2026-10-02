@@ -258,6 +258,28 @@ test.describe("Board (AP11.2)", () => {
     await expect(board.getByRole("article", { name: "Post by Anna" })).toHaveCount(0);
   });
 
+  test("compact: posts by the same person in a row share one header, the actions appear on hover", async ({ page }) => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    const input = page.getByRole("textbox", { name: "New post" });
+    for (const text of ["Lunch at 12?", "RUU-12 is merged"]) {
+      await input.fill(text);
+      await input.press("Control+Enter");
+      await expect(board.getByRole("article").first()).toContainText(text);
+    }
+    const [newest, older] = [board.getByRole("article").nth(0), board.getByRole("article").nth(1)];
+    await expect(newest.locator("header")).toContainText("Anna · Just now");
+    await expect(older.locator("header")).toHaveCount(0);
+    // the learned ticket link from the sample notes
+    await expect(newest.getByRole("link", { name: "RUU-12" })).toHaveAttribute("href", "https://jira.example.org/browse/RUU-12");
+    const tools = older.locator(".tools");
+    await expect(tools).toHaveCSS("opacity", "0");
+    await older.hover();
+    await expect(tools).toHaveCSS("opacity", "1");
+    await older.getByRole("button", { name: "Open" }).click();
+    await expect(page.getByRole("dialog")).toContainText("Lunch at 12?");
+  });
+
   test("copy to room: rooms per floor, own floor first, the copy shows where it came from", async ({ page }) => {
     await page.getByRole("button", { name: "Show board" }).click();
     const board = page.getByRole("complementary", { name: "Board" });

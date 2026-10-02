@@ -164,3 +164,18 @@ export function copyTargets(building: Building | null, channels: readonly Pick<C
     .map((f) => ({ floorId: f.channelId, floor: f.name, rooms: f.rooms.filter((r) => !r.isSelf && !r.locked && !temporary.has(r.channelId)).map((r) => ({ channelId: r.channelId, name: r.name })) }))
     .filter((f) => f.rooms.length > 0);
 }
+
+/** posts by the same person this close together share one header (like a chat) */
+export const GROUP_MINUTES = 10;
+
+/**
+ * Chat-like groups in the displayed order (newest first): `head` = the post shows the author header, `next` = the
+ * following post continues its group (the cards join). A post continues the one above it if both are by the same
+ * person, at most GROUP_MINUTES apart, and neither is a copy from another room (its header names the origin).
+ */
+export function postGroups(posts: readonly Pick<Post, "authorName" | "mine" | "createdAt" | "copiedFrom">[]): { head: boolean; next: boolean }[] {
+  const continues = (above: (typeof posts)[number] | undefined, post: (typeof posts)[number]) =>
+    !!above && above.authorName === post.authorName && above.mine === post.mine && !above.copiedFrom && !post.copiedFrom
+    && Math.abs(above.createdAt - post.createdAt) <= GROUP_MINUTES * 60_000;
+  return posts.map((post, i) => ({ head: !continues(posts[i - 1], post), next: i + 1 < posts.length && continues(post, posts[i + 1]!) }));
+}

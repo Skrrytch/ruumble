@@ -4,7 +4,7 @@ import { t } from "../src/lib/i18n/index.svelte.ts";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import type { Snapshot } from "@ruumble/protocol";
 import { buildBuilding } from "../src/lib/model/building.ts";
-import { PIN_TITLE_MAX, copyTargets, fileKind, filterPosts, formatSize, isLong, looksLikeCode, newestPost, parseSeen, pastedName, relativeTime, suggestTitle, summarizeReactions, unseenPosts } from "../src/lib/board/model.ts";
+import { PIN_TITLE_MAX, copyTargets, postGroups, fileKind, filterPosts, formatSize, isLong, looksLikeCode, newestPost, parseSeen, pastedName, relativeTime, suggestTitle, summarizeReactions, unseenPosts } from "../src/lib/board/model.ts";
 
 const post = (kind: Post["kind"], id: string = kind): Post => ({ id, channelId: 3, kind, text: "x", authorName: "A", mine: false, canDelete: false, createdAt: 0, updatedAt: 0, reactions: [] });
 
@@ -148,5 +148,29 @@ describe("Copy to room", () => {
     s.channels.find((c) => c.id === 7)!.temporary = true;
     s.channels.push({ id: 20, parent: 9, name: "Too deep", position: 0, links: [], temporary: false }); // locks "Support"
     expect(copyTargets(buildBuilding(s), s.channels)).toEqual([]);
+  });
+});
+
+describe("Groups of posts", () => {
+  const MIN = 60_000;
+  const p = (authorName: string, minutesAgo: number, extra: Partial<Post> = {}) => ({ authorName, mine: false, createdAt: 100 * MIN - minutesAgo * MIN, ...extra });
+
+  it("same person within 10 minutes shares one header, newest first", () => {
+    expect(postGroups([p("Anna", 0), p("Anna", 4), p("Anna", 14), p("Ben", 15), p("Anna", 16)])).toEqual([
+      { head: true, next: true },
+      { head: false, next: true },
+      { head: false, next: false },
+      { head: true, next: false },
+      { head: true, next: false },
+    ]);
+    // 10 minutes apart still joins, more does not
+    expect(postGroups([p("Anna", 0), p("Anna", 10), p("Anna", 21)]).map((g) => g.head)).toEqual([true, false, true]);
+    expect(postGroups([])).toEqual([]);
+  });
+
+  it("a copy from another room and a different `mine` start their own group", () => {
+    const copy = { copiedFrom: { roomName: "Meeting", authorName: "Ben" } };
+    expect(postGroups([p("Anna", 0), p("Anna", 1, copy), p("Anna", 2)]).map((g) => g.head)).toEqual([true, true, true]);
+    expect(postGroups([p("Anna", 0), p("Anna", 1, { mine: true })]).map((g) => g.head)).toEqual([true, true]);
   });
 });

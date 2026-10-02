@@ -7,7 +7,7 @@
   import type { Post } from "@ruumble/protocol";
   import { untrack } from "svelte";
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
-  import { FILTERS, PIN_TITLE_MAX, copyTargets, filterPosts, suggestTitle, type BoardFilter } from "../../board/model.ts";
+  import { FILTERS, PIN_TITLE_MAX, copyTargets, filterPosts, postGroups, suggestTitle, type BoardFilter } from "../../board/model.ts";
   import { t } from "../../i18n/index.svelte.ts";
   import type { RuumbleState } from "../../state.svelte.ts";
   import Composer from "./Composer.svelte";
@@ -57,6 +57,7 @@
   // kept on top (A3): not a second time in the list, except in search and filter results
   const pinnedPost = $derived(board?.pinned ? (board.posts.find((p) => p.id === board.pinned!.postId) ?? null) : null);
   const listed = $derived(narrowed || !pinnedPost ? posts : posts.filter((p) => p.id !== pinnedPost.id));
+  const groups = $derived(postGroups(listed));
   // the dot on a card: take the post down, or ask for the title right where it will be kept on top
   let pinDraft = $state<{ post: Post; title: string } | null>(null);
   function pinFromDot(post: Post): void {
@@ -227,8 +228,8 @@
         <button type="button" class="new-above" onclick={showNew}><ArrowUp size={14} aria-hidden="true" />{t().board.newAbove(newAbove)}</button>
       {/if}
       <div class="list" bind:this={list} onscroll={() => { if (newAbove && !scrolledDown()) newAbove = 0; }}>
-        {#each listed as post (post.id)}
-          <PostCard {post} {now} arrival={arrived[post.id] ?? null} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
+        {#each listed as post, i (post.id)}
+          <PostCard {post} {now} head={groups[i]?.head ?? true} next={groups[i]?.next ?? false} arrival={arrived[post.id] ?? null} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
             pinned={post.id === pinnedPost?.id} onpin={pinFromDot} ondelete={(p) => app.deletePost(p.id)} {targets} oncopy={(p, target) => app.copyPost(p, target)} />
         {:else}
           <!-- only the post on top: nothing to say below it -->
@@ -294,7 +295,8 @@
   .clear:hover { background: var(--color-blue-100); }
   .tool:focus-visible, .menu button:focus-visible, .clear:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   /* same side spacing as header and input (12 px) */
-  .list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 12px; min-height: 0; }
+  /* room at the top for the actions floating on the first card's edge */
+  .list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 22px 12px 12px; min-height: 0; }
   .drop {
     position: absolute; inset: 8px; z-index: 2; display: flex; align-items: center; justify-content: center; pointer-events: none;
     border: 2px dashed var(--color-blue-500); border-radius: var(--radius-md); background: rgb(255 255 255 / 0.85);
