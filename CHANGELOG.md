@@ -6,8 +6,19 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-10-02
+
+Plugin 0.5.0 (unchanged).
+
 ### Added
+- **Copy to another room.** The "…" menu of every post offers "Copy to room …" with the rooms you may enter in Mumble, your own floor first, e.g. to take the final SQL from a meeting room back to your team room. The copy is your post there and says where it came from ("from “Meeting”, by Ben"); the people in that room get a notice in the Mumble log ("Anna brought code from “Meeting” to the board."). Ticks in a task list are copied, reactions are not. Attachments are not stored twice.
 - **Icons in all common sizes:** PNG 192/512 (also maskable for Android), an Apple touch icon and `favicon.ico` with a pixel-drawn 16 px version, next to the existing SVG. The web app's manifest lists them, and every release carries them as `ruumble-icons.zip`.
+
+### Changed
+- The "…" menu is on every post now; "Delete" in it is still only offered where you may delete.
+
+### Upgrading
+- No configuration changes: change the image tag to `0.21.0` and restart. The board database gets two new columns on start.
 
 ## [0.20.0] - 2026-10-02
 
