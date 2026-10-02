@@ -13,7 +13,7 @@
 
 **[Try the demo](https://skrrytch.github.io/ruumble/)**: runs in the browser against a simulated server, no Mumble needed.
 
-![Ruumble: moving between rooms, the board and the elevator](docs/images/ruumble-demo.gif)
+![Ruumble: moving between rooms, a new post on the board, the elevator and back via the room sign](docs/images/ruumble-demo.gif)
 
 ## Features
 
