@@ -38,7 +38,7 @@ Links from Mumble (welcome message, pairing link) open in your default browser. 
 
 ## Using Ruumble
 
-- **Elevator (left):** one button per floor. Locked floors (nested too deeply or more than 8 rooms) are greyed out; for those, use the classic channel view in Mumble.
+- **Elevator (left):** one button per floor. Locked floors (nested too deeply) are greyed out; for those, use the classic channel view in Mumble.
 - **Rooms and corridor:** clicking a room or the corridor moves you to that channel. Your room is light blue, your avatar has a yellow ring.
 - **Icons on people:** muted, deafened, "quiet" (has not talked for 15 minutes), "away" (deafened and quiet for 5 minutes). An ear on a room means someone is listening in. "● Recording" means the room is being recorded.
 - **User menu (bottom left):** mute microphone, deafen, back to your own floor, change language.

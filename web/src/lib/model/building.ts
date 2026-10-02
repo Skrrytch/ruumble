@@ -6,8 +6,8 @@
 import type { Channel, Snapshot, User } from "@ruumble/protocol";
 import { t } from "../i18n/index.svelte.ts";
 
-/** More rooms do not fit sensibly on one floor (docs/internal/charter.md). */
-export const MAX_ROOMS = 8;
+/** Rooms per row in view (6 on a floor); more scroll sideways (docs/internal/charter.md, E31). */
+export const ROOMS_IN_VIEW = 3;
 
 /** After this many minutes without talking someone counts as quiet (E30). Ice idlesecs only counts talking. */
 export const QUIET_MINUTES = 15;
@@ -16,7 +16,7 @@ export const AWAY_MINUTES = 5;
 
 export type Presence = "active" | "quiet" | "away";
 
-export type LockReason = "too-deep" | "too-many-rooms";
+export type LockReason = "too-deep";
 
 export interface UserView {
   session: number;
@@ -53,7 +53,7 @@ export interface Space {
 export interface Room extends Space {
   /** Name contains “(stumm)” */
   muted: boolean;
-  /** flex-grow by rank in the Mumble order (roomGrow) */
+  /** flex-grow by the number of people in it (roomGrow) */
   grow: number;
 }
 
@@ -117,21 +117,29 @@ export function visibleChannels(channels: readonly Channel[]): Channel[] {
 }
 
 /**
- * Width by rank in the Mumble order: rooms 1 and 2 are large,
- * after that the rooms get gradually smaller (1.1 to 0.85).
+ * Width follows occupancy: an empty room has 1, every person adds 0.4, up to 8 people (4.2).
+ * Rooms in a row share its width in this ratio.
  */
-export function roomGrow(index: number): number {
-  if (index < 2) return 1.3;
-  return Math.round(Math.max(0.85, 1.1 - (index - 2) * 0.05) * 100) / 100;
+export function roomGrow(people: number): number {
+  return Math.round((1 + 0.4 * Math.min(Math.max(people, 0), 8)) * 10) / 10;
 }
 
 /**
- * The large rooms are at the top, so with an odd count the bottom row gets
+ * The top row has ⌊n/2⌋ rooms (at least one), so with an odd count the bottom row gets
  * one room more. A single room is at the top.
  */
 export function splitRows<T>(rooms: readonly T[]): { top: T[]; bottom: T[] } {
   const top = Math.max(Math.min(rooms.length, 1), Math.floor(rooms.length / 2));
   return { top: rooms.slice(0, top), bottom: rooms.slice(top) };
+}
+
+/**
+ * Width of the floor plan's rows relative to the visible width: 1 up to ROOMS_IN_VIEW rooms per row,
+ * beyond that it grows so that on average ROOMS_IN_VIEW rooms are in view, and the plan scrolls sideways.
+ */
+export function rowsWidth(rooms: number): number {
+  const { top, bottom } = splitRows(Array.from({ length: rooms }));
+  return Math.max(1, Math.max(top.length, bottom.length) / ROOMS_IN_VIEW);
 }
 
 /** Floors with at most this many rooms get narrower when the board is open */
@@ -225,20 +233,16 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
 
   const floors: Floor[] = childrenOf(0).map((f, index) => {
     const roomChannels = childrenOf(f.id);
-    const lock: LockReason | null = roomChannels.some((r) => childrenOf(r.id).length > 0)
-      ? "too-deep"
-      : roomChannels.length > MAX_ROOMS
-        ? "too-many-rooms"
-        : null;
+    const lock: LockReason | null = roomChannels.some((r) => childrenOf(r.id).length > 0) ? "too-deep" : null;
     return {
       channelId: f.id,
       name: f.name,
       ...floorLabels(index),
       corridor: space(f),
-      rooms: roomChannels.map((r, i) => ({
+      rooms: roomChannels.map((r) => ({
         ...space(r),
         muted: isMutedRoomName(r.name),
-        grow: roomGrow(i),
+        grow: roomGrow(usersIn.get(r.id)?.length ?? 0),
       })),
       open: roomChannels.length === 0,
       lock,

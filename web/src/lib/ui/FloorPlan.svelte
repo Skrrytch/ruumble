@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MAX_ROOMS, countText, splitRows, type Floor } from "../model/building.ts";
+  import { countText, rowsWidth, splitRows, type Floor } from "../model/building.ts";
   import SpaceButton from "./SpaceButton.svelte";
   import { t } from "../i18n/index.svelte.ts";
 
@@ -24,10 +24,30 @@
   } = $props();
 
   const rows = $derived(splitRows(floor.rooms));
-  const lockText = $derived(floor.lock === "too-many-rooms" ? t().floorPlan.lockText["too-many-rooms"](MAX_ROOMS) : t().floorPlan.lockText["too-deep"]);
+  const lockText = $derived(floor.lock ? t().floorPlan.lockText[floor.lock] : "");
+  // more than 3 rooms per row: the rows get wider than the view and only the floor plan scrolls sideways
+  const width = $derived(rowsWidth(floor.rooms.length));
+
+  let plan = $state<HTMLDivElement | null>(null);
+  // own room out of view (other floor, room change, many rooms): bring it into view
+  const selfRoom = $derived(floor.rooms.find((r) => r.isSelf)?.channelId ?? null);
+  $effect(() => {
+    if (selfRoom === null || !plan) return;
+    plan.querySelector(`[data-channel="${selfRoom}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
+  // a mouse wheel scrolls the floor plan sideways when it is wider than the view
+  function wheel(el: HTMLElement) {
+    const onwheel = (e: WheelEvent) => {
+      if (e.ctrlKey || el.scrollWidth <= el.clientWidth || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener("wheel", onwheel, { passive: false });
+    return () => el.removeEventListener("wheel", onwheel);
+  }
 </script>
 
-<div class="floorplan">
+<div class="floorplan" class:wide={width > 1} bind:this={plan} {@attach wheel}>
   {#if floor.lock}
     <div class="notice" role="status">
       <strong>{t().common.notShown}</strong>
@@ -45,31 +65,35 @@
       {onjoin}
     />
   {:else}
-    <div class="row top">
-      {#each rows.top as room (room.channelId)}
-        <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {boardUnseen} {ontoggleboard} />
-      {/each}
-    </div>
-    <SpaceButton
-      space={floor.corridor}
-      variant="corridor"
-      title={t().common.corridor}
-      subtitle={t().floorPlan.corridorSubtitle(countText(floor.corridor.users.length))}
-      pending={pendingChannel === floor.channelId}
-      {talking}
-      {readonly}
-      {onjoin}
-    />
-    <div class="row bottom">
-      {#each rows.bottom as room (room.channelId)}
-        <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {boardUnseen} {ontoggleboard} />
-      {/each}
+    <div class="track" style:width={width > 1 ? `${width * 100}%` : undefined}>
+      <div class="row top">
+        {#each rows.top as room (room.channelId)}
+          <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {boardUnseen} {ontoggleboard} />
+        {/each}
+      </div>
+      <SpaceButton
+        space={floor.corridor}
+        variant="corridor"
+        title={t().common.corridor}
+        subtitle={t().floorPlan.corridorSubtitle(countText(floor.corridor.users.length))}
+        pending={pendingChannel === floor.channelId}
+        {talking}
+        {readonly}
+        {onjoin}
+      />
+      <div class="row bottom">
+        {#each rows.bottom as room (room.channelId)}
+          <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {boardUnseen} {ontoggleboard} />
+        {/each}
+      </div>
     </div>
   {/if}
 </div>
 
 <style>
-  .floorplan { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--wall); }
+  .floorplan { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--wall); overflow-x: auto; overflow-y: hidden; }
+  .floorplan.wide { scrollbar-color: var(--color-blue-300) var(--color-navy); }
+  .track { flex: 1 0 auto; min-width: 100%; display: flex; flex-direction: column; gap: var(--wall); }
   .row { display: flex; gap: var(--wall); flex: 1 1 0; min-height: 0; }
   .notice {
     flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 40px;

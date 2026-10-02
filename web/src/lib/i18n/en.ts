@@ -51,8 +51,7 @@ export const en: Messages = {
     connecting: "Connecting …",
     mumbleOfflineText: (server) => `Start Mumble with the Ruumble plugin enabled and connect to the server ${server}.`,
     vacancyTitle: "Vacant",
-    vacancyText: (maxRooms) =>
-      `No floor of this building can be shown: every floor is nested deeper than two levels or has more than ${maxRooms} rooms. Use the classic view in Mumble.`,
+    vacancyText: "No floor of this building can be shown: every floor is nested deeper than two levels. Use the classic view in Mumble.",
     reconnecting: "Connection to the Ruumble service lost, reconnecting …",
     dismissNotice: "Dismiss notice",
   },
@@ -67,7 +66,7 @@ export const en: Messages = {
     elevator: "Elevator",
     elevatorLabel: "Elevator – floors",
     lockedShort: "locked",
-    lockReason: { "too-deep": "Channel structure too deep", "too-many-rooms": "Too many rooms" },
+    lockReason: { "too-deep": "Channel structure too deep" },
     floorButton: (level, name, lock) => `${level}: ${name}${lock ? ` – locked: ${lock}` : ""}`,
     mumbleServer: "Mumble server",
     hiddenPlace: "area not shown",
@@ -81,7 +80,7 @@ export const en: Messages = {
     languageName: { de: "Deutsch", en: "English" },
   },
   floorPlan: {
-    lockText: { "too-deep": "The channel structure of this floor is deeper than two levels.", "too-many-rooms": (max) => `This floor has more than ${max} rooms.` },
+    lockText: { "too-deep": "The channel structure of this floor is deeper than two levels." },
     useMumble: "Use the classic view in Mumble for this floor.",
     openFloor: (count) => `Open floor without offices · ${count}`,
     corridorSubtitle: (count) => `Floor channel · ${count}`,

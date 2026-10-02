@@ -85,6 +85,8 @@
       {/if}
     </svg>
   {/if}
+  <!-- in the corridor the content stays in view while the floor plan scrolls sideways -->
+  <span class="content">
   <span class="label">
     <span class="title">
       {title}
@@ -106,6 +108,7 @@
       {/each}
     </span>
   {/if}
+  </span>
 </button>
 {#if boardToggle}
   <button
@@ -127,6 +130,10 @@
 <style>
   /* basis = horizontal padding of the room, so the widths are distributed as without the wrapper */
   .wrap { position: relative; display: flex; flex-basis: 44px; min-width: 0; }
+  /* the width follows the people in the room (roomGrow): changes glide; names stay readable */
+  .wrap-room { min-width: 150px; transition: flex-grow var(--dur-slow) var(--ease-out); }
+  .content { display: contents; }
+  .room.corridor .content { position: sticky; left: 22px; display: flex; align-items: center; gap: 24px; min-width: 0; }
   .wrap-corridor { flex: none; }
   .wrap-open { flex-grow: 1; }
   .room {

@@ -73,8 +73,8 @@ test("layout matches the prototype (sample building, DEVELOPMENT floor)", async 
     if (!box) { deviations.push(`${key}: missing`); continue; }
     // Floor buttons are deliberately more compact than in the prototype (room for more floors and the entrance):
     // for them only x and width, for the elevator panel everything except the height
-    // Since the floor layout, room widths follow the Mumble order (rooms 1 and 2 large), no longer the name
-    // as in the prototype: for rooms therefore only row (y) and height
+    // Room widths follow the number of people in them (E31), no longer the name as in the prototype:
+    // for rooms therefore only row (y) and height
     const keys = key.startsWith("floor-")
       ? (["x", "width"] as const)
       : key.startsWith("room-") && key !== "room-2"

@@ -2,7 +2,7 @@
   import Unplug from "@lucide/svelte/icons/unplug";
   import Users from "@lucide/svelte/icons/users";
   import type { MockAdapter } from "./lib/adapter/mock.ts";
-  import { FEW_ROOMS, MAX_ROOMS } from "./lib/model/building.ts";
+  import { FEW_ROOMS } from "./lib/model/building.ts";
   import type { RuumbleState } from "./lib/state.svelte.ts";
   import Core from "./lib/ui/Core.svelte";
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
@@ -91,7 +91,7 @@
       {:else}
         <div class="vacancy" role="status">
           <strong>{t().screens.vacancyTitle}</strong>
-          <span>{t().screens.vacancyText(MAX_ROOMS)}</span>
+          <span>{t().screens.vacancyText}</span>
         </div>
       {/if}
       {#if app.boardOpen && !app.readonly}<BoardPanel {app} />{/if}

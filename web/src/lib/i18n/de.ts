@@ -46,8 +46,7 @@ export const de = {
     connecting: "Verbinde …",
     mumbleOfflineText: (server: string) => `Starte Mumble mit aktiviertem Ruumble-Plugin und verbinde dich mit dem Server ${server}.`,
     vacancyTitle: "Leerstand",
-    vacancyText: (maxRooms: number) =>
-      `Keine Etage dieses Gebäudes lässt sich darstellen: Jede Etage ist tiefer als zwei Ebenen oder hat mehr als ${maxRooms} Räume. Nutze die klassische Ansicht in Mumble.`,
+    vacancyText: "Keine Etage dieses Gebäudes lässt sich darstellen: Jede Etage ist tiefer als zwei Ebenen. Nutze die klassische Ansicht in Mumble.",
     reconnecting: "Verbindung zum Ruumble-Dienst unterbrochen, verbinde neu …",
     dismissNotice: "Hinweis schließen",
   },
@@ -62,7 +61,7 @@ export const de = {
     elevator: "Aufzug",
     elevatorLabel: "Aufzug – Etagen",
     lockedShort: "gesperrt",
-    lockReason: { "too-deep": "Kanalstruktur zu tief", "too-many-rooms": "Zu viele Räume" },
+    lockReason: { "too-deep": "Kanalstruktur zu tief" },
     floorButton: (level: string, name: string, lock: string | null) => `${level}: ${name}${lock ? ` – gesperrt: ${lock}` : ""}`,
     mumbleServer: "Mumble-Server",
     hiddenPlace: "nicht darstellbarer Bereich",
@@ -76,7 +75,7 @@ export const de = {
     languageName: { de: "Deutsch", en: "English" },
   },
   floorPlan: {
-    lockText: { "too-deep": "Die Kanalstruktur dieser Etage ist tiefer als zwei Ebenen.", "too-many-rooms": (max: number) => `Diese Etage hat mehr als ${max} Räume.` },
+    lockText: { "too-deep": "Die Kanalstruktur dieser Etage ist tiefer als zwei Ebenen." },
     useMumble: "Nutze für diese Etage die klassische Ansicht in Mumble.",
     openFloor: (count: string) => `Offene Etage ohne Büros · ${count}`,
     corridorSubtitle: (count: string) => `Etagenkanal · ${count}`,

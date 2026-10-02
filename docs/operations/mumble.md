@@ -39,7 +39,7 @@ Put the whole value in double quotes (otherwise a comma splits it), the link in 
 
 ## Order of floors and rooms
 
-Top-level channels become floors, their subchannels rooms. The order comes from the channels' **Position** (in Mumble: edit channel → Position; lower numbers first, equal ones alphabetically). The first top-level channel is the ground floor. Floors with more than 8 rooms or deeper nesting are shown locked in the elevator.
+Top-level channels become floors, their subchannels rooms. The order comes from the channels' **Position** (in Mumble: edit channel → Position; lower numbers first, equal ones alphabetically). The first top-level channel is the ground floor. Floors with deeper nesting are shown locked in the elevator; floors with many rooms scroll sideways.
 
 ## SuperUser password as a secret
 

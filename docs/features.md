@@ -13,10 +13,10 @@ How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.m
 - Top-level channels become **floors**, the floor channel itself is the **corridor**, second-level channels are **rooms**. A floor without subchannels is an **open floor**.
 - Order follows the channels' **position** in Mumble, then the name, as in the Mumble client. The first floor is the ground floor. There are no special names or keywords.
 - Users in the root channel stand in the **entrance**, below the elevator.
-- **Locked floors:** a floor with more than two levels or more than 8 rooms is greyed out in the elevator, with the reason. The rule is re-evaluated live on every change.
+- **Locked floors:** a floor with more than two levels is greyed out in the elevator, with the reason. The rule is re-evaluated live on every change.
 - **Linked channels** are hidden, including their subchannels. The other rooms use the space.
 - Temporary channels are shown as normal rooms.
-- **Room layout:** rooms 1 and 2 are large, later rooms get smaller. ⌊n/2⌋ rooms in the top row, the rest below the corridor.
+- **Room layout:** a room's width follows the number of people in it, so occupied rooms get more space. ⌊n/2⌋ rooms in the top row, the rest below the corridor. Up to 3 rooms per row are in view; with more, the floor plan scrolls sideways (the elevator and the board stay put).
 - A **lock icon** marks rooms you may not enter (Mumble ACLs).
 - "(stumm)" or "(muted)" in the channel name shows a speaker-off icon.
 - **Vacant** message when no floor can be shown; a notice when you are in a part of the tree that cannot be shown.

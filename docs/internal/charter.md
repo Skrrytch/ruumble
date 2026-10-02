@@ -43,12 +43,9 @@ Set by the project owner.
 
 ### 3.3 Locked floors
 
-A floor is **locked** (cannot be shown) if
+A floor is **locked** (cannot be shown) if at least one of its visible rooms has visible subchannels (L4, notice "Channel structure too deep").
 
-1. at least one of its visible rooms has visible subchannels (L4, notice "Channel structure too deep"), **or**
-2. it has **more than 8 rooms** (notice "Too many rooms"). The corridor does not count.
-
-If both apply, "too deep" wins.
+Update 2026-10-02: a floor with **more than 8 rooms** is no longer locked ("Too many rooms" is gone); its floor plan scrolls sideways (E31).
 
 - Locked floors appear in the elevator, greyed out, with `aria-disabled` and the reason as a hint.
 - Numbering stays stable: a locked floor keeps its number.
@@ -73,7 +70,7 @@ If both apply, "too deep" wins.
 - Compact header: floor name on the left; people on the floor and "N online" on the right.
 - **Floor plan:** the elevator core on the left (building sign, elevator with one button per floor, entrance, user menu) and the floor area on the right: top row of rooms, corridor, bottom row. Walls are 4 px gaps; every door has a door arc.
 - The **building sign** shows only the server name (no "primary" label, E9).
-- **Room widths and rows** (E31): order follows the Mumble position. Rooms 1 and 2 are large, then rooms get gradually smaller. The top row has ⌊n/2⌋ rooms (at least one), the rest go below; with at most 8 rooms that is at most 4 per row. With 1–2 rooms, the open board gets wider.
+- **Room widths and rows** (E31): order follows the Mumble position. The width follows the **number of people** in a room (empty 1, each person +0.4, up to 8 people); rooms in a row share its width in that ratio, and changes glide. The top row has ⌊n/2⌋ rooms (at least one), the rest go below. At most **3 rooms per row (6 per floor)** are in view; with more, the rows get wider and only the floor plan scrolls sideways (scrollbar, mouse wheel), while the elevator core and the board stay put. The corridor's label stays in view, and the own room is scrolled into view. With 1–2 rooms, the open board gets wider. (Until 2026-10-02: rooms 1 and 2 large, then gradually smaller, at most 8 rooms.)
 - Own room has a light blue background, own avatar a yellow ring. That is the only yellow element.
 - Interaction: clicking a room moves the user (only after server confirmation; a short transition, and a message on rejection). Clicking a floor only changes the view. Plus mute, deafen and "go to my floor".
 - Accessibility: real buttons, `aria-current`, `aria-pressed`, touch targets ≥ 44 px.
@@ -112,7 +109,7 @@ Feasibility studies S1 (Ice from Node.js) and S2 (minimal plugin) passed: [feasi
 | E2 | PR to Mumble | Not for now, hence the combination of A and B (section 4). |
 | E3 | Platform | Linux; Windows as a later option. |
 | E4 | Locked floors | Visible in the elevator, but locked (3.3). |
-| E5 | Many rooms | More than 8 rooms lock the floor (3.3). |
+| E5 | Many rooms | More than 8 rooms lock the floor (3.3). Update 2026-10-02: no limit any more, more than 3 rooms per row scroll sideways (E31). |
 | E6 | Root channel | Entrance below the elevator box (3.4). |
 | E7 | Floor order | Mumble `position`, then name. First floor = ground floor, no keywords (3.2). |
 | E8 | Talking indicator | Yes, if technically possible. It is possible with the plugin. |
@@ -138,7 +135,7 @@ Feasibility studies S1 (Ice from Node.js) and S2 (minimal plugin) passed: [feasi
 | E28 | Server mute (O6) | Dark badge with microphone-off. Self-mute light with microphone-off, self-deaf light with headphones-off. Each badge has a tooltip. |
 | E29 | Settings (O7) | Button visible but disabled ("no function yet"). *Superseded, see E10.* |
 | E30 | Presence thresholds (O14) | Quiet = 15 min without talking; away = self-deafened + 5 min quiet. |
-| E31 | Room sizes and rows | Order still via the Mumble **position** field (no marker of our own). Rooms 1 and 2 are large, then smaller; top row ⌊n/2⌋ rooms; with 1–2 rooms the open board gets wider. |
+| E31 | Room sizes and rows | Order still via the Mumble **position** field (no marker of our own). Rooms 1 and 2 are large, then smaller; top row ⌊n/2⌋ rooms; with 1–2 rooms the open board gets wider. Update 2026-10-02: the width follows the number of people; 3 rooms per row in view, more scroll sideways. |
 
 ## 6. Open questions
 

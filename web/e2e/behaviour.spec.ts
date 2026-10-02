@@ -59,8 +59,28 @@ test.describe("Edge cases", () => {
     await expect(archive).toHaveAttribute("aria-disabled", "true");
     await archive.click({ force: true }); // aria-disabled: otherwise Playwright does not click at all
     await expect(page.getByRole("heading", { name: "DEVELOPMENT" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "4th floor: OPEN SPACE – locked: Too many rooms" })).toBeVisible();
     await expect(page.getByRole("button", { name: /EXTERNAL|PARTNERS/ })).toHaveCount(0);
+  });
+
+  test("many rooms: 3 per row in view, only the floor plan scrolls sideways, also with the wheel", async ({ page }) => {
+    await page.getByRole("button", { name: "4th floor: OPEN SPACE" }).click();
+    const plan = page.locator(".floorplan");
+    await expect(plan.locator(".row.top .room")).toHaveCount(4);
+    await expect(plan.locator(".row.bottom .room")).toHaveCount(5);
+    const { scrollWidth, clientWidth } = await plan.evaluate((el) => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }));
+    expect(scrollWidth / clientWidth).toBeCloseTo(5 / 3, 1);
+    // Desk 2 has someone in it: wider than the empty Desk 1 next to it
+    const desk = async (name: string) => (await plan.getByRole("button", { name: new RegExp(`^${name}`) }).boundingBox())!.width;
+    expect(await desk("Desk 2")).toBeGreaterThan((await desk("Desk 1")) * 1.2);
+    const elevator = await page.locator(".core").boundingBox();
+    await plan.hover();
+    await page.mouse.wheel(0, 300);
+    await expect.poll(() => plan.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+    expect(await page.locator(".core").boundingBox()).toEqual(elevator);
+    // the corridor's label stays in view
+    const corridor = await plan.locator(".room.corridor .label").boundingBox();
+    const view = (await plan.boundingBox())!;
+    expect(corridor!.x).toBeGreaterThanOrEqual(view.x);
   });
 
   test("entrance, lock, listeners, status icons", async ({ page }) => {

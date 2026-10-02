@@ -6,6 +6,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Changed
+- Room widths follow the number of people in a room instead of the Mumble order: occupied rooms get more space, and the change glides. At most 3 rooms per row (6 per floor) are in view; with more, only the floor plan scrolls sideways (scrollbar or mouse wheel), the elevator and the board stay put. The corridor label stays in view and the own room is scrolled into view.
+- Floors with more than 8 rooms are no longer locked ("Too many rooms" is gone); they scroll instead.
+
 ## [0.16.0] - 2026-10-02
 
 Plugin 0.5.0 (unchanged). The board points out new posts, and own posts can be deleted from the card.

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Snapshot, type Channel, type User } from "@ruumble/protocol";
 import {
   AWAY_MINUTES,
-  MAX_ROOMS,
+  ROOMS_IN_VIEW,
   QUIET_MINUTES,
   presenceOf,
   buildBuilding,
@@ -13,6 +13,7 @@ import {
   initials,
   isMutedRoomName,
   roomGrow,
+  rowsWidth,
   sortSiblings,
   splitRows,
   visibleChannels,
@@ -39,9 +40,15 @@ describe("Individual rules", () => {
     expect(sorted.map((c) => c.name)).toEqual(["Oben", "Österreich", "alpha", "Zeta"]);
   });
 
-  it("roomGrow: rooms 1 and 2 large, then gradually smaller", () => {
-    expect([0, 1, 2, 3, 4, 5, 6, 7].map(roomGrow)).toEqual([1.3, 1.3, 1.1, 1.05, 1, 0.95, 0.9, 0.85]);
-    expect(roomGrow(20)).toBe(0.85);
+  it("roomGrow: the width follows the number of people, up to 8", () => {
+    expect([0, 1, 2, 3, 5, 8].map(roomGrow)).toEqual([1, 1.4, 1.8, 2.2, 3, 4.2]);
+    expect(roomGrow(20)).toBe(4.2);
+    expect(roomGrow(-1)).toBe(1);
+  });
+
+  it("rowsWidth: up to 3 rooms per row fit, beyond that the rows get wider than the view", () => {
+    expect(ROOMS_IN_VIEW).toBe(3);
+    expect([0, 1, 5, 6, 7, 8, 9, 12].map(rowsWidth)).toEqual([1, 1, 1, 1, 4 / 3, 4 / 3, 5 / 3, 2]);
   });
 
   it("splitRows: bottom row gets one more room for an odd count", () => {
@@ -141,9 +148,14 @@ describe("Edge cases", () => {
     expect(floor("ARCHIVE")).toMatchObject({ lock: "too-deep", population: 1 });
   });
 
-  it("more than 8 rooms lock the floor", () => {
-    expect(floor("OPEN SPACE")!.rooms).toHaveLength(MAX_ROOMS + 1);
-    expect(floor("OPEN SPACE")!.lock).toBe("too-many-rooms");
+  it("many rooms do not lock the floor (it scrolls sideways)", () => {
+    expect(floor("OPEN SPACE")!.rooms).toHaveLength(9);
+    expect(floor("OPEN SPACE")!.lock).toBeNull();
+  });
+
+  it("rooms get wider with the people in them", () => {
+    const rooms = buildBuilding(snapshot([ch(0, null, "R"), ch(1, 0, "Upper"), ch(2, 1, "Empty"), ch(3, 1, "Busy")], [user(1, "Anna", 3), user(2, "Ben", 3)])).floors[0]!.rooms;
+    expect(rooms.map((r) => [r.name, r.grow])).toEqual([["Busy", 1.8], ["Empty", 1]]);
   });
 
   it("temporary channels are normal rooms", () => {
@@ -213,17 +225,11 @@ describe("Vacancy and live changes", () => {
     expect(buildBuilding(snapshot(base)).floors[0]?.lock).toBeNull();
   });
 
-  it("linked subchannel does not lock (O3), 9th room locks, linking it unlocks again", () => {
-    const rooms = Array.from({ length: 8 }, (_, i) => ch(10 + i, 1, `R${i}`, i));
+  it("linked subchannel does not lock (O3), a real one does", () => {
+    const rooms = Array.from({ length: 9 }, (_, i) => ch(10 + i, 1, `R${i}`, i));
     const base = [ch(0, null, "R"), ch(1, 0, "Upper"), ...rooms];
     expect(buildBuilding(snapshot([...base, ch(30, 10, "Sub", 0, [31]), ch(31, 0, "X", 9, [30])])).floors[0]?.lock).toBeNull();
-    expect(buildBuilding(snapshot([...base, ch(20, 1, "R8", 8)])).floors[0]?.lock).toBe("too-many-rooms");
-    expect(buildBuilding(snapshot([...base, ch(20, 1, "R8", 8, [21]), ch(21, 0, "Y", 9, [20])])).floors[0]?.lock).toBeNull();
-  });
-
-  it("both lock reasons: “too deep” wins", () => {
-    const rooms = Array.from({ length: 9 }, (_, i) => ch(10 + i, 1, `R${i}`, i));
-    expect(buildBuilding(snapshot([ch(0, null, "R"), ch(1, 0, "Upper"), ...rooms, ch(40, 10, "Sub")])).floors[0]?.lock).toBe("too-deep");
+    expect(buildBuilding(snapshot([...base, ch(40, 10, "Sub")])).floors[0]?.lock).toBe("too-deep");
   });
 
   it("renaming changes the order at equal position", () => {
