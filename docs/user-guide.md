@@ -60,6 +60,7 @@ The plugin's messages in the Mumble log follow the system language (Linux: `LC_A
 - **Reactions**: the smiley with the plus in a post's actions; the summary at the top right of the card shows who reacted.
 - **Keep on top**: point at a post and click the small dot on its top edge (it turns into a pin), adjust the title and press Enter. The post then sits in a slim row above the list, e.g. the checklist of the day; a click unfolds it. There is one per room; keeping another post on top replaces it.
 - **Copy to another room**: "…" under a post → **Copy to room …** → choose the room, e.g. to take the final SQL from a meeting room back to your team room. You do not have to be there; any room you may enter in Mumble is offered. The copy is your post there and says where it came from ("from “Meeting”, by Ben"); the people in that room get the usual notice in the Mumble log. Ticks in a task list are copied, reactions are not.
+- **Links** show a short form, e.g. "PR #13 · ruumble" or "TAG-1366" instead of the long URL; the full address is in the tooltip. Links in code and logs are clickable too, and the card lists them below the code.
 - **Ticket keys** such as `TAG-1366` become links to Jira by themselves, once anyone on the server has posted a full link to an issue of that project (e.g. `https://jira.example.com/browse/TAG-1`). Nothing needs to be set up.
 - **Search and filter** in the header of the board.
 - Posts are kept for 30 days.

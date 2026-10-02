@@ -61,6 +61,7 @@ Every room has a board next to the floor plan. It shows the board of the room yo
 - **Compact cards**: the author is one line ("Anna · 5 min ago", 20 px avatar) and the actions (open, react, copy or download, "…") float on the bottom-right edge of the post only on hover, keyboard focus or while a menu is open, and the post itself is lightly tinted meanwhile, so it is clear what they apply to (also within a group); so a one-line post is about 70 px instead of 140. Posts by the same person at most 10 minutes apart (not copies from another room) join into one card with a single header and a dashed line between them; their time is in the floating actions (`postGroups` in `web/src/lib/board/model.ts`). Reactions and task progress stay visible, next to the content of a post without its own header.
 - **Copy to room**: the "…" menu of every post offers "Copy to room …" with the rooms per floor (own floor first) that the user may enter in Mumble, except the own room, temporary rooms and locked floors. The copy is a new post by the user in the target room with its origin ("from “Meeting”, by Ben"; a copy of a copy keeps the original author), the same text, code language and attachment (stored once), task ticks included; reactions and "kept on top" stay behind. The people in the target room get the Mumble notice "Anna brought code from “Meeting” to the board."; the own board does not change. This is the one write to a room the user is not in ([ADR-0011](decisions/0011-own-storage-for-the-board.md#current-state-code)).
 - **Ticket keys** become links without any configuration: a post with a link to an issue (`…/browse/TAG-1366`, Jira Cloud and Data Center alike) teaches the service where project `TAG` lives, and from then on a plain "TAG-1366" in text, captions and task lists links there (not in code, not inside links). Only the shape of the URL counts, nothing is fetched. The oldest post wins, so a later link cannot redirect a known project; what is learned is derived from the stored posts and goes away with them. A board only receives the projects whose keys appear in its own posts (`protocol/src/tickets.ts`).
+- **Links** (A4, A5): URLs in code posts (logs, stack traces) are clickable too, and the card lists the distinct links of a code post below it (at most three, then "+ N more", which opens the post; the dialog lists all), outside the 8-line preview, so a link far down in a log is one click away. Links show a short form with a Lucide symbol, derived only from the shape of the URL, never by fetching it: "PR #13 · ruumble", "MR !42 · app", "#42 · ruumble", "a1b2c3d · ruumble", "CI · ruumble", "Pipeline #98765 · app", "Build #123 · app", "TAG-1366", the title of a Confluence page or a Stack Overflow question, otherwise host and shortened path (`web/src/lib/board/links.ts`). In text and captions a bare `http(s)://` URL shows the same short form (without symbol), the full URL as tooltip; links with their own Markdown text stay as written. Ticket keys in code stay plain text.
 - **Mumble notice**: when someone pins something, the others in the room get a short line in their Mumble log, e.g. "Anna pinned code to the board." (in each recipient's language).
 
 | Rule | Value |
@@ -131,7 +132,9 @@ Tested versions: see [operations](operations.md#requirements).
 | A3 – Kept on top | done (0.13.0) |
 | Ticket keys as links (learned from issue links) | done (0.20.0) |
 | Copy a post to another room | done (0.21.0) |
-| A4–A9 – Board for developers | planned, in this order |
+| A4 – Clickable links everywhere | done (0.23.0) |
+| A5 – Short form for well-known URLs | done (0.23.0) |
+| A6–A9 – Board for developers | planned, in this order |
 | Report the Mumble avatar bug | open (O16) |
 | Address check over proxy and VPN | proxy with hairpin NAT: `warn` required, VPN untested (see [P7](mumble-interfaces.md#5-checkpoints-of-the-feasibility-studies)). |
 
@@ -188,11 +191,11 @@ Done (0.10.0), see *Board* above: work reactions first, then social ones, in a f
 
 **A3 – Kept on top.** Done (0.13.0), see *Board* above. The post kept on top expires after 30 days like any other (ADR-0011 unchanged).
 
-**A4 – Clickable links everywhere.** Text posts already turn URLs into links (Markdown with linkify). Code posts, stack traces and image or file captions do not: there a URL is plain text today. Links in these posts become clickable too, and in addition every post shows the links it contains as a compact list below its content: duplicates removed, at most three entries, then "+ N more". That way a ticket link in a code comment or log is one click away without searching the text.
+**A4 – Clickable links everywhere.** Done (0.23.0), see *Board* above. Captions turned out to be Markdown with links already, so the change concerns code posts; the list of links is shown below code posts only, where the links would otherwise be hidden in the text. Text posts already turn URLs into links (Markdown with linkify). Code posts, stack traces and image or file captions do not: there a URL is plain text today. Links in these posts become clickable too, and in addition every post shows the links it contains as a compact list below its content: duplicates removed, at most three entries, then "+ N more". That way a ticket link in a code comment or log is one click away without searching the text.
 
 Only `http(s)` links are offered, always in a new tab and without access to the Ruumble window (as today). In the list the full URL appears as a tooltip; the entries use the short form from A5.
 
-**A5 – Short form for well-known URLs.** Instead of a long URL, a link shows a symbol and a short text, derived only from the **shape of the URL**, never by fetching it. This works for self-hosted instances too, because the path is recognised, not the host:
+**A5 – Short form for well-known URLs.** Done (0.23.0), see *Board* above; GitLab merge requests read "MR !42", CI links name the run, pipeline, job or Jenkins build. Instead of a long URL, a link shows a symbol and a short text, derived only from the **shape of the URL**, never by fetching it. This works for self-hosted instances too, because the path is recognised, not the host:
 
 | URL shape | Shown as |
 |---|---|

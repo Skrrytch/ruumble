@@ -27,6 +27,7 @@ import xml from "highlight.js/lib/languages/xml";
 import yaml from "highlight.js/lib/languages/yaml";
 import MarkdownIt from "markdown-it";
 import { splitTickets, type TicketLinks } from "@ruumble/protocol";
+import { describeLink } from "./links.ts";
 
 const LANGUAGES = { bash, cpp, csharp, css, diff, dockerfile, go, ini, java, javascript, json, kotlin, markdown, php, python, rust, sql, typescript, xml, yaml };
 for (const [name, lang] of Object.entries(LANGUAGES)) hljs.registerLanguage(name, lang);
@@ -112,6 +113,26 @@ md.core.ruler.push("tickets", (state) => {
   }
 });
 
+/**
+ * Bare URLs that linkify turned into links show their short form (A5, links.ts), the full URL as tooltip.
+ * Only links written out with http(s)://; "example.com" and Markdown links with their own text stay as written.
+ */
+md.core.ruler.push("short-links", (state) => {
+  for (const block of state.tokens) {
+    const children = block.type === "inline" ? block.children : null;
+    children?.forEach((token, i) => {
+      const text = children[i + 1];
+      if (token.type !== "link_open" || token.markup !== "linkify" || text?.type !== "text") return;
+      const href = String(token.attrGet("href") ?? "");
+      const info = /^https?:\/\//i.test(text.content) ? describeLink(href) : null;
+      if (!info) return;
+      text.content = info.label;
+      token.attrSet("title", href);
+      token.attrJoin("class", `link-${info.kind}`);
+    });
+  }
+});
+
 // Links always in a new tab and without access to this window
 DOMPurify.addHook("afterSanitizeAttributes", (node) => {
   if (node.tagName === "A") {
@@ -122,7 +143,7 @@ DOMPurify.addHook("afterSanitizeAttributes", (node) => {
 
 const PURIFY = {
   ALLOWED_TAGS: ["p", "br", "strong", "em", "s", "del", "code", "pre", "blockquote", "ul", "ol", "li", "a", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "table", "thead", "tbody", "tr", "th", "td", "span"],
-  ALLOWED_ATTR: ["href", "class", "target", "rel"],
+  ALLOWED_ATTR: ["href", "class", "target", "rel", "title"],
   ALLOWED_URI_REGEXP: /^(?:https?:|mailto:)/i, // no javascript:, data:, vbscript:
 };
 
@@ -136,8 +157,53 @@ export function renderInline(text: string, tickets?: TicketLinks): string {
   return DOMPurify.sanitize(md.renderInline(text, { tickets }), PURIFY) as string;
 }
 
-/** Code post → sanitised HTML (lines separately for line numbers via CSS) */
+/** http(s) URLs written out in a text, in order, with their position (A4); no fuzzy links like "example.com" */
+export function findLinks(text: string): { url: string; index: number; lastIndex: number }[] {
+  return (md.linkify.match(text) ?? []).filter((m) => /^https?:$/i.test(m.schema)).map(({ url, index, lastIndex }) => ({ url, index, lastIndex }));
+}
+
+/** the distinct http(s) URLs of a text, in order of appearance */
+export function uniqueLinks(text: string): string[] {
+  return [...new Set(findLinks(text).map((m) => m.url))];
+}
+
+/**
+ * URLs in highlighted code become links (A4). The positions come from the plain code and are mapped onto the
+ * text nodes of the highlighted HTML, so a URL that highlight.js split across several spans links in full.
+ */
+function linkCode(html: string, code: string): string {
+  // the HTML parser turns CR LF into LF, so the positions are taken from the code with LF only
+  const links = findLinks(code.replace(/\r\n?/g, "\n"));
+  if (!links.length) return html;
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_TEXT);
+  const nodes: Text[] = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+  let offset = 0;
+  for (const node of nodes) {
+    const start = offset, end = offset + node.data.length;
+    offset = end;
+    // from the back, so the split does not move the parts still to come
+    for (const link of links.filter((l) => l.index < end && l.lastIndex > start).reverse()) {
+      const from = Math.max(link.index, start) - start, to = Math.min(link.lastIndex, end) - start;
+      const tail = node.splitText(from);
+      tail.splitText(to - from);
+      const a = document.createElement("a");
+      a.href = link.url;
+      a.className = "code-link";
+      tail.replaceWith(a);
+      a.append(tail);
+    }
+  }
+  return template.innerHTML;
+}
+
+/** Code post → sanitised HTML (lines separately for line numbers via CSS); URLs in it are links */
 export function renderCode(text: string, language?: string): { html: string; language: string } {
   const { html, language: detected } = highlight(text, language);
-  return { html: DOMPurify.sanitize(html, { ALLOWED_TAGS: ["span"], ALLOWED_ATTR: ["class"] }) as string, language: detected };
+  return {
+    html: DOMPurify.sanitize(linkCode(html, text), { ALLOWED_TAGS: ["span", "a"], ALLOWED_ATTR: ["class", "href", "target", "rel"], ALLOWED_URI_REGEXP: /^https?:/i }) as string,
+    language: detected,
+  };
 }

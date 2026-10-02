@@ -191,6 +191,8 @@ export const en: Messages = {
     confirmDelete: "Really delete this post?",
     copyToRoom: "Copy to room …",
     copyToRoomShort: "To room …",
+    linksInPost: "Links in this post",
+    moreLinks: (n) => `+ ${n} more`,
     copyToRoomTitle: "Copy to which room?",
     copyNoRooms: "No other room you may enter",
     copiedTo: (room) => `Copied to “${room}”.`,

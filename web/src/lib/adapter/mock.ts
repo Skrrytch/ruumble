@@ -56,6 +56,7 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
     mine: false, canDelete: false, createdAt: now, updatedAt: now, reactions: [], ...p,
   });
   const code = [
+    "// fixes RUU-14, see https://github.com/example/ruumble/pull/13",
     "export function greet(name: string): string {",
     "  if (!name) {",
     '    throw new Error("Name is missing");',
@@ -67,6 +68,9 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
     "// a few more lines so the preview gets shortened",
     "const a = 1;",
     "const b = 2;",
+    "// CI: https://github.com/example/ruumble/actions/runs/1234567890",
+    "// docs: https://example.org/wiki/spaces/DEV/pages/42/Greeting+Rules",
+    "// and https://stackoverflow.com/questions/123/how-to-greet-politely",
   ].join("\n");
   const notes = [
     "## Sprint notes",

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { highlight, renderCode, renderInline, renderMarkdown } from "../src/lib/board/render.ts";
+import { findLinks, highlight, renderCode, renderInline, renderMarkdown, uniqueLinks } from "../src/lib/board/render.ts";
 
 describe("Rendering: Markdown and code without XSS (ADR-0011)", () => {
   it("renders common Markdown", () => {
@@ -118,5 +118,51 @@ describe("Ticket keys (learned links)", () => {
     expect(linked).not.toContain('href="https://jira.example/browse/TAG-1"');
     expect(renderMarkdown("UTF-8 and VKB-1", tickets)).not.toContain("<a");
     expect(renderMarkdown("TAG-1")).not.toContain("<a");
+  });
+});
+
+describe("Links everywhere (A4) and their short form in text (A5)", () => {
+  it("a bare URL in text shows its short form, the full URL as tooltip", () => {
+    const html = renderMarkdown("See https://github.com/x/ruumble/pull/13 please");
+    expect(html).toContain('<a href="https://github.com/x/ruumble/pull/13" title="https://github.com/x/ruumble/pull/13" class="link-pr" target="_blank" rel="noopener noreferrer nofollow">PR #13 · ruumble</a>');
+  });
+
+  it("links with their own text and mail addresses stay as written", () => {
+    expect(renderMarkdown("[the PR](https://github.com/x/r/pull/1)")).toContain(">the PR</a>");
+    expect(renderMarkdown("anna@example.com")).toContain(">anna@example.com</a>");
+  });
+
+  it("finds only written-out http(s) URLs, each once", () => {
+    const text = "https://a.example/1 and example.com, mailto:x@y.z, http://b.example/2?q=1 and again https://a.example/1.";
+    expect(findLinks(text).map((m) => m.url)).toEqual(["https://a.example/1", "http://b.example/2?q=1", "https://a.example/1"]);
+    expect(uniqueLinks(text)).toEqual(["https://a.example/1", "http://b.example/2?q=1"]);
+    expect(uniqueLinks("no links")).toEqual([]);
+  });
+
+  it("URLs in code become links in a new tab, the code text stays unchanged", () => {
+    const code = '// see https://jira.example/browse/TAG-1\nconst url = "https://api.example/v1?a=1&b=2";\nfetch(url);';
+    const { html } = renderCode(code, "javascript");
+    const doc = new DOMParser().parseFromString(`<pre>${html}</pre>`, "text/html");
+    const links = [...doc.querySelectorAll("a")];
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["https://jira.example/browse/TAG-1", "https://api.example/v1?a=1&b=2"]);
+    expect(links.map((a) => a.textContent)).toEqual(["https://jira.example/browse/TAG-1", "https://api.example/v1?a=1&b=2"]);
+    expect(links.every((a) => a.className === "code-link" && a.target === "_blank" && a.rel === "noopener noreferrer nofollow")).toBe(true);
+    expect(doc.body.textContent).toBe(code);
+  });
+
+  it("a URL split across highlighted spans links in full, also with CR LF line ends", () => {
+    // bash highlights $ID as a variable inside the string: three parts, all pointing to the whole URL
+    const code = 'echo start\r\ncurl "https://api.example/$ID/items"\r\n';
+    const doc = new DOMParser().parseFromString(`<pre>${renderCode(code, "bash").html}</pre>`, "text/html");
+    const parts = [...doc.querySelectorAll("a")];
+    expect(parts.map((a) => a.textContent)).toEqual(["https://api.example/", "$ID", "/items"]);
+    expect(new Set(parts.map((a) => a.getAttribute("href")))).toEqual(new Set(["https://api.example/$ID/items"]));
+  });
+
+  it("links in code stay safe: only http(s), nothing but spans and links", () => {
+    const { html } = renderCode('javascript:alert(1) <img src=x onerror=alert(1)> "https://ok.example/"');
+    const doc = new DOMParser().parseFromString(`<pre>${html}</pre>`, "text/html");
+    expect(doc.querySelectorAll("img, script").length).toBe(0);
+    expect([...doc.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual(["https://ok.example/"]);
   });
 });

@@ -199,6 +199,8 @@ export const de = {
     copyToRoom: "In Raum kopieren …",
     /** visible text of the menu item next to its icon; `copyToRoom` is its accessible name */
     copyToRoomShort: "In Raum …",
+    linksInPost: "Links in diesem Beitrag",
+    moreLinks: (n: number) => `+ ${n} weitere`,
     copyToRoomTitle: "In welchen Raum kopieren?",
     copyNoRooms: "Kein anderer Raum, den du betreten darfst",
     copiedTo: (room: string) => `In „${room}“ kopiert.`,

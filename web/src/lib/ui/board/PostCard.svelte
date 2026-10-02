@@ -16,6 +16,7 @@
   import { intlLocale, t } from "../../i18n/index.svelte.ts";
   import { initials } from "../../model/building.ts";
   import { getFileUrl } from "../../board/context.ts";
+  import LinkList from "./LinkList.svelte";
   import PostBody from "./PostBody.svelte";
   import ReactionPicker from "./ReactionPicker.svelte";
   import { REACTION_ICONS } from "./reactionIcons.ts";
@@ -126,6 +127,8 @@
     </div>
     {#if !head && (tasks || summary.total)}<span class="side">{@render badges()}</span>{/if}
   </div>
+  <!-- outside the clamped body, so links far down in a long log stay one click away (A4) -->
+  {#if post.kind === "code"}<LinkList text={post.text} limit={3} onmore={() => onopen(post)} />{/if}
   {#if post.updatedByName}
     <div class="edited">{t().board.editedBy(post.updatedByName)} · {relativeTime(post.updatedAt, now)}</div>
   {/if}

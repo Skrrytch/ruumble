@@ -211,6 +211,25 @@ test.describe("Board (AP11.2)", () => {
     await expect(page.getByRole("dialog").locator(".gutter")).toBeVisible();
   });
 
+  test("links: clickable in code, listed below in their short form, all of them in the popup (A4, A5)", async ({ page }) => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    const code = board.getByRole("article", { name: "Post by Ben" }).filter({ has: page.locator(".hljs") });
+    const link = code.locator(".hljs a.code-link").first();
+    await expect(link).toHaveAttribute("href", "https://github.com/example/ruumble/pull/13");
+    await expect(link).toHaveAttribute("target", "_blank");
+    const list = code.getByRole("list", { name: "Links in this post" });
+    await expect(list.getByRole("link")).toHaveText(["PR #13 · ruumble", "CI · ruumble", "Greeting Rules"]);
+    await expect(list.getByRole("link", { name: "PR #13 · ruumble" })).toHaveAttribute("title", "https://github.com/example/ruumble/pull/13");
+    await list.getByRole("button", { name: "+ 1 more" }).click();
+    const all = page.getByRole("dialog").getByRole("list", { name: "Links in this post" }).getByRole("link");
+    await expect(all).toHaveCount(4);
+    await expect(all.last()).toHaveText("How to greet politely");
+    await page.keyboard.press("Escape");
+    // a bare URL in text shows its short form
+    await expect(board.getByRole("article", { name: "Post by Anna" }).getByRole("link", { name: "RUU-12" })).toHaveAttribute("title", "https://jira.example.org/browse/RUU-12");
+  });
+
   test("pin with Ctrl+Enter, filter, delete", async ({ page }) => {
     await page.getByRole("button", { name: "Show board" }).click();
     const board = page.getByRole("complementary", { name: "Board" });

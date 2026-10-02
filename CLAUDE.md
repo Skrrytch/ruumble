@@ -42,7 +42,7 @@ Local stack with real Mumble + live tests: see `docs/development.md` (`deploy/lo
 Gotchas:
 - `bridge` lint/build/dev first run `scripts/gen-ice.mjs`, which generates `bridge/gen/MumbleServer.cjs` from the Ice file (the slice2js CLI is broken, so `compile()` is called directly). Run `pnpm -F @ruumble/bridge gen` if `gen/` is missing.
 - `protocol` build is `gen-schema.ts --check`: it fails if the committed JSON Schema is stale.
-- `web` lint is `svelte-check --fail-on-warnings`; unit tests run with coverage thresholds of 95% on `src/lib/model/**`, `src/lib/board/model.ts`, `src/lib/board/render.ts`, `src/lib/i18n/**`.
+- `web` lint is `svelte-check --fail-on-warnings`; unit tests run with coverage thresholds of 95% on `src/lib/model/**`, `src/lib/board/model.ts`, `src/lib/board/links.ts`, `src/lib/board/render.ts`, `src/lib/i18n/**`.
 - Files under `third_party/mumble/` are never edited by hand; CI verifies their checksums. Update only via `tools/update-mumble-interfaces.sh <tag>`.
 
 ## Architecture

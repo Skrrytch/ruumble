@@ -7,7 +7,7 @@ export default defineConfig({
     include: ["test/**/*.test.ts"],
     setupFiles: ["test/setup.ts"],
     coverage: {
-      include: ["src/lib/model/**", "src/lib/board/model.ts", "src/lib/board/render.ts", "src/lib/i18n/**"],
+      include: ["src/lib/model/**", "src/lib/board/model.ts", "src/lib/board/links.ts", "src/lib/board/render.ts", "src/lib/i18n/**"],
       thresholds: { lines: 95, branches: 95, functions: 95, statements: 95 },
     },
   },

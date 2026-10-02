@@ -5,6 +5,7 @@
   import { relativeTime } from "../../board/model.ts";
   import { t } from "../../i18n/index.svelte.ts";
   import { CODE_LANGUAGES } from "../../board/render.ts";
+  import LinkList from "./LinkList.svelte";
   import PostBody from "./PostBody.svelte";
 
   let {
@@ -76,6 +77,7 @@
       <textarea bind:value={draft} class:mono={post.kind === "code"} class:short={hasAttachment} aria-label={hasAttachment ? t().board.editDescription : t().board.editPost} placeholder={hasAttachment ? t().board.captionPlaceholder : ""} spellcheck={post.kind !== "code"}></textarea>
     {:else}
       <PostBody {post} numbers large {ontoggle} />
+      {#if post.kind === "code"}<div class="links"><LinkList text={post.text} /></div>{/if}
     {/if}
   </div>
   {#if post.updatedByName}<p class="edited">{t().board.editedBy(post.updatedByName)}</p>{/if}
@@ -104,6 +106,7 @@
   textarea.short { min-height: 96px; }
   textarea.mono { font-family: var(--font-mono); font-size: 13px; }
   .lang { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 8px; }
+  .links { margin-top: 8px; }
   .edited { margin: 0 16px 8px; font-size: 12px; color: var(--color-blue-700); }
   button { min-height: 36px; padding: 0 14px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); color: var(--color-navy); font-size: 14px; cursor: pointer; }
   button.primary { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); font-weight: 700; }

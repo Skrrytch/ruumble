@@ -19,5 +19,8 @@
   pre { margin: 0; padding: 8px 10px; font-family: var(--font-mono); }
   .gutter { color: var(--color-blue-300); text-align: right; user-select: none; border-right: 1px solid var(--color-blue-100); }
   .hljs { flex: 1; white-space: pre; }
+  /* links in code (A4): keep the highlighting colour, underlined */
+  .hljs :global(a.code-link) { color: inherit; text-decoration: underline; text-decoration-color: var(--color-blue-300); text-underline-offset: 2px; }
+  .hljs :global(a.code-link:hover) { text-decoration-color: currentColor; }
   .lang { display: inline-block; margin-top: 4px; font-size: 11px; color: var(--color-blue-500); }
 </style>
