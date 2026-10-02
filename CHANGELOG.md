@@ -8,37 +8,28 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [0.19.0] - 2026-10-02
 
-Plugin 0.5.0 (unchanged). The web UI uses the full window width.
-
-### Changed
-- The web UI uses the full width of the window instead of stopping at 1440 px; 1440 px is now the minimum width (narrower windows scroll). The open board gets half of the width beyond 1440 px.
-
-## [0.18.0] - 2026-10-02
-
-Plugin 0.5.0 (unchanged). The top bar is made of signs.
-
-### Changed
-- The top bar is made of signs: the floor sign (with elevator buttons, so it is obvious that it changes the floor), the room sign of the own place in the middle (it leads back from another floor) and a name badge for the user menu. Head counts stand behind the floor names; everyone online and the server name moved into a status bar at the bottom of the elevator.
-
-## [0.17.0] - 2026-10-02
-
-Plugin 0.5.0 (unchanged). More room for the floor plan: a top bar instead of the left column, room widths follow occupancy, many rooms scroll sideways.
-
-### Changed
-- The left column is gone: a **top bar** carries the navigation, so the floor plan gets the full width. On the left the current floor with its head count opens the elevator as a dropdown (with the entrance at the bottom); in the middle the server name and everyone online; on the right mute, deafen and the user menu ("Go to my floor", language, versions).
-- Room widths follow the number of people in a room instead of the Mumble order: occupied rooms get more space, and the change glides. At most 3 rooms per row (6 per floor) are in view; with more, only the floor plan scrolls sideways (scrollbar or mouse wheel), the elevator and the board stay put. The corridor label stays in view and the own room is scrolled into view.
-- Floors with more than 8 rooms are no longer locked ("Too many rooms" is gone); they scroll instead.
-
-## [0.16.0] - 2026-10-02
-
-Plugin 0.5.0 (unchanged). The board points out new posts, and own posts can be deleted from the card.
+Plugin 0.5.0 (unchanged). A new layout with more room for the floor plan, and a board that points out new posts. 0.16.0 to 0.18.0 were not published; their changes are included here.
 
 ### Added
-- New posts by others stand out: with the board closed, a yellow note lands on the toggle in the user's own room (it stays until the board is opened, and those posts light up once there). With the board open, a new post is pinned on from above and glows; if the list is scrolled down, a "1 new post" button leads up to it. "Seen" is remembered per room in the browser. The mock's debug panel can simulate such a post.
-- "…" menu on a post card, right of copy/download, with "Delete" for posts the user may delete (own posts, or as Mumble admin); asks before deleting, like the popup.
+- **New posts stand out.** With the board closed, a yellow note lands on the board toggle in your own room when someone else pins something; it stays until you open the board, and those posts light up once there. With the board open, a new post is pinned on from above and glows; if the list is scrolled down, a "1 new post" button leads up to it. What you have seen is remembered per room in the browser.
+- **Delete from the card:** a "…" menu next to copy/download offers "Delete" for posts you may delete (your own, or all as a Mumble admin), with the same confirmation as the popup.
+- The mock's debug panel can simulate a post by someone else.
 
 ### Changed
-- The operations guide is split into short pages: setting up (`docs/operations.md`), and under `docs/operations/` HTTPS, backup and updates, troubleshooting, Mumble tips and the configuration reference. Upgrade notes for old versions are in this changelog.
+- **Top bar instead of the left column**, so the floor plan gets the full width. It is made of signs:
+  - on the left the **floor sign** with the current floor and its head count; its elevator buttons open the **elevator** as a dropdown (floors with their head counts, the entrance below the ground floor, and a status bar with everyone online and the server name),
+  - in the middle the **room sign** of your own place with its head count; when you look at another floor, it takes you back,
+  - on the right mute, deafen and your **name badge**, which opens the user menu ("Go to my floor", language, versions).
+- **Room widths follow occupancy:** a room gets wider with every person in it (up to 8), and the change glides. This replaces the fixed sizes by Mumble order.
+- **Many rooms scroll sideways:** up to 3 rooms per row (6 per floor) are in view; with more, only the floor plan scrolls (scrollbar or mouse wheel) while the top bar and the board stay put. The corridor label stays in view and your own room is scrolled into view.
+- **Full window width:** the web UI no longer stops at 1440 px. 1440 px is now the minimum width (narrower windows scroll), and the open board gets half of the width beyond it.
+- The operations guide is split into short pages: setting up (`docs/operations.md`), and under `docs/operations/` HTTPS, backup and updates, troubleshooting, Mumble tips and the configuration reference.
+
+### Removed
+- The "Too many rooms" lock: floors with more than 8 rooms are shown and scroll sideways. Only floors nested deeper than two levels are still locked.
+
+### Upgrading
+- No configuration changes: change the image tag to `0.19.0` and restart. The board data stays as it is.
 
 ## [0.15.0] - 2026-09-30
 
@@ -202,8 +193,5 @@ Plugin 0.1.0 to 0.2.0.
 - Docker image with the plugin bundle served under `/download`.
 
 [0.19.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.19.0
-[0.18.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.18.0
-[0.17.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.17.0
-[0.16.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.16.0
 [0.15.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.15.0
 [0.14.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.14.0
