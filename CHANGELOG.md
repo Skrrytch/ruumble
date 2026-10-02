@@ -6,6 +6,15 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-10-02
+
+### Changed
+- **Compact board.** A one-line post takes about half the height, a series of short posts about a third:
+  - the author is one line ("Anna · 5 min ago") with a smaller avatar,
+  - the actions (open, react, copy or download, "…") float on the top edge of a post when you point at it or reach it with the keyboard, instead of a row under every post; the pin dot for "keep on top" appears the same way,
+  - posts by the same person at most 10 minutes apart join into one card with a single name line; the time of each is shown with its actions,
+  - less space between and inside the cards.
+
 ## [0.21.1] - 2026-10-02
 
 ### Fixed
