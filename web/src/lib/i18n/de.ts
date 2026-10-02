@@ -53,13 +53,14 @@ export const de = {
   header: {
     preview: "Vorschau, nur lesend",
     onFloorTitle: "Personen auf dieser Etage",
-    onFloorLabel: (n: number) => `${n} auf dieser Etage`,
     onlineTitle: "Online auf dem Server",
     online: (n: number) => `${n} online`,
   },
   core: {
     elevator: "Aufzug",
     elevatorLabel: "Aufzug – Etagen",
+    /** the current floor in the top bar, opens the elevator */
+    currentFloor: (level: string, name: string, n: number) => `${level}: ${name}, ${n} auf dieser Etage – Etage wählen`,
     lockedShort: "gesperrt",
     lockReason: { "too-deep": "Kanalstruktur zu tief" },
     floorButton: (level: string, name: string, lock: string | null) => `${level}: ${name}${lock ? ` – gesperrt: ${lock}` : ""}`,

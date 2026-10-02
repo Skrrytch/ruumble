@@ -1,4 +1,5 @@
 import { expect, test, type Locator } from "@playwright/test";
+import { gotoFloor } from "./topbar.ts";
 
 /** choose a kind in the filter menu of the board header */
 async function filter(board: Locator, name: string): Promise<void> {
@@ -280,7 +281,7 @@ test.describe("Board (AP11.2)", () => {
 
 test("floor with 2 rooms: one room at the top and one at the bottom, the open board gets wider", async ({ page }) => {
   await page.goto("/?fixture=edge-cases&talking=0");
-  await page.getByRole("button", { name: /STUDIO/ }).click();
+  await gotoFloor(page, /STUDIO/);
   await page.getByRole("button", { name: "Studio A – enter" }).click();
   const a = page.locator('.room[data-channel="41"]');
   const b = page.locator('.room[data-channel="42"]');

@@ -37,11 +37,8 @@ async function boxes(page: Page, attr: "data-join" | "data-channel") {
     };
     const result: Record<string, { x: number; y: number; width: number; height: number }> = {
       plan: { x: 0, y: 0, width: plan.width, height: plan.height },
-      core: rel(document.querySelector(".core")!),
-      elevator: rel(document.querySelector(".elevator")!),
     };
     for (const el of document.querySelectorAll(`.room[${attr}]`)) result[`room-${el.getAttribute(attr)}`] = rel(el);
-    for (const el of document.querySelectorAll(".floor[data-floor]")) result[`floor-${el.getAttribute("data-floor")}`] = rel(el);
     return result;
   }, attr);
 }
@@ -68,24 +65,17 @@ test("layout matches the prototype (sample building, DEVELOPMENT floor)", async 
   await page.screenshot({ path: info.outputPath("ruumble.png") });
 
   const deviations: string[] = [];
-  for (const [key, ref] of Object.entries(reference) as [string, Box][]) {
+  for (const [key, ref] of (Object.entries(reference) as [string, Box][]).filter(([key]) => key.startsWith("room-"))) {
     const box = ours[key] as Box | undefined;
     if (!box) { deviations.push(`${key}: missing`); continue; }
-    // Floor buttons are deliberately more compact than in the prototype (room for more floors and the entrance):
-    // for them only x and width, for the elevator panel everything except the height
-    // Room widths follow the number of people in them (E31), no longer the name as in the prototype:
-    // for rooms therefore only row (y) and height
-    const keys = key.startsWith("floor-")
-      ? (["x", "width"] as const)
-      : key.startsWith("room-") && key !== "room-2"
-        ? (["y", "height"] as const)
-      : key === "elevator"
-        ? (["x", "y", "width"] as const)
-        : (["x", "y", "width", "height"] as const);
+    // The elevator column of the prototype became the top bar (2026-10-02) and room widths follow the number
+    // of people (E31): what is left to compare are the rows and the corridor, i.e. y and height of every room
+    const keys = ["y", "height"] as const;
     for (const k of keys) {
       if (Math.abs(box[k] - ref[k]) > TOLERANCE) deviations.push(`${key}.${k}: ${box[k].toFixed(1)} instead of ${ref[k].toFixed(1)}`);
     }
   }
   expect(deviations, deviations.join("\n")).toEqual([]);
-  expect(Object.keys(ours).sort()).toEqual(Object.keys(reference).sort());
+  const rooms = (boxes: Record<string, unknown>) => Object.keys(boxes).filter((k) => k.startsWith("room-")).sort();
+  expect(rooms(ours)).toEqual(rooms(reference));
 });

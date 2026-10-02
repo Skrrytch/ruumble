@@ -38,14 +38,14 @@ Links from Mumble (welcome message, pairing link) open in your default browser. 
 
 ## Using Ruumble
 
-- **Elevator (left):** one button per floor. Locked floors (nested too deeply) are greyed out; for those, use the classic channel view in Mumble.
+- **Top bar:** on the left the current floor with the number of people on it. Click it to open the **elevator**: one button per floor, the entrance below the ground floor. Locked floors (nested too deeply) are greyed out; for those, use the classic channel view in Mumble. In the middle the server and how many people are online.
 - **Rooms and corridor:** clicking a room or the corridor moves you to that channel. Your room is light blue, your avatar has a yellow ring.
 - **Icons on people:** muted, deafened, "quiet" (has not talked for 15 minutes), "away" (deafened and quiet for 5 minutes). An ear on a room means someone is listening in. "● Recording" means the room is being recorded.
-- **User menu (bottom left):** mute microphone, deafen, back to your own floor, change language.
+- **Right in the top bar:** mute microphone and deafen; your name opens the user menu with "Go to my floor", the language switch and the versions.
 
 ### Language
 
-The web UI is in German if your browser prefers German, otherwise in English. You can switch it with the language button in the user menu (bottom left); the browser remembers your choice.
+The web UI is in German if your browser prefers German, otherwise in English. You can switch it in the user menu (your name, top right); the browser remembers your choice.
 
 The plugin's messages in the Mumble log follow the system language (Linux: `LC_ALL`, then `LC_MESSAGES`, then `LANG`; Windows: the display language): German for German, English for everything else.
 

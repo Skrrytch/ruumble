@@ -27,7 +27,7 @@ Set by the project owner.
 
 | Mumble | Building |
 |---|---|
-| Root channel | Building (sign in the elevator core); users in it stand in the entrance |
+| Root channel | Building (server name in the top bar); users in it stand in the entrance |
 | First-level channel | Floor, ordered as in 3.2 |
 | The floor channel itself | Corridor, always enterable |
 | Second-level channel | Room/office of the floor (temporary channels included) |
@@ -55,7 +55,7 @@ Update 2026-10-02: a floor with **more than 8 rooms** is no longer locked ("Too 
 
 ### 3.4 Other rules
 
-- **Entrance:** Users in the root channel stand in the entrance, shown below the elevator box.
+- **Entrance:** Users in the root channel stand in the entrance, shown below the elevator box (since 2026-10-02 at the bottom of the elevator dropdown).
 - **Temporary channels** on the second level are normal rooms (but have no board, see ADR-0011).
 - **Linked channels disappear completely**, including all their subchannels. Any channel with a non-empty `Channel.links` is not shown. Links in Mumble are always bidirectional, so both sides disappear. The remaining rooms share the space, and hidden rooms do not count towards the limit of 8. Edge cases: O2–O4.
 - **Listening:** If someone listens to a room (channel listener), an ear icon next to the room name shows it, with the tooltip "N people are listening", without names (E27).
@@ -68,9 +68,9 @@ Update 2026-10-02: a floor with **more than 8 rooms** is no longer locked ("Too 
 ### 3.5 Layout
 
 - Compact header: floor name on the left; people on the floor and "N online" on the right.
-- **Floor plan:** the elevator core on the left (building sign, elevator with one button per floor, entrance, user menu) and the floor area on the right: top row of rooms, corridor, bottom row. Walls are 4 px gaps; every door has a door arc.
-- The **building sign** shows only the server name (no "primary" label, E9).
-- **Room widths and rows** (E31): order follows the Mumble position. The width follows the **number of people** in a room (empty 1, each person +0.4, up to 8 people); rooms in a row share its width in that ratio, and changes glide. The top row has ⌊n/2⌋ rooms (at least one), the rest go below. At most **3 rooms per row (6 per floor)** are in view; with more, the rows get wider and only the floor plan scrolls sideways (scrollbar, mouse wheel), while the elevator core and the board stay put. The corridor's label stays in view, and the own room is scrolled into view. With 1–2 rooms, the open board gets wider. (Until 2026-10-02: rooms 1 and 2 large, then gradually smaller, at most 8 rooms.)
+- **Top bar and floor plan** (update 2026-10-02, replaces the elevator core on the left): the top bar has, on the left, the current floor (badge, name, people on the floor), which opens the **elevator** as a dropdown in the style of an elevator panel (floors top to bottom, the entrance below); in the middle the server name and everyone online; on the right mute, deafen and the **user menu** (own name and place, "go to my floor", language, versions). Below it the floor area across the full width: top row of rooms, corridor, bottom row. Walls are 4 px gaps; every door has a door arc.
+- The **building sign** shows only the server name (no "primary" label, E9); it is now the server name in the middle of the top bar.
+- **Room widths and rows** (E31): order follows the Mumble position. The width follows the **number of people** in a room (empty 1, each person +0.4, up to 8 people); rooms in a row share its width in that ratio, and changes glide. The top row has ⌊n/2⌋ rooms (at least one), the rest go below. At most **3 rooms per row (6 per floor)** are in view; with more, the rows get wider and only the floor plan scrolls sideways (scrollbar, mouse wheel), while the top bar and the board stay put. The corridor's label stays in view, and the own room is scrolled into view. With 1–2 rooms, the open board gets wider. (Until 2026-10-02: rooms 1 and 2 large, then gradually smaller, at most 8 rooms.)
 - Own room has a light blue background, own avatar a yellow ring. That is the only yellow element.
 - Interaction: clicking a room moves the user (only after server confirmation; a short transition, and a message on rejection). Clicking a floor only changes the view. Plus mute, deafen and "go to my floor".
 - Accessibility: real buttons, `aria-current`, `aria-pressed`, touch targets ≥ 44 px.
@@ -110,7 +110,7 @@ Feasibility studies S1 (Ice from Node.js) and S2 (minimal plugin) passed: [feasi
 | E3 | Platform | Linux; Windows as a later option. |
 | E4 | Locked floors | Visible in the elevator, but locked (3.3). |
 | E5 | Many rooms | More than 8 rooms lock the floor (3.3). Update 2026-10-02: no limit any more, more than 3 rooms per row scroll sideways (E31). |
-| E6 | Root channel | Entrance below the elevator box (3.4). |
+| E6 | Root channel | Entrance below the elevator box (3.4). Update 2026-10-02: at the bottom of the elevator dropdown. |
 | E7 | Floor order | Mumble `position`, then name. First floor = ground floor, no keywords (3.2). |
 | E8 | Talking indicator | Yes, if technically possible. It is possible with the plugin. |
 | E9 | Building sign | The "primary" label is dropped. |

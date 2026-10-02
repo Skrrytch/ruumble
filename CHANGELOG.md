@@ -7,6 +7,7 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 ## [Unreleased]
 
 ### Changed
+- The left column is gone: a **top bar** carries the navigation, so the floor plan gets the full width. On the left the current floor with its head count opens the elevator as a dropdown (with the entrance at the bottom); in the middle the server name and everyone online; on the right mute, deafen and the user menu ("Go to my floor", language, versions).
 - Room widths follow the number of people in a room instead of the Mumble order: occupied rooms get more space, and the change glides. At most 3 rooms per row (6 per floor) are in view; with more, only the floor plan scrolls sideways (scrollbar or mouse wheel), the elevator and the board stay put. The corridor label stays in view and the own room is scrolled into view.
 - Floors with more than 8 rooms are no longer locked ("Too many rooms" is gone); they scroll instead.
 

@@ -1,16 +1,15 @@
 <script lang="ts">
   import Unplug from "@lucide/svelte/icons/unplug";
-  import Users from "@lucide/svelte/icons/users";
   import type { MockAdapter } from "./lib/adapter/mock.ts";
   import { FEW_ROOMS } from "./lib/model/building.ts";
   import type { RuumbleState } from "./lib/state.svelte.ts";
-  import Core from "./lib/ui/Core.svelte";
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
   import FloorPlan from "./lib/ui/FloorPlan.svelte";
   import { t } from "./lib/i18n/index.svelte.ts";
   import { shortcutOf } from "./lib/shortcuts.ts";
   import PairForm from "./lib/ui/PairForm.svelte";
   import PluginHelp from "./lib/ui/PluginHelp.svelte";
+  import TopBar from "./lib/ui/TopBar.svelte";
   import BoardPanel from "./lib/ui/board/BoardPanel.svelte";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
@@ -21,7 +20,6 @@
   const fewRooms = $derived(
     app.boardOpen && !app.readonly && !!floor && !floor.lock && floor.rooms.length > 0 && floor.rooms.length <= FEW_ROOMS,
   );
-  const hidden = $derived(building?.self?.kind === "hidden");
 
   // keyboard shortcuts (lib/shortcuts.ts): only in the building view with an own user
   function onkeydown(e: KeyboardEvent): void {
@@ -55,27 +53,10 @@
       <PluginHelp versions={app.versions} />
     </div>
   {:else}
-    <!-- title bar, space-saving: the floor is marked in the elevator, here only name and numbers -->
-    <header class="head">
-      <div class="where">
-        <h1>{floor?.name ?? t().screens.vacancyTitle}</h1>
-        {#if app.readonly}<span class="note">{t().header.preview}</span>{/if}
-        {#if hidden}<span class="note">{t().common.notShown}</span>{/if}
-      </div>
-      <div class="counts">
-        {#if floor}
-          <span class="count" title={t().header.onFloorTitle} aria-label={t().header.onFloorLabel(floor.population)}>
-            <Users size={16} aria-hidden="true" />{floor.population}
-          </span>
-        {/if}
-        <span class="count" title={t().header.onlineTitle}>
-          <span class="dot" aria-hidden="true"></span>{t().header.online(building.online)}
-        </span>
-      </div>
-    </header>
+    <!-- top bar instead of an elevator column: the floor plan gets the full width -->
+    <TopBar {app} {building} {floor} />
 
     <div class="plan" class:few={fewRooms}>
-      <Core {app} {building} {floor} />
       {#if floor}
         <!-- also when vacant: if the user is on a locked floor, its notice appears there -->
         <FloorPlan
@@ -115,16 +96,6 @@
     width: min(1440px, 100%); height: 100vh; min-height: 640px; margin: 0 auto; padding: 16px 32px 24px;
     display: flex; flex-direction: column; gap: 12px; overflow: hidden;
   }
-  .head { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 40px; }
-  .where { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
-  h1 { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .note { font-size: 13px; font-weight: 700; color: var(--color-blue-500); }
-  .counts { display: flex; gap: 8px; flex-shrink: 0; }
-  .count {
-    display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px;
-    background: var(--color-blue-100); color: var(--color-navy); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums;
-  }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-sky); box-shadow: 0 0 0 3px rgb(255 255 255 / 0.7); }
 
   /* floor with 1–2 rooms: floor plan and board share the width */
   .plan.few :global(.floorplan), .plan.few :global(.board) { flex: 1 1 0; width: auto; min-width: 340px; }

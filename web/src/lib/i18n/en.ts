@@ -58,13 +58,14 @@ export const en: Messages = {
   header: {
     preview: "Preview, read-only",
     onFloorTitle: "People on this floor",
-    onFloorLabel: (n) => `${n} on this floor`,
     onlineTitle: "Online on the server",
     online: (n) => `${n} online`,
   },
   core: {
     elevator: "Elevator",
     elevatorLabel: "Elevator – floors",
+    /** the current floor in the top bar, opens the elevator */
+    currentFloor: (level, name, n) => `${level}: ${name}, ${n} on this floor – choose floor`,
     lockedShort: "locked",
     lockReason: { "too-deep": "Channel structure too deep" },
     floorButton: (level, name, lock) => `${level}: ${name}${lock ? ` – locked: ${lock}` : ""}`,
