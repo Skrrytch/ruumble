@@ -6,6 +6,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-10-02
+
+Plugin 0.5.0 (unchanged). The web UI uses the full window width.
+
 ### Changed
 - The web UI uses the full width of the window instead of stopping at 1440 px; 1440 px is now the minimum width (narrower windows scroll). The open board gets half of the width beyond 1440 px.
 
@@ -197,6 +201,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.19.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.19.0
 [0.18.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.18.0
 [0.17.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.17.0
 [0.16.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.16.0
