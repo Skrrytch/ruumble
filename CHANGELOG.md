@@ -6,6 +6,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-02
+
+Plugin 0.5.0 (unchanged). More room for the floor plan: a top bar instead of the left column, room widths follow occupancy, many rooms scroll sideways.
+
 ### Changed
 - The left column is gone: a **top bar** carries the navigation, so the floor plan gets the full width. On the left the current floor with its head count opens the elevator as a dropdown (with the entrance at the bottom); in the middle the server name and everyone online; on the right mute, deafen and the user menu ("Go to my floor", language, versions).
 - Room widths follow the number of people in a room instead of the Mumble order: occupied rooms get more space, and the change glides. At most 3 rooms per row (6 per floor) are in view; with more, only the floor plan scrolls sideways (scrollbar or mouse wheel), the elevator and the board stay put. The corridor label stays in view and the own room is scrolled into view.
@@ -183,6 +187,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.17.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.17.0
 [0.16.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.16.0
 [0.15.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.15.0
 [0.14.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.14.0
