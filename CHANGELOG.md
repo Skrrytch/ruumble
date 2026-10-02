@@ -6,6 +6,17 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-10-02
+
+Plugin 0.5.0 (unchanged).
+
+### Added
+- **Links in code are clickable.** URLs in code posts, logs and stack traces open in a new tab, and below a code post its links are listed (up to three, then "+ N more", which opens the post), so a ticket or PR link far down in a log is one click away.
+- **Short form for well-known links.** Instead of a long URL, a link shows what it points to, read only from the shape of the URL (nothing is fetched, self-hosted instances work too): "PR #13 · ruumble", "MR !42 · app", "#42 · ruumble", "a1b2c3d · ruumble", "CI · ruumble", "Pipeline #98765 · app", "TAG-1366", the title of a Confluence page or Stack Overflow question, otherwise the host and a shortened path. The full URL is in the tooltip. Links with their own text stay as written.
+
+### Upgrading
+- No configuration changes: change the image tag to `0.23.0` and restart.
+
 ## [0.22.1] - 2026-10-02
 
 ### Changed
