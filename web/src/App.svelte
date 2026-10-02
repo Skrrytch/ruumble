@@ -93,8 +93,9 @@
 
 <style>
   .app {
-    width: min(1440px, 100%); height: 100vh; min-height: 640px; margin: 0 auto; padding: 16px 32px 24px;
-    display: flex; flex-direction: column; gap: 12px; overflow: hidden;
+    /* at least the minimum width (narrower windows scroll), otherwise the full width; the board measures against it */
+    width: 100%; min-width: var(--app-min-width); height: 100vh; min-height: 640px; padding: 16px 32px 24px;
+    display: flex; flex-direction: column; gap: 12px; overflow: hidden; container-type: inline-size;
   }
 
   /* floor with 1–2 rooms: floor plan and board share the width */

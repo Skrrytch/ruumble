@@ -30,6 +30,10 @@
   --wall: 4px;
   --radius-md: 4px;
 
+  /* Layout: the app never gets narrower than this; a wider window is used in full (like the height) */
+  --app-min-width: 1440px;
+  --board-width: 340px;        /* open board at the minimum width; it gets half of every pixel beyond */
+
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur: 160ms;

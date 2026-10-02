@@ -79,3 +79,19 @@ test("layout matches the prototype (sample building, DEVELOPMENT floor)", async 
   const rooms = (boxes: Record<string, unknown>) => Object.keys(boxes).filter((k) => k.startsWith("room-")).sort();
   expect(rooms(ours)).toEqual(rooms(reference));
 });
+
+test("width: at least 1440 px, a wider window is used in full and the open board gets half of the extra width", async ({ page }) => {
+  await page.goto("/?fixture=sample&talking=0");
+  const width = async (selector: string) => (await page.locator(selector).boundingBox())!.width;
+  for (const [window, board] of [[1440, 340], [1920, 340 + 240], [2560, 340 + 560]] as const) {
+    await page.setViewportSize({ width: window, height: 900 });
+    expect(await width(".app")).toBeCloseTo(window, 0);
+    await page.getByRole("button", { name: "Show board" }).click();
+    expect(await width(".board")).toBeCloseTo(board, 0);
+    await page.getByRole("button", { name: "Hide board" }).first().click();
+  }
+  // narrower than the minimum: the app keeps its width and the page scrolls
+  await page.setViewportSize({ width: 1280, height: 900 });
+  expect(await width(".app")).toBeCloseTo(1440, 0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeGreaterThan(1280);
+});

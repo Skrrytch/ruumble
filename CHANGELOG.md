@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Changed
+- The web UI uses the full width of the window instead of stopping at 1440 px; 1440 px is now the minimum width (narrower windows scroll). The open board gets half of the width beyond 1440 px.
+
 ## [0.18.0] - 2026-10-02
 
 Plugin 0.5.0 (unchanged). The top bar is made of signs.

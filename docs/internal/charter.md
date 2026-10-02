@@ -74,7 +74,7 @@ Update 2026-10-02: a floor with **more than 8 rooms** is no longer locked ("Too 
 - Own room has a light blue background, own avatar a yellow ring. That is the only yellow element.
 - Interaction: clicking a room moves the user (only after server confirmation; a short transition, and a message on rejection). Clicking a floor only changes the view. Plus mute, deafen and "go to my floor".
 - Accessibility: real buttons, `aria-current`, `aria-pressed`, touch targets ≥ 44 px.
-- Minimum height 720 px, width flexible up to 1440 px. There is no separate small-window layout.
+- Minimum height 720 px, width flexible up to 1440 px. There is no separate small-window layout. Update 2026-10-02: 1440 px is now the **minimum width** (narrower windows scroll), a wider window is used in full; the open board (340 px at the minimum) gets half of the width beyond it.
 - Colours, sizes and radii come from the design tokens. Font and icons are freely licensed: **Inter** (SIL OFL) and **Lucide** (ISC) (E13).
 
 ## 4. Architecture summary
