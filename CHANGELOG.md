@@ -6,6 +6,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-02
+
+Plugin 0.5.0 (unchanged). The top bar is made of signs.
+
 ### Changed
 - The top bar is made of signs: the floor sign (with elevator buttons, so it is obvious that it changes the floor), the room sign of the own place in the middle (it leads back from another floor) and a name badge for the user menu. Head counts stand behind the floor names; everyone online and the server name moved into a status bar at the bottom of the elevator.
 
@@ -190,6 +194,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.18.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.18.0
 [0.17.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.17.0
 [0.16.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.16.0
 [0.15.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.15.0
