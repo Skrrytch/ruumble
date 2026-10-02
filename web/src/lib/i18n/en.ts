@@ -134,6 +134,7 @@ export const en: Messages = {
     newAbove: (n) => (n === 1 ? "1 new post" : `${n} new posts`),
     withKey: (label, key) => `${label} (${key.toUpperCase()})`,
     hide: "Hide board",
+    moreActions: "More actions",
     dropHere: "Drop to pin",
     onlyRooms: "Boards exist only in rooms. Go to a room to pin something there.",
     unavailable: "The board is not available right now.",

@@ -223,6 +223,31 @@ test.describe("Board (AP11.2)", () => {
     await expect(board.getByRole("searchbox", { name: "Search the board" })).toHaveAttribute("placeholder", "Search 4 posts …");
   });
 
+  test("“…” menu next to copy: only on own posts, deletes after confirming, Escape closes", async ({ page }) => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    // in the sample only Anna's text is her own
+    await expect(board.getByRole("button", { name: "More actions" })).toHaveCount(1);
+    const own = board.getByRole("article").filter({ has: page.getByRole("button", { name: "More actions" }) });
+    const more = own.getByRole("button", { name: "More actions" });
+    await more.click();
+    const item = own.getByRole("menuitem", { name: "Delete" });
+    await expect(item).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(item).toHaveCount(0);
+    await expect(more).toBeFocused();
+    // cancelling the question keeps the post
+    page.once("dialog", (d) => d.dismiss());
+    await more.click();
+    await item.click();
+    await expect(board.getByRole("article")).toHaveCount(4);
+    page.once("dialog", (d) => d.accept());
+    await more.click();
+    await item.click();
+    await expect(board.getByRole("article")).toHaveCount(3);
+    await expect(board.getByRole("button", { name: "More actions" })).toHaveCount(0);
+  });
+
   test("pasted code: suggestion “pin as code”", async ({ page }) => {
     await page.getByRole("button", { name: "Show board" }).click();
     const input = page.getByRole("textbox", { name: "New post" });

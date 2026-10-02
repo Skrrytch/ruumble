@@ -227,7 +227,7 @@
       <div class="list" bind:this={list} onscroll={() => { if (newAbove && !scrolledDown()) newAbove = 0; }}>
         {#each listed as post (post.id)}
           <PostCard {post} {now} arrival={arrived[post.id] ?? null} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
-            pinned={post.id === pinnedPost?.id} onpin={pinFromDot} />
+            pinned={post.id === pinnedPost?.id} onpin={pinFromDot} ondelete={(p) => app.deletePost(p.id)} />
         {:else}
           <!-- only the post on top: nothing to say below it -->
           {#if narrowed || !pinnedPost}<p class="empty">{board.posts.length ? t().board.emptyFilter : t().board.empty}</p>{/if}

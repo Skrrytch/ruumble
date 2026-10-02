@@ -3,11 +3,13 @@
   import Check from "@lucide/svelte/icons/check";
   import Copy from "@lucide/svelte/icons/copy";
   import Download from "@lucide/svelte/icons/download";
+  import Ellipsis from "@lucide/svelte/icons/ellipsis";
   import FaceSlightlySmilingPlus from "@lucide/svelte/icons/face-slightly-smiling-plus";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
   import ListChecks from "@lucide/svelte/icons/list-checks";
   import Pin from "@lucide/svelte/icons/pin";
   import PinOff from "@lucide/svelte/icons/pin-off";
+  import Trash2 from "@lucide/svelte/icons/trash-2";
   import { parseTaskList, type Post, type ReactionKind } from "@ruumble/protocol";
   import { PREVIEW_LINES, isLong, relativeTime, summarizeReactions } from "../../board/model.ts";
   import { intlLocale, t } from "../../i18n/index.svelte.ts";
@@ -20,9 +22,10 @@
   /** `avatar`: the author's image if they are currently connected and registered; otherwise initials */
   /** `pinned`: this post is the one kept on top (A3); `onpin`: the dot keeps it on top or takes it down */
   /** `arrival`: new for the user – "land" (by someone else while the board was open: pinned on from above, lights up) or "glow" (only lights up) */
-  let { post, now, avatar = null, pinned = false, arrival = null, onopen, onreact, ontoggle, onpin }: {
+  /** `ondelete`: from the "…" menu, only offered if the user may delete the post (author or Mumble admin) */
+  let { post, now, avatar = null, pinned = false, arrival = null, onopen, onreact, ontoggle, onpin, ondelete }: {
     post: Post; now: number; avatar?: string | null; pinned?: boolean; arrival?: "land" | "glow" | null; onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
-    ontoggle: (post: Post, index: number, done: boolean) => void; onpin: (post: Post) => void;
+    ontoggle: (post: Post, index: number, done: boolean) => void; onpin: (post: Post) => void; ondelete: (post: Post) => void;
   } = $props();
   let avatarBroken = $state<string | null>(null);
 
@@ -41,6 +44,21 @@
   async function copy() {
     copied = await copyText(post.text);
     setTimeout(() => (copied = false), 1500);
+  }
+
+  // "…" menu: closes on choice, Escape and a click elsewhere
+  let menuOpen = $state(false);
+  let menuButton = $state<HTMLButtonElement | null>(null);
+  $effect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest(".more")) menuOpen = false; };
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  });
+  function remove(): void {
+    menuOpen = false;
+    if (confirm(t().board.confirmDelete)) ondelete(post);
+    else menuButton?.focus();
   }
 
   function pick(kind: ReactionKind): void {
@@ -101,6 +119,23 @@
         <button type="button" class="icon-btn" aria-label={copied ? t().common.copied : t().common.copy} title={copied ? t().common.copied : t().common.copy} onclick={copy}>
           {#if copied}<Check size={16} aria-hidden="true" />{:else}<Copy size={16} aria-hidden="true" />{/if}
         </button>
+      {/if}
+      {#if post.canDelete}
+        <span class="more">
+          <button
+            type="button" class="icon-btn" bind:this={menuButton} aria-haspopup="menu" aria-expanded={menuOpen}
+            aria-label={t().board.moreActions} title={t().board.moreActions} onclick={() => (menuOpen = !menuOpen)}
+          >
+            <Ellipsis size={16} aria-hidden="true" />
+          </button>
+          {#if menuOpen}
+            <div class="menu" role="menu" tabindex="-1" onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); menuOpen = false; menuButton?.focus(); } }}>
+              <button type="button" role="menuitem" class="danger" onclick={remove} {@attach (el) => el.focus()}>
+                <Trash2 size={15} aria-hidden="true" />{t().common.delete}
+              </button>
+            </div>
+          {/if}
+        </span>
       {/if}
     </span>
   </footer>
@@ -163,6 +198,16 @@
     background: none; color: var(--color-blue-500); cursor: pointer;
   }
   .icon-btn:hover { background: var(--color-blue-100); color: var(--color-navy); }
+  .more { position: relative; display: inline-flex; }
+  .more .icon-btn[aria-expanded="true"] { background: var(--color-blue-100); color: var(--color-navy); }
+  .menu {
+    position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; min-width: 140px; display: flex; flex-direction: column; padding: 4px;
+    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); box-shadow: 0 4px 12px rgb(0 56 105 / 0.15);
+  }
+  .menu button { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); font-size: 14px; text-align: left; cursor: pointer; }
+  .menu button:hover { background: var(--color-blue-100); }
+  .menu .danger { color: var(--color-alert); }
+  .menu button:focus-visible { outline: 3px solid var(--color-sky); outline-offset: -3px; }
   .react[aria-expanded="true"] { background: var(--color-blue-100); color: var(--color-navy); }
   .link:focus-visible, .icon-btn:focus-visible, .summary:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
 </style>

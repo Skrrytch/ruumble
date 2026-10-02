@@ -133,6 +133,8 @@ export const de = {
     /** tooltip with the keyboard shortcut */
     withKey: (label: string, key: string) => `${label} (${key.toUpperCase()})`,
     hide: "Pinnwand ausblenden",
+    /** "…" button on a card */
+    moreActions: "Weitere Aktionen",
     dropHere: "Loslassen zum Anheften",
     onlyRooms: "Pinnwände gibt es nur in Räumen. Geh in einen Raum, um dort etwas anzuheften.",
     unavailable: "Die Pinnwand ist gerade nicht erreichbar.",

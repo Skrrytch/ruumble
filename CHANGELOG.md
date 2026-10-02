@@ -8,6 +8,7 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ### Added
 - New posts by others stand out: with the board closed, a yellow note lands on the toggle in the user's own room (it stays until the board is opened, and those posts light up once there). With the board open, a new post is pinned on from above and glows; if the list is scrolled down, a "1 new post" button leads up to it. "Seen" is remembered per room in the browser. The mock's debug panel can simulate such a post.
+- "…" menu on a post card, right of copy/download, with "Delete" for posts the user may delete (own posts, or as Mumble admin); asks before deleting, like the popup.
 
 ### Changed
 - The operations guide is split into short pages: setting up (`docs/operations.md`), and under `docs/operations/` HTTPS, backup and updates, troubleshooting, Mumble tips and the configuration reference. Upgrade notes for old versions are in this changelog.
