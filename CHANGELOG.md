@@ -6,6 +6,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-02
+
+Plugin 0.5.0 (unchanged). The board points out new posts, and own posts can be deleted from the card.
+
 ### Added
 - New posts by others stand out: with the board closed, a yellow note lands on the toggle in the user's own room (it stays until the board is opened, and those posts light up once there). With the board open, a new post is pinned on from above and glows; if the list is scrolled down, a "1 new post" button leads up to it. "Seen" is remembered per room in the browser. The mock's debug panel can simulate such a post.
 - "…" menu on a post card, right of copy/download, with "Delete" for posts the user may delete (own posts, or as Mumble admin); asks before deleting, like the popup.
@@ -174,5 +178,6 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.16.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.16.0
 [0.15.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.15.0
 [0.14.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.14.0
