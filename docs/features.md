@@ -1,6 +1,6 @@
 # Ruumble – Features
 
-As of 2026-09-29: service and web UI 0.13, plugin 0.4.
+As of 2026-10-02: service and web UI 0.20, plugin 0.5.
 
 How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.md](operations.md). Architecture: [decisions/](decisions/README.md).
 
@@ -58,6 +58,7 @@ Every room has a board next to the floor plan. It shows the board of the room yo
 - **Kept on top**: one post per room can be kept on top (A3) with the pin dot at the top of its card, which grows into a pin button on hover or keyboard focus. The title field then appears right where the post will be, with a title suggested from the first heading or line (max. 40 characters, editable; Enter confirms, Escape cancels). It appears as one slim row above the list (title, progress for task lists) and unfolds on a click, with its own scrolling; each browser remembers whether it is unfolded. It is not shown a second time in the list, except in search and filter results, where its dot takes it down again. Keeping another post on top replaces it, with a note. Everyone present may set and remove it; it goes away with its post. The UI says "keep on top" because "pin" already means posting.
 - **Keyboard**: **B** shows and hides the board. Shortcuts are single keys without Ctrl, Alt or Meta (those clash with the browser) and never apply while typing or while a dialog is open (`web/src/lib/shortcuts.ts`).
 - **Compact layout**: one slim header row with a search field (text, caption, file name, code language and author; the simple form of A7) and a filter menu by kind. While a search or filter is active, a line shows "N of M posts" with a reset. Each card has a single toolbar row: open on the left, react in the middle, copy or download as an icon on the right. The input stays one line until it has focus.
+- **Ticket keys** become links without any configuration: a post with a link to an issue (`…/browse/TAG-1366`, Jira Cloud and Data Center alike) teaches the service where project `TAG` lives, and from then on a plain "TAG-1366" in text, captions and task lists links there (not in code, not inside links). Only the shape of the URL counts, nothing is fetched. The oldest post wins, so a later link cannot redirect a known project; what is learned is derived from the stored posts and goes away with them. A board only receives the projects whose keys appear in its own posts (`protocol/src/tickets.ts`).
 - **Mumble notice**: when someone pins something, the others in the room get a short line in their Mumble log, e.g. "Anna pinned code to the board." (in each recipient's language).
 
 | Rule | Value |
@@ -126,6 +127,7 @@ Tested versions: see [operations](operations.md#requirements).
 | A1 – Quick reactions | done (0.10.0) |
 | A2 – Shared task lists | done (0.12.0) |
 | A3 – Kept on top | done (0.13.0) |
+| Ticket keys as links (learned from issue links) | done (0.20.0) |
 | A4–A9 – Board for developers | planned, in this order |
 | Report the Mumble avatar bug | open (O16) |
 | Address check over proxy and VPN | proxy with hairpin NAT: `warn` required, VPN untested (see [P7](mumble-interfaces.md#5-checkpoints-of-the-feasibility-studies)). |

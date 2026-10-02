@@ -159,6 +159,18 @@ describe("BoardStore", () => {
     expect(store.pinned(4)).toBeNull();
   });
 
+  it("ticket links: learned from issue links in all rooms, oldest post wins, forgotten with the post", () => {
+    const { store } = tempStore();
+    expect(store.ticketLinks()).toEqual({});
+    const first = store.create({ channelId: 3, kind: "text", text: "https://jira.example/browse/TAG-1", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 4, kind: "code", text: "// https://evil.example/browse/TAG-2\n// https://jira.example/browse/VKB-3", authorHash: B, authorName: "Ben" });
+    expect(store.ticketLinks()).toEqual({ TAG: "https://jira.example/browse/", VKB: "https://jira.example/browse/" });
+    store.update(first.id, { text: "no link any more" }, "Anna");
+    expect(store.ticketLinks().TAG).toBe("https://evil.example/browse/");
+    store.delete(store.list(4)[0]!.id);
+    expect(store.ticketLinks()).toEqual({});
+  });
+
   it("migration 3 keeps existing reactions and allows the new kinds", () => {
     const dir = mkdtempSync(join(tmpdir(), "ruumble-board-"));
     const old = new Database(join(dir, "board.sqlite"));
@@ -321,6 +333,17 @@ describe("REST /api/board", () => {
     await poller.poll();
     expect((await app.inject({ method: "PUT", url: "/api/board/pin", headers: as("ben"), payload: { postId: post.id, title: "x" } })).json()).toEqual({ error: "not-found" });
     expect((await app.inject({ method: "DELETE", url: "/api/board/pin" })).statusCode).toBe(401);
+  });
+
+  it("ticket links: only projects mentioned in the room, learned from any room", async () => {
+    const { app, source, poller, as } = await setup();
+    source.channels.push({ id: 4, parent: 1, name: "Other", position: 2, links: [], temporary: false });
+    source.users[1]!.channel = 4;
+    await poller.poll();
+    await app.inject({ method: "POST", url: "/api/board/posts", headers: as("ben"), payload: { kind: "text", text: "https://jira.example/browse/TAG-1 https://jira.example/browse/SECRET-1" } });
+    expect((await app.inject({ url: "/api/board", headers: as("anna") })).json().tickets).toEqual({});
+    await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "TAG-1366 is fixed" } });
+    expect((await app.inject({ url: "/api/board", headers: as("anna") })).json().tickets).toEqual({ TAG: "https://jira.example/browse/" });
   });
 
   it("non-admin may not delete other people's posts", async () => {

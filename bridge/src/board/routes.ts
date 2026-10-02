@@ -15,7 +15,7 @@
  */
 import { createReadStream } from "node:fs";
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { BOARD_LIMITS, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, type BoardView, type Post, type Reaction } from "@ruumble/protocol";
+import { BOARD_LIMITS, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, ticketProjects, type BoardView, type Post, type Reaction, type TicketLinks } from "@ruumble/protocol";
 import type { Hub, Viewer } from "../hub.ts";
 import type { MumbleSource } from "../mumble.ts";
 import { detectImage, imageSize, safeFileName } from "./media.ts";
@@ -90,8 +90,13 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     if ("error" in r) return fail(reply, r.error);
     const { viewer } = r;
     const isAdmin = await o.source.canWrite(viewer.session, viewer.channelId);
-    const posts = o.store.list(viewer.channelId).map((p) => toView(p, viewer, isAdmin));
-    const view: BoardView = { channelId: viewer.channelId, channelName: o.hub.channelName(viewer.channelId), posts, pinned: o.store.pinned(viewer.channelId) };
+    const stored = o.store.list(viewer.channelId);
+    const posts = stored.map((p) => toView(p, viewer, isAdmin));
+    // only projects mentioned in this room: which projects other rooms link stays there
+    const learned = o.store.ticketLinks();
+    const tickets: TicketLinks = {};
+    for (const project of ticketProjects(stored.map((p) => p.text).join("\n"))) if (Object.hasOwn(learned, project)) tickets[project] = learned[project]!;
+    const view: BoardView = { channelId: viewer.channelId, channelName: o.hub.channelName(viewer.channelId), posts, pinned: o.store.pinned(viewer.channelId), tickets };
     return view;
   });
 

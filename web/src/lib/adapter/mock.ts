@@ -7,7 +7,7 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, REACTION_KINDS, setTask, type Attachment, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, REACTION_KINDS, learnTicketLinks, setTask, ticketProjects, type Attachment, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
@@ -75,9 +75,9 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
     "- Review the avatar handling",
     "- Sync with Clara: *Thursday 10 am*",
     "",
-    "Details are in the [wiki](https://example.org/wiki).",
+    "Details are in the [wiki](https://example.org/wiki) and in https://jira.example.org/browse/RUU-12.",
     "",
-    "1. Fix the flaky e2e test",
+    "1. Fix the flaky e2e test (RUU-15)",
     "2. Bump the dependencies",
     "3. Update the changelog",
     "4. Tag the release",
@@ -151,7 +151,7 @@ export class MockAdapter implements MumbleAdapter {
         // like the service: the pin goes away with its post
         const pin = this.pins.get(channelId);
         const pinned = pin && posts.some((p) => p.id === pin.postId) ? pin : null;
-        return { channelId, channelName: this.channelName(channelId), posts, pinned };
+        return { channelId, channelName: this.channelName(channelId), posts, pinned, tickets: this.ticketLinks(posts) };
       }),
     pin: async (postId: string, title: string) =>
       this.boardRoom((channelId) => {
@@ -399,6 +399,15 @@ export class MockAdapter implements MumbleAdapter {
   }
 
   // ---------------------------------------------------------------- internal
+
+  /** like the service: learned from the issue links in all rooms (oldest first), only projects mentioned here */
+  private ticketLinks(posts: Post[]): TicketLinks {
+    const all = [...this.posts.values()].flat().sort((a, b) => a.createdAt - b.createdAt);
+    const learned: TicketLinks = {};
+    for (const p of all) learnTicketLinks(p.text, learned);
+    const projects = ticketProjects(posts.map((p) => p.text).join("\n"));
+    return Object.fromEntries(Object.entries(learned).filter(([project]) => projects.has(project)));
+  }
 
   private channelName(id: number): string {
     return this.state.channels.find((c) => c.id === id)?.name ?? "";

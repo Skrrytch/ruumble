@@ -9,6 +9,7 @@
 import { z } from "zod";
 
 export * from "./tasks.ts";
+export * from "./tickets.ts";
 
 export const PROTOCOL_VERSION = 1 as const;
 
@@ -209,7 +210,14 @@ export const PinRequest = z.object({ postId: z.string().min(1), title: z.string(
 export type PinRequest = z.infer<typeof PinRequest>;
 
 /** GET /api/board: board of the room the own user is currently in */
-export const BoardView = z.object({ channelId, channelName: z.string(), posts: z.array(Post), pinned: Pinned.nullable() });
+export const BoardView = z.object({
+  channelId,
+  channelName: z.string(),
+  posts: z.array(Post),
+  pinned: Pinned.nullable(),
+  /** learned ticket links (tickets.ts), only for projects whose keys appear in this room's posts */
+  tickets: z.record(z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/), z.url({ protocol: /^https?$/ })).optional(),
+});
 export type BoardView = z.infer<typeof BoardView>;
 
 /** PUT /api/board/posts/:id/tasks/:index: tick or untick one task of a task list (A2) */

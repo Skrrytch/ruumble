@@ -1,5 +1,6 @@
 <script lang="ts">
   import { parseTaskList, type Post } from "@ruumble/protocol";
+  import { getTicketLinks } from "../../board/context.ts";
   import { renderInline, renderMarkdown } from "../../board/render.ts";
   import AttachmentView from "./AttachmentView.svelte";
   import CodeBlock from "./CodeBlock.svelte";
@@ -8,9 +9,10 @@
   /** `large`: larger image (in the popup) */
   /** `ontoggle`: tick a task of a task list (A2); without it the checkboxes are read-only */
   let { post, numbers = false, large = false, ontoggle }: { post: Post; numbers?: boolean; large?: boolean; ontoggle?: (index: number, done: boolean) => void } = $props();
+  const tickets = getTicketLinks();
   const tasks = $derived(post.kind === "text" ? parseTaskList(post.text) : null);
   // images and files: the text is the caption, also Markdown; task lists: only the introduction
-  const html = $derived(post.kind === "code" ? "" : tasks ? (tasks.intro ? renderMarkdown(tasks.intro) : "") : post.text.trim() ? renderMarkdown(post.text) : "");
+  const html = $derived(post.kind === "code" ? "" : tasks ? (tasks.intro ? renderMarkdown(tasks.intro, tickets()) : "") : post.text.trim() ? renderMarkdown(post.text, tickets()) : "");
 </script>
 
 {#if post.kind === "code"}
@@ -23,7 +25,7 @@
         <label>
           <!-- no optimistic update (ADR-0003): back to the known state, the box changes with the service's answer -->
           <input type="checkbox" checked={task.done} disabled={!ontoggle} onchange={(e) => { e.currentTarget.checked = task.done; ontoggle?.(task.index, !task.done); }} />
-          <span class="md">{@html renderInline(task.text)}</span>
+          <span class="md">{@html renderInline(task.text, tickets())}</span>
         </label>
       </li>
     {/each}

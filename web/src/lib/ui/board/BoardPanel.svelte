@@ -14,12 +14,13 @@
   import PinnedBar from "./PinnedBar.svelte";
   import PostCard from "./PostCard.svelte";
   import PostDialog from "./PostDialog.svelte";
-  import { setFileUrl } from "../../board/context.ts";
+  import { setFileUrl, setTicketLinks } from "../../board/context.ts";
   import { SHORTCUT_KEYS } from "../../shortcuts.ts";
 
   let { app }: { app: RuumbleState } = $props();
 
   setFileUrl((a, download) => app.fileUrl(a, download));
+  setTicketLinks(() => app.board?.tickets);
 
   let openId = $state<string | null>(null);
   let now = $state(Date.now());

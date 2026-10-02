@@ -100,3 +100,23 @@ describe("Task texts (A2)", () => {
     expect(unsafe).not.toContain("<img"); // shown as text, escaped
   });
 });
+
+describe("Ticket keys (learned links)", () => {
+  const tickets = { TAG: "https://jira.example/browse/" };
+
+  it("keys of learned projects become links, in a new tab", () => {
+    const html = renderMarkdown("Fixed **TAG-1366** and TAG-7.", tickets);
+    expect(html).toContain('<a href="https://jira.example/browse/TAG-1366" class="ticket" target="_blank" rel="noopener noreferrer nofollow">TAG-1366</a>');
+    expect(html).toContain('<a href="https://jira.example/browse/TAG-7"');
+    expect(renderInline("- [ ] TAG-1 review", tickets)).toContain('href="https://jira.example/browse/TAG-1"');
+  });
+
+  it("not in code, not inside links, not for unknown projects, not without links", () => {
+    expect(renderMarkdown("`TAG-1`\n\n```\nTAG-2\n```", tickets)).not.toContain("<a");
+    const linked = renderMarkdown("[TAG-1 here](https://example.org) https://jira.example/browse/TAG-3", tickets);
+    expect(linked.match(/<a /g)).toHaveLength(2);
+    expect(linked).not.toContain('href="https://jira.example/browse/TAG-1"');
+    expect(renderMarkdown("UTF-8 and VKB-1", tickets)).not.toContain("<a");
+    expect(renderMarkdown("TAG-1")).not.toContain("<a");
+  });
+});

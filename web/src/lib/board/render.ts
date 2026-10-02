@@ -26,6 +26,7 @@ import typescript from "highlight.js/lib/languages/typescript";
 import xml from "highlight.js/lib/languages/xml";
 import yaml from "highlight.js/lib/languages/yaml";
 import MarkdownIt from "markdown-it";
+import { splitTickets, type TicketLinks } from "@ruumble/protocol";
 
 const LANGUAGES = { bash, cpp, csharp, css, diff, dockerfile, go, ini, java, javascript, json, kotlin, markdown, php, python, rust, sql, typescript, xml, yaml };
 for (const [name, lang] of Object.entries(LANGUAGES)) hljs.registerLanguage(name, lang);
@@ -84,6 +85,33 @@ const md = new MarkdownIt({
   highlight: (code, lang) => `<pre class="hljs"><code>${highlight(code, lang || undefined).html}</code></pre>`,
 });
 
+/**
+ * Ticket keys of learned projects ("TAG-1366") become links (tickets.ts in the protocol). Runs after linkify on
+ * the text tokens only, so keys in code, inside links and in URLs stay as they are.
+ */
+md.core.ruler.push("tickets", (state) => {
+  const links = (state.env as { tickets?: TicketLinks }).tickets;
+  if (!links) return;
+  for (const block of state.tokens) {
+    if (block.type !== "inline" || !block.children) continue;
+    let inLink = 0;
+    block.children = block.children.flatMap((token) => {
+      if (token.type === "link_open") inLink++;
+      if (token.type === "link_close") inLink--;
+      const parts = token.type === "text" && inLink === 0 ? splitTickets(token.content, links) : null;
+      if (!parts) return [token];
+      return parts.flatMap((part) => {
+        const text = new state.Token("text", "", 0);
+        text.content = part.text;
+        if (!part.href) return [text];
+        const open = new state.Token("link_open", "a", 1);
+        open.attrs = [["href", part.href], ["class", "ticket"]];
+        return [open, text, new state.Token("link_close", "a", -1)];
+      });
+    });
+  }
+});
+
 // Links always in a new tab and without access to this window
 DOMPurify.addHook("afterSanitizeAttributes", (node) => {
   if (node.tagName === "A") {
@@ -98,14 +126,14 @@ const PURIFY = {
   ALLOWED_URI_REGEXP: /^(?:https?:|mailto:)/i, // no javascript:, data:, vbscript:
 };
 
-/** Markdown → sanitised HTML */
-export function renderMarkdown(text: string): string {
-  return DOMPurify.sanitize(md.render(text), PURIFY) as string;
+/** Markdown → sanitised HTML; `tickets`: learned ticket links of the room */
+export function renderMarkdown(text: string, tickets?: TicketLinks): string {
+  return DOMPurify.sanitize(md.render(text, { tickets }), PURIFY) as string;
 }
 
 /** one line of Markdown without block elements (task of a task list, A2) → sanitised HTML */
-export function renderInline(text: string): string {
-  return DOMPurify.sanitize(md.renderInline(text), PURIFY) as string;
+export function renderInline(text: string, tickets?: TicketLinks): string {
+  return DOMPurify.sanitize(md.renderInline(text, { tickets }), PURIFY) as string;
 }
 
 /** Code post → sanitised HTML (lines separately for line numbers via CSS) */

@@ -58,6 +58,7 @@ The plugin's messages in the Mumble log follow the system language (Linux: `LC_A
 - **Task lists** (checklists): a text whose lines after an optional introduction are all tasks (`- [ ] Task` or `- [] Task`, `- [x] Done`) becomes a list that everyone in the room can tick. The card shows the progress, e.g. "2/5".
 - **Reactions**: the smiley with the plus under a post; the summary at the top right of the card shows who reacted.
 - **Keep on top**: click the small dot at the top of a post (it turns into a pin), adjust the title and press Enter. The post then sits in a slim row above the list, e.g. the checklist of the day; a click unfolds it. There is one per room; keeping another post on top replaces it.
+- **Ticket keys** such as `TAG-1366` become links to Jira by themselves, once anyone on the server has posted a full link to an issue of that project (e.g. `https://jira.example.com/browse/TAG-1`). Nothing needs to be set up.
 - **Search and filter** in the header of the board.
 - Posts are kept for 30 days.
 

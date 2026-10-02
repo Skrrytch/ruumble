@@ -6,7 +6,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import Database from "better-sqlite3";
-import type { PostKind, ReactionKind } from "@ruumble/protocol";
+import { learnTicketLinks, type PostKind, type ReactionKind, type TicketLinks } from "@ruumble/protocol";
 
 export interface StoredAttachment {
   id: string;
@@ -117,6 +117,8 @@ export class BoardStore {
   private readonly db: Database.Database;
   private readonly dir: string;
   private readonly opts: Required<StoreOptions>;
+  /** learned ticket links, recomputed after a change to the posts */
+  private tickets: TicketLinks | null = null;
 
   constructor(dir: string, opts: StoreOptions = {}) {
     this.opts = { retentionDays: 30, quotaBytes: 2048 * 1024 * 1024, orphanMinutes: 60, now: Date.now, ...opts };
@@ -202,6 +204,7 @@ export class BoardStore {
   create(input: { channelId: number; kind: PostKind; text: string; language?: string; attachmentId?: string; attachmentName?: string; authorHash: string; authorName: string }): StoredPost {
     const id = randomUUID();
     const now = this.opts.now();
+    this.tickets = null;
     this.db
       .prepare(`INSERT INTO posts (id, channel_id, kind, text, language, attachment_id, attachment_name, author_hash, author_name, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
@@ -210,6 +213,7 @@ export class BoardStore {
   }
 
   update(id: string, change: { text: string; language?: string }, editorName: string): StoredPost | null {
+    this.tickets = null;
     const r = this.db
       .prepare("UPDATE posts SET text = ?, language = ?, updated_at = ?, updated_by_name = ? WHERE id = ?")
       .run(change.text, change.language ?? null, this.opts.now(), editorName, id);
@@ -220,6 +224,7 @@ export class BoardStore {
     const post = this.db.prepare("SELECT attachment_id AS a FROM posts WHERE id = ?").get(id) as { a: string | null } | undefined;
     if (!post) return false;
     this.db.prepare("DELETE FROM posts WHERE id = ?").run(id);
+    this.tickets = null;
     // only remove the post's own attachment: fresh uploads by others are still waiting to be pinned
     if (post.a) this.removeIfUnreferenced(post.a);
     return true;
@@ -235,6 +240,21 @@ export class BoardStore {
   /** rooms that have something pinned */
   channelsWithPosts(): number[] {
     return (this.db.prepare("SELECT DISTINCT channel_id AS c FROM posts ORDER BY c").all() as { c: number }[]).map((r) => r.c);
+  }
+
+  /**
+   * Ticket links learned from the issue links in all posts, in every room: the oldest post wins, so a later link
+   * cannot redirect a known project. Derived from the posts, so it forgets what expires or is deleted with them.
+   */
+  ticketLinks(): TicketLinks {
+    if (!this.tickets) {
+      const links: TicketLinks = {};
+      for (const { text } of this.db.prepare("SELECT text FROM posts WHERE text LIKE '%/browse/%' ORDER BY created_at, rowid").all() as { text: string }[]) {
+        learnTicketLinks(text, links);
+      }
+      this.tickets = links;
+    }
+    return this.tickets;
   }
 
   // ---------------------------------------------------------------- Attachments
@@ -289,6 +309,7 @@ export class BoardStore {
   cleanup(): CleanupResult {
     const now = this.opts.now();
     const channels = new Set<number>();
+    this.tickets = null;
     const removeWhere = (where: string, ...args: unknown[]) => {
       const rows = this.db.prepare(`DELETE FROM posts WHERE ${where} RETURNING channel_id AS c`).all(...args) as { c: number }[];
       for (const r of rows) channels.add(r.c);
