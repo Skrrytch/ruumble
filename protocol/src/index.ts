@@ -197,6 +197,8 @@ export const Post = z.object({
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   updatedByName: z.string().optional(),
+  /** a copy from another room: that room's name and the original author, both at the time of copying */
+  copiedFrom: z.object({ roomName: z.string(), authorName: z.string() }).optional(),
   /** only kinds with at least one reaction, in the order of REACTION_KINDS */
   reactions: z.array(Reaction),
 });
@@ -219,6 +221,10 @@ export const BoardView = z.object({
   tickets: z.record(z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/), z.url({ protocol: /^https?$/ })).optional(),
 });
 export type BoardView = z.infer<typeof BoardView>;
+
+/** POST /api/board/posts/:id/copy: copy a post of the own room to another room the user may enter */
+export const CopyRequest = z.object({ channelId });
+export type CopyRequest = z.infer<typeof CopyRequest>;
 
 /** PUT /api/board/posts/:id/tasks/:index: tick or untick one task of a task list (A2) */
 export const TaskToggle = z.object({ done: z.boolean() });

@@ -28,6 +28,7 @@ export interface StoredPost {
   createdAt: number;
   updatedAt: number;
   updatedByName?: string;
+  copiedFrom?: { roomName: string; authorName: string };
   /** oldest first */
   reactions: StoredReaction[];
 }
@@ -111,6 +112,9 @@ export const MIGRATIONS = [
      pinned_by_name TEXT NOT NULL,
      pinned_at INTEGER NOT NULL
    );`,
+  // copy to another room: where it came from
+  `ALTER TABLE posts ADD COLUMN copied_from_room TEXT;
+   ALTER TABLE posts ADD COLUMN copied_from_author TEXT;`,
 ];
 
 export class BoardStore {
@@ -201,14 +205,20 @@ export class BoardStore {
     return true;
   }
 
-  create(input: { channelId: number; kind: PostKind; text: string; language?: string; attachmentId?: string; attachmentName?: string; authorHash: string; authorName: string }): StoredPost {
+  create(input: {
+    channelId: number; kind: PostKind; text: string; language?: string; attachmentId?: string; attachmentName?: string; authorHash: string; authorName: string;
+    copiedFrom?: { roomName: string; authorName: string };
+  }): StoredPost {
     const id = randomUUID();
     const now = this.opts.now();
     this.tickets = null;
     this.db
-      .prepare(`INSERT INTO posts (id, channel_id, kind, text, language, attachment_id, attachment_name, author_hash, author_name, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(id, input.channelId, input.kind, input.text, input.language ?? null, input.attachmentId ?? null, input.attachmentName ?? null, input.authorHash, input.authorName, now, now);
+      .prepare(`INSERT INTO posts (id, channel_id, kind, text, language, attachment_id, attachment_name, author_hash, author_name, created_at, updated_at, copied_from_room, copied_from_author)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(
+        id, input.channelId, input.kind, input.text, input.language ?? null, input.attachmentId ?? null, input.attachmentName ?? null, input.authorHash, input.authorName, now, now,
+        input.copiedFrom?.roomName ?? null, input.copiedFrom?.authorName ?? null,
+      );
     return this.get(id)!;
   }
 
@@ -367,6 +377,8 @@ interface Row {
   created_at: number;
   updated_at: number;
   updated_by_name: string | null;
+  copied_from_room: string | null;
+  copied_from_author: string | null;
   mime: string | null;
   size: number | null;
   width: number | null;
@@ -388,6 +400,7 @@ function toPost(r: Row, reactions: StoredReaction[] = []): StoredPost {
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     ...(r.updated_by_name ? { updatedByName: r.updated_by_name } : {}),
+    ...(r.copied_from_room !== null ? { copiedFrom: { roomName: r.copied_from_room, authorName: r.copied_from_author ?? "" } } : {}),
     reactions,
   };
 }

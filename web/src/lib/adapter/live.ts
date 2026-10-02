@@ -28,6 +28,7 @@ const liveBoard: BoardApi = {
   create: (post) => call(Post, "/api/board/posts", { method: "POST", body: JSON.stringify(post) }),
   update: (id, change) => call(Post, `/api/board/posts/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(change) }),
   remove: (id) => call<true>(null, `/api/board/posts/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  copy: (id, channelId) => call(Post, `/api/board/posts/${encodeURIComponent(id)}/copy`, { method: "POST", body: JSON.stringify({ channelId }) }),
   pin: (postId, title) => call(Pinned, "/api/board/pin", { method: "PUT", body: JSON.stringify({ postId, title }) }),
   unpin: () => call<true>(null, "/api/board/pin", { method: "DELETE" }),
   toggleTask: (id, index, done) => call(Post, `/api/board/posts/${encodeURIComponent(id)}/tasks/${index}`, { method: "PUT", body: JSON.stringify({ done }) }),

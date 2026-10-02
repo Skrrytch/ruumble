@@ -6,6 +6,7 @@
  *   POST   /api/board/uploads         raw data up to 10 MB, headers X-File-Name (URI-encoded), X-File-Type (else Content-Type)
  *   PATCH  /api/board/posts/:id       edit (everyone present)
  *   DELETE /api/board/posts/:id       delete (author or Mumble admin)
+ *   POST   /api/board/posts/:id/copy  copy to another room { channelId } the user may enter (everyone present)
  *   PUT    /api/board/pin                          keep a post on top { postId, title } (A3, everyone present, replaces)
  *   DELETE /api/board/pin                          remove it from the top
  *   PUT    /api/board/posts/:id/tasks/:index      tick or untick one task of a task list (A2, everyone present)
@@ -15,7 +16,7 @@
  */
 import { createReadStream } from "node:fs";
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { BOARD_LIMITS, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, ticketProjects, type BoardView, type Post, type Reaction, type TicketLinks } from "@ruumble/protocol";
+import { BOARD_LIMITS, CopyRequest, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, ticketProjects, type BoardView, type Post, type Reaction, type TicketLinks } from "@ruumble/protocol";
 import type { Hub, Viewer } from "../hub.ts";
 import type { MumbleSource } from "../mumble.ts";
 import { detectImage, imageSize, safeFileName } from "./media.ts";
@@ -81,6 +82,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
       canDelete: mine || isAdmin,
       createdAt: p.createdAt, updatedAt: p.updatedAt,
       ...(p.updatedByName ? { updatedByName: p.updatedByName } : {}),
+      ...(p.copiedFrom ? { copiedFrom: p.copiedFrom } : {}),
       reactions: aggregate(p, viewer.certHash),
     };
   }
@@ -172,6 +174,35 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     o.store.delete(post.id);
     o.hub.boardChanged(post.channelId);
     return reply.code(204).send();
+  });
+
+  // copy to another room: the one exception to "only the room you are in" (ADR-0011): a room the user may enter in
+  // Mumble, so nobody reaches a board they could not open. A new post by the user there, with where it came from;
+  // tasks keep their ticks, reactions and "kept on top" stay behind. The people in the target room get the notice.
+  app.post<{ Params: { id: string } }>("/api/board/posts/:id/copy", async (req, reply) => {
+    const r = room(req.headers.cookie);
+    if ("error" in r) return fail(reply, r.error);
+    const { viewer } = r;
+    const body = CopyRequest.safeParse(req.body);
+    if (!body.success) return fail(reply, "invalid");
+    const post = o.store.get(req.params.id);
+    if (!post) return fail(reply, "not-found");
+    if (post.channelId !== viewer.channelId) return fail(reply, "not-in-room");
+    const target = body.data.channelId;
+    if (target === viewer.channelId || !o.hub.isBoardRoom(target)) return fail(reply, "no-board-here");
+    if (!o.hub.mayEnter(viewer.session, target)) return fail(reply, "forbidden");
+    if (rateLimited(viewer.certHash)) return fail(reply, "rate-limited");
+    const copy = o.store.create({
+      channelId: target, kind: post.kind, text: post.text,
+      ...(post.language ? { language: post.language } : {}),
+      ...(post.attachment ? { attachmentId: post.attachment.id, attachmentName: post.attachment.name } : {}),
+      authorHash: viewer.certHash, authorName: viewer.name,
+      // a copy of a copy keeps naming the original author
+      copiedFrom: { roomName: o.hub.channelName(viewer.channelId), authorName: post.copiedFrom?.authorName ?? post.authorName },
+    });
+    o.hub.boardChanged(target);
+    o.onNewPost?.(copy, viewer);
+    return reply.code(201).send(toView(copy, viewer, await o.source.canWrite(viewer.session, target)));
   });
 
   // kept on top (A3): one post per room, everyone present may set, replace and remove it; no Mumble notice

@@ -346,6 +346,53 @@ describe("REST /api/board", () => {
     expect((await app.inject({ url: "/api/board", headers: as("anna") })).json().tickets).toEqual({ TAG: "https://jira.example/browse/" });
   });
 
+  it("copy to another room: only rooms the user may enter, with origin, notice there, ticks kept, reactions not", async () => {
+    const { app, as, hub, plugins, poller, source, store, notified } = await setup();
+    source.channels.push({ id: 4, parent: 1, name: "Meeting", position: 2, links: [], temporary: false }, { id: 6, parent: 1, name: "Temp", position: 3, links: [], temporary: true });
+    poller.watchSessions([7, 8]);
+    await poller.poll();
+    const post = (await app.inject({ method: "POST", url: "/api/board/posts", headers: as("ben"), payload: { kind: "text", text: "- [x] one\n- [ ] two" } })).json();
+    await app.inject({ method: "PUT", url: `/api/board/posts/${post.id}/reactions/agree`, headers: as("anna") });
+    const copy = (target: number, who = "anna", id = post.id) => app.inject({ method: "POST", url: `/api/board/posts/${id}/copy`, headers: as(who), payload: { channelId: target } });
+    // Anna may not enter "Secret" (3); the own room, the corridor and temporary rooms have no board to copy to
+    expect((await copy(3)).json()).toEqual({ error: "forbidden" });
+    for (const target of [2, 1, 6, 99]) expect((await copy(target)).json()).toEqual({ error: "no-board-here" });
+    expect((await copy(4, "anna", "nope")).json()).toEqual({ error: "not-found" });
+    expect((await app.inject({ method: "POST", url: `/api/board/posts/${post.id}/copy`, headers: as("anna"), payload: { channelId: "4" } })).json()).toEqual({ error: "invalid" });
+
+    const annaUi = recorder<BridgeToUi>();
+    hub.uiConnected(annaUi.conn, A);
+    source.users[1]!.channel = 4; // Ben is in the meeting room, Anna copies Ben's post there
+    await poller.poll();
+    const res = await copy(4);
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toMatchObject({ channelId: 4, text: "- [x] one\n- [ ] two", authorName: "Anna", mine: true, reactions: [], copiedFrom: { roomName: "Office", authorName: "Ben" } });
+    expect(notified.at(-1)).toBe(res.json().id);
+    notifyRoom(hub, store.get(res.json().id)!, { name: "Anna", certHash: A });
+    expect(plugins.ben.last("notify")).toEqual({ v: 1, type: "notify", text: 'Anna hat einen Text aus „Office“ an die Pinnwand geheftet.' });
+    expect(annaUi.last("board")).toBeUndefined(); // Anna stays in her room, its board did not change
+    expect(store.list(2)).toHaveLength(1);
+    // Ben copies the copy back: the original author stays Ben, the room is where it came from now
+    const back = (await copy(2, "ben", res.json().id)).json();
+    expect(back.copiedFrom).toEqual({ roomName: "Meeting", authorName: "Ben" });
+    expect(annaUi.last("board")).toEqual({ v: 1, type: "board", channelId: 2 });
+    // posts of another room cannot be copied
+    expect((await copy(2, "anna", res.json().id)).json()).toEqual({ error: "not-in-room" });
+  });
+
+  it("copy keeps the attachment, stored once", async () => {
+    const { app, as, poller, source, store } = await setup();
+    source.channels.push({ id: 4, parent: 1, name: "Meeting", position: 2, links: [], temporary: false });
+    await poller.poll();
+    const img = (await app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream" }, payload: PNG })).json();
+    const post = (await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "image", text: "Sketch", attachmentId: img.id, attachmentName: "a.png" } })).json();
+    const copy = (await app.inject({ method: "POST", url: `/api/board/posts/${post.id}/copy`, headers: as("anna"), payload: { channelId: 4 } })).json();
+    expect(copy).toMatchObject({ kind: "image", text: "Sketch", attachment: { id: img.id, name: "a.png" } });
+    // deleting the original keeps the file for the copy
+    await app.inject({ method: "DELETE", url: `/api/board/posts/${post.id}`, headers: as("anna") });
+    expect(existsSync(store.filePath(img.id))).toBe(true);
+  });
+
   it("non-admin may not delete other people's posts", async () => {
     const { app, source, as } = await setup();
     source.admins.clear();
@@ -412,6 +459,11 @@ describe("REST /api/board", () => {
     source.users[1]!.channel = 1; // Ben goes to the corridor: no more notice
     await poller.poll();
     expect(notifyRoom(hub, { channelId: 2, kind: "text" }, { name: "Anna", certHash: A })).toBe(0);
+  });
+
+  it("notice for a copy names the room it came from", () => {
+    expect(notifyText("Anna", "code", "de", "Meeting")).toBe("Anna hat Code aus „Meeting“ an die Pinnwand geheftet.");
+    expect(notifyText("Anna", "image", "en", "Meeting")).toBe('Anna brought an image from "Meeting" to the board.');
   });
 
   it("notice in the recipient's language (plugin reports locale)", async () => {

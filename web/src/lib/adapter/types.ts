@@ -24,6 +24,8 @@ export interface BoardApi {
   create(post: NewPost): Promise<BoardResult<Post>>;
   update(id: string, change: PostUpdate): Promise<BoardResult<Post>>;
   remove(id: string): Promise<BoardResult<true>>;
+  /** copy a post of the own room to another room the user may enter */
+  copy(id: string, channelId: number): Promise<BoardResult<Post>>;
   /** keep a post of the room on top, replacing the previous one (A3) */
   pin(postId: string, title: string): Promise<BoardResult<Pinned>>;
   unpin(): Promise<BoardResult<true>>;

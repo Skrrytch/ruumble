@@ -7,7 +7,7 @@
   import type { Post } from "@ruumble/protocol";
   import { untrack } from "svelte";
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
-  import { FILTERS, PIN_TITLE_MAX, filterPosts, suggestTitle, type BoardFilter } from "../../board/model.ts";
+  import { FILTERS, PIN_TITLE_MAX, copyTargets, filterPosts, suggestTitle, type BoardFilter } from "../../board/model.ts";
   import { t } from "../../i18n/index.svelte.ts";
   import type { RuumbleState } from "../../state.svelte.ts";
   import Composer from "./Composer.svelte";
@@ -30,6 +30,7 @@
   });
 
   const board = $derived(app.board);
+  const targets = $derived(copyTargets(app.building, app.snapshot?.channels ?? []));
   const posts = $derived(board ? filterPosts(board.posts, app.boardFilter, app.boardQuery) : []);
   const narrowed = $derived(app.boardFilter !== "all" || app.boardQuery.trim() !== "");
 
@@ -228,7 +229,7 @@
       <div class="list" bind:this={list} onscroll={() => { if (newAbove && !scrolledDown()) newAbove = 0; }}>
         {#each listed as post (post.id)}
           <PostCard {post} {now} arrival={arrived[post.id] ?? null} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
-            pinned={post.id === pinnedPost?.id} onpin={pinFromDot} ondelete={(p) => app.deletePost(p.id)} />
+            pinned={post.id === pinnedPost?.id} onpin={pinFromDot} ondelete={(p) => app.deletePost(p.id)} {targets} oncopy={(p, target) => app.copyPost(p, target)} />
         {:else}
           <!-- only the post on top: nothing to say below it -->
           {#if narrowed || !pinnedPost}<p class="empty">{board.posts.length ? t().board.emptyFilter : t().board.empty}</p>{/if}

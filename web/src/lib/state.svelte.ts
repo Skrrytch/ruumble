@@ -4,7 +4,7 @@
  */
 import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairErrorCode, PluginStatus } from "./adapter/types.ts";
-import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter } from "./board/model.ts";
+import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter, type CopyTarget } from "./board/model.ts";
 import { t } from "./i18n/index.svelte.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
 
@@ -243,6 +243,14 @@ export class RuumbleState {
     const r = await this.adapter.board.remove(id);
     if (!r.ok) return this.boardFailed(r.error);
     await this.loadBoard();
+    return true;
+  }
+
+  /** copy a post to another room; the own board stays as it is, a notice confirms it */
+  async copyPost(post: Post, target: CopyTarget): Promise<boolean> {
+    const r = await this.adapter.board.copy(post.id, target.channelId);
+    if (!r.ok) return this.boardFailed(r.error);
+    this.setNotice({ text: t().board.copiedTo(target.name) });
     return true;
   }
 

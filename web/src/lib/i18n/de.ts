@@ -195,6 +195,14 @@ export const de = {
     open: "Öffnen",
     editedBy: (name: string) => `zuletzt bearbeitet von ${name}`,
     confirmDelete: "Diesen Beitrag wirklich löschen?",
+    /** "…" menu: copy a post to another room; then the rooms to choose from */
+    copyToRoom: "In Raum kopieren …",
+    copyToRoomTitle: "In welchen Raum kopieren?",
+    copyNoRooms: "Kein anderer Raum, den du betreten darfst",
+    copiedTo: (room: string) => `In „${room}“ kopiert.`,
+    /** card header of a copy: where it came from, and from whom if someone else wrote it */
+    copiedFrom: (room: string) => `aus „${room}“`,
+    copiedFromBy: (room: string, name: string) => `aus „${room}“, von ${name}`,
     editPost: "Beitrag bearbeiten",
     editDescription: "Beschreibung bearbeiten",
     captionPlaceholder: "Beschreibung (optional) …",

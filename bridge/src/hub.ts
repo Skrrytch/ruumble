@@ -112,6 +112,11 @@ export class Hub {
     return !!c && !c.temporary && !!floor && floor.parent === 0;
   }
 
+  /** may this user enter the channel (Mumble ACLs, as for moving); unknown counts as yes, like in the snapshot */
+  mayEnter(session: number, channelId: number): boolean {
+    return this.state?.canEnter.get(session)?.[String(channelId)] !== false;
+  }
+
   channelName(channelId: number): string {
     return this.state?.channels.find((c) => c.id === channelId)?.name ?? "";
   }
@@ -302,7 +307,7 @@ export class Hub {
     ui.commandTimes.push(now);
     if (body.cmd === "join") {
       const exists = this.state?.channels.some((c) => c.id === body.channel);
-      const allowed = this.state?.canEnter.get(plugin.session)?.[String(body.channel)] !== false;
+      const allowed = this.mayEnter(plugin.session, body.channel);
       if (!exists || !allowed) return reply("rejected");
     }
     const pluginId = randomUUID();

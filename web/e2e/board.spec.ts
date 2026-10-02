@@ -224,16 +224,21 @@ test.describe("Board (AP11.2)", () => {
     await expect(board.getByRole("searchbox", { name: "Search the board" })).toHaveAttribute("placeholder", "Search 4 posts …");
   });
 
-  test("“…” menu next to copy: only on own posts, deletes after confirming, Escape closes", async ({ page }) => {
+  test("“…” menu next to copy: on every post, delete only on own posts, after confirming, Escape closes", async ({ page }) => {
     await page.getByRole("button", { name: "Show board" }).click();
     const board = page.getByRole("complementary", { name: "Board" });
+    await expect(board.getByRole("button", { name: "More actions" })).toHaveCount(4);
     // in the sample only Anna's text is her own
-    await expect(board.getByRole("button", { name: "More actions" })).toHaveCount(1);
-    const own = board.getByRole("article").filter({ has: page.getByRole("button", { name: "More actions" }) });
+    const others = board.getByRole("article", { name: "Post by Ben" }).first();
+    await others.getByRole("button", { name: "More actions" }).click();
+    await expect(others.getByRole("menuitem", { name: "Copy to room …" })).toBeFocused();
+    await expect(others.getByRole("menuitem", { name: "Delete" })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    const own = board.getByRole("article", { name: "Post by Anna" });
     const more = own.getByRole("button", { name: "More actions" });
     await more.click();
     const item = own.getByRole("menuitem", { name: "Delete" });
-    await expect(item).toBeFocused();
+    await expect(item).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(item).toHaveCount(0);
     await expect(more).toBeFocused();
@@ -246,7 +251,30 @@ test.describe("Board (AP11.2)", () => {
     await more.click();
     await item.click();
     await expect(board.getByRole("article")).toHaveCount(3);
-    await expect(board.getByRole("button", { name: "More actions" })).toHaveCount(0);
+    await expect(board.getByRole("article", { name: "Post by Anna" })).toHaveCount(0);
+  });
+
+  test("copy to room: rooms per floor, own floor first, the copy shows where it came from", async ({ page }) => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    const code = board.getByRole("article", { name: "Post by Ben" }).filter({ has: page.locator(".hljs") });
+    await code.getByRole("button", { name: "More actions" }).click();
+    await code.getByRole("menuitem", { name: "Copy to room …" }).click();
+    const menu = code.getByRole("menu", { name: "Copy to which room?" });
+    // the own room "Let's talk" is not offered; the first room of the own floor has the focus
+    await expect(menu.getByRole("menuitem")).toHaveText(["Let's play", "Retrospective", "Ben's office", "Clara's office", "Office 1", "Office 2", "Office 3", "Office 4"]);
+    await expect(menu.getByRole("menuitem", { name: "Let's play" })).toBeFocused();
+    await menu.getByRole("menuitem", { name: "Retrospective" }).click();
+    await expect(menu).toHaveCount(0);
+    await expect(page.getByRole("alert")).toContainText("Copied to “Retrospective”.");
+    await expect(board.getByRole("article")).toHaveCount(4); // the own board stays as it is
+    // over there: Anna's copy, from Ben in "Let's talk", without the reactions
+    await page.getByRole("button", { name: "Retrospective – enter" }).click();
+    await expect(page.getByRole("button", { name: "Retrospective – you are here" })).toBeVisible();
+    const copy = board.getByRole("article", { name: "Post by Anna" });
+    await expect(copy).toContainText("from “Let's talk”, by Ben");
+    await expect(copy.locator(".hljs")).toBeVisible();
+    await expect(copy.getByRole("button", { name: /^Reactions – / })).toHaveCount(0);
   });
 
   test("pasted code: suggestion “pin as code”", async ({ page }) => {

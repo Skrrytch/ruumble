@@ -208,6 +208,24 @@ export class MockAdapter implements MumbleAdapter {
         this.boardChanged(channelId);
         return true as const;
       }),
+    copy: async (id: string, target: number) =>
+      this.boardRoom((channelId) => {
+        const post = (this.posts.get(channelId) ?? []).find((p) => p.id === id);
+        if (!post) return null;
+        const c = this.state.channels.find((x) => x.id === target);
+        const floor = c && c.parent !== null ? this.state.channels.find((x) => x.id === c.parent) : undefined;
+        if (target === channelId || !c || c.temporary || !floor || floor.parent !== 0) return "invalid";
+        if (this.state.canEnter[String(target)] === false) return "forbidden";
+        const now = Date.now();
+        const copy: Post = {
+          ...post, id: `mock-${this.nextPostId++}`, channelId: target, authorName: this.me()!.name, mine: true, canDelete: true, createdAt: now, updatedAt: now, reactions: [],
+          copiedFrom: { roomName: this.channelName(channelId), authorName: post.copiedFrom?.authorName ?? post.authorName },
+        };
+        delete copy.updatedByName;
+        this.posts.set(target, [copy, ...(this.posts.get(target) ?? [])]);
+        this.boardChanged(target);
+        return copy;
+      }),
     toggleTask: async (id: string, index: number, done: boolean) =>
       this.boardRoom((channelId) => {
         const list = this.posts.get(channelId) ?? [];

@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Post, Reaction } from "@ruumble/protocol";
 import { t } from "../src/lib/i18n/index.svelte.ts";
-import { PIN_TITLE_MAX, fileKind, filterPosts, formatSize, isLong, looksLikeCode, newestPost, parseSeen, pastedName, relativeTime, suggestTitle, summarizeReactions, unseenPosts } from "../src/lib/board/model.ts";
+import sample from "@ruumble/protocol/fixtures/sample.json";
+import type { Snapshot } from "@ruumble/protocol";
+import { buildBuilding } from "../src/lib/model/building.ts";
+import { PIN_TITLE_MAX, copyTargets, fileKind, filterPosts, formatSize, isLong, looksLikeCode, newestPost, parseSeen, pastedName, relativeTime, suggestTitle, summarizeReactions, unseenPosts } from "../src/lib/board/model.ts";
 
 const post = (kind: Post["kind"], id: string = kind): Post => ({ id, channelId: 3, kind, text: "x", authorName: "A", mine: false, canDelete: false, createdAt: 0, updatedAt: 0, reactions: [] });
 
@@ -125,5 +128,25 @@ describe("Attachments (AP11.3)", () => {
     expect(pastedName({ name: "", type: "image/jpeg" }, at)).toBe("image-2026-09-28-0905.jpg");
     expect(pastedName({ name: "holiday.jpg", type: "image/jpeg" }, at)).toBe("holiday.jpg");
     expect(pastedName({ name: "blob", type: "" }, at)).toBe("image-2026-09-28-0905.png");
+  });
+});
+
+describe("Copy to room", () => {
+  const snapshot = structuredClone(sample) as unknown as Snapshot;
+
+  it("rooms of all floors, the own floor first, without the own room", () => {
+    expect(copyTargets(buildBuilding(snapshot), snapshot.channels)).toEqual([
+      { floorId: 2, floor: "Development", rooms: [{ channelId: 4, name: "Let's play" }, { channelId: 5, name: "Retrospective" }, { channelId: 6, name: "Ben's office" }, { channelId: 7, name: "Clara's office" }] },
+      { floorId: 8, floor: "Support", rooms: [9, 10, 11, 12].map((id) => ({ channelId: id, name: `Office ${id - 8}` })) },
+    ]);
+    expect(copyTargets(null, [])).toEqual([]);
+  });
+
+  it("not into locked or temporary rooms, nothing from a locked floor, no empty floors", () => {
+    const s = structuredClone(snapshot);
+    s.canEnter = { "4": false, "5": false, "6": false };
+    s.channels.find((c) => c.id === 7)!.temporary = true;
+    s.channels.push({ id: 20, parent: 9, name: "Too deep", position: 0, links: [], temporary: false }); // locks "Support"
+    expect(copyTargets(buildBuilding(s), s.channels)).toEqual([]);
   });
 });

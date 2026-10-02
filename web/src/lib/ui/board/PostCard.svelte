@@ -4,6 +4,7 @@
   import Copy from "@lucide/svelte/icons/copy";
   import Download from "@lucide/svelte/icons/download";
   import Ellipsis from "@lucide/svelte/icons/ellipsis";
+  import Forward from "@lucide/svelte/icons/forward";
   import FaceSlightlySmilingPlus from "@lucide/svelte/icons/face-slightly-smiling-plus";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
   import ListChecks from "@lucide/svelte/icons/list-checks";
@@ -11,7 +12,7 @@
   import PinOff from "@lucide/svelte/icons/pin-off";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import { parseTaskList, type Post, type ReactionKind } from "@ruumble/protocol";
-  import { PREVIEW_LINES, isLong, relativeTime, summarizeReactions } from "../../board/model.ts";
+  import { PREVIEW_LINES, isLong, relativeTime, summarizeReactions, type CopyTarget, type CopyTargets } from "../../board/model.ts";
   import { intlLocale, t } from "../../i18n/index.svelte.ts";
   import { initials } from "../../model/building.ts";
   import { getFileUrl } from "../../board/context.ts";
@@ -23,9 +24,11 @@
   /** `pinned`: this post is the one kept on top (A3); `onpin`: the dot keeps it on top or takes it down */
   /** `arrival`: new for the user – "land" (by someone else while the board was open: pinned on from above, lights up) or "glow" (only lights up) */
   /** `ondelete`: from the "…" menu, only offered if the user may delete the post (author or Mumble admin) */
-  let { post, now, avatar = null, pinned = false, arrival = null, onopen, onreact, ontoggle, onpin, ondelete }: {
-    post: Post; now: number; avatar?: string | null; pinned?: boolean; arrival?: "land" | "glow" | null; onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
-    ontoggle: (post: Post, index: number, done: boolean) => void; onpin: (post: Post) => void; ondelete: (post: Post) => void;
+  /** `targets`, `oncopy`: "Copy to room …" in the "…" menu, the rooms per floor (copyTargets) */
+  let { post, now, avatar = null, pinned = false, arrival = null, targets = [], onopen, onreact, ontoggle, onpin, ondelete, oncopy }: {
+    post: Post; now: number; avatar?: string | null; pinned?: boolean; arrival?: "land" | "glow" | null; targets?: CopyTargets;
+    onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
+    ontoggle: (post: Post, index: number, done: boolean) => void; onpin: (post: Post) => void; ondelete: (post: Post) => void; oncopy: (post: Post, target: CopyTarget) => void;
   } = $props();
   let avatarBroken = $state<string | null>(null);
 
@@ -46,15 +49,40 @@
     setTimeout(() => (copied = false), 1500);
   }
 
-  // "…" menu: closes on choice, Escape and a click elsewhere
+  const copiedFrom = $derived(
+    post.copiedFrom && (post.copiedFrom.authorName === post.authorName ? t().board.copiedFrom(post.copiedFrom.roomName) : t().board.copiedFromBy(post.copiedFrom.roomName, post.copiedFrom.authorName)),
+  );
+
+  // "…" menu: closes on choice, Escape and a click elsewhere; "Copy to room …" turns it into the list of rooms
   let menuOpen = $state(false);
+  let choosing = $state(false);
   let menuButton = $state<HTMLButtonElement | null>(null);
+  const hasTargets = $derived(targets.length > 0);
   $effect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen) {
+      choosing = false;
+      return;
+    }
     const close = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest(".more")) menuOpen = false; };
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   });
+  function copyTo(target: CopyTarget): void {
+    menuOpen = false;
+    menuButton?.focus();
+    oncopy(post, target);
+  }
+  const focus = (el: HTMLElement) => el.focus();
+  /** the list of rooms can be long: open it where there is more room in the scrolling list, scroll inside beyond that */
+  function fit(menu: HTMLElement): void {
+    const area = menu.closest(".list")?.getBoundingClientRect() ?? { top: 0, bottom: window.innerHeight };
+    const button = menu.parentElement!.getBoundingClientRect();
+    const below = area.bottom - button.bottom - 8, above = button.top - area.top - 8;
+    const up = menu.scrollHeight > below && above > below;
+    menu.classList.toggle("up", up);
+    menu.style.maxHeight = `${Math.max(160, up ? above : below)}px`;
+  }
+
   function remove(): void {
     menuOpen = false;
     if (confirm(t().board.confirmDelete)) ondelete(post);
@@ -79,7 +107,9 @@
     </span>
     <span class="who">
       <strong>{post.authorName}</strong>
-      <span class="when" title={new Date(post.createdAt).toLocaleString(intlLocale())}>{relativeTime(post.createdAt, now)}</span>
+      <span class="when" title={copiedFrom ? `${new Date(post.createdAt).toLocaleString(intlLocale())} · ${copiedFrom}` : new Date(post.createdAt).toLocaleString(intlLocale())}>
+        {relativeTime(post.createdAt, now)}{#if copiedFrom}{` · ${copiedFrom}`}{/if}
+      </span>
     </span>
     {#if tasks}
       <span class="progress" class:complete={tasksDone === tasks.tasks.length} role="img" aria-label={t().board.taskProgress(tasksDone, tasks.tasks.length)} title={t().board.taskProgress(tasksDone, tasks.tasks.length)}>
@@ -120,23 +150,38 @@
           {#if copied}<Check size={16} aria-hidden="true" />{:else}<Copy size={16} aria-hidden="true" />{/if}
         </button>
       {/if}
-      {#if post.canDelete}
-        <span class="more">
-          <button
-            type="button" class="icon-btn" bind:this={menuButton} aria-haspopup="menu" aria-expanded={menuOpen}
-            aria-label={t().board.moreActions} title={t().board.moreActions} onclick={() => (menuOpen = !menuOpen)}
-          >
-            <Ellipsis size={16} aria-hidden="true" />
-          </button>
-          {#if menuOpen}
-            <div class="menu" role="menu" tabindex="-1" onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); menuOpen = false; menuButton?.focus(); } }}>
-              <button type="button" role="menuitem" class="danger" onclick={remove} {@attach (el) => el.focus()}>
-                <Trash2 size={15} aria-hidden="true" />{t().common.delete}
+      <span class="more">
+        <button
+          type="button" class="icon-btn" bind:this={menuButton} aria-haspopup="menu" aria-expanded={menuOpen}
+          aria-label={t().board.moreActions} title={t().board.moreActions} onclick={() => (menuOpen = !menuOpen)}
+        >
+          <Ellipsis size={16} aria-hidden="true" />
+        </button>
+        {#if menuOpen}
+          <div class="menu" role="menu" tabindex="-1" {@attach (el) => { if (choosing) fit(el); }} aria-label={choosing ? t().board.copyToRoomTitle : t().board.moreActions} onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); menuOpen = false; menuButton?.focus(); } }}>
+            {#if choosing}
+              <div class="menu-title" aria-hidden="true">{t().board.copyToRoomTitle}</div>
+              {#each targets as group, g (group.floorId)}
+                {#if targets.length > 1}<div class="floor" aria-hidden="true">{group.floor}</div>{/if}
+                {#each group.rooms as room, r (room.channelId)}
+                  <button type="button" role="menuitem" onclick={() => copyTo(room)} {@attach g === 0 && r === 0 && focus}>{room.name}</button>
+                {/each}
+              {/each}
+            {:else}
+              <!-- stopPropagation: the menu changes its content, the click must not count as one outside it -->
+              <button type="button" role="menuitem" aria-disabled={!hasTargets} title={hasTargets ? undefined : t().board.copyNoRooms}
+                onclick={(e) => { e.stopPropagation(); if (hasTargets) choosing = true; }} {@attach focus}>
+                <Forward size={15} aria-hidden="true" />{t().board.copyToRoom}
               </button>
-            </div>
-          {/if}
-        </span>
-      {/if}
+              {#if post.canDelete}
+                <button type="button" role="menuitem" class="danger" onclick={remove}>
+                  <Trash2 size={15} aria-hidden="true" />{t().common.delete}
+                </button>
+              {/if}
+            {/if}
+          </div>
+        {/if}
+      </span>
     </span>
   </footer>
   {#if picking}
@@ -173,7 +218,7 @@
   .av img { width: 100%; height: 100%; object-fit: cover; }
   .av.me { background: var(--color-navy); box-shadow: 0 0 0 2px var(--color-accent); }
   .who { display: flex; flex-direction: column; line-height: 1.2; font-size: 13px; min-width: 0; }
-  .when { font-size: 12px; color: var(--color-blue-700); }
+  .when { font-size: 12px; color: var(--color-blue-700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .progress { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--color-blue-700); }
   .progress.complete { color: var(--color-navy); }
   .progress + .summary { margin-left: 0; }
@@ -207,6 +252,12 @@
   .menu button { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); font-size: 14px; text-align: left; cursor: pointer; }
   .menu button:hover { background: var(--color-blue-100); }
   .menu .danger { color: var(--color-alert); }
+  .menu [aria-disabled="true"] { color: var(--color-blue-700); cursor: default; }
+  .menu [aria-disabled="true"]:hover { background: none; }
+  .menu-title { padding: 6px 10px 4px; font-size: 12px; font-weight: 700; color: var(--color-blue-700); white-space: nowrap; }
+  .floor { padding: 6px 10px 2px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-blue-500); }
+  .menu { overflow-y: auto; }
+  .menu:global(.up) { top: auto; bottom: calc(100% + 4px); }
   .menu button:focus-visible { outline: 3px solid var(--color-sky); outline-offset: -3px; }
   .react[aria-expanded="true"] { background: var(--color-blue-100); color: var(--color-navy); }
   .link:focus-visible, .icon-btn:focus-visible, .summary:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }

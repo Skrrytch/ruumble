@@ -1,6 +1,7 @@
 /** Board: pure helper functions without DOM (ADR-0011, AP11.2). */
-import { REACTION_KINDS, type Post, type PostKind, type Reaction, type ReactionKind } from "@ruumble/protocol";
+import { REACTION_KINDS, type Channel, type Post, type PostKind, type Reaction, type ReactionKind } from "@ruumble/protocol";
 import { intlLocale, t } from "../i18n/index.svelte.ts";
+import type { Building } from "../model/building.ts";
 
 export type BoardFilter = "all" | PostKind;
 
@@ -141,4 +142,25 @@ export function pastedName(file: { name: string; type: string }, now = new Date(
   const ext = file.type.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${t().board.pastedPrefix}-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.${ext}`;
+}
+
+export interface CopyTarget {
+  channelId: number;
+  name: string;
+}
+
+/**
+ * Rooms a post can be copied to, per floor, the own floor first: rooms with a board (not temporary), not the own
+ * room, not locked for the user, not on a locked floor. The service checks the same (ADR-0011, "Copy to room").
+ */
+export type CopyTargets = { floorId: number; floor: string; rooms: CopyTarget[] }[];
+
+export function copyTargets(building: Building | null, channels: readonly Pick<Channel, "id" | "temporary">[]): CopyTargets {
+  if (!building) return [];
+  const temporary = new Set(channels.filter((c) => c.temporary).map((c) => c.id));
+  return [...building.floors]
+    .sort((a, b) => Number(b.isSelf) - Number(a.isSelf))
+    .filter((f) => !f.lock)
+    .map((f) => ({ floorId: f.channelId, floor: f.name, rooms: f.rooms.filter((r) => !r.isSelf && !r.locked && !temporary.has(r.channelId)).map((r) => ({ channelId: r.channelId, name: r.name })) }))
+    .filter((f) => f.rooms.length > 0);
 }
