@@ -295,8 +295,8 @@
   .clear:hover { background: var(--color-blue-100); }
   .tool:focus-visible, .menu button:focus-visible, .clear:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   /* same side spacing as header and input (12 px) */
-  /* room at the top for the actions floating on the first card's edge */
-  .list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 22px 12px 12px; min-height: 0; }
+  /* room at the bottom for the actions floating on the last card's edge */
+  .list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 14px 12px 26px; min-height: 0; }
   .drop {
     position: absolute; inset: 8px; z-index: 2; display: flex; align-items: center; justify-content: center; pointer-events: none;
     border: 2px dashed var(--color-blue-500); border-radius: var(--radius-md); background: rgb(255 255 255 / 0.85);

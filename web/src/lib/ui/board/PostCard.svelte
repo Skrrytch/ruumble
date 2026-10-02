@@ -211,8 +211,8 @@
   .pin .dot, .pin .glyph { position: absolute; left: 50%; top: 50%; border-radius: 50%; transform: translate(-50%, -50%); }
   .pin .dot { width: 7px; height: 7px; background: var(--color-navy); transition: width 0.12s, height 0.12s; }
   /* like the actions: only on hover and keyboard focus, so a column of short posts stays calm */
-  .pin { opacity: 0; transition: opacity 0.1s; }
-  .card:hover .pin, .card:focus-within .pin, .card.active .pin { opacity: 1; }
+  .pin { opacity: 0; transition: opacity 0.1s; pointer-events: none; }
+  .card:hover .pin, .card:focus-within .pin, .card.active .pin { opacity: 1; pointer-events: auto; }
   .pin .glyph { display: flex; align-items: center; justify-content: center; color: var(--color-white); opacity: 0; transition: opacity 0.12s; }
   .pin:hover .dot, .pin:focus-visible .dot { width: 22px; height: 22px; }
   .pin:hover .glyph, .pin:focus-visible .glyph { opacity: 1; }
@@ -257,13 +257,15 @@
   .side { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
   .side .summary, .side .progress { margin-left: 0; }
   .edited { font-size: 11px; color: var(--color-blue-700); }
-  /* actions: float on the top edge, shown on hover, keyboard focus and while a menu or the picker is open */
+  /* the post being pointed at stands out a little, so it is clear what the actions apply to (also within a group) */
+  .card:hover, .card:focus-within, .card.active { background: color-mix(in srgb, var(--color-blue-100) 35%, var(--color-white)); }
+  /* actions: float on the bottom edge of the post they belong to, shown on hover, keyboard focus and while a menu or the picker is open */
   .tools {
-    position: absolute; top: -19px; right: 8px; z-index: 2; display: inline-flex; align-items: center; gap: 1px; padding: 1px;
+    position: absolute; bottom: -19px; right: 8px; z-index: 2; display: inline-flex; align-items: center; gap: 1px; padding: 1px;
     border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); box-shadow: 0 2px 6px rgb(0 56 105 / 0.12);
-    opacity: 0; transition: opacity 0.1s;
+    opacity: 0; transition: opacity 0.1s; pointer-events: none; /* hidden, it must not catch clicks meant for the next post */
   }
-  .card:hover .tools, .card:focus-within .tools, .card.active .tools { opacity: 1; }
+  .card:hover .tools, .card:focus-within .tools, .card.active .tools { opacity: 1; pointer-events: auto; }
   @media (prefers-reduced-motion: reduce) { .tools { transition: none; } }
   .tools .icon-btn { width: 26px; height: 26px; }
   .stamp { padding: 0 6px; font-size: 12px; color: var(--color-blue-700); white-space: nowrap; }

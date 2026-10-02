@@ -1,6 +1,12 @@
 import { expect, test, type Locator } from "@playwright/test";
 import { gotoFloor } from "./topbar.ts";
 
+/** point at a post: its actions (and the pin dot) only take clicks while it is hovered or focused */
+async function pointAt(post: Locator): Promise<Locator> {
+  await post.hover();
+  return post;
+}
+
 /** choose a kind in the filter menu of the board header */
 async function filter(board: Locator, name: string): Promise<void> {
   await board.getByRole("button", { name: "Filter posts" }).click();
@@ -38,11 +44,11 @@ test.describe("Board (AP11.2)", () => {
     await expect(picker).toHaveCount(0);
     await expect(summary).toHaveAccessibleName("Reactions – Agreed / fine by me: Clara; Unclear, let's talk: David");
     // the button in the toolbar, then a social reaction; Escape closes without choosing
-    await code.getByRole("button", { name: "React", exact: true }).click();
+    await (await pointAt(code)).getByRole("button", { name: "React", exact: true }).click();
     await picker.getByRole("button", { name: "Happy birthday" }).click();
     await expect(summary).toHaveText("3");
     await expect(summary).toHaveAccessibleName("Reactions – Agreed / fine by me: Clara; Unclear, let's talk: David; Happy birthday: Anna");
-    await code.getByRole("button", { name: "React", exact: true }).click();
+    await (await pointAt(code)).getByRole("button", { name: "React", exact: true }).click();
     await page.keyboard.press("Escape");
     await expect(picker).toHaveCount(0);
   });
@@ -92,7 +98,7 @@ test.describe("Board (AP11.2)", () => {
     await card.getByRole("checkbox", { name: "Changelog" }).click();
     await expect(card.getByRole("checkbox", { name: "Changelog" })).not.toBeChecked();
     // also in the popup
-    await card.getByRole("button", { name: "Open", exact: true }).click();
+    await (await pointAt(card)).getByRole("button", { name: "Open", exact: true }).click();
     await page.getByRole("dialog").getByRole("checkbox", { name: "Tag" }).click();
     await expect(page.getByRole("dialog").getByRole("checkbox", { name: "Tag" })).toBeChecked();
     await page.keyboard.press("Escape");
@@ -122,7 +128,7 @@ test.describe("Board (AP11.2)", () => {
     const board = page.getByRole("complementary", { name: "Board" });
     const title = board.getByRole("textbox", { name: "Title on top" });
     // Anna's notes: title suggested from the first heading, editable
-    await board.getByRole("article", { name: "Post by Anna" }).getByRole("button", { name: "Keep on top" }).click();
+    await (await pointAt(board.getByRole("article", { name: "Post by Anna" }))).getByRole("button", { name: "Keep on top" }).click();
     await expect(title).not.toHaveValue("");
     await title.fill("Team notes");
     await board.getByRole("form", { name: "Keep on top" }).getByRole("button", { name: "Ok" }).click();
@@ -137,7 +143,7 @@ test.describe("Board (AP11.2)", () => {
     await expect(board.getByRole("article", { name: "Post by Anna" })).toBeVisible();
     await board.getByRole("searchbox").fill("");
     // another post replaces it, with a note
-    await board.getByRole("article").first().getByRole("button", { name: "Keep on top" }).click();
+    await (await pointAt(board.getByRole("article").first())).getByRole("button", { name: "Keep on top" }).click();
     await expect(board.getByText("Replaces “Team notes”, which is on top now.")).toBeVisible();
     await title.press("Enter");
     await expect(board.getByRole("button", { name: /Team notes/ })).toHaveCount(0);
@@ -148,7 +154,7 @@ test.describe("Board (AP11.2)", () => {
     await expect(board.getByRole("region", { name: /^Kept on top: / })).toHaveCount(0);
     await expect(board.getByRole("article")).toHaveCount(4);
     // the popup has no such option
-    await board.getByRole("article").first().getByRole("button", { name: "Open", exact: true }).click();
+    await (await pointAt(board.getByRole("article").first())).getByRole("button", { name: "Open", exact: true }).click();
     await expect(page.getByRole("dialog").getByRole("button", { name: "Keep on top" })).toHaveCount(0);
   });
 
@@ -156,20 +162,20 @@ test.describe("Board (AP11.2)", () => {
     await page.getByRole("button", { name: "Show board" }).click();
     const board = page.getByRole("complementary", { name: "Board" });
     const anna = board.getByRole("article", { name: "Post by Anna" });
-    await anna.getByRole("button", { name: "Keep on top" }).click();
+    await (await pointAt(anna)).getByRole("button", { name: "Keep on top" }).click();
     const form = board.getByRole("form", { name: "Keep on top" });
     const title = form.getByRole("textbox", { name: "Title on top" });
     await expect(title).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(form).toHaveCount(0);
-    await anna.getByRole("button", { name: "Keep on top" }).click();
+    await (await pointAt(anna)).getByRole("button", { name: "Keep on top" }).click();
     await title.fill("Sprint");
     await title.press("Enter");
     await expect(board.getByRole("button", { name: /^Sprint/ })).toHaveAttribute("aria-expanded", "false");
     await expect(board.getByRole("article", { name: "Post by Anna" })).toHaveCount(0);
     // in the search results its dot takes it down again
     await board.getByRole("searchbox").fill("release");
-    await board.getByRole("article", { name: "Post by Anna" }).getByRole("button", { name: "Remove from top" }).click();
+    await (await pointAt(board.getByRole("article", { name: "Post by Anna" }))).getByRole("button", { name: "Remove from top" }).click();
     await expect(board.getByRole("region", { name: /^Kept on top: / })).toHaveCount(0);
   });
 
@@ -185,7 +191,7 @@ test.describe("Board (AP11.2)", () => {
     const notes = board.getByRole("article", { name: "Post by Anna" });
     await expect(notes.locator(".body.clamped")).toHaveCount(1);
     await expect(notes.getByText("last edited by Ben")).toBeVisible();
-    await notes.getByRole("button", { name: "Open", exact: true }).click();
+    await (await pointAt(notes)).getByRole("button", { name: "Open", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Post by Anna" });
     await expect(dialog.getByText("Tag the release")).toBeVisible();
     await dialog.getByRole("button", { name: "Edit" }).click();
@@ -201,7 +207,7 @@ test.describe("Board (AP11.2)", () => {
     const code = page.getByRole("complementary", { name: "Board" }).getByRole("article", { name: "Post by Ben" }).filter({ has: page.locator(".hljs") });
     await expect(code.locator(".hljs")).toBeVisible();
     await expect(code.locator(".gutter")).toHaveCount(0);
-    await code.getByRole("button", { name: "Open", exact: true }).click();
+    await (await pointAt(code)).getByRole("button", { name: "Open", exact: true }).click();
     await expect(page.getByRole("dialog").locator(".gutter")).toBeVisible();
   });
 
@@ -219,7 +225,7 @@ test.describe("Board (AP11.2)", () => {
     await filter(board, "All");
     // delete own post
     page.once("dialog", (d) => d.accept());
-    await board.getByRole("article").first().getByRole("button", { name: "Open", exact: true }).click();
+    await (await pointAt(board.getByRole("article").first())).getByRole("button", { name: "Open", exact: true }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
     await expect(board.getByRole("searchbox", { name: "Search the board" })).toHaveAttribute("placeholder", "Search 4 posts …");
   });
@@ -230,16 +236,17 @@ test.describe("Board (AP11.2)", () => {
     await expect(board.getByRole("button", { name: "More actions" })).toHaveCount(4);
     // in the sample only Anna's text is her own
     const others = board.getByRole("article", { name: "Post by Ben" }).first();
-    await others.getByRole("button", { name: "More actions" }).click();
+    await (await pointAt(others)).getByRole("button", { name: "More actions" }).click();
     await expect(others.getByRole("menuitem", { name: "Copy to room …" })).toBeFocused();
     await expect(others.getByRole("menuitem", { name: "Delete" })).toHaveCount(0);
     // the "…" of another card closes this menu
-    await board.getByRole("article", { name: "Post by Anna" }).getByRole("button", { name: "More actions" }).click();
+    await (await pointAt(board.getByRole("article", { name: "Post by Anna" }))).getByRole("button", { name: "More actions" }).click();
     await expect(others.getByRole("menu")).toHaveCount(0);
     await expect(board.getByRole("menu")).toHaveCount(1);
     await page.keyboard.press("Escape");
     const own = board.getByRole("article", { name: "Post by Anna" });
     const more = own.getByRole("button", { name: "More actions" });
+    await own.hover();
     await more.click();
     const item = own.getByRole("menuitem", { name: "Delete" });
     await expect(item).toBeVisible();
@@ -248,10 +255,12 @@ test.describe("Board (AP11.2)", () => {
     await expect(more).toBeFocused();
     // cancelling the question keeps the post
     page.once("dialog", (d) => d.dismiss());
+    await own.hover();
     await more.click();
     await item.click();
     await expect(board.getByRole("article")).toHaveCount(4);
     page.once("dialog", (d) => d.accept());
+    await own.hover();
     await more.click();
     await item.click();
     await expect(board.getByRole("article")).toHaveCount(3);
@@ -276,7 +285,7 @@ test.describe("Board (AP11.2)", () => {
     await expect(tools).toHaveCSS("opacity", "0");
     await older.hover();
     await expect(tools).toHaveCSS("opacity", "1");
-    await older.getByRole("button", { name: "Open" }).click();
+    await (await pointAt(older)).getByRole("button", { name: "Open" }).click();
     await expect(page.getByRole("dialog")).toContainText("Lunch at 12?");
   });
 
@@ -284,7 +293,7 @@ test.describe("Board (AP11.2)", () => {
     await page.getByRole("button", { name: "Show board" }).click();
     const board = page.getByRole("complementary", { name: "Board" });
     const code = board.getByRole("article", { name: "Post by Ben" }).filter({ has: page.locator(".hljs") });
-    await code.getByRole("button", { name: "More actions" }).click();
+    await (await pointAt(code)).getByRole("button", { name: "More actions" }).click();
     await code.getByRole("menuitem", { name: "Copy to room …" }).click();
     const menu = code.getByRole("menu", { name: "Copy to which room?" });
     // the own room "Let's talk" is not offered; the first room of the own floor has the focus
@@ -428,7 +437,7 @@ test.describe("Board: images and files (AP11.3)", () => {
 
   test("edit an image's description in the popup", async ({ page }) => {
     const board = page.getByRole("complementary", { name: "Board" });
-    await board.getByRole("article", { name: "Post by Clara" }).getByRole("button", { name: "Open", exact: true }).click();
+    await (await pointAt(board.getByRole("article", { name: "Post by Clara" }))).getByRole("button", { name: "Open", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Post by Clara" });
     await dialog.getByRole("button", { name: "Edit description" }).click();
     await dialog.getByRole("textbox", { name: "Edit description" }).fill("New sketch");
