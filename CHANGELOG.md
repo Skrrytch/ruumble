@@ -6,6 +6,13 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-02
+
+Plugin 0.5.0 (unchanged).
+
+### Added
+- **Ticket keys become links.** Once anyone on the server has posted a link to an issue (`https://jira.example.com/browse/TAG-1`), a plain "TAG-1366" in text, captions and task lists links to it, without any configuration in Ruumble or Jira. Only the shape of the URL counts, nothing is fetched. The oldest post wins, so a later link cannot redirect a known project, and what is learned goes away with the posts it came from. A board only receives the projects that appear in its own posts.
+
 ## [0.19.0] - 2026-10-02
 
 Plugin 0.5.0 (unchanged). A new layout with more room for the floor plan, and a board that points out new posts. 0.16.0 to 0.18.0 were not published; their changes are included here.
