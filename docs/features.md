@@ -96,7 +96,7 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 | Item | Supported |
 |---|---|
 | Mumble server | 1.5 or later with Ice enabled (official Docker image) |
-| Mumble client | 1.4 or later on **Linux** (x64), from the distribution packages |
+| Mumble client | 1.4 or later on **Linux** (x64, from the distribution packages) or **Windows** (x64); one plugin bundle for both (ADR-0013) |
 | Plugin API | 1.0.x, so the plugin also runs on Mumble 1.4 |
 | Service | Docker container next to the Mumble server; `/healthz`, `/download` (plugin bundle), `/api/version` (service and plugin version, shown on the notice pages) |
 | HTTPS | optional, behind a reverse proxy ([HTTPS](operations/https.md)) |
@@ -121,8 +121,8 @@ Tested versions: see [operations](operations.md#requirements).
 
 | Item | Status |
 |---|---|
-| Windows and macOS plugin | later option (E3) |
-| B – Status line | idea, decision open |
+| macOS plugin | later option (E3) |
+| B – Status line | on hold: the Mumble comment cannot be set from the plugin (see below) |
 | C – Knocking | idea, decision open |
 | F – More controls | idea, decision open |
 | G – "Door closed" | idea, after B and C |
@@ -135,9 +135,11 @@ Tested versions: see [operations](operations.md#requirements).
 | Report the Mumble avatar bug | open (O16) |
 | Address check over proxy and VPN | proxy with hairpin NAT: `warn` required, VPN untested (see [P7](mumble-interfaces.md#5-checkpoints-of-the-feasibility-studies)). |
 
-**Windows and macOS plugin.** The plugin is Linux-only today (`os="linux" arch="x64"`). Other platforms need their own builds and tests.
+**macOS plugin.** The plugin runs on Linux and Windows (since 0.14.0, ADR-0013). macOS needs its own build and tests.
 
-**B – Status line.** A short status such as "In a meeting until 2 pm", with templates and an expiry time, shown under the avatar. Stored as a marked first line of the Mumble comment, so regular Mumble clients see it too. No storage of its own.
+**B – Status line.** A short status such as "In a meeting until 2 pm", with templates and an expiry time, shown under the avatar. The idea was to store it as a marked first line of the Mumble comment, so regular Mumble clients see it too, without storage of its own.
+
+On hold (2026-10-02): this does not work. The plugin API's `requestSetLocalUserComment` only changes the comment in the local client's model (`pmModel->setComment`) and never sends a `UserState` to the server, unlike Mumble's own comment dialog (`MainWindow::openSelfCommentDialog`); same in 1.5.735, 1.6.870 and `master` (`src/mumble/API_v_1_x_x.cpp`). Neither other clients nor Ice would see the status. The remaining options are storing the status in the service (visible only in Ruumble) or writing the comment via Ice, which needs the write secret and contradicts ADR-0002. Worth reporting at mumble-voip/mumble like O16.
 
 **C – Knocking.** "Knock" on someone else's room: the people inside get a notice with a sound in Ruumble ("Let in", "One moment", "Later") and a line in the Mumble log. Runs through the service, in memory only, expires after 60 s, with abuse protection.
 
