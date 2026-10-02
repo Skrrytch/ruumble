@@ -272,6 +272,23 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
   };
 }
 
+/**
+ * The own user's place for the room sign in the top bar: its name and how many people are in it.
+ * Hidden channels are not named; on a locked floor the channel name comes from the snapshot.
+ */
+export function ownPlace(building: Building, snapshot: Snapshot): { name: string; people: number } | null {
+  const self = building.self;
+  if (!self) return null;
+  if (self.kind === "entrance") return { name: t().common.entrance, people: building.entrance.length };
+  const inChannel = snapshot.users.filter((u) => u.channel === self.channelId).length;
+  if (self.kind === "hidden") return { name: t().core.hiddenPlace, people: inChannel };
+  const floor = building.floors.find((f) => f.channelId === self.floorId);
+  if (self.kind === "corridor") return { name: t().common.corridor, people: inChannel };
+  if (self.kind === "open-floor") return { name: floor?.name ?? "", people: inChannel };
+  const name = snapshot.channels.find((c) => c.id === self.channelId)?.name ?? "";
+  return { name, people: inChannel };
+}
+
 /** Which floor is shown at start or on “Go to my floor”: your own, otherwise the first displayable one. */
 export function homeFloor(building: Building): Floor | null {
   const own = building.floors.find((f) => f.isSelf);

@@ -12,7 +12,7 @@ How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.m
 
 - Top-level channels become **floors**, the floor channel itself is the **corridor**, second-level channels are **rooms**. A floor without subchannels is an **open floor**.
 - Order follows the channels' **position** in Mumble, then the name, as in the Mumble client. The first floor is the ground floor. There are no special names or keywords.
-- **Top bar** instead of a side column, so the floor plan gets the full width: the current floor with its head count opens the **elevator** as a dropdown; in the middle the server name and everyone online; on the right mute, deafen and the user menu ("go to my floor", language, versions).
+- **Top bar** instead of a side column, so the floor plan gets the full width: the **floor sign** with the current floor and its head count opens the **elevator** as a dropdown (head count behind every floor, everyone online and the server name in a status bar at the bottom); in the middle the **room sign** of the own place (leads back from another floor); on the right mute, deafen and the **name badge**, which opens the user menu ("go to my floor", language, versions).
 - Users in the root channel stand in the **entrance**, at the bottom of the elevator.
 - **Locked floors:** a floor with more than two levels is greyed out in the elevator, with the reason. The rule is re-evaluated live on every change.
 - **Linked channels** are hidden, including their subchannels. The other rooms use the space.

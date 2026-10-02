@@ -38,10 +38,10 @@ Links from Mumble (welcome message, pairing link) open in your default browser. 
 
 ## Using Ruumble
 
-- **Top bar:** on the left the current floor with the number of people on it. Click it to open the **elevator**: one button per floor, the entrance below the ground floor. Locked floors (nested too deeply) are greyed out; for those, use the classic channel view in Mumble. In the middle the server and how many people are online.
+- **Top bar:** on the left the floor sign with the current floor and the number of people on it. Click it to open the **elevator**: one button per floor with its head count, the entrance below the ground floor, and at the bottom how many people are online on the server. Locked floors (nested too deeply) are greyed out; for those, use the classic channel view in Mumble. In the middle the sign of the room you are in; when you look at another floor, it takes you back.
 - **Rooms and corridor:** clicking a room or the corridor moves you to that channel. Your room is light blue, your avatar has a yellow ring.
 - **Icons on people:** muted, deafened, "quiet" (has not talked for 15 minutes), "away" (deafened and quiet for 5 minutes). An ear on a room means someone is listening in. "● Recording" means the room is being recorded.
-- **Right in the top bar:** mute microphone and deafen; your name opens the user menu with "Go to my floor", the language switch and the versions.
+- **Right in the top bar:** mute microphone and deafen; your name badge opens the user menu with "Go to my floor", the language switch and the versions.
 
 ### Language
 

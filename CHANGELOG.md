@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Changed
+- The top bar is made of signs: the floor sign (with elevator buttons, so it is obvious that it changes the floor), the room sign of the own place in the middle (it leads back from another floor) and a name badge for the user menu. Head counts stand behind the floor names; everyone online and the server name moved into a status bar at the bottom of the elevator.
+
 ## [0.17.0] - 2026-10-02
 
 Plugin 0.5.0 (unchanged). More room for the floor plan: a top bar instead of the left column, room widths follow occupancy, many rooms scroll sideways.

@@ -7,10 +7,13 @@ test.describe("Sample building", () => {
   test("starts on the user's own floor with their own room marked", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Development" })).toBeVisible();
     await expect(currentFloor(page)).toHaveAccessibleName("1st floor: Development, 4 on this floor – choose floor");
-    await expect(page.getByText("8 online", { exact: true })).toBeVisible();
-    await expect(page.getByText("Acme HQ")).toBeVisible();
+    await expect(page.getByRole("status", { name: "You are here: Let's talk, 3 people" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Let's talk – you are here" })).toBeVisible();
-    await expect((await elevator(page)).getByRole("button", { name: "1st floor: Development" })).toHaveAttribute("aria-current", "page");
+    const lift = await elevator(page);
+    await expect(lift.getByRole("button", { name: "1st floor: Development" })).toHaveAttribute("aria-current", "page");
+    // the whole building in the elevator's status bar
+    await expect(lift.getByText("8 online", { exact: true })).toBeVisible();
+    await expect(lift.getByText("Acme HQ")).toBeVisible();
   });
 
   test("top bar: the elevator and the user menu open as dropdowns, Escape and a click elsewhere close them", async ({ page }) => {
@@ -46,6 +49,10 @@ test.describe("Sample building", () => {
     await expect(page.getByRole("heading", { name: "Lobby" })).toBeVisible();
     await expect(page.getByText("Open floor without offices · 2 people")).toBeVisible();
     await (await userMenu(page)).getByRole("button", { name: "Go to my floor" }).click();
+    await expect(page.getByRole("heading", { name: "Development" })).toBeVisible();
+    // from another floor the room sign leads back too
+    await gotoFloor(page, "Ground floor: Lobby");
+    await page.getByRole("button", { name: "You are here: Let's talk, 3 people – Go to my floor" }).click();
     await expect(page.getByRole("heading", { name: "Development" })).toBeVisible();
   });
 

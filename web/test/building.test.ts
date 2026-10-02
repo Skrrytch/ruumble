@@ -10,6 +10,7 @@ import {
   countText,
   floorLabels,
   homeFloor,
+  ownPlace,
   initials,
   isMutedRoomName,
   roomGrow,
@@ -195,6 +196,25 @@ describe("Where is the own user?", () => {
     [7, { kind: "hidden", channelId: 7 }],
   ])("channel %i → %j", (channel, expected) => {
     expect(at(channel).self).toEqual(expected);
+  });
+
+  it.each([
+    [0, { name: "Entrance", people: 1 }],
+    [1, { name: "Ground", people: 1 }],
+    [2, { name: "Corridor", people: 1 }],
+    [3, { name: "Room", people: 1 }],
+    [6, { name: "T1a", people: 1 }],
+    [7, { name: "area not shown", people: 1 }],
+  ])("own place for the room sign in channel %i → %j", (channel, expected) => {
+    const s = snapshot(house, [user(1, "Me", channel)], 1);
+    expect(ownPlace(buildBuilding(s), s)).toEqual(expected);
+  });
+
+  it("room sign counts everyone in the own room, none without an own user", () => {
+    const s = snapshot(house, [user(1, "Me", 3), user(2, "Ben", 3), user(3, "Eva", 2)], 1);
+    expect(ownPlace(buildBuilding(s), s)).toEqual({ name: "Room", people: 2 });
+    const none = snapshot(house, [user(1, "Me", 3)]);
+    expect(ownPlace(buildBuilding(none), none)).toBeNull();
   });
 
   it("own locked floor is still shown, hidden channel falls back to the first displayable one", () => {

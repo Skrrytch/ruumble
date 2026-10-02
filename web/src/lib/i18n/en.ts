@@ -66,6 +66,12 @@ export const en: Messages = {
     elevatorLabel: "Elevator – floors",
     /** the current floor in the top bar, opens the elevator */
     currentFloor: (level, name, n) => `${level}: ${name}, ${n} on this floor – choose floor`,
+    chooseFloor: "Choose floor",
+    /** room sign in the middle of the top bar */
+    youAreHere: "You are here",
+    ownPlace: (name, people) => `You are here: ${name}, ${people}`,
+    /** caption on the name badge */
+    nameTag: "Hello, I'm",
     lockedShort: "locked",
     lockReason: { "too-deep": "Channel structure too deep" },
     floorButton: (level, name, lock) => `${level}: ${name}${lock ? ` – locked: ${lock}` : ""}`,

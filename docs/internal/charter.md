@@ -27,7 +27,7 @@ Set by the project owner.
 
 | Mumble | Building |
 |---|---|
-| Root channel | Building (server name in the top bar); users in it stand in the entrance |
+| Root channel | Building (server name in the elevator's status bar); users in it stand in the entrance |
 | First-level channel | Floor, ordered as in 3.2 |
 | The floor channel itself | Corridor, always enterable |
 | Second-level channel | Room/office of the floor (temporary channels included) |
@@ -68,8 +68,8 @@ Update 2026-10-02: a floor with **more than 8 rooms** is no longer locked ("Too 
 ### 3.5 Layout
 
 - Compact header: floor name on the left; people on the floor and "N online" on the right.
-- **Top bar and floor plan** (update 2026-10-02, replaces the elevator core on the left): the top bar has, on the left, the current floor (badge, name, people on the floor), which opens the **elevator** as a dropdown in the style of an elevator panel (floors top to bottom, the entrance below); in the middle the server name and everyone online; on the right mute, deafen and the **user menu** (own name and place, "go to my floor", language, versions). Below it the floor area across the full width: top row of rooms, corridor, bottom row. Walls are 4 px gaps; every door has a door arc.
-- The **building sign** shows only the server name (no "primary" label, E9); it is now the server name in the middle of the top bar.
+- **Top bar and floor plan** (update 2026-10-02, replaces the elevator core on the left): the top bar is made of **signs**. On the left the **floor sign** (dark plate with screws: level, name, people on the floor, and elevator buttons on the right), which opens the **elevator** as a dropdown in the style of an elevator panel (floors top to bottom with their head count behind the name, the entrance below, and a **status bar** at the bottom with everyone online and the server name). In the middle the **room sign** of the own place (light blue door plate, "You are here", name and head count; from another floor it leads back). On the right mute, deafen and the **name badge** (white with a yellow band on a clip, "Hello, I'm" and the name), which opens the **user menu** (own name and place, "go to my floor", language, versions). Below it the floor area across the full width: top row of rooms, corridor, bottom row. Walls are 4 px gaps; every door has a door arc.
+- The **building sign** shows only the server name (no "primary" label, E9); it is now in the elevator's status bar.
 - **Room widths and rows** (E31): order follows the Mumble position. The width follows the **number of people** in a room (empty 1, each person +0.4, up to 8 people); rooms in a row share its width in that ratio, and changes glide. The top row has ⌊n/2⌋ rooms (at least one), the rest go below. At most **3 rooms per row (6 per floor)** are in view; with more, the rows get wider and only the floor plan scrolls sideways (scrollbar, mouse wheel), while the top bar and the board stay put. The corridor's label stays in view, and the own room is scrolled into view. With 1–2 rooms, the open board gets wider. (Until 2026-10-02: rooms 1 and 2 large, then gradually smaller, at most 8 rooms.)
 - Own room has a light blue background, own avatar a yellow ring. That is the only yellow element.
 - Interaction: clicking a room moves the user (only after server confirmation; a short transition, and a message on rejection). Clicking a floor only changes the view. Plus mute, deafen and "go to my floor".

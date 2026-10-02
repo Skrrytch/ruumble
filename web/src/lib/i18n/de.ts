@@ -61,6 +61,12 @@ export const de = {
     elevatorLabel: "Aufzug – Etagen",
     /** the current floor in the top bar, opens the elevator */
     currentFloor: (level: string, name: string, n: number) => `${level}: ${name}, ${n} auf dieser Etage – Etage wählen`,
+    chooseFloor: "Etage wählen",
+    /** room sign in the middle of the top bar */
+    youAreHere: "Du bist hier",
+    ownPlace: (name: string, people: string) => `Du bist hier: ${name}, ${people}`,
+    /** caption on the name badge */
+    nameTag: "Hallo, ich bin",
     lockedShort: "gesperrt",
     lockReason: { "too-deep": "Kanalstruktur zu tief" },
     floorButton: (level: string, name: string, lock: string | null) => `${level}: ${name}${lock ? ` – gesperrt: ${lock}` : ""}`,
