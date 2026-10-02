@@ -6,6 +6,14 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-10-02
+
+### Changed
+- Board: the actions of a post appear at its bottom right instead of the top, and the post you point at is lightly tinted, so it is clear which one you are about to open, copy, react to or delete, also within a group.
+
+### Fixed
+- Board: hidden actions and pin dots no longer catch clicks meant for the post next to them.
+
 ## [0.22.0] - 2026-10-02
 
 ### Changed
