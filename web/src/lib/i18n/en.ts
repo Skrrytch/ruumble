@@ -190,6 +190,7 @@ export const en: Messages = {
     editedBy: (name) => `last edited by ${name}`,
     confirmDelete: "Really delete this post?",
     copyToRoom: "Copy to room …",
+    copyToRoomShort: "To room …",
     copyToRoomTitle: "Copy to which room?",
     copyNoRooms: "No other room you may enter",
     copiedTo: (room) => `Copied to “${room}”.`,

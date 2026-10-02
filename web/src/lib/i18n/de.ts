@@ -197,6 +197,8 @@ export const de = {
     confirmDelete: "Diesen Beitrag wirklich löschen?",
     /** "…" menu: copy a post to another room; then the rooms to choose from */
     copyToRoom: "In Raum kopieren …",
+    /** visible text of the menu item next to its icon; `copyToRoom` is its accessible name */
+    copyToRoomShort: "In Raum …",
     copyToRoomTitle: "In welchen Raum kopieren?",
     copyNoRooms: "Kein anderer Raum, den du betreten darfst",
     copiedTo: (room: string) => `In „${room}“ kopiert.`,

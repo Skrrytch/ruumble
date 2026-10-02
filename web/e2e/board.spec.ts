@@ -233,6 +233,10 @@ test.describe("Board (AP11.2)", () => {
     await others.getByRole("button", { name: "More actions" }).click();
     await expect(others.getByRole("menuitem", { name: "Copy to room …" })).toBeFocused();
     await expect(others.getByRole("menuitem", { name: "Delete" })).toHaveCount(0);
+    // the "…" of another card closes this menu
+    await board.getByRole("article", { name: "Post by Anna" }).getByRole("button", { name: "More actions" }).click();
+    await expect(others.getByRole("menu")).toHaveCount(0);
+    await expect(board.getByRole("menu")).toHaveCount(1);
     await page.keyboard.press("Escape");
     const own = board.getByRole("article", { name: "Post by Anna" });
     const more = own.getByRole("button", { name: "More actions" });

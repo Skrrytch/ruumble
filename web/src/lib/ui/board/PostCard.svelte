@@ -57,13 +57,15 @@
   let menuOpen = $state(false);
   let choosing = $state(false);
   let menuButton = $state<HTMLButtonElement | null>(null);
+  let more = $state<HTMLElement | null>(null);
   const hasTargets = $derived(targets.length > 0);
   $effect(() => {
     if (!menuOpen) {
       choosing = false;
       return;
     }
-    const close = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest(".more")) menuOpen = false; };
+    // only this card's menu counts as inside: the "…" of another card closes this one
+    const close = (e: MouseEvent) => { if (!more?.contains(e.target as Node)) menuOpen = false; };
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   });
@@ -73,7 +75,7 @@
     oncopy(post, target);
   }
   const focus = (el: HTMLElement) => el.focus();
-  /** the list of rooms can be long: open it where there is more room in the scrolling list, scroll inside beyond that */
+  /** open the menu where there is more room in the scrolling list (again when it turns into the list of rooms), scroll inside beyond that */
   function fit(menu: HTMLElement): void {
     const area = menu.closest(".list")?.getBoundingClientRect() ?? { top: 0, bottom: window.innerHeight };
     const button = menu.parentElement!.getBoundingClientRect();
@@ -150,7 +152,7 @@
           {#if copied}<Check size={16} aria-hidden="true" />{:else}<Copy size={16} aria-hidden="true" />{/if}
         </button>
       {/if}
-      <span class="more">
+      <span class="more" bind:this={more}>
         <button
           type="button" class="icon-btn" bind:this={menuButton} aria-haspopup="menu" aria-expanded={menuOpen}
           aria-label={t().board.moreActions} title={t().board.moreActions} onclick={() => (menuOpen = !menuOpen)}
@@ -158,7 +160,7 @@
           <Ellipsis size={16} aria-hidden="true" />
         </button>
         {#if menuOpen}
-          <div class="menu" role="menu" tabindex="-1" {@attach (el) => { if (choosing) fit(el); }} aria-label={choosing ? t().board.copyToRoomTitle : t().board.moreActions} onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); menuOpen = false; menuButton?.focus(); } }}>
+          <div class="menu" role="menu" tabindex="-1" {@attach (el) => { void choosing; fit(el); }} aria-label={choosing ? t().board.copyToRoomTitle : t().board.moreActions} onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); menuOpen = false; menuButton?.focus(); } }}>
             {#if choosing}
               <div class="menu-title" aria-hidden="true">{t().board.copyToRoomTitle}</div>
               {#each targets as group, g (group.floorId)}
@@ -169,9 +171,9 @@
               {/each}
             {:else}
               <!-- stopPropagation: the menu changes its content, the click must not count as one outside it -->
-              <button type="button" role="menuitem" aria-disabled={!hasTargets} title={hasTargets ? undefined : t().board.copyNoRooms}
+              <button type="button" role="menuitem" aria-disabled={!hasTargets} aria-label={t().board.copyToRoom} title={hasTargets ? t().board.copyToRoom : t().board.copyNoRooms}
                 onclick={(e) => { e.stopPropagation(); if (hasTargets) choosing = true; }} {@attach focus}>
-                <Forward size={15} aria-hidden="true" />{t().board.copyToRoom}
+                <Forward size={15} aria-hidden="true" />{t().board.copyToRoomShort}
               </button>
               {#if post.canDelete}
                 <button type="button" role="menuitem" class="danger" onclick={remove}>
@@ -246,10 +248,10 @@
   .more { position: relative; display: inline-flex; }
   .more .icon-btn[aria-expanded="true"] { background: var(--color-blue-100); color: var(--color-navy); }
   .menu {
-    position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; min-width: 140px; display: flex; flex-direction: column; padding: 4px;
+    position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; min-width: 170px; display: flex; flex-direction: column; padding: 4px;
     border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); box-shadow: 0 4px 12px rgb(0 56 105 / 0.15);
   }
-  .menu button { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); font-size: 14px; text-align: left; cursor: pointer; }
+  .menu button { white-space: nowrap; display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); font-size: 14px; text-align: left; cursor: pointer; }
   .menu button:hover { background: var(--color-blue-100); }
   .menu .danger { color: var(--color-alert); }
   .menu [aria-disabled="true"] { color: var(--color-blue-700); cursor: default; }
