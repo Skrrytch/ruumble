@@ -19,6 +19,7 @@
     talking,
     onjoin,
     boardOpen = false,
+    boardUnseen = 0,
     ontoggleboard,
   }: {
     space: Space | Room;
@@ -35,6 +36,8 @@
     onjoin: (channelId: number) => void;
     /** board sidebar open (for the toggle in the user's own room, ADR-0011) */
     boardOpen?: boolean;
+    /** posts by others not seen yet in this room: an extra note on the closed toggle */
+    boardUnseen?: number;
     ontoggleboard?: () => void;
   } = $props();
 
@@ -42,6 +45,8 @@
   const room = $derived("grow" in space ? space : null);
   // board graphic only in the user's own room, as the toggle for the sidebar
   const boardToggle = $derived(!!room && space.isSelf && !readonly && !!ontoggleboard);
+  const boardFresh = $derived(!boardOpen && boardUnseen > 0);
+  const boardLabel = $derived(boardOpen ? t().board.hide : boardFresh ? t().board.showUnseen(boardUnseen) : t().board.show);
   const disabled = $derived((space.locked && !space.isSelf) || readonly);
   const ariaLabel = $derived.by(() => {
     const s = t().space;
@@ -106,14 +111,15 @@
   <button
     type="button"
     class="notes toggle"
-    aria-label={boardOpen ? t().board.hide : t().board.show}
-    title={t().board.withKey(boardOpen ? t().board.hide : t().board.show, SHORTCUT_KEYS.toggleBoard)}
+    aria-label={boardLabel}
+    title={t().board.withKey(boardLabel, SHORTCUT_KEYS.toggleBoard)}
     aria-keyshortcuts={SHORTCUT_KEYS.toggleBoard.toUpperCase()}
     aria-expanded={boardOpen}
     aria-controls="board-panel"
     onclick={ontoggleboard}
   >
-    <BoardNotes />
+    <!-- remounted for every further unseen post, so the new note lands again -->
+    {#key boardFresh && boardUnseen}<BoardNotes fresh={boardFresh} />{/key}
   </button>
 {/if}
 </div>

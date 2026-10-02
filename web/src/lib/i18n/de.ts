@@ -126,6 +126,10 @@ export const de = {
   board: {
     title: "Pinnwand",
     show: "Pinnwand einblenden",
+    /** toggle label while posts by others are unseen */
+    showUnseen: (n: number) => `Pinnwand einblenden – ${n === 1 ? "1 neuer Beitrag" : `${n} neue Beiträge`}`,
+    /** button above the list when new posts arrived out of view */
+    newAbove: (n: number) => (n === 1 ? "1 neuer Beitrag" : `${n} neue Beiträge`),
     /** tooltip with the keyboard shortcut */
     withKey: (label: string, key: string) => `${label} (${key.toUpperCase()})`,
     hide: "Pinnwand ausblenden",

@@ -130,6 +130,8 @@ export const en: Messages = {
   board: {
     title: "Board",
     show: "Show board",
+    showUnseen: (n) => `Show board – ${n === 1 ? "1 new post" : `${n} new posts`}`,
+    newAbove: (n) => (n === 1 ? "1 new post" : `${n} new posts`),
     withKey: (label, key) => `${label} (${key.toUpperCase()})`,
     hide: "Hide board",
     dropHere: "Drop to pin",

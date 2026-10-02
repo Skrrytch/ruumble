@@ -10,6 +10,7 @@
     talking,
     onjoin,
     boardOpen = false,
+    boardUnseen = 0,
     ontoggleboard,
   }: {
     floor: Floor;
@@ -18,6 +19,7 @@
     talking: Record<number, boolean>;
     onjoin: (channelId: number) => void;
     boardOpen?: boolean;
+    boardUnseen?: number;
     ontoggleboard?: () => void;
   } = $props();
 
@@ -45,7 +47,7 @@
   {:else}
     <div class="row top">
       {#each rows.top as room (room.channelId)}
-        <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {ontoggleboard} />
+        <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {boardUnseen} {ontoggleboard} />
       {/each}
     </div>
     <SpaceButton
@@ -60,7 +62,7 @@
     />
     <div class="row bottom">
       {#each rows.bottom as room (room.channelId)}
-        <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {ontoggleboard} />
+        <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {boardUnseen} {ontoggleboard} />
       {/each}
     </div>
   {/if}

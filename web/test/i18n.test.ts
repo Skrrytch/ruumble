@@ -71,6 +71,8 @@ describe("UI language", () => {
   it("board search in German: singular and plural", () => {
     expect([0, 1, 4].map((n) => de.board.searchPlaceholder(n))).toEqual(["Durchsuchen …", "1 Beitrag durchsuchen …", "4 Beiträge durchsuchen …"]);
     expect([de.board.shown(1, 1), de.board.shown(2, 4)]).toEqual(["1 von 1 Beitrag", "2 von 4 Beiträgen"]);
+    expect([de.board.showUnseen(1), de.board.newAbove(3)]).toEqual(["Pinnwand einblenden – 1 neuer Beitrag", "3 neue Beiträge"]);
+    expect([en.board.showUnseen(2), en.board.newAbove(1)]).toEqual(["Show board – 2 new posts", "1 new post"]);
   });
 
   it("English ordinals and plurals", () => {

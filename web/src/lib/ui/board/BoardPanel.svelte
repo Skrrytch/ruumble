@@ -5,6 +5,8 @@
   import Search from "@lucide/svelte/icons/search";
   import X from "@lucide/svelte/icons/x";
   import type { Post } from "@ruumble/protocol";
+  import { untrack } from "svelte";
+  import ArrowUp from "@lucide/svelte/icons/arrow-up";
   import { FILTERS, PIN_TITLE_MAX, filterPosts, suggestTitle, type BoardFilter } from "../../board/model.ts";
   import { t } from "../../i18n/index.svelte.ts";
   import type { RuumbleState } from "../../state.svelte.ts";
@@ -66,6 +68,42 @@
       pinnedOpen = false;
     }
   }
+  // posts that appear while the board is open (not on the first load or after a room change) are animated:
+  // by others they land, own ones only light up. Those unseen when opening light up too.
+  // If the list is scrolled down, a button above it counts the new ones by others and scrolls up to them.
+  let list = $state<HTMLDivElement | null>(null);
+  let arrived = $state<Record<string, "land" | "glow">>({});
+  let newAbove = $state(0);
+  let known: { channelId: number; ids: Set<string> } | null = null;
+  const scrolledDown = () => (list?.scrollTop ?? 0) > 40;
+  $effect(() => {
+    if (!board) return;
+    const ids = new Set(board.posts.map((p) => p.id));
+    if (!known) untrack(() => welcome(board.posts.filter((p) => app.boardRevealed.includes(p.id)), true));
+    else if (known.channelId !== board.channelId) newAbove = 0;
+    else {
+      const fresh = board.posts.filter((p) => !known!.ids.has(p.id));
+      untrack(() => welcome(fresh));
+    }
+    known = { channelId: board.channelId, ids };
+  });
+  function welcome(fresh: Post[], revealed = false): void {
+    if (!fresh.length) return;
+    arrived = { ...arrived, ...Object.fromEntries(fresh.map((p) => [p.id, p.mine || revealed ? "glow" : "land"] as const)) };
+    const visible = new Set(listed.map((p) => p.id));
+    if (!revealed && scrolledDown()) newAbove += fresh.filter((p) => !p.mine && visible.has(p.id)).length;
+    // done after the glow, so filtering or scrolling does not replay it
+    setTimeout(() => {
+      const rest = { ...arrived };
+      for (const p of fresh) delete rest[p.id];
+      arrived = rest;
+    }, 3500);
+  }
+  function showNew(): void {
+    list?.scrollTo({ top: 0, behavior: "smooth" });
+    newAbove = 0;
+  }
+
   const PINNED_OPEN_KEY = "ruumble.pinnedOpen";
   let pinnedOpen = $state(readPinnedOpen());
   function readPinnedOpen(): boolean {
@@ -182,14 +220,19 @@
         ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
       />
     {/if}
-    <div class="list">
-      {#each listed as post (post.id)}
-        <PostCard {post} {now} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
-          pinned={post.id === pinnedPost?.id} onpin={pinFromDot} />
-      {:else}
-        <!-- only the post on top: nothing to say below it -->
-        {#if narrowed || !pinnedPost}<p class="empty">{board.posts.length ? t().board.emptyFilter : t().board.empty}</p>{/if}
-      {/each}
+    <div class="list-wrap">
+      {#if newAbove > 0}
+        <button type="button" class="new-above" onclick={showNew}><ArrowUp size={14} aria-hidden="true" />{t().board.newAbove(newAbove)}</button>
+      {/if}
+      <div class="list" bind:this={list} onscroll={() => { if (newAbove && !scrolledDown()) newAbove = 0; }}>
+        {#each listed as post (post.id)}
+          <PostCard {post} {now} arrival={arrived[post.id] ?? null} avatar={app.avatarOf(post.authorName)} onopen={(p) => (openId = p.id)} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
+            pinned={post.id === pinnedPost?.id} onpin={pinFromDot} />
+        {:else}
+          <!-- only the post on top: nothing to say below it -->
+          {#if narrowed || !pinnedPost}<p class="empty">{board.posts.length ? t().board.emptyFilter : t().board.empty}</p>{/if}
+        {/each}
+      </div>
     </div>
     <Composer
       bind:this={composer}
@@ -253,5 +296,14 @@
     border: 2px dashed var(--color-blue-500); border-radius: var(--radius-md); background: rgb(255 255 255 / 0.85);
     font-weight: 700; color: var(--color-navy);
   }
+  /* the list scrolls; the button floats above its top edge */
+  .list-wrap { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .new-above {
+    position: absolute; top: 8px; left: 50%; z-index: 2; transform: translateX(-50%); display: flex; align-items: center; gap: 6px;
+    height: 30px; padding: 0 12px; border: 0; border-radius: 15px; background: var(--color-navy); color: var(--color-white);
+    font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgb(0 56 105 / 0.25); animation: pill-in 300ms var(--ease-out) both;
+  }
+  .new-above:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
+  @keyframes pill-in { from { transform: translate(-50%, -8px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
   .empty { margin: 16px; font-size: 14px; color: var(--color-blue-700); }
 </style>

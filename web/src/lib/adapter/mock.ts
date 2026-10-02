@@ -372,6 +372,20 @@ export class MockAdapter implements MumbleAdapter {
     this.emit();
   }
 
+  /** someone else pins a note to the board of the user's own room (if it has one) */
+  postAsOther(): void {
+    const me = this.me();
+    const author = this.state.users.find((u) => u.session !== me?.session)?.name ?? "Ben";
+    this.boardRoom((channelId) => {
+      const now = Date.now();
+      const text = `Note from ${author}, ${new Date(now).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+      const post: Post = { id: `mock-${this.nextPostId++}`, channelId, kind: "text", text, authorName: author, mine: false, canDelete: false, createdAt: now, updatedAt: now, reactions: [] };
+      this.posts.set(channelId, [post, ...(this.posts.get(channelId) ?? [])]);
+      this.boardChanged(channelId);
+      return post;
+    });
+  }
+
   /** moves a random other user into a random channel */
   moveRandomUser(): void {
     const others = this.state.users.filter((u) => u.session !== this.state.self?.session);

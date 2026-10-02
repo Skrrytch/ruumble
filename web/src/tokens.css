@@ -4,7 +4,7 @@
   /* Base colours */
   --color-navy: #003869;       /* text, walls, active states */
   --color-sky: #5aa6e7;        /* icons, focus ring */
-  --color-accent: #fbd200;     /* ONLY: ring around your own avatar */
+  --color-accent: #fbd200;     /* ONLY: ring around your own avatar, the board graphic's pin and its note for unseen posts */
   --color-surface: #f5f5f5;    /* elevator core, hover */
   --color-white: #ffffff;
   --color-navy-light: #0f4b8c;

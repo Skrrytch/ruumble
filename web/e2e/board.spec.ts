@@ -366,3 +366,27 @@ test("avatar image in the user area and on the user's own board cards (initials 
   await expect(board.getByRole("article", { name: "Post by Anna" }).locator(".av img")).toBeVisible();
   await expect(board.getByRole("article", { name: "Post by Clara" }).locator(".av img")).toHaveCount(0); // Clara without an image
 });
+
+test("posts by others: an extra note on the closed toggle, a landing card in the open board", async ({ page }) => {
+  await page.goto("/?fixture=sample&talking=0&debug");
+  const someonePosts = page.getByRole("button", { name: "Someone posts in my room" });
+  const board = page.getByRole("complementary", { name: "Board" });
+  // closed: the toggle gets the yellow note and says how many are new
+  await expect(page.getByRole("button", { name: "Show board", exact: true })).toBeVisible();
+  await someonePosts.click();
+  await someonePosts.click();
+  const toggle = page.getByRole("button", { name: "Show board – 2 new posts" });
+  await expect(toggle.locator(".new")).toHaveCount(1);
+  // opening shows them lit up and resets the toggle
+  await toggle.click();
+  await expect(board.locator("article.glow")).toHaveCount(2);
+  await expect(page.locator(".notes.toggle .new")).toHaveCount(0);
+  // open: the next one lands
+  await someonePosts.click();
+  await expect(board.getByRole("article")).toHaveCount(7);
+  await expect(board.locator("article.land")).toHaveCount(1);
+  // seen stays seen, also after a reload
+  await page.getByRole("button", { name: "Hide board" }).first().click();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Show board", exact: true })).toBeVisible();
+});

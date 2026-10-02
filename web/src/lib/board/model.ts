@@ -82,6 +82,29 @@ export function relativeTime(then: number, now = Date.now()): string {
   return d === 1 ? b.yesterday : b.daysAgo(d);
 }
 
+// ---------------------------------------------------------------- Unseen posts
+
+/** newest creation time on a board (service clock): what “seen up to” means for that room; 0 without posts */
+export function newestPost(posts: readonly Post[]): number {
+  return posts.reduce((n, p) => Math.max(n, p.createdAt), 0);
+}
+
+/** posts by others created after `seenAt`: they light up the closed board toggle */
+export function unseenPosts(posts: readonly Post[], seenAt: number): Post[] {
+  return posts.filter((p) => !p.mine && p.createdAt > seenAt);
+}
+
+/** “seen up to” per room as stored in localStorage (`{"<channelId>": <createdAt>}`); anything else counts as empty */
+export function parseSeen(raw: string | null): Record<string, number> {
+  try {
+    const v: unknown = JSON.parse(raw ?? "");
+    if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+    return Object.fromEntries(Object.entries(v).filter((e): e is [string, number] => typeof e[1] === "number" && Number.isFinite(e[1])));
+  } catch {
+    return {};
+  }
+}
+
 /** From how many lines a card is truncated (long texts truncated, full in the popup) */
 export const PREVIEW_LINES = 8;
 

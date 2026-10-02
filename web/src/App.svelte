@@ -85,6 +85,7 @@
           talking={app.talking}
           onjoin={(id) => app.join(id)}
           boardOpen={app.boardOpen}
+          boardUnseen={app.boardUnseen}
           ontoggleboard={() => app.toggleBoard()}
         />
       {:else}

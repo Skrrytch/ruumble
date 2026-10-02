@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Post, Reaction } from "@ruumble/protocol";
 import { t } from "../src/lib/i18n/index.svelte.ts";
-import { PIN_TITLE_MAX, fileKind, filterPosts, formatSize, isLong, looksLikeCode, pastedName, relativeTime, suggestTitle, summarizeReactions } from "../src/lib/board/model.ts";
+import { PIN_TITLE_MAX, fileKind, filterPosts, formatSize, isLong, looksLikeCode, newestPost, parseSeen, pastedName, relativeTime, suggestTitle, summarizeReactions, unseenPosts } from "../src/lib/board/model.ts";
 
 const post = (kind: Post["kind"], id: string = kind): Post => ({ id, channelId: 3, kind, text: "x", authorName: "A", mine: false, canDelete: false, createdAt: 0, updatedAt: 0, reactions: [] });
 
@@ -73,6 +73,30 @@ describe("Board model", () => {
     expect(isLong("a\n".repeat(9))).toBe(true);
     expect(isLong("short")).toBe(false);
     expect(isLong("x".repeat(700))).toBe(true);
+  });
+});
+
+describe("Unseen posts", () => {
+  const at = (id: string, createdAt: number, mine = false): Post => ({ ...post("text", id), createdAt, mine });
+
+  it("newest post is the room's seen marker, 0 without posts", () => {
+    expect(newestPost([at("a", 5), at("b", 9), at("c", 7)])).toBe(9);
+    expect(newestPost([])).toBe(0);
+  });
+
+  it("only posts by others after the marker are unseen", () => {
+    const posts = [at("new", 12), at("own", 13, true), at("same", 10), at("old", 4)];
+    expect(unseenPosts(posts, 10).map((p) => p.id)).toEqual(["new"]);
+    expect(unseenPosts(posts, 20)).toEqual([]);
+  });
+
+  it("reads the stored markers, ignoring junk", () => {
+    expect(parseSeen('{"3":12,"7":5}')).toEqual({ "3": 12, "7": 5 });
+    expect(parseSeen('{"3":"x","4":null,"5":8}')).toEqual({ "5": 8 });
+    expect(parseSeen("[1,2]")).toEqual({});
+    expect(parseSeen("null")).toEqual({});
+    expect(parseSeen("{broken")).toEqual({});
+    expect(parseSeen(null)).toEqual({});
   });
 });
 

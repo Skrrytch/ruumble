@@ -19,8 +19,9 @@
 
   /** `avatar`: the author's image if they are currently connected and registered; otherwise initials */
   /** `pinned`: this post is the one kept on top (A3); `onpin`: the dot keeps it on top or takes it down */
-  let { post, now, avatar = null, pinned = false, onopen, onreact, ontoggle, onpin }: {
-    post: Post; now: number; avatar?: string | null; pinned?: boolean; onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
+  /** `arrival`: new for the user – "land" (by someone else while the board was open: pinned on from above, lights up) or "glow" (only lights up) */
+  let { post, now, avatar = null, pinned = false, arrival = null, onopen, onreact, ontoggle, onpin }: {
+    post: Post; now: number; avatar?: string | null; pinned?: boolean; arrival?: "land" | "glow" | null; onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
     ontoggle: (post: Post, index: number, done: boolean) => void; onpin: (post: Post) => void;
   } = $props();
   let avatarBroken = $state<string | null>(null);
@@ -48,7 +49,7 @@
   }
 </script>
 
-<article class="card" aria-label={t().board.postBy(post.authorName)}>
+<article class="card" class:land={arrival === "land"} class:glow={arrival === "glow"} aria-label={t().board.postBy(post.authorName)}>
   <!-- the pin dot is also the handle for "keep on top": it grows into a button on hover and keyboard focus -->
   <button type="button" class="pin" class:pinned aria-label={pinned ? t().board.unpin : t().board.pinOnTop} title={pinned ? t().board.unpin : t().board.pinOnTop} onclick={() => onpin(post)}>
     <span class="dot" aria-hidden="true"></span>
@@ -120,6 +121,18 @@
   .pin:focus-visible { outline: none; }
   .pin:focus-visible .dot { box-shadow: 0 0 0 3px var(--color-sky); }
   @media (prefers-reduced-motion: reduce) { .pin .dot, .pin .glyph { transition: none; } }
+  /* new post: pinned on from above, then a yellow glow that fades (the colour of the note on the closed toggle) */
+  .card.land { animation: card-land 480ms var(--ease-out) both, card-glow 3s ease-out; }
+  .card.glow { animation: card-glow 3s ease-out; }
+  @keyframes card-land {
+    0% { transform: translateY(-18px) rotate(-2.5deg) scale(1.03); opacity: 0; }
+    55% { transform: translateY(2px) rotate(0.6deg); opacity: 1; }
+    100% { transform: none; }
+  }
+  @keyframes card-glow {
+    0%, 25% { border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 55%, transparent); background: color-mix(in srgb, var(--color-accent) 18%, var(--color-white)); }
+    100% { border-color: var(--color-blue-100); box-shadow: 0 0 0 3px transparent; background: var(--color-white); }
+  }
   header { display: flex; align-items: center; gap: 8px; }
   .av { width: 26px; height: 26px; border-radius: 50%; background: var(--color-blue-500); color: var(--color-white); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
   .av img { width: 100%; height: 100%; object-fit: cover; }

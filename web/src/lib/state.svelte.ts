@@ -4,7 +4,7 @@
  */
 import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairErrorCode, PluginStatus } from "./adapter/types.ts";
-import { formatSize, type BoardFilter } from "./board/model.ts";
+import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter } from "./board/model.ts";
 import { t } from "./i18n/index.svelte.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
 
@@ -15,6 +15,9 @@ export function boardErrorText(error: BoardErrorCode): string {
   const m = t().boardErrors[error];
   return typeof m === "function" ? m(formatSize(BOARD_LIMITS.fileBytes)) : m;
 }
+
+/** per room: creation time of the newest post the user has seen on its board (only in this browser) */
+const SEEN_KEY = "ruumble.boardSeen";
 
 export class RuumbleState {
   snapshot = $state<Snapshot | null>(null);
@@ -40,7 +43,12 @@ export class RuumbleState {
   boardFilter = $state<BoardFilter>("all");
   /** free-text search over the loaded posts of the room (simple form of A7) */
   boardQuery = $state("");
+  /** posts by others in the current room that arrived since the board was last open there (closed toggle) */
+  boardUnseen = $state(0);
+  /** the posts that were unseen when the board was opened: they light up once in the sidebar */
+  boardRevealed: string[] = [];
   private boardChannel: number | null = null;
+  private boardSeen = readSeen();
 
   /** displayed floor; `null` = own or first displayable one */
   private viewFloorId = $state<number | null>(null);
@@ -86,8 +94,9 @@ export class RuumbleState {
         this.connection = "connected";
       },
       connection: (state) => (this.connection = state),
+      // also while closed: the toggle shows posts the user has not seen yet
       board: (channelId) => {
-        if (this.boardOpen && this.me?.channel === channelId) void this.loadBoard();
+        if (this.me?.channel === channelId) void this.loadBoard();
       },
     });
   }
@@ -149,7 +158,13 @@ export class RuumbleState {
 
   toggleBoard(): void {
     this.boardOpen = !this.boardOpen;
-    if (this.boardOpen) void this.loadBoard();
+    if (this.boardOpen) {
+      const b = this.board;
+      const seenAt = b && b.channelId === this.me?.channel ? this.boardSeen[String(b.channelId)] : undefined;
+      this.boardRevealed = b && seenAt !== undefined ? unseenPosts(b.posts, seenAt).map((p) => p.id) : [];
+      this.boardUnseen = 0;
+      void this.loadBoard();
+    }
   }
 
   closeBoard(): void {
@@ -162,9 +177,33 @@ export class RuumbleState {
     if (r.ok) {
       this.board = r.value;
       this.boardError = null;
+      this.trackSeen(r.value);
     } else {
       this.board = null;
       this.boardError = r.error;
+      this.boardUnseen = 0;
+    }
+  }
+
+  /** Open board: everything counts as seen. Closed: count what arrived since. A room seen for the first time starts as seen. */
+  private trackSeen(view: BoardView): void {
+    const key = String(view.channelId);
+    const seenAt = this.boardSeen[key];
+    if (this.boardOpen || seenAt === undefined) {
+      this.boardUnseen = 0;
+      const newest = newestPost(view.posts);
+      if (seenAt !== newest) this.storeSeen(key, newest);
+    } else {
+      this.boardUnseen = unseenPosts(view.posts, seenAt).length;
+    }
+  }
+
+  private storeSeen(key: string, at: number): void {
+    this.boardSeen = { ...this.boardSeen, [key]: at };
+    try {
+      localStorage.setItem(SEEN_KEY, JSON.stringify(this.boardSeen));
+    } catch {
+      /* private mode: only remembered until reload */
     }
   }
 
@@ -268,9 +307,9 @@ export class RuumbleState {
 
   private onSnapshot(s: Snapshot): void {
     this.snapshot = s;
-    // room changed: the sidebar always shows the board of the current room
+    // room changed: the sidebar always shows the board of the current room; closed, the toggle counts its unseen posts
     const channel = s.users.find((u) => u.session === s.self?.session)?.channel ?? null;
-    if (this.boardOpen && channel !== this.boardChannel) void this.loadBoard();
+    if (channel !== this.boardChannel) void this.loadBoard();
     // The talking state is reported by the own client (only for what is audible, ADR-0005), which also ends it
     // with “passive”. Do not filter by the snapshot: the client hears new users earlier than polling shows them.
     // Only those who left the server are removed, and everything when self-deafened.
@@ -283,5 +322,13 @@ export class RuumbleState {
 
   private onTalking(session: number, state: TalkingState): void {
     this.talking = { ...this.talking, [session]: state !== "passive" };
+  }
+}
+
+function readSeen(): Record<string, number> {
+  try {
+    return parseSeen(localStorage.getItem(SEEN_KEY));
+  } catch {
+    return {};
   }
 }
