@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Added
+- **Icons in all common sizes:** PNG 192/512 (also maskable for Android), an Apple touch icon and `favicon.ico` with a pixel-drawn 16 px version, next to the existing SVG. The web app's manifest lists them, and every release carries them as `ruumble-icons.zip`.
+
 ## [0.20.0] - 2026-10-02
 
 Plugin 0.5.0 (unchanged).

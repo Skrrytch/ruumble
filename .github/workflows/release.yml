@@ -2,8 +2,8 @@ name: Release
 
 # Pushing a tag v<service version> (e.g. v0.14.0) publishes a release (docs/development.md#releasing):
 #   - Docker image ghcr.io/<owner>/ruumble:<version> and :<major.minor>, :latest, for linux/amd64 and linux/arm64
-#   - GitHub release with the plugin bundle (Linux + Windows), the Compose template, the third-party
-#     notices and SHA256SUMS; the notes are the version's section in CHANGELOG.md
+#   - GitHub release with the plugin bundle (Linux + Windows), the Compose template, the icons,
+#     the third-party notices and SHA256SUMS; the notes are the version's section in CHANGELOG.md
 # Started manually it is a dry run: it builds everything and uploads the assets as a workflow artifact,
 # but pushes no image and creates no release.
 on:
@@ -115,6 +115,7 @@ jobs:
           cp "out/ruumble-$PLUGIN.mumble_plugin" assets/
           cp deploy/compose/ruumble.docker-compose.yml deploy/compose/mumble-with-ruumble.docker-compose.yml assets/
           cp THIRD_PARTY_NOTICES.md assets/
+          (cd web/public && zip -X -j ../../assets/ruumble-icons.zip icon*.svg icon*.png apple-touch-icon.png favicon.ico)
           (cd assets && sha256sum * > SHA256SUMS)
           cat assets/SHA256SUMS
           {
@@ -124,6 +125,7 @@ jobs:
             echo
             echo "- **Service and web UI:** \`docker pull $IMAGE:$SERVICE\` (linux/amd64, linux/arm64). Setup: [docs/operations.md](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/operations.md), Compose templates attached (`mumble-with-ruumble` for a new setup, `ruumble` next to an existing Mumble container)."
             echo "- **Plugin $PLUGIN** for Mumble 1.4+ on Linux x86_64 and Windows x64: \`ruumble-$PLUGIN.mumble_plugin\`, attached and also served by the service under \`/download\`. Guide: [docs/user-guide.md](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/user-guide.md)."
+            echo "- **Icons** (SVG, PNG 192/512 also as maskable, Apple touch icon, favicon.ico): \`ruumble-icons.zip\`, also served by every instance at its root (e.g. \`/icon-512.png\`)."
             echo
             echo "The Docker image is GPL-2.0 as a whole because the service uses Ice for JavaScript; Ruumble's own code is BSD-3-Clause. See THIRD_PARTY_NOTICES.md."
           } > notes.md

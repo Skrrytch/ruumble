@@ -75,6 +75,10 @@ Browser ──http(s)──▶ Ruumble service ──Ice (read-only)──▶ Mu
 | Developers | [docs/development.md](docs/development.md): build, test, release |
 | Everyone | [CHANGELOG.md](CHANGELOG.md), [features and plans](docs/features.md), [Mumble interfaces used](docs/mumble-interfaces.md) |
 
+## Icons
+
+The Ruumble icon for portals, dashboards and bookmarks: [ruumble-icons.zip](https://github.com/Skrrytch/ruumble/releases/latest/download/ruumble-icons.zip) from the latest release, with the SVG, PNGs in 192 and 512 px (also as maskable icons with a full-bleed background), the Apple touch icon and `favicon.ico`. Every Ruumble instance also serves them at its root, e.g. `https://<your-ruumble>/icon-512.png`. The sources are in [`web/public/`](web/public/).
+
 ## Support and contributing
 
 - Questions and ideas: [Discussions](https://github.com/Skrrytch/ruumble/discussions). Bugs and feature requests: [issues](https://github.com/Skrrytch/ruumble/issues).

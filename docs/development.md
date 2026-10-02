@@ -79,6 +79,10 @@ In the dev server the web UI runs against the **mock** by default (a simulated M
 | `?talking=0` | turn off simulated talking events |
 | `?live` | against a running service on `127.0.0.1:64080` (proxy for `/ws`, `/api`, `/avatar`, `/download`, `/pair`) |
 
+### Icons
+
+`web/public/icon.svg` and `icon-maskable.svg` (full-bleed background, plan inside the safe zone) are the sources. `tools/gen-icons.sh` (needs ImageMagick) renders the PNGs, the Apple touch icon and `favicon.ico` from them; the 16 px favicon is drawn pixel by pixel in the script. Rerun it after changing an SVG and commit the output. The release zips them as `ruumble-icons.zip`.
+
 ### Demo on GitHub Pages
 
 `pnpm -F @ruumble/web build:demo` builds the web UI in the Vite mode `demo` with a relative base into `web/dist-demo`: it always runs against the mock, and the plugin download links to the latest release. `.github/workflows/pages.yml` deploys it to <https://skrrytch.github.io/ruumble/> for every release tag, or when started manually.
