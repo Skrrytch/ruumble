@@ -6,6 +6,15 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-10-02
+
+### Fixed
+- Board: opening the "…" menu of another post closes the one that is open.
+- Board: near the bottom of the list the "…" menu opens upwards instead of being cut off.
+
+### Changed
+- Board: the menu item reads "To room …" next to its icon (the full "Copy to room …" stays its accessible name and tooltip); the menu is a little wider.
+
 ## [0.21.0] - 2026-10-02
 
 Plugin 0.5.0 (unchanged).
