@@ -43,13 +43,45 @@ test.describe("Care (ADR-0014)", () => {
     await expect(dialog.getByRole("button", { name: "Delete posts …" })).toBeDisabled();
   });
 
-  test("room care: export the board as a file", async ({ page }) => {
+  test("room care: export the board as a file (browser download where there is no Save as dialog)", async ({ page }) => {
+    await page.addInitScript(() => delete (window as { showSaveFilePicker?: unknown }).showSaveFilePicker);
+    await page.reload();
     await page.getByRole("button", { name: "Room care: Let's talk" }).click();
     const dialog = page.getByRole("dialog", { name: "Room care" });
     const download = page.waitForEvent("download");
     await dialog.getByRole("button", { name: "Export as ZIP" }).click();
     expect((await download).suggestedFilename()).toBe("board-Let-s-talk.md"); // the mock exports Markdown, the service a ZIP
     await expect(dialog.getByRole("status")).toHaveText("Saved: board-Let-s-talk.md");
+  });
+
+  test("room care: export through the Save as dialog, streamed into the chosen file; cancelling says nothing", async ({ page }) => {
+    // stand-in for Chromium's File System Access API: records the suggested name and what is written
+    await page.addInitScript(() => {
+      const w = window as unknown as { saved: { name: string; text: string; cancel: boolean }; showSaveFilePicker: unknown };
+      w.saved = { name: "", text: "", cancel: false };
+      w.showSaveFilePicker = async ({ suggestedName }: { suggestedName: string }) => {
+        if (w.saved.cancel) throw new DOMException("cancelled", "AbortError");
+        w.saved.name = suggestedName;
+        const decoder = new TextDecoder();
+        return { createWritable: async () => new WritableStream({ write: (chunk: Uint8Array) => void (w.saved.text += decoder.decode(chunk, { stream: true })) }) };
+      };
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "Room care: Let's talk" }).click();
+    const dialog = page.getByRole("dialog", { name: "Room care" });
+    await dialog.getByRole("button", { name: "Export as ZIP" }).click();
+    await expect(dialog.getByRole("status")).toHaveText("Saved: board-Let-s-talk.md");
+    const saved = await page.evaluate(() => (window as unknown as { saved: { name: string; text: string } }).saved);
+    expect(saved.name).toBe("board-Let-s-talk.md");
+    expect(saved.text).toContain('# Board of "Let\'s talk"');
+    // cancelled in the dialog: no message, no error
+    await page.reload();
+    await page.evaluate(() => void ((window as unknown as { saved: { cancel: boolean } }).saved.cancel = true));
+    await page.getByRole("button", { name: "Room care: Let's talk" }).click();
+    await dialog.getByRole("button", { name: "Export as ZIP" }).click();
+    await expect(dialog.getByRole("button", { name: "Export as ZIP" })).toBeEnabled();
+    await expect(dialog.getByRole("status")).toHaveCount(0);
+    await expect(dialog.getByRole("alert")).toHaveCount(0);
   });
 
   test("floor care: rooms as a list, a line opens room care, back and the breadcrumb return", async ({ page }) => {
@@ -168,10 +200,10 @@ test.describe("Building maintenance (ADR-0016)", () => {
     const save = dialog.getByRole("button", { name: "Save" });
     await expect(save).toBeDisabled();
     await retention.fill("0");
-    await expect(dialog.getByText("Please enter whole numbers within the allowed range.")).toBeVisible();
+    await expect(dialog.getByRole("alert")).toHaveText("Whole numbers within the allowed range only.");
     await expect(save).toBeDisabled();
     await retention.fill("90");
-    await expect(dialog.getByText(/^Shorter retention/)).toBeVisible();
+    await expect(dialog.getByRole("alert")).toHaveText(/^Shorter retention/);
     await dialog.getByLabel("Largest file").fill("25");
     await dialog.getByLabel("Notice in Mumble for new posts").uncheck();
     await save.click();
@@ -181,7 +213,7 @@ test.describe("Building maintenance (ADR-0016)", () => {
     await expect(save).toBeDisabled();
     // a shorter grace for deleted rooms deletes data too: asks first; Escape cancels only the popup
     await dialog.getByLabel("Keep data of deleted rooms").fill("0");
-    await expect(dialog.getByText(/^Shorter grace period/)).toBeVisible();
+    await expect(dialog.getByRole("alert")).toHaveText(/^Shorter grace period/);
     await save.click();
     const grace = dialog.getByRole("alertdialog", { name: "Save, although posts will then be deleted?" });
     await expect(grace).toContainText("Shorter grace period");

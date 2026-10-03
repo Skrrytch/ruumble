@@ -57,7 +57,20 @@
   }
 
   // a key list that failed to load shows its error in the Access section, a failed revoke here
-  const status = $derived(app.maintenanceError ? { text: careErrorText(app.maintenanceError), error: true } : app.keysError && app.keys ? { text: careErrorText(app.keysError), error: true } : app.maintenanceMessage ? { text: app.maintenanceMessage, error: false } : null);
+  // what the form says before saving (invalid values, changes that delete data) stands in the footer instead of the
+  // house rules, so the dialog keeps its height
+  const warning = $derived.by(() => {
+    const m = t().maintenance;
+    if (!valid) return m.invalid;
+    return [shorterRetention ? m.shorterRetention : "", quotaBelowUse ? m.quotaBelowUse : "", shorterGrace ? m.shorterGrace : ""].filter(Boolean).join(" ");
+  });
+  const status = $derived(
+    app.maintenanceError ? { text: careErrorText(app.maintenanceError), error: true }
+    : app.keysError && app.keys ? { text: careErrorText(app.keysError), error: true }
+    : warning ? { text: warning, error: true }
+    : app.maintenanceMessage ? { text: app.maintenanceMessage, error: false }
+    : null,
+  );
 </script>
 
 <CareShell
@@ -93,10 +106,6 @@
           <input id="setting-notifyNewPosts" type="checkbox" bind:checked={draft.notifyNewPosts} disabled={app.maintenanceBusy} />
           <span><span class="label">{t().maintenance.fields.notifyNewPosts}</span><span class="hint">{t().maintenance.notifyHint}</span></span>
         </label>
-        {#if shorterRetention}<p class="warn">{t().maintenance.shorterRetention}</p>{/if}
-        {#if quotaBelowUse}<p class="warn">{t().maintenance.quotaBelowUse}</p>{/if}
-        {#if shorterGrace}<p class="warn">{t().maintenance.shorterGrace}</p>{/if}
-        {#if !valid}<p class="warn">{t().maintenance.invalid}</p>{/if}
         <div class="row">
           <button type="button" class="btn primary" disabled={app.maintenanceBusy || !changed || !valid} onclick={save}>{t().common.save}</button>
           <button type="button" class="btn secondary" disabled={app.maintenanceBusy || atDefaults} onclick={() => (draft = { ...defaults })}>{t().maintenance.resetAll}</button>
@@ -127,7 +136,6 @@
   h4 { margin: 6px 0 0; font-size: 13px; font-weight: 700; }
   p { margin: 0; }
   .hint { font-size: 12px; color: var(--muted); }
-  .warn { font-size: 12px; color: var(--danger); }
   .error { color: var(--danger); }
   .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
   .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }

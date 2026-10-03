@@ -60,8 +60,8 @@ const liveMaintenance: MaintenanceApi = {
   save: (settings) => call(Maintenance, "/api/maintenance/settings", { method: "PUT", body: JSON.stringify(settings) }),
 };
 
-/** a file from the service (export): the content and the name from Content-Disposition */
-async function download(url: string): Promise<BoardResult<{ blob: Blob; name: string }>> {
+/** a file from the service (export): the content as a stream and the name from Content-Disposition */
+async function download(url: string): Promise<BoardResult<{ stream: ReadableStream<Uint8Array>; name: string }>> {
   let res: Response;
   try {
     res = await fetch(url, { credentials: "same-origin" });
@@ -73,7 +73,8 @@ async function download(url: string): Promise<BoardResult<{ blob: Blob; name: st
     return { ok: false, error: known.success ? known.data.error : (STATUS_ERROR[res.status] ?? "invalid") };
   }
   const encoded = /filename\*=UTF-8''([^;]+)/.exec(res.headers.get("content-disposition") ?? "")?.[1];
-  return { ok: true, value: { blob: await res.blob(), name: encoded ? decodeURIComponent(encoded) : "board.zip" } };
+  if (!res.body) return { ok: false, error: "invalid" };
+  return { ok: true, value: { stream: res.body, name: encoded ? decodeURIComponent(encoded) : "board.zip" } };
 }
 
 /** Errors that Fastify reports itself (e.g. body too large) have no code of their own */

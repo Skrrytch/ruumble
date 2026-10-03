@@ -421,11 +421,15 @@ export class RuumbleState {
   exportRoom(): Promise<boolean> {
     const target = this.care;
     if (target?.kind !== "room") return Promise.resolve(false);
-    return this.careAction(async () => {
+    let cancelled = false;
+    return this.careAction(async (): Promise<BoardResult<{ name: string }>> => {
       const r = await this.adapter.care.exportRoom(target.channelId);
-      if (r.ok) saveFile(r.value.blob, r.value.name);
-      return r;
-    }, (v) => t().care.exported(v.name));
+      if (!r.ok) return r;
+      const saved = await saveStream(r.value.stream, r.value.name);
+      if (saved === "failed") return { ok: false, error: "offline" };
+      cancelled = saved === "cancelled";
+      return { ok: true, value: { name: r.value.name } };
+    }, (v) => (cancelled ? "" : t().care.exported(v.name)));
   }
 
   /** floor care: move the board of room `from` to room `to` on this floor */
@@ -557,6 +561,44 @@ export class RuumbleState {
 }
 
 /** hand a file to the browser to save */
+/** the File System Access API's save dialog (Chromium); not in TypeScript's DOM types */
+type SavePicker = (options: { suggestedName: string; types?: { description: string; accept: Record<string, string[]> }[] }) => Promise<FileSystemFileHandle>;
+
+/**
+ * Save a streamed file. Where the browser has a "Save as" dialog (Chromium), it asks for the place and writes the
+ * stream straight to disk: nothing is held in memory, and an installed web app shows no download bubble at its window
+ * edge. Elsewhere, or if the dialog is not allowed (e.g. the click was too long ago), the browser's own download.
+ */
+async function saveStream(stream: ReadableStream<Uint8Array>, name: string): Promise<"saved" | "cancelled" | "failed"> {
+  const picker = (window as unknown as { showSaveFilePicker?: SavePicker }).showSaveFilePicker;
+  if (picker) {
+    let handle: FileSystemFileHandle | null = null;
+    try {
+      handle = await picker({ suggestedName: name, ...(name.endsWith(".zip") ? { types: [{ description: "ZIP", accept: { "application/zip": [".zip"] } }] } : {}) });
+    } catch (e) {
+      if ((e as Error).name === "AbortError") {
+        await stream.cancel().catch(() => {});
+        return "cancelled";
+      }
+      // no permission for the dialog: fall back to the download below
+    }
+    if (handle) {
+      try {
+        await stream.pipeTo(await handle.createWritable()); // an error aborts the file instead of leaving half of it
+        return "saved";
+      } catch {
+        return "failed";
+      }
+    }
+  }
+  try {
+    saveFile(await new Response(stream).blob(), name);
+    return "saved";
+  } catch {
+    return "failed";
+  }
+}
+
 function saveFile(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

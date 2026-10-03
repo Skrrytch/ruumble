@@ -8,6 +8,8 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ### Changed
 - **Flatter rooms, names at the door.** Name and head count of a room are a door plate on the corridor side next to the door, with the board and the plant beside it; the people fill the room from the far wall. A room needs about 200 px for two rows of people instead of about 270, so the web UI fits windows down to about 640 px high. The people stand in the middle of their area, every row centred. Where more people are in a room than fit, the last tile shows "+n" with the others' names in its tooltip; your own avatar always stays visible. Narrow rooms show the head count as a small number behind the name.
+- **Export with a "Save as" dialog** where the browser has one (Chrome, Edge, Chromium): you choose the place, and the ZIP is written there while it downloads instead of being held in the browser first. In an installed web app this also avoids the download bubble at the window edge. Other browsers download as before.
+- Building maintenance: hints about invalid values or changes that delete data are shorter and stand in the footer instead of the house rules, so the dialog keeps its height.
 - **The door tells whether you may enter.** It stands ajar (45°) where you may and is closed where Mumble does not let you in.
 
 ## [0.25.1] - 2026-10-03

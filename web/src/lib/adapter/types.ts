@@ -47,7 +47,8 @@ export interface CareApi {
   /** delete the posts older than `days` (one of PRUNE_DAYS) */
   pruneRoom(channelId: number, days: number): Promise<BoardResult<CareDone>>;
   /** the whole board as a file to save (ZIP with board.md and the attachments) */
-  exportRoom(channelId: number): Promise<BoardResult<{ blob: Blob; name: string }>>;
+  /** the board as a file, streamed: resolves once the service answers, the content follows in `stream` */
+  exportRoom(channelId: number): Promise<BoardResult<{ stream: ReadableStream<Uint8Array>; name: string }>>;
   floor(channelId: number): Promise<BoardResult<FloorCare>>;
   /** remove these rooms that are gone from the floor, with all their data */
   cleanFloor(channelId: number, rooms: number[]): Promise<BoardResult<CareDone>>;

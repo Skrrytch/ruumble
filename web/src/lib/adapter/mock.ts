@@ -252,7 +252,7 @@ export class MockAdapter implements MumbleAdapter {
       this.caretaker(id, () => {
         const posts = [...(this.posts.get(id) ?? [])].sort((a, b) => a.createdAt - b.createdAt);
         const md = [`# Board of "${this.channelName(id)}"`, "", ...posts.flatMap((p) => ["---", "", `## ${p.authorName} · ${new Date(p.createdAt).toISOString()}`, "", p.text, ""])].join("\n");
-        return { blob: new Blob([md], { type: "text/markdown" }), name: `board-${this.channelName(id).replace(/[^\p{L}\p{N}._-]+/gu, "-")}.md` };
+        return { stream: new Blob([md], { type: "text/markdown" }).stream(), name: `board-${this.channelName(id).replace(/[^\p{L}\p{N}._-]+/gu, "-")}.md` };
       }, this.isRoom(id)),
     floor: async (id) =>
       this.caretaker(id, () => ({
