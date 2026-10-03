@@ -133,9 +133,9 @@
   </button>
 {/if}
 {#if tendable}
-  <button type="button" class="plant-spot plant-{variant} tend" aria-label={tendLabel} title={tendLabel} onclick={ontend}><Plant /></button>
+  <button type="button" class="plant-spot plant-{variant} tend" aria-label={tendLabel} title={tendLabel} onclick={ontend}><Plant size={26} subtle /></button>
 {:else}
-  <span class="plant-spot plant-{variant}"><Plant /></span>
+  <span class="plant-spot plant-{variant}"><Plant size={26} subtle /></span>
 {/if}
 </div>
 
