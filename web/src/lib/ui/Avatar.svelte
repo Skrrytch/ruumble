@@ -52,7 +52,7 @@
 
 <style>
   /* a tile of 60 × 63: avatar, 3 px, a name line of 16 px (PERSON_TILE in model/building.ts) */
-  .person { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 60px; font-size: 12px; line-height: 16px; }
+  .person { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 60px; font-size: 11px; line-height: 16px; } /* 11 px: names like "SuperUser" fit whole */
   .name { max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .av {
     position: relative; width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%;
