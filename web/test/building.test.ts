@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Snapshot, type Channel, type User } from "@ruumble/protocol";
 import {
   AWAY_MINUTES,
+  fitPeople,
   ROOMS_IN_VIEW,
   QUIET_MINUTES,
   presenceOf,
@@ -305,3 +306,22 @@ describe("Care (ADR-0014)", () => {
     expect([b.floors[0]!.corridor, ...b.floors[0]!.rooms].some((s) => s.canTend)).toBe(false);
   });
 });
+
+describe("fitPeople", () => {
+  const people = (n: number, self = -1) => Array.from({ length: n }, (_, i) => ({ id: i, isSelf: i === self }));
+  it("everyone fits, or the last tile becomes +n; the own user stays visible", () => {
+    // 3 columns (3 × 60 + 2 × 3 = 186) and 2 rows (2 × 63 + 6 = 132)
+    expect(fitPeople(people(6), 186, 132).hidden).toEqual([]);
+    const crowded = fitPeople(people(9, 8), 186, 132);
+    expect(crowded.shown.map((p) => p.id)).toEqual([0, 1, 2, 3, 8]);
+    expect(crowded.hidden.map((p) => p.id)).toEqual([4, 5, 6, 7]);
+    expect(fitPeople(people(9), 186, 132).shown.map((p) => p.id)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it("not measured yet: everyone; tiny area: at least one tile", () => {
+    expect(fitPeople(people(4), 0, 0).shown).toHaveLength(4);
+    const tiny = fitPeople(people(3), 10, 10);
+    expect([tiny.shown.length, tiny.hidden.length]).toEqual([0, 3]);
+  });
+});
+

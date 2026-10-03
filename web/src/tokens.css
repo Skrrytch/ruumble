@@ -23,6 +23,7 @@
   --color-blue-700: #00508c;   /* secondary text (contrast ≥ 4.5:1 on white) */
   --color-blue-500: #0078be;   /* avatar fill of other users, floor kicker */
   --color-blue-300: #9ccaf1;   /* door arcs, tool button borders */
+  --color-blue-50: #eef5fc;    /* "+n" tile for people who do not fit */
   --color-blue-100: #cee4f8;   /* own room, tool button hover */
 
   /* Patterns */
@@ -43,11 +44,12 @@
   --app-min-width: 1000px;
   --board-width: 340px;        /* open board up to this window width; it gets half of every pixel beyond */
   --board-grow-from: 1440px;
-  /* Height: the window may shrink until every room still holds two rows of people (shorter windows scroll) */
-  --two-people: 144px;         /* 2 × person (avatar 44 + gap 6 + name 16) + 12 px between the rows */
-  /* padding, title and count, gap, people, padding; the door arc (48 px) is below the people in the upper row, above them in the lower */
-  --room-min-top: calc(20px + 40px + 14px + var(--two-people) + 48px);
-  --room-min-bottom: calc(56px + 40px + 14px + var(--two-people) + 20px);
+  /* Height: the window may shrink until every room still holds two rows of people (shorter windows scroll).
+     Rooms (design "Grundriss: Flurseite"): far wall 12, people, 8, the door strip with door, plant, board and plate */
+  --door-strip: 48px;
+  --two-people: 132px;         /* 2 × person (avatar 44 + 3 + name 16 = 63) + 6 px between the rows */
+  --room-min-top: calc(12px + var(--two-people) + 8px + var(--door-strip));
+  --room-min-bottom: var(--room-min-top);
   --corridor-height: 110px;
   --topbar-height: 60px;
 

@@ -146,6 +146,27 @@ export function rowsWidth(rooms: number): number {
   return Math.max(1, Math.max(top.length, bottom.length) / ROOMS_IN_VIEW);
 }
 
+/** a person in a room: avatar 44 + 3 + name line 16 = 63 high, 60 wide; 3 px between columns, 6 px between rows */
+export const PERSON_TILE = { width: 60, height: 63, columnGap: 3, rowGap: 6 } as const;
+
+/**
+ * Who of the people in a room fits into the area for people (measured in px). If not everyone does, the last tile
+ * becomes "+n" for the rest. The own user always stays visible. Before the area is measured (0), everyone is shown.
+ */
+export function fitPeople<T extends { isSelf: boolean }>(users: readonly T[], width: number, height: number): { shown: T[]; hidden: T[] } {
+  if (width <= 0 || height <= 0) return { shown: [...users], hidden: [] };
+  const t = PERSON_TILE;
+  const columns = Math.max(1, Math.floor((width + t.columnGap) / (t.width + t.columnGap)));
+  const rows = Math.max(1, Math.floor((height + t.rowGap) / (t.height + t.rowGap)));
+  const capacity = columns * rows;
+  if (users.length <= capacity) return { shown: [...users], hidden: [] };
+  const self = users.find((u) => u.isSelf);
+  const ordered = self ? [self, ...users.filter((u) => u !== self)] : [...users];
+  const keep = capacity - 1; // one tile for "+n"
+  const shownSet = new Set(ordered.slice(0, keep));
+  return { shown: users.filter((u) => shownSet.has(u)), hidden: users.filter((u) => !shownSet.has(u)) };
+}
+
 /** Floors with at most this many rooms get narrower when the board is open */
 export const FEW_ROOMS = 2;
 

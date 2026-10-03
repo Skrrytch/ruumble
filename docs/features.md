@@ -79,7 +79,7 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 
 ### Care of the stored data
 
-A potted plant stands in every room (bottom right), at the end of every corridor and at the entrance in the elevator. For everyone it is decoration; whoever has Mumble's Write permission there can click it ([ADR-0014](decisions/0014-care-of-the-stored-data.md)):
+A potted plant stands in every room (behind the door, on the corridor side), at the end of every corridor and at the entrance in the elevator. For everyone it is decoration; whoever has Mumble's Write permission there can click it ([ADR-0014](decisions/0014-care-of-the-stored-data.md)):
 
 - **Room care**: posts, attachment space, newest and oldest post, the retention period; **delete posts older than** 7 days, 14 days, 1, 3 or 6 months (with the count per choice); **clear the board** (all posts with reactions, "kept on top" and attachments); both send a Mumble notice to the people present. **Export** the board as a ZIP (`board.md` and the attachments).
 - **Floor care**: all rooms of the floor with posts, size and last post (a line opens the room's care, "back" returns); **move a board** from any room in the database, current or gone, to a room on this floor (e.g. a room recreated in Mumble with a new ID); rooms of this floor that were deleted in Mumble or moved out of the floor plan and still hold data, one line each (name, posts, size, gone since), removed one by one or all.
@@ -173,7 +173,7 @@ On hold (2026-10-02): this does not work. The plugin API's `requestSetLocalUserC
 
 **Smaller items**
 
-- A layout for small windows (today the web UI scales down to 1000 px wide and to the height where every room still holds two rows of people, about 780 px; smaller windows scroll).
+- A layout for small windows (today the web UI scales down to 1000 px wide and to the height where every room still holds two rows of people, about 640 px; smaller windows scroll).
 - Old raw avatar format (600×60 BGRA) from very old clients; treated as "no avatar" today.
 
 ### Board for developers (A1–A9)

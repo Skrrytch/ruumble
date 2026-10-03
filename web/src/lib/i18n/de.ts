@@ -101,6 +101,7 @@ export const de = {
     mutedRoom: "Stummer Raum",
     noAccessTitle: "Kein Zutritt",
     recording: "Hier wird aufgezeichnet",
+    morePeople: (names: string) => `Außerdem hier: ${names}`,
     recordingBadge: "● Aufnahme",
   },
   /** Pairing with a code from the Mumble log (ADR-0012) */

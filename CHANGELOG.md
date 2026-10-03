@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Changed
+- **Flatter rooms, names at the door.** Name and head count of a room are a door plate on the corridor side next to the door, with the board and the plant beside it; the people fill the room from the far wall. A room needs about 200 px for two rows of people instead of about 270, so the web UI fits windows down to about 640 px high. Where more people are in a room than fit, the last tile shows "+n" with the others' names in its tooltip; your own avatar always stays visible. Narrow rooms show the head count as a small number behind the name.
+
 ## [0.25.1] - 2026-10-03
 
 Plugin 0.5.0 (unchanged).

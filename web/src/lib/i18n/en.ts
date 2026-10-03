@@ -106,6 +106,7 @@ export const en: Messages = {
     mutedRoom: "Silent room",
     noAccessTitle: "No access",
     recording: "Recording in progress here",
+    morePeople: (names) => `Also here: ${names}`,
     recordingBadge: "● Recording",
   },
   pairing: {

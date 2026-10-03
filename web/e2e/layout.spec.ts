@@ -101,9 +101,9 @@ test("height: rooms keep room for two rows of people, a lower window scrolls", a
   await page.goto("/?fixture=sample&talking=0");
   const box = async (selector: string) => (await page.locator(selector).first().boundingBox())!;
   const person = (await box(".person")).height;
-  // upper rooms: title and count, two rows of people and the door arc below; lower rooms: the door arc above
-  expect((await box(".row.top .room")).height).toBeGreaterThanOrEqual(20 + 40 + 14 + 2 * person + 12 + 48 - 1);
-  expect((await box(".row.bottom .room")).height).toBeGreaterThanOrEqual(56 + 40 + 14 + 2 * person + 12 + 20 - 1);
+  // far wall 12, two rows of people with 6 between, 8, the door strip (48) with door, plant, board and door plate
+  expect(person).toBe(63);
+  for (const row of ["top", "bottom"]) expect((await box(`.row.${row} .room`)).height).toBeGreaterThanOrEqual(12 + 2 * person + 6 + 8 + 48 - 1);
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeGreaterThan(600);
   // a tall window is used in full
   await page.setViewportSize({ width: 1000, height: 1000 });

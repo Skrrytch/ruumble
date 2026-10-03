@@ -1,8 +1,9 @@
 <script lang="ts">
   import Ear from "@lucide/svelte/icons/ear";
   import Lock from "@lucide/svelte/icons/lock";
+  import Users from "@lucide/svelte/icons/users";
   import VolumeX from "@lucide/svelte/icons/volume-x";
-  import { countText, type Room, type Space } from "../model/building.ts";
+  import { countText, fitPeople, type Room, type Space } from "../model/building.ts";
   import Avatar from "./Avatar.svelte";
   import BoardNotes from "./board/BoardNotes.svelte";
   import Plant from "./Plant.svelte";
@@ -61,13 +62,30 @@
     return name + (space.isSelf ? s.here : readonly ? "" : disabled ? s.noAccess : pending ? s.entering : s.enter);
   });
 
+  // rooms: as many people as fit into their area, the rest behind a "+n" tile (design "Grundriss: Flurseite")
+  let peopleWidth = $state(0);
+  let peopleHeight = $state(0);
+  /** the board toggle sits left of the door plate */
+  let plateWidth = $state(0);
+  const fit = $derived(variant === "room" ? fitPeople(space.users, peopleWidth, peopleHeight) : { shown: space.users, hidden: [] });
+  const countLine = $derived(pending ? t().space.enteringText : (subtitle ?? countText(space.users.length)));
+
   function click() {
     if (space.isSelf || disabled || pending) return;
     onjoin(space.channelId);
   }
 </script>
 
-<div class="wrap wrap-{variant}" style:flex-grow={room ? room.grow : undefined}>
+{#snippet icons()}
+  {#if room?.muted}<span class="icon" title={t().space.mutedRoom}><VolumeX size={variant === "room" ? 16 : 18} /></span>{/if}
+  {#if space.listeners.length > 0}
+    <span class="icon" title={t().people.listening(space.listeners.length)}><Ear size={variant === "room" ? 16 : 18} /></span>
+  {/if}
+  {#if space.locked && !space.isSelf}<span class="icon" title={t().space.noAccessTitle}><Lock size={variant === "room" ? 14 : 16} /></span>{/if}
+  {#if space.recording}<span class="rec" title={t().space.recording}>{t().space.recordingBadge}</span>{/if}
+{/snippet}
+
+<div class="wrap wrap-{variant}" class:lower={row === "bottom"} style:flex-grow={room ? room.grow : undefined}>
 <button
   type="button"
   class="room {variant}"
@@ -83,41 +101,47 @@
   onclick={click}
 >
   {#if variant === "room"}
-    <span class="door" aria-hidden="true"></span>
-    <svg class="arc" aria-hidden="true" width="48" height="48" viewBox="0 0 48 48">
-      {#if row === "top"}
-        <path d="M1 48 V1 A47 47 0 0 1 48 48" />
-      {:else}
-        <path d="M1 0 V47 A47 47 0 0 0 48 0" />
-      {/if}
+    <!-- door at the corridor wall: the white strip cuts the opening into the wall; mirrored in the lower row -->
+    <svg class="door" width="48" height="52" viewBox="0 0 48 52" fill="none" aria-hidden="true">
+      <rect x="2" y="48" width="44" height="4" class="opening" />
+      <path d="M2 48V4" class="leaf" />
+      <path d="M2 4A44 44 0 0 1 46 48" class="swing" />
     </svg>
-  {/if}
-  <!-- in the corridor the content stays in view while the floor plan scrolls sideways -->
-  <span class="content">
-  <span class="label">
-    <span class="title">
-      {title}
-      {#if room?.muted}<span class="icon" title={t().space.mutedRoom}><VolumeX size={18} /></span>{/if}
-      {#if space.listeners.length > 0}
-        <span class="icon" title={t().people.listening(space.listeners.length)}>
-          <Ear size={18} />
-        </span>
-      {/if}
-      {#if space.locked && !space.isSelf}<span class="icon" title={t().space.noAccessTitle}><Lock size={16} /></span>{/if}
-      {#if space.recording}<span class="rec" title={t().space.recording}>{t().space.recordingBadge}</span>{/if}
-    </span>
-    <span class="count">{pending ? t().space.enteringText : (subtitle ?? countText(space.users.length))}</span>
-  </span>
-  {#if space.users.length > 0}
-    <span class="people">
-      {#each space.users as user (user.session)}
+    <span class="people" bind:clientWidth={peopleWidth} bind:clientHeight={peopleHeight}>
+      {#each fit.shown as user (user.session)}
         <Avatar {user} talking={talking[user.session] ?? false} />
       {/each}
+      {#if fit.hidden.length}
+        {@const names = t().space.morePeople(fit.hidden.map((u) => u.name).join(", "))}
+        <span class="person more" title={names} aria-label={names} role="img"><span class="more-tile" aria-hidden="true">+{fit.hidden.length}</span></span>
+      {/if}
+    </span>
+    <!-- door plate on the corridor side, right-aligned; the full name in the tooltip -->
+    <span class="plate" bind:clientWidth={plateWidth}>
+      <span class="title">{@render icons()}<span class="name" title={title}>{title}</span>{#if space.users.length}<span class="mini-count"><Users size={12} />{space.users.length}</span>{/if}</span>
+      <span class="count">{countLine}</span>
+    </span>
+  {:else}
+    <!-- in the corridor the content stays in view while the floor plan scrolls sideways -->
+    <span class="content">
+    <span class="label">
+      <span class="title">
+        {title}
+        {@render icons()}
+      </span>
+      <span class="count">{countLine}</span>
+    </span>
+    {#if space.users.length > 0}
+      <span class="people">
+        {#each space.users as user (user.session)}
+          <Avatar {user} talking={talking[user.session] ?? false} />
+        {/each}
+      </span>
+    {/if}
     </span>
   {/if}
-  </span>
 </button>
-{#if boardToggle}
+{#snippet notesToggle()}
   <button
     type="button"
     class="notes toggle"
@@ -126,24 +150,29 @@
     aria-keyshortcuts={SHORTCUT_KEYS.toggleBoard.toUpperCase()}
     aria-expanded={boardOpen}
     aria-controls="board-panel"
+    style:right={variant === "room" ? `${14 + plateWidth + 6}px` : undefined}
     onclick={ontoggleboard}
   >
     <!-- remounted for every further unseen post, so the new note lands again -->
     {#key boardFresh && boardUnseen}<BoardNotes fresh={boardFresh} />{/key}
   </button>
-{/if}
-{#if tendable}
-  <button type="button" class="plant-spot plant-{variant} tend" aria-label={tendLabel} title={tendLabel} onclick={ontend}><Plant size={26} subtle /></button>
-{:else}
-  <span class="plant-spot plant-{variant}"><Plant size={26} subtle /></span>
-{/if}
+{/snippet}
+{#snippet plant()}
+  {#if tendable}
+    <button type="button" class="plant-spot plant-{variant} tend" aria-label={tendLabel} title={tendLabel} onclick={ontend}><Plant size={variant === "room" ? 22 : 26} subtle /></button>
+  {:else}
+    <span class="plant-spot plant-{variant}"><Plant size={variant === "room" ? 22 : 26} subtle /></span>
+  {/if}
+{/snippet}
+{#if boardToggle}{@render notesToggle()}{/if}
+{@render plant()}
 </div>
 
 <style>
   /* basis = horizontal padding of the room, so the widths are distributed as without the wrapper */
   .wrap { position: relative; display: flex; flex-basis: 44px; min-width: 0; }
   /* the width follows the people in the room (roomGrow): changes glide; names stay readable */
-  .wrap-room { min-width: 150px; transition: flex-grow var(--dur-slow) var(--ease-out); }
+  .wrap-room { min-width: 190px; transition: flex-grow var(--dur-slow) var(--ease-out); container-type: inline-size; }
   .content { display: contents; }
   .room.corridor .content { position: sticky; left: 22px; display: flex; align-items: center; gap: 24px; min-width: 0; }
   .wrap-corridor { flex: none; }
@@ -153,26 +182,6 @@
     text-align: left; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
     flex: 1 1 auto; min-width: 0; width: 100%; transition: background var(--dur) var(--ease-out);
   }
-  /* board graphic top right (ADR-0011, variant B) */
-  /* toggle without a box: only the notes, on hover they lift slightly */
-  .notes.toggle {
-    position: absolute; top: 12px; right: 12px; border: 0; background: transparent; padding: 4px; margin: -4px; border-radius: var(--radius-md);
-    min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer;
-    transition: transform var(--dur) var(--ease-out);
-  }
-  .notes.toggle:hover { transform: translateY(-2px) rotate(-2deg) scale(1.06); }
-  .notes.toggle:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
-  /* plant (care, ADR-0014): bottom right in a room and an open floor, at the right end of the corridor */
-  .plant-spot {
-    position: absolute; right: 10px; bottom: 8px; display: flex; align-items: flex-end; justify-content: center;
-    min-width: 44px; min-height: 44px; padding: 2px; border: 0; background: transparent; border-radius: var(--radius-md);
-    pointer-events: none;
-  }
-  .plant-spot.plant-corridor { bottom: auto; top: 50%; right: 14px; transform: translateY(-50%); }
-  .plant-spot.tend { pointer-events: auto; cursor: pointer; transition: transform var(--dur) var(--ease-out); }
-  .plant-spot.tend:hover { transform: translateY(-2px) rotate(3deg) scale(1.08); }
-  .plant-spot.plant-corridor.tend:hover { transform: translateY(calc(-50% - 2px)) rotate(3deg) scale(1.08); }
-  .plant-spot.tend:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
   .room:hover { background: var(--color-surface); }
   .room:focus-visible { outline: 3px solid var(--color-sky); outline-offset: -7px; }
   .room.mine, .room.mine:hover { background: var(--color-blue-100); cursor: default; }
@@ -182,17 +191,71 @@
   .room.pending { cursor: progress; }
   .room.pending .count { color: var(--color-blue-500); }
 
-  .door { position: absolute; left: 28px; width: 48px; height: var(--wall); background: var(--color-white); }
-  :global(.row.top) .door { bottom: calc(-1 * var(--wall)); }
-  :global(.row.bottom) .door { top: calc(-1 * var(--wall)); }
-  .arc { position: absolute; left: 28px; fill: none; stroke: var(--color-blue-300); stroke-width: 1.5; }
-  :global(.row.top) .arc { bottom: 0; }
-  :global(.row.bottom) .arc { top: 0; }
-  :global(.row.bottom) .room { padding-top: 56px; }
+  /* Rooms (design "Grundriss: Flurseite"): a 48 px door strip on the corridor side holds the plant behind the door,
+     the door and, right-aligned, the board and the door plate; the people fill the rest from the far wall.
+     Upper row: corridor side below; lower row (.lower): mirrored. */
+  .room.room { padding: 12px 14px calc(var(--door-strip) + 8px); gap: 0; }
+  .lower .room.room { padding: calc(var(--door-strip) + 8px) 14px 12px; }
+  .door { position: absolute; left: 34px; bottom: calc(-1 * var(--wall)); z-index: 2; overflow: visible; }
+  .lower .door { bottom: auto; top: calc(-1 * var(--wall)); transform: scaleY(-1); }
+  .door .opening { fill: var(--color-white); }
+  .door .leaf { stroke: var(--color-blue-300); stroke-width: 2; }
+  .door .swing { stroke: var(--color-blue-300); stroke-width: 1.5; }
+  .room.room .people { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px 3px; overflow: hidden; }
+  .more { display: flex; flex-direction: column; align-items: center; width: 60px; height: 63px; }
+  .more-tile {
+    width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--color-blue-50); color: var(--color-navy); font-size: 14px; font-weight: 700;
+  }
+  .plate {
+    position: absolute; right: 14px; bottom: 8px; max-width: calc(100% - 14px - 90px);
+    display: flex; flex-direction: column; align-items: flex-end; text-align: right; line-height: 1.25;
+  }
+  .lower .plate { bottom: auto; top: 8px; }
+  .room.room .title { gap: 6px; flex-wrap: nowrap; max-width: 100%; font-size: 15px; }
+  .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .room.room .count { margin-top: 1px; font-size: 12px; color: var(--color-blue-700); }
+  .mini-count { display: none; align-items: center; gap: 2px; flex: none; font-size: 12px; font-weight: 700; color: var(--color-blue-700); }
+  /* narrow rooms: the count moves behind the name, the board gets smaller */
+  @container (max-width: 220px) {
+    .room.room .count { display: none; }
+    .mini-count { display: inline-flex; }
+  }
+  @container (max-width: 170px) {
+    .notes.toggle :global(svg) { width: 20px; height: 16px; }
+  }
+
+  /* board toggle without a box: only the notes, on hover they lift slightly. In a room left of the door plate
+     (its right offset comes from the plate's width), in the open floor top right */
+  .notes.toggle {
+    position: absolute; top: 12px; right: 12px; border: 0; background: transparent; padding: 4px; margin: -4px; border-radius: var(--radius-md);
+    min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: transform var(--dur) var(--ease-out);
+  }
+  .wrap-room .notes.toggle { top: auto; bottom: 2px; min-width: 40px; min-height: 40px; }
+  .wrap-room.lower .notes.toggle { bottom: auto; top: 2px; }
+  .wrap-room .notes.toggle :global(svg) { width: 34px; height: 24px; }
+  .notes.toggle:hover { transform: translateY(-2px) rotate(-2deg) scale(1.06); }
+  .notes.toggle:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
+
+  /* plant (care, ADR-0014): in a room behind the door in the door strip, bottom right in an open floor, at the
+     right end of the corridor */
+  .plant-spot {
+    position: absolute; right: 10px; bottom: 8px; display: flex; align-items: flex-end; justify-content: center;
+    min-width: 44px; min-height: 44px; padding: 2px; border: 0; background: transparent; border-radius: var(--radius-md);
+    pointer-events: none;
+  }
+  .plant-spot.plant-room { left: 4px; right: auto; bottom: 8px; min-width: 30px; min-height: 32px; width: 30px; height: 32px; padding: 0; align-items: center; }
+  .lower .plant-spot.plant-room { bottom: auto; top: 8px; }
+  .plant-spot.plant-corridor { bottom: auto; top: 50%; right: 14px; transform: translateY(-50%); }
+  .plant-spot.tend { pointer-events: auto; cursor: pointer; transition: transform var(--dur) var(--ease-out); }
+  .plant-spot.tend:hover { transform: translateY(-2px) rotate(3deg) scale(1.08); }
+  .plant-spot.plant-corridor.tend:hover { transform: translateY(calc(-50% - 2px)) rotate(3deg) scale(1.08); }
+  .plant-spot.tend:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
 
   .title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; font-weight: 700; }
-  .icon { display: inline-flex; color: var(--color-blue-500); }
-  .rec { font-size: 12px; font-weight: 700; color: var(--color-alert); }
+  .icon { display: inline-flex; flex: none; color: var(--color-blue-500); }
+  .rec { font-size: 12px; font-weight: 700; color: var(--color-alert); white-space: nowrap; }
   .count { font-size: 13px; color: var(--color-blue-700); display: block; margin-top: 4px; }
   .people { display: flex; flex-wrap: wrap; gap: 12px; }
 
