@@ -234,6 +234,10 @@ export type BoardView = z.infer<typeof BoardView>;
 
 const count = z.number().int().min(0);
 
+/** "delete posts older than" in room care: 7 and 14 days, 1, 3 and 6 months (in days) */
+export const PRUNE_DAYS = [7, 14, 30, 90, 180] as const;
+const time = z.number().int();
+
 /** GET /api/care/rooms/:id: what a room's board holds */
 export const RoomCare = z.object({
   channelId,
@@ -241,6 +245,13 @@ export const RoomCare = z.object({
   posts: count,
   /** size of the attachments in bytes */
   bytes: count,
+  /** creation time of the newest and the oldest post, null without posts */
+  newest: time.nullable(),
+  oldest: time.nullable(),
+  /** posts are deleted automatically after this many days */
+  retentionDays: z.number().int().min(1),
+  /** per choice of PRUNE_DAYS: how many posts are older */
+  olderThan: z.array(z.object({ days: z.number().int(), posts: count })),
 });
 export type RoomCare = z.infer<typeof RoomCare>;
 
@@ -256,8 +267,30 @@ export const OrphanedRoom = z.object({
 });
 export type OrphanedRoom = z.infer<typeof OrphanedRoom>;
 
-/** GET /api/care/floors/:id: rooms of this floor that are gone but still hold data */
-export const FloorCare = z.object({ channelId, name: z.string(), orphans: z.array(OrphanedRoom) });
+/** a room of the floor in the overview */
+export const RoomSummary = z.object({ channelId, name: z.string(), posts: count, bytes: count, newest: time.nullable() });
+export type RoomSummary = z.infer<typeof RoomSummary>;
+
+/** a room whose board may be moved to this floor: any room in the database the user may tend */
+export const TransferSource = z.object({
+  channelId,
+  name: z.string(),
+  /** its floor (current, else last known); empty if not known */
+  floorName: z.string(),
+  posts: count,
+  /** the room no longer exists as a room */
+  gone: z.boolean(),
+});
+export type TransferSource = z.infer<typeof TransferSource>;
+
+/** GET /api/care/floors/:id: the floor's rooms, rooms that are gone but still hold data, boards that can be moved here */
+export const FloorCare = z.object({
+  channelId,
+  name: z.string(),
+  rooms: z.array(RoomSummary),
+  orphans: z.array(OrphanedRoom),
+  sources: z.array(TransferSource),
+});
 export type FloorCare = z.infer<typeof FloorCare>;
 
 /** a floor that is gone, with the data of its rooms; `channelId` null: rooms whose floor is not known */
@@ -271,8 +304,20 @@ export const OrphanedFloor = z.object({
 });
 export type OrphanedFloor = z.infer<typeof OrphanedFloor>;
 
-/** GET /api/care/building: floors that are gone but still hold data, and every learned ticket link (one per project, building-wide) */
-export const BuildingCare = z.object({ orphans: z.array(OrphanedFloor), tickets: TicketLinksSchema });
+/** a floor in the storage overview: rooms with posts, posts, attachment size */
+export const FloorSummary = z.object({ channelId, name: z.string(), rooms: count, posts: count, bytes: count });
+export type FloorSummary = z.infer<typeof FloorSummary>;
+
+/**
+ * GET /api/care/building: storage use, the floors, floors that are gone but still hold data, and every learned ticket
+ * link (one per project, building-wide)
+ */
+export const BuildingCare = z.object({
+  storage: z.object({ usedBytes: count, quotaBytes: count, retentionDays: z.number().int().min(1) }),
+  floors: z.array(FloorSummary),
+  orphans: z.array(OrphanedFloor),
+  tickets: TicketLinksSchema,
+});
 export type BuildingCare = z.infer<typeof BuildingCare>;
 
 /** POST /api/care/floors/:id/cleanup: remove these rooms (as shown) with all their data */
@@ -280,12 +325,38 @@ export const FloorCleanup = z.object({ rooms: z.array(channelId).min(1).max(1000
 /** POST /api/care/building/cleanup: remove these floors (as shown) with all their data */
 export const BuildingCleanup = z.object({ floors: z.array(channelId.nullable()).min(1).max(1000) });
 
+/** POST /api/care/rooms/:id/prune: delete the posts older than this many days */
+export const RoomPrune = z.object({ days: z.union(PRUNE_DAYS.map((d) => z.literal(d))) });
+/** POST /api/care/floors/:id/transfer: move the board of room `from` (anywhere) to room `to` on this floor */
+export const FloorTransfer = z.object({ from: channelId, to: channelId });
+
 /** POST /api/care/building/tickets/forget: forget the learned links of these projects */
 export const TicketsForget = z.object({ projects: z.array(z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/)).min(1).max(1000) });
 
-/** answer to a care action: number of posts removed */
+/** answer to a care action: number of posts removed or moved */
 export const CareDone = z.object({ posts: count });
 export type CareDone = z.infer<typeof CareDone>;
+
+// ---------------------------------------------------------------- Key cabinet (ADR-0015, REST under /api/keys)
+
+/** a paired browser ("key"); `id` names it without revealing the token */
+export const DeviceKey = z.object({
+  id: z.string().regex(/^[0-9a-f]{16}$/),
+  /** coarse description from the browser, e.g. "Firefox on Linux"; empty if not known */
+  device: z.string().max(80),
+  created: time,
+  lastUsed: time.nullable(),
+  /** the browser asking */
+  current: z.boolean(),
+});
+export type DeviceKey = z.infer<typeof DeviceKey>;
+
+/** GET /api/keys: the own keys; for admins (Write on the root channel) also everyone else's, by person */
+export const KeyCabinet = z.object({
+  mine: z.array(DeviceKey),
+  others: z.array(z.object({ name: z.string(), keys: z.array(DeviceKey) })).nullable(),
+});
+export type KeyCabinet = z.infer<typeof KeyCabinet>;
 
 /** POST /api/board/posts/:id/copy: copy a post of the own room to another room the user may enter */
 export const CopyRequest = z.object({ channelId });

@@ -2,7 +2,7 @@
  * State of the web UI: holds the latest snapshot, derives the building and runs commands.
  * No optimistic switching: the own channel only changes with the next snapshot (ADR-0003).
  */
-import { BOARD_LIMITS, type Attachment, type BoardView, type BuildingCare, type FloorCare, type RoomCare, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_LIMITS, type Attachment, type BoardView, type BuildingCare, type FloorCare, type KeyCabinet, type RoomCare, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairErrorCode, PluginStatus } from "./adapter/types.ts";
 import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter, type CopyTarget } from "./board/model.ts";
 import { t } from "./i18n/index.svelte.ts";
@@ -62,6 +62,13 @@ export class RuumbleState {
   careBusy = $state(false);
   careMessage = $state<string | null>(null);
   careError = $state<BoardErrorCode | null>(null);
+  /** care levels opened from an overview (building → floor → room), for "back" */
+  careTrail = $state<CareTarget[]>([]);
+  /** key cabinet (ADR-0015): open, what the service reported, a running revoke, its error */
+  keysOpen = $state(false);
+  keys = $state<KeyCabinet | null>(null);
+  keysBusy = $state(false);
+  keysError = $state<BoardErrorCode | null>(null);
   private boardChannel: number | null = null;
   private boardSeen = readSeen();
 
@@ -108,7 +115,10 @@ export class RuumbleState {
         this.preview = preview;
         this.connection = "connected";
       },
-      connection: (state) => (this.connection = state),
+      connection: (state) => {
+        this.connection = state;
+        if (state === "unpaired") this.closeKeys(); // e.g. this browser's key was just revoked
+      },
       // also while closed: the toggle shows posts the user has not seen yet
       board: (channelId) => {
         if (this.me?.channel === channelId) void this.loadBoard();
@@ -310,7 +320,9 @@ export class RuumbleState {
 
   // ---------------------------------------------------------------- Care (ADR-0014)
 
-  async openCare(target: CareTarget): Promise<void> {
+  /** `from`: opened from an overview line, "back" returns there */
+  async openCare(target: CareTarget, from = false): Promise<void> {
+    this.careTrail = from && this.care ? [...this.careTrail, this.care] : [];
     this.care = target;
     this.careView = null;
     this.careMessage = null;
@@ -321,6 +333,15 @@ export class RuumbleState {
   closeCare(): void {
     this.care = null;
     this.careView = null;
+    this.careTrail = [];
+  }
+
+  async careBack(): Promise<void> {
+    const trail = this.careTrail;
+    const previous = trail.at(-1);
+    if (!previous) return;
+    await this.openCare(previous);
+    this.careTrail = trail.slice(0, -1);
   }
 
   private async loadCare(): Promise<void> {
@@ -364,12 +385,71 @@ export class RuumbleState {
     return this.careAction(() => this.adapter.care.forgetTickets(projects), () => t().care.ticketsForgotten(projects.length));
   }
 
+  pruneRoom(days: number): Promise<boolean> {
+    const target = this.care;
+    if (target?.kind !== "room") return Promise.resolve(false);
+    return this.careAction(() => this.adapter.care.pruneRoom(target.channelId, days), (v) => t().care.pruned(t().care.posts(v.posts)));
+  }
+
+  /** the board as a file: the browser saves it */
+  exportRoom(): Promise<boolean> {
+    const target = this.care;
+    if (target?.kind !== "room") return Promise.resolve(false);
+    return this.careAction(async () => {
+      const r = await this.adapter.care.exportRoom(target.channelId);
+      if (r.ok) saveFile(r.value.blob, r.value.name);
+      return r;
+    }, (v) => t().care.exported(v.name));
+  }
+
+  /** floor care: move the board of room `from` to room `to` on this floor */
+  transferBoard(from: number, to: number): Promise<boolean> {
+    const target = this.care;
+    if (target?.kind !== "floor") return Promise.resolve(false);
+    return this.careAction(() => this.adapter.care.transfer(target.channelId, from, to), (v) => t().care.transferred(t().care.posts(v.posts)));
+  }
+
   /** floor: rooms that are gone; building: floors that are gone (null: unknown floor) */
   removeOrphans(ids: (number | null)[]): Promise<boolean> {
     const target = this.care;
     if (!target || target.kind === "room" || !ids.length) return Promise.resolve(false);
     const run = target.kind === "floor" ? () => this.adapter.care.cleanFloor(target.channelId, ids.filter((id) => id !== null)) : () => this.adapter.care.cleanBuilding(ids);
     return this.careAction(run, (v) => t().care.removed(t().care.posts(v.posts)));
+  }
+
+  // ---------------------------------------------------------------- Key cabinet (ADR-0015)
+
+  async openKeys(): Promise<void> {
+    this.keysOpen = true;
+    this.keys = null;
+    this.keysError = null;
+    await this.loadKeys();
+  }
+
+  closeKeys(): void {
+    this.keysOpen = false;
+    this.keys = null;
+  }
+
+  private async loadKeys(): Promise<void> {
+    const r = await this.adapter.keys.list();
+    if (!this.keysOpen) return;
+    if (r.ok) this.keys = r.value;
+    else this.keysError = r.error;
+  }
+
+  /** revoking this browser's key unpairs it: the connection reports "unpaired" */
+  async revokeKey(id: string): Promise<boolean> {
+    this.keysBusy = true;
+    this.keysError = null;
+    const r = await this.adapter.keys.revoke(id);
+    this.keysBusy = false;
+    if (!r.ok) {
+      this.keysError = r.error;
+      return false;
+    }
+    await this.loadKeys();
+    return true;
   }
 
   dismissNotice(): void {
@@ -410,6 +490,18 @@ export class RuumbleState {
   private onTalking(session: number, state: TalkingState): void {
     this.talking = { ...this.talking, [session]: state !== "passive" };
   }
+}
+
+/** hand a file to the browser to save */
+function saveFile(blob: Blob, name: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 function wrap<K extends CareView["kind"]>(kind: K, r: BoardResult<Extract<CareView, { kind: K }>["value"]>): BoardResult<CareView> {

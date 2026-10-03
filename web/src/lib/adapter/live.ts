@@ -2,8 +2,8 @@
  * LiveAdapter: WebSocket to the Ruumble service (`/ws/ui`, ADR-0007).
  * Reconnects with increasing delay after a drop. Results are matched to commands by ID.
  */
-import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
-import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, BoardResult, MumbleAdapter, PairApi, PairResult } from "./types.ts";
+import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, KeyCabinet, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, KeysApi, BoardResult, MumbleAdapter, PairApi, PairResult } from "./types.ts";
 
 /** REST of the board; the pairing cookie is sent automatically (same-origin) */
 async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit = {}): Promise<BoardResult<T>> {
@@ -40,12 +40,36 @@ const liveBoard: BoardApi = {
 const liveCare: CareApi = {
   room: (id) => call(RoomCare, `/api/care/rooms/${id}`),
   clearRoom: (id) => call(CareDone, `/api/care/rooms/${id}/posts`, { method: "DELETE" }),
+  pruneRoom: (id, days) => call(CareDone, `/api/care/rooms/${id}/prune`, { method: "POST", body: JSON.stringify({ days }) }),
+  exportRoom: (id) => download(`/api/care/rooms/${id}/export`),
   floor: (id) => call(FloorCare, `/api/care/floors/${id}`),
   cleanFloor: (id, rooms) => call(CareDone, `/api/care/floors/${id}/cleanup`, { method: "POST", body: JSON.stringify({ rooms }) }),
+  transfer: (id, from, to) => call(CareDone, `/api/care/floors/${id}/transfer`, { method: "POST", body: JSON.stringify({ from, to }) }),
   building: () => call(BuildingCare, "/api/care/building"),
   cleanBuilding: (floors) => call(CareDone, "/api/care/building/cleanup", { method: "POST", body: JSON.stringify({ floors }) }),
   forgetTickets: (projects) => call<true>(null, "/api/care/building/tickets/forget", { method: "POST", body: JSON.stringify({ projects }) }),
 };
+
+const liveKeys: KeysApi = {
+  list: () => call(KeyCabinet, "/api/keys"),
+  revoke: (id) => call<true>(null, `/api/keys/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};
+
+/** a file from the service (export): the content and the name from Content-Disposition */
+async function download(url: string): Promise<BoardResult<{ blob: Blob; name: string }>> {
+  let res: Response;
+  try {
+    res = await fetch(url, { credentials: "same-origin" });
+  } catch {
+    return { ok: false, error: "offline" };
+  }
+  if (!res.ok) {
+    const known = BoardError.safeParse(await res.json().catch(() => null));
+    return { ok: false, error: known.success ? known.data.error : (STATUS_ERROR[res.status] ?? "invalid") };
+  }
+  const encoded = /filename\*=UTF-8''([^;]+)/.exec(res.headers.get("content-disposition") ?? "")?.[1];
+  return { ok: true, value: { blob: await res.blob(), name: encoded ? decodeURIComponent(encoded) : "board.zip" } };
+}
 
 /** Errors that Fastify reports itself (e.g. body too large) have no code of their own */
 const STATUS_ERROR: Record<number, BoardErrorCode> = { 401: "not-paired", 403: "not-in-room", 404: "no-board-here", 413: "too-large", 415: "bad-type", 429: "rate-limited" };
@@ -103,6 +127,7 @@ export class LiveAdapter implements MumbleAdapter {
   private nextId = 1;
   readonly board: BoardApi = liveBoard;
   readonly care: CareApi = liveCare;
+  readonly keys: KeysApi = liveKeys;
   readonly pairing: PairApi = {
     request: async () => {
       const r = await pairCall("/api/pair/request");

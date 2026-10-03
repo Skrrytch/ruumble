@@ -2,17 +2,35 @@
  * Pairing web UI ↔ plugin (ADR-0004): one-time link (60 s) → long-lived device token, bound to the
  * certificate hash. Only the SHA-256 of the token is stored.
  * Further browsers: 6-digit code in the Mumble log, entered on the page (ADR-0012).
+ * Key cabinet (ADR-0015): every token ("key") also has a coarse device label and when it was last used.
  */
 import { createHash, randomBytes, randomInt } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { Locale } from "@ruumble/protocol";
+import type { DeviceKey, Locale } from "@ruumble/protocol";
 
 interface TokenEntry {
   certHash: string;
   name: string;
   created: string;
+  /** "Firefox on Linux", from the User-Agent at pairing or first use (ADR-0015) */
+  device?: string;
+  lastUsed?: string;
 }
+
+/** "last used" is written at most this often per key, so connecting does not rewrite the file every time */
+const TOUCH_INTERVAL_MS = 60 * 60_000;
+
+/** coarse, privacy-friendly description of a browser: browser family and operating system, no versions */
+export function deviceLabel(userAgent: string | undefined): string {
+  const ua = userAgent ?? "";
+  const browser = /Edg\//.test(ua) ? "Edge" : /OPR\/|Opera/.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "";
+  const os = /Android/.test(ua) ? "Android" : /iPhone|iPad|iPod/.test(ua) ? "iOS" : /Windows/.test(ua) ? "Windows" : /Mac OS X|Macintosh/.test(ua) ? "macOS" : /CrOS/.test(ua) ? "ChromeOS" : /Linux/.test(ua) ? "Linux" : "";
+  return browser && os ? `${browser} on ${os}` : browser || os;
+}
+
+/** the public name of a key: the start of its stored hash (the token itself cannot be derived from it) */
+const keyId = (hash: string) => hash.slice(0, 16);
 
 /** a request for codes (ADR-0012): one code per matching plugin */
 interface CodeRequest {
@@ -68,11 +86,11 @@ export class Pairing {
   }
 
   /** exchange a one-time code for a device token; `null` if unknown or expired */
-  redeem(code: string, now = Date.now()): string | null {
+  redeem(code: string, now = Date.now(), userAgent?: string): string | null {
     const entry = this.codes.get(code);
     this.codes.delete(code);
     if (!entry || entry.expires < now) return null;
-    return this.issue(entry.certHash, entry.name, now);
+    return this.issue(entry.certHash, entry.name, now, userAgent);
   }
 
   /**
@@ -102,7 +120,7 @@ export class Pairing {
   }
 
   /** code entered on the page → device token; after 5 wrong attempts the request is void */
-  confirmCode(request: string, code: string, now = Date.now()): string | "wrong-code" | "expired" {
+  confirmCode(request: string, code: string, now = Date.now(), userAgent?: string): string | "wrong-code" | "expired" {
     const r = this.requests.get(request);
     if (!r || r.expires < now) {
       this.requests.delete(request);
@@ -116,14 +134,57 @@ export class Pairing {
       return "expired";
     }
     this.requests.delete(request);
-    return this.issue(target.certHash, target.name, now);
+    return this.issue(target.certHash, target.name, now, userAgent);
   }
 
-  private issue(certHash: string, name: string, now: number): string {
+  private issue(certHash: string, name: string, now: number, userAgent?: string): string {
     const token = randomBytes(32).toString("base64url");
-    this.tokens[sha256(token)] = { certHash, name, created: new Date(now).toISOString() };
+    const at = new Date(now).toISOString();
+    this.tokens[sha256(token)] = { certHash, name, created: at, device: deviceLabel(userAgent), lastUsed: at };
     this.save();
     return token;
+  }
+
+  /** a web UI connected with this token: note when, and the device if not known yet (keys from before ADR-0015) */
+  touch(token: string | undefined, userAgent: string | undefined, now = Date.now()): void {
+    const entry = token ? this.tokens[sha256(token)] : undefined;
+    if (!entry) return;
+    const device = entry.device || deviceLabel(userAgent);
+    const stale = !entry.lastUsed || now - Date.parse(entry.lastUsed) >= TOUCH_INTERVAL_MS;
+    if (!stale && device === entry.device) return;
+    entry.device = device;
+    if (stale) entry.lastUsed = new Date(now).toISOString();
+    this.save();
+  }
+
+  /** public name of the key behind a token, null if unknown */
+  keyIdOf(token: string | undefined): string | null {
+    if (!token) return null;
+    const hash = sha256(token);
+    return this.tokens[hash] ? keyId(hash) : null;
+  }
+
+  /** every key, grouped by person (certificate hash), newest first; `current`: the key of the asking browser */
+  keys(current: string | null = null): { certHash: string; name: string; keys: DeviceKey[] }[] {
+    const holders = new Map<string, { certHash: string; name: string; keys: DeviceKey[]; latest: string }>();
+    for (const [hash, e] of Object.entries(this.tokens)) {
+      const h = holders.get(e.certHash) ?? { certHash: e.certHash, name: e.name, keys: [], latest: "" };
+      if (e.created > h.latest) Object.assign(h, { name: e.name, latest: e.created }); // the name at the latest pairing
+      const id = keyId(hash);
+      h.keys.push({ id, device: e.device ?? "", created: Date.parse(e.created), lastUsed: e.lastUsed ? Date.parse(e.lastUsed) : null, current: id === current });
+      holders.set(e.certHash, h);
+    }
+    return [...holders.values()].map(({ latest: _latest, ...h }) => ({ ...h, keys: h.keys.sort((a, b) => b.created - a.created) }));
+  }
+
+  /** revoke a key by its public name; returns the certificate hash it belonged to, null if unknown */
+  revokeKey(id: string): string | null {
+    const hash = Object.keys(this.tokens).find((h) => keyId(h) === id);
+    if (!hash) return null;
+    const { certHash } = this.tokens[hash]!;
+    delete this.tokens[hash];
+    this.save();
+    return certHash;
   }
 
   certHashOf(token: string | undefined): string | null {

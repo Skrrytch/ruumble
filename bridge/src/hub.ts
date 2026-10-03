@@ -68,6 +68,8 @@ const MAX_COMMANDS_PER_SECOND = 5;
 interface UiEntry {
   conn: Conn<BridgeToUi>;
   certHash: string | null;
+  /** public name of the device token it connected with (key cabinet, ADR-0015) */
+  keyId: string | null;
   commandTimes: number[];
 }
 
@@ -117,6 +119,21 @@ export class Hub {
     return !!this.state?.channels.some((c) => c.id === channelId && c.parent === 0);
   }
 
+  /** floors (children of the root channel) with their rooms that can have a board, in Mumble's order */
+  floorPlan(): { id: number; name: string; rooms: { id: number; name: string }[] }[] {
+    const channels = this.state?.channels ?? [];
+    const order = (a: { position: number; name: string }, b: { position: number; name: string }) => a.position - b.position || a.name.localeCompare(b.name, "de");
+    return channels
+      .filter((c) => c.parent === 0)
+      .sort(order)
+      .map((f) => ({ id: f.id, name: f.name, rooms: channels.filter((c) => c.parent === f.id && !c.temporary).sort(order).map((r) => ({ id: r.id, name: r.name })) }));
+  }
+
+  /** current floor of a room with a board, null otherwise */
+  floorOf(channelId: number): number | null {
+    return this.isBoardRoom(channelId) ? (this.state?.channels.find((c) => c.id === channelId)?.parent ?? null) : null;
+  }
+
   /** may this user enter the channel (Mumble ACLs, as for moving); unknown counts as yes, like in the snapshot */
   mayEnter(session: number, channelId: number): boolean {
     return this.state?.canEnter.get(session)?.[String(channelId)] !== false;
@@ -164,6 +181,11 @@ export class Hub {
   /** May this web UI see images and data? (paired or preview, ADR-0004) */
   canView(certHash: string | null): boolean {
     return certHash !== null || this.opts.preview;
+  }
+
+  /** a key was revoked: web UIs connected with it become unpaired (ADR-0015) */
+  keyRevoked(keyId: string): void {
+    for (const ui of [...this.uis]) if (ui.keyId === keyId) ui.conn.close(4401, "not-paired");
   }
 
   /** Virtual server restarted: sessions are reassigned, plugins register again (S2). */
@@ -279,13 +301,13 @@ export class Hub {
 
   // ---------------------------------------------------------------- Web UI
 
-  /** `certHash = null`: unpaired (only allowed in preview) */
-  uiConnected(conn: Conn<BridgeToUi>, certHash: string | null) {
+  /** `certHash = null`: unpaired (only allowed in preview); `keyId`: the device token's public name */
+  uiConnected(conn: Conn<BridgeToUi>, certHash: string | null, keyId: string | null = null) {
     if (!certHash && !this.opts.preview) {
       conn.close(4401, "not-paired");
       return { onMessage: () => {}, onClose: () => {} };
     }
-    const ui: UiEntry = { conn, certHash, commandTimes: [] };
+    const ui: UiEntry = { conn, certHash, keyId, commandTimes: [] };
     this.uis.add(ui);
     const plugin = certHash ? this.plugins.get(certHash) : undefined;
     conn.send({ v, type: "status", plugin: plugin ? "connected" : "disconnected", ...(certHash ? {} : { preview: true }) });

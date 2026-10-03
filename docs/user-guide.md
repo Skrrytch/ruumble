@@ -63,8 +63,9 @@ The plugin's messages in the Mumble log follow the system language (Linux: `LC_A
 - **Links** show a short form, e.g. "PR #13 · ruumble" or "TAG-1366" instead of the long URL; the full address is in the tooltip. Links in code and logs are clickable too, and the card lists them below the code.
 - **Ticket keys** such as `TAG-1366` become links to Jira by themselves, once anyone on the server has posted a full link to an issue of that project (e.g. `https://jira.example.com/browse/TAG-1`). Nothing needs to be set up.
 - **Search and filter** in the header of the board.
-- Posts are kept for 30 days.
-- The **plant** in a room, at the end of the corridor and at the entrance (in the elevator) is for Mumble admins: it opens room, floor or building care, e.g. to clear a board (room), remove the data of rooms that no longer exist (floor) or reset a wrong ticket link (building, at the entrance). For everyone else it is just a plant.
+- Posts are kept for one year (unless your admin set something else).
+- The **plant** in a room, at the end of the corridor and at the entrance (in the elevator) is for Mumble admins: it opens room, floor or building care, e.g. to delete old posts, clear or export a board (room), see all rooms or move a board to a recreated room (floor), or check the storage and reset a wrong ticket link (building, at the entrance). For everyone else it is just a plant.
+- The **key cabinet** next to the plant at the entrance lists your paired browsers ("keys"). Revoke one you no longer use or have lost; that browser then has to be paired again.
 
 ## Questions and problems
 

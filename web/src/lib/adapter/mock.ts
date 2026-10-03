@@ -7,12 +7,12 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, REACTION_KINDS, learnTicketLinks, setTask, ticketProjects, type Attachment, type OrphanedFloor, type OrphanedRoom, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, PRUNE_DAYS, REACTION_KINDS, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
 import vacant from "@ruumble/protocol/fixtures/vacant.json";
-import type { AdapterEvents, BoardApi, BoardResult, CareApi, MumbleAdapter, PairApi, PluginStatus } from "./types.ts";
+import type { AdapterEvents, BoardApi, BoardResult, CareApi, KeysApi, MumbleAdapter, PairApi, PluginStatus } from "./types.ts";
 
 const MINUTE = 60_000;
 
@@ -104,7 +104,8 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
       post({ id: "m2", channelId: 3, kind: "text", authorName: "Anna", mine: true, canDelete: true, createdAt: now - 60 * MINUTE, updatedAt: now - 30 * MINUTE, updatedByName: "Ben", text: notes,
         reactions: [{ kind: "done", count: 1, names: ["Ben"], mine: false }] }),
     ]],
-    [7, [post({ id: "m3", channelId: 7, kind: "text", authorName: "Clara", text: "In a customer call from 2 pm." })]],
+    // older than two weeks: something for "delete old posts" in room care
+    [7, [post({ id: "m3", channelId: 7, kind: "text", authorName: "Clara", createdAt: now - 20 * 24 * 60 * MINUTE, updatedAt: now - 20 * 24 * 60 * MINUTE, text: "In a customer call from 2 pm." })]],
   ]);
 }
 
@@ -117,6 +118,25 @@ function sampleOrphans(now: number): { floorId: number | null; floorName: string
     { floorId: 40, floorName: "Marketing", room: { channelId: 42, name: "Events", posts: 2, bytes: 0, goneSince: now - 5 * 24 * 60 * MINUTE } },
     { floorId: null, floorName: "", room: { channelId: 50, name: "", posts: 1, bytes: 0, goneSince: now - 24 * 60 * MINUTE } },
   ];
+}
+
+const DAY = 24 * 60 * MINUTE;
+/** retention and quota as the service reports them (defaults) */
+const MOCK_RETENTION_DAYS = 365;
+const MOCK_QUOTA_BYTES = 2048 * 1024 * 1024;
+
+/** paired browsers (key cabinet, ADR-0015): the own ones (first: this browser) and others' */
+function sampleKeys(now: number): { mine: DeviceKey[]; others: KeyCabinet["others"] } {
+  const key = (id: string, device: string, createdDays: number, usedDays: number | null, current = false): DeviceKey => ({
+    id: id.padEnd(16, "0"), device, created: now - createdDays * DAY, lastUsed: usedDays === null ? null : now - usedDays * DAY, current,
+  });
+  return {
+    mine: [key("a1", "Firefox on Linux", 40, 0, true), key("a2", "Safari on iOS", 12, 3), key("a3", "", 200, null)],
+    others: [
+      { name: "Ben", keys: [key("b1", "Chrome on Windows", 30, 0)] },
+      { name: "Clara", keys: [key("c1", "Edge on Windows", 90, 1), key("c2", "Chrome on Android", 5, 5)] },
+    ],
+  };
 }
 
 export const FIXTURES = {
@@ -162,11 +182,40 @@ export class MockAdapter implements MumbleAdapter {
   private orphans = sampleOrphans(Date.now());
   /** projects whose learned link was reset (care); a newer post teaches it again */
   private forgotten = new Map<string, number>();
+  private keyring = sampleKeys(Date.now());
+  readonly keys: KeysApi = {
+    list: async () => {
+      if (!this.me()) return { ok: false, error: "not-paired" };
+      return { ok: true, value: { mine: this.keyring.mine, others: this.state.care?.includes(0) ? this.keyring.others : null } };
+    },
+    revoke: async (id) => {
+      if (!this.me()) return { ok: false, error: "not-paired" };
+      const current = this.keyring.mine.find((k) => k.id === id)?.current;
+      const isMine = this.keyring.mine.some((k) => k.id === id);
+      if (!isMine && !this.state.care?.includes(0)) return { ok: false, error: "forbidden" };
+      this.keyring = {
+        mine: this.keyring.mine.filter((k) => k.id !== id),
+        others: (this.keyring.others ?? []).map((h) => ({ ...h, keys: h.keys.filter((k) => k.id !== id) })).filter((h) => h.keys.length > 0),
+      };
+      // like the service: revoking this browser's key unpairs it
+      if (current) {
+        this.paired = false;
+        setTimeout(() => this.events?.connection("unpaired"), 0);
+      }
+      return { ok: true, value: true as const };
+    },
+  };
   readonly care: CareApi = {
     room: async (id) =>
       this.caretaker(id, () => {
         const posts = this.posts.get(id) ?? [];
-        return { channelId: id, name: this.channelName(id), posts: posts.length, bytes: posts.reduce((n, p) => n + (p.attachment?.size ?? 0), 0) };
+        const times = posts.map((p) => p.createdAt).sort((a, b) => a - b);
+        const now = Date.now();
+        return {
+          channelId: id, name: this.channelName(id), posts: posts.length, bytes: posts.reduce((n, p) => n + (p.attachment?.size ?? 0), 0),
+          newest: times.at(-1) ?? null, oldest: times[0] ?? null, retentionDays: MOCK_RETENTION_DAYS,
+          olderThan: PRUNE_DAYS.map((days) => ({ days, posts: times.filter((t) => t < now - days * DAY).length })),
+        };
       }, this.isRoom(id)),
     clearRoom: async (id) =>
       this.caretaker(id, () => {
@@ -176,8 +225,48 @@ export class MockAdapter implements MumbleAdapter {
         if (posts) this.boardChanged(id);
         return { posts };
       }, this.isRoom(id)),
+    pruneRoom: async (id, days) =>
+      this.caretaker(id, () => {
+        const list = this.posts.get(id) ?? [];
+        const keep = list.filter((p) => p.createdAt >= Date.now() - days * DAY);
+        this.posts.set(id, keep);
+        if (keep.length !== list.length) this.boardChanged(id);
+        return { posts: list.length - keep.length };
+      }, this.isRoom(id)),
+    exportRoom: async (id) =>
+      // the mock has no ZIP: the board as Markdown is enough to see the download
+      this.caretaker(id, () => {
+        const posts = [...(this.posts.get(id) ?? [])].sort((a, b) => a.createdAt - b.createdAt);
+        const md = [`# Board of "${this.channelName(id)}"`, "", ...posts.flatMap((p) => ["---", "", `## ${p.authorName} · ${new Date(p.createdAt).toISOString()}`, "", p.text, ""])].join("\n");
+        return { blob: new Blob([md], { type: "text/markdown" }), name: `board-${this.channelName(id).replace(/[^\p{L}\p{N}._-]+/gu, "-")}.md` };
+      }, this.isRoom(id)),
     floor: async (id) =>
-      this.caretaker(id, () => ({ channelId: id, name: this.channelName(id), orphans: this.orphans.filter((o) => o.floorId === id).map((o) => o.room) }), this.isFloor(id)),
+      this.caretaker(id, () => ({
+        channelId: id,
+        name: this.channelName(id),
+        rooms: this.roomsOf(id).map((c) => {
+          const posts = this.posts.get(c.id) ?? [];
+          return { channelId: c.id, name: c.name, posts: posts.length, bytes: posts.reduce((n, p) => n + (p.attachment?.size ?? 0), 0), newest: posts.length ? Math.max(...posts.map((p) => p.createdAt)) : null };
+        }),
+        orphans: this.orphans.filter((o) => o.floorId === id).map((o) => o.room),
+        sources: this.transferSources(),
+      }), this.isFloor(id)),
+    transfer: async (id, from, to) =>
+      this.caretaker(id, () => {
+        const target = this.state.channels.find((c) => c.id === to);
+        if (target?.parent !== id || from === to) return { posts: 0 };
+        const orphan = this.orphans.find((o) => o.room.channelId === from);
+        const now = Date.now();
+        // a gone room in the mock has only numbers: it brings that many notes
+        const moved = orphan
+          ? Array.from({ length: orphan.room.posts }, (_, i): Post => ({ id: `mock-${this.nextPostId++}`, channelId: to, kind: "text", text: `From "${orphan.room.name}" (${i + 1})`, authorName: "Ben", mine: false, canDelete: false, createdAt: now - i * MINUTE, updatedAt: now - i * MINUTE, reactions: [] }))
+          : (this.posts.get(from) ?? []).map((p) => ({ ...p, channelId: to }));
+        if (orphan) this.orphans = this.orphans.filter((o) => o !== orphan);
+        else this.posts.delete(from);
+        this.posts.set(to, [...(this.posts.get(to) ?? []), ...moved].sort((a, b) => b.createdAt - a.createdAt));
+        this.boardChanged(to);
+        return { posts: moved.length };
+      }, this.isFloor(id)),
     cleanFloor: async (id, rooms) =>
       this.caretaker(id, () => this.removeOrphans((o) => o.floorId === id && rooms.includes(o.room.channelId)), this.isFloor(id)),
     building: async () =>
@@ -190,7 +279,17 @@ export class MockAdapter implements MumbleAdapter {
           floors.set(o.floorId, { ...f, rooms: f.rooms + 1, posts: f.posts + o.room.posts, bytes: f.bytes + o.room.bytes, goneSince: gone === null ? f.goneSince : Math.min(gone, f.goneSince ?? gone) });
         }
         const learned = this.learnedLinks();
-        return { orphans: [...floors.values()], tickets: Object.fromEntries(Object.keys(learned).sort().map((p) => [p, learned[p]!])) };
+        const roomBytes = (id: number) => (this.posts.get(id) ?? []).reduce((n, p) => n + (p.attachment?.size ?? 0), 0);
+        const used = [...this.posts.keys()].reduce((n, id) => n + roomBytes(id), 0) + this.orphans.reduce((n, o) => n + o.room.bytes, 0);
+        return {
+          storage: { usedBytes: used, quotaBytes: MOCK_QUOTA_BYTES, retentionDays: MOCK_RETENTION_DAYS },
+          floors: this.state.channels.filter((c) => c.parent === 0).sort((a, b) => a.position - b.position).map((f) => {
+            const rooms = this.roomsOf(f.id).filter((r) => (this.posts.get(r.id) ?? []).length > 0);
+            return { channelId: f.id, name: f.name, rooms: rooms.length, posts: rooms.reduce((n, r) => n + this.posts.get(r.id)!.length, 0), bytes: rooms.reduce((n, r) => n + roomBytes(r.id), 0) };
+          }),
+          orphans: [...floors.values()],
+          tickets: Object.fromEntries(Object.keys(learned).sort().map((p) => [p, learned[p]!])),
+        };
       }, true),
     cleanBuilding: async (floors) =>
       this.caretaker(0, () => this.removeOrphans((o) => floors.includes(o.floorId) && (o.floorId === null || !this.isFloor(o.floorId))), true),
@@ -421,6 +520,7 @@ export class MockAdapter implements MumbleAdapter {
     this.posts = samplePosts(Date.now(), this.files);
     this.orphans = sampleOrphans(Date.now());
     this.forgotten.clear();
+    this.keyring = sampleKeys(Date.now());
     this.unmuteOnUndeaf = false;
     this.setPlugin(this.state.self ? "connected" : "disconnected");
     this.emit();
@@ -499,6 +599,20 @@ export class MockAdapter implements MumbleAdapter {
 
   private isFloor(id: number): boolean {
     return this.state.channels.some((c) => c.id === id && c.parent === 0);
+  }
+
+  private roomsOf(floorId: number) {
+    return this.state.channels.filter((c) => c.parent === floorId && !c.temporary).sort((a, b) => a.position - b.position || a.name.localeCompare(b.name));
+  }
+
+  /** like the service: every room with posts, current or gone, with its floor */
+  private transferSources(): TransferSource[] {
+    const current = [...this.posts].filter(([, posts]) => posts.length > 0).map(([id, posts]) => {
+      const floor = this.state.channels.find((c) => c.id === this.state.channels.find((x) => x.id === id)?.parent);
+      return { channelId: id, name: this.channelName(id), floorName: floor?.name ?? "", posts: posts.length, gone: false };
+    });
+    const gone = this.orphans.map((o) => ({ channelId: o.room.channelId, name: o.room.name || `#${o.room.channelId}`, floorName: o.floorName, posts: o.room.posts, gone: true }));
+    return [...current, ...gone].sort((a, b) => a.floorName.localeCompare(b.floorName) || a.name.localeCompare(b.name));
   }
 
   private isRoom(id: number): boolean {

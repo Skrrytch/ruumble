@@ -7,7 +7,10 @@ import { describe, expect, it } from "vitest";
 import type { BridgeToPlugin, BridgeToUi, PostKind } from "@ruumble/protocol";
 import { imageSize, safeFileName } from "../src/board/media.ts";
 import { careRoutes, orphanedFloors } from "../src/board/care.ts";
-import { clearedText, notifyCleared, notifyRoom, notifyText } from "../src/board/notify.ts";
+import { boardMarkdown, uniqueName } from "../src/board/export.ts";
+import { careText, notifyCare, notifyRoom, notifyText } from "../src/board/notify.ts";
+import { zip } from "../src/board/zip.ts";
+import { inflateRawSync } from "node:zlib";
 import { boardRoutes } from "../src/board/routes.ts";
 import { BoardStore, MIGRATIONS } from "../src/board/store.ts";
 import { Hub } from "../src/hub.ts";
@@ -81,7 +84,7 @@ describe("BoardStore", () => {
 
   it("retention 30 days, deleted channels after 7 days", () => {
     let now = 1_000 * DAY;
-    const { store } = tempStore({ now: () => now });
+    const { store } = tempStore({ now: () => now, retentionDays: 30 });
     store.create({ channelId: 3, kind: "text", text: "old", authorHash: A, authorName: "Anna" });
     now += 10 * DAY;
     store.create({ channelId: 5, kind: "text", text: "channel disappears", authorHash: A, authorName: "Anna" });
@@ -218,6 +221,37 @@ describe("BoardStore", () => {
     expect(store.placeName(4)).toBe(""); // its floor holds nothing any more
     expect(store.clearRoom(2)).toBe(1);
     expect(store.orphanedRooms().map((r) => r.channelId)).toEqual([9]);
+  });
+
+  it("care: delete old posts, statistics per room, move a board with its pin", () => {
+    let now = 100 * DAY;
+    const { store } = tempStore({ now: () => now, orphanMinutes: 0 });
+    store.syncChannels(places([0, null, "Root"], [1, 0, "1F"], [2, 1, "Office"], [3, 1, "Lab"]));
+    const att = store.putFile(PNG, "image/png");
+    const old = store.create({ channelId: 2, kind: "image", text: "", attachmentId: att.id, attachmentName: "a.png", authorHash: A, authorName: "Anna" });
+    now += 20 * DAY;
+    const fresh = store.create({ channelId: 2, kind: "text", text: "new", authorHash: A, authorName: "Anna" });
+    store.react(fresh.id, "agree", true, { hash: B, name: "Ben" });
+    store.pin(2, fresh.id, "Today", "Anna");
+    expect(store.postTimes(2)).toEqual([old.createdAt, fresh.createdAt]);
+    expect(store.channelStats().get(2)).toEqual({ posts: 2, bytes: PNG.length, newest: fresh.createdAt, oldest: old.createdAt });
+    expect(store.pruneRoom(2, now - 14 * DAY)).toBe(1);
+    expect(store.attachment(att.id)).toBeNull();
+    // move: posts, reactions and the pin come along; the target's own pin wins
+    const lab = store.create({ channelId: 3, kind: "text", text: "lab", authorHash: B, authorName: "Ben" });
+    expect(store.moveRoom(2, 3)).toBe(1);
+    expect(store.list(3).map((p) => p.id)).toEqual([lab.id, fresh.id]);
+    expect(store.get(fresh.id)?.reactions).toHaveLength(1);
+    expect(store.pinned(3)?.postId).toBe(fresh.id);
+    store.create({ channelId: 2, kind: "text", text: "again", authorHash: A, authorName: "Anna" });
+    store.pin(2, store.list(2)[0]!.id, "Other", "Anna");
+    store.moveRoom(2, 3);
+    expect(store.pinned(3)?.title).toBe("Today");
+    expect(store.pinned(2)).toBeNull();
+    expect(store.moveRoom(3, 3)).toBe(0);
+    expect(store.placeFloor(3)).toBe(1);
+    expect(store.placeFloor(1)).toBeNull();
+    expect(store.retentionDays).toBe(365);
   });
 
   it("care: a room moved out of the floor plan keeps its last floor", () => {
@@ -560,7 +594,8 @@ describe("REST /api/care (ADR-0014)", () => {
     const source = new FakeSource();
     source.users[0]!.channel = 2; // Anna in Office, Ben (admin) in the corridor
     source.admins.add(8);
-    const { store } = tempStore({ orphanMinutes: 0 });
+    const clock = { now: 1_000 * DAY };
+    const { store } = tempStore({ orphanMinutes: 0, now: () => clock.now });
     const hub = new Hub({ source, pairing: new Pairing(null), publicUrl: "http://r", addressCheck: "off", preview: false });
     const poller = new Poller(source, { onChange: (s) => { store.syncChannels(s.channels); hub.setState(s); } });
     await poller.poll();
@@ -572,11 +607,12 @@ describe("REST /api/care (ADR-0014)", () => {
     await app.register(careRoutes, {
       store, hub, source,
       certHashOf: (c) => (c === "anna" ? A : c === "ben" ? B : null),
-      onCleared: (id, viewer) => notifyCleared(hub, id, viewer),
+      onChanged: (id, viewer, change) => notifyCare(hub, id, viewer, change),
       actionsPerMinute: 4,
+      now: () => clock.now,
     });
     const as = (cookie: string) => ({ cookie });
-    return { app, store, hub, source, poller, plugins, as };
+    return { app, store, hub, source, poller, plugins, as, clock };
   }
 
   it("the snapshot names the channels the user may tend: root, floors, rooms", async () => {
@@ -597,7 +633,7 @@ describe("REST /api/care (ADR-0014)", () => {
     expect((await app.inject({ url: "/api/care/rooms/2" })).statusCode).toBe(401);
     expect((await app.inject({ url: "/api/care/rooms/2", headers: as("anna") })).json()).toEqual({ error: "forbidden" });
     expect((await app.inject({ url: "/api/care/rooms/1", headers: as("ben") })).json()).toEqual({ error: "not-found" }); // a floor
-    expect((await app.inject({ url: "/api/care/rooms/2", headers: as("ben") })).json()).toEqual({ channelId: 2, name: "Office", posts: 1, bytes: 0 });
+    expect((await app.inject({ url: "/api/care/rooms/2", headers: as("ben") })).json()).toMatchObject({ channelId: 2, name: "Office", posts: 1, bytes: 0 });
     const ui = recorder<BridgeToUi>();
     hub.uiConnected(ui.conn, A);
     expect((await app.inject({ method: "DELETE", url: "/api/care/rooms/2/posts", headers: as("anna") })).statusCode).toBe(403);
@@ -605,7 +641,9 @@ describe("REST /api/care (ADR-0014)", () => {
     expect(store.list(2)).toEqual([]);
     expect(ui.last("board")).toEqual({ v: 1, type: "board", channelId: 2 });
     expect(plugins.anna.last("notify")?.text).toBe("Ben hat die Pinnwand geleert.");
-    expect(clearedText("Ben", "en")).toBe("Ben cleared the board.");
+    expect(careText("Ben", { kind: "cleared" }, "en")).toBe("Ben cleared the board.");
+    expect(careText("Ben", { kind: "pruned", days: 14 }, "en")).toBe("Ben removed posts older than 14 days from the board.");
+    expect(careText("Ben", { kind: "moved", posts: 1, from: "Lab" }, "de")).toBe("Ben hat einen Beitrag aus „Lab“ an diese Pinnwand gebracht.");
   });
 
   it("building: every learned ticket link, forgotten per project for the whole building", async () => {
@@ -643,8 +681,76 @@ describe("REST /api/care (ADR-0014)", () => {
     expect((await app.inject({ method: "POST", url: "/api/care/building/cleanup", headers: as("ben"), payload: { floors: [] } })).statusCode).toBe(400);
     expect((await app.inject({ method: "POST", url: "/api/care/building/cleanup", headers: as("ben"), payload: { floors: [4, 1] } })).json()).toEqual({ posts: 1 });
     expect(store.channelsWithPosts()).toEqual([2]);
-    expect((await app.inject({ url: "/api/care/building", headers: as("ben") })).json()).toEqual({ orphans: [], tickets: {} });
+    expect((await app.inject({ url: "/api/care/building", headers: as("ben") })).json()).toMatchObject({ orphans: [], tickets: {} });
     expect((await app.inject({ method: "POST", url: "/api/care/building/cleanup", headers: as("anna"), payload: { floors: [4] } })).statusCode).toBe(403);
+  });
+
+  it("room: delete posts older than a choice, counted per choice, with a notice", async () => {
+    const { app, store, plugins, as, clock } = await setup();
+    store.create({ channelId: 2, kind: "text", text: "old", authorHash: A, authorName: "Anna" });
+    clock.now += 20 * DAY;
+    store.create({ channelId: 2, kind: "text", text: "new", authorHash: A, authorName: "Anna" });
+    const room = (await app.inject({ url: "/api/care/rooms/2", headers: as("ben") })).json();
+    expect(room).toMatchObject({ posts: 2, retentionDays: 365, newest: clock.now, oldest: clock.now - 20 * DAY });
+    expect(room.olderThan).toEqual([{ days: 7, posts: 1 }, { days: 14, posts: 1 }, { days: 30, posts: 0 }, { days: 90, posts: 0 }, { days: 180, posts: 0 }]);
+    const prune = (days: unknown) => app.inject({ method: "POST", url: "/api/care/rooms/2/prune", headers: as("ben"), payload: { days } });
+    expect((await prune(365)).statusCode).toBe(400); // not a choice
+    expect((await prune(14)).json()).toEqual({ posts: 1 });
+    expect(store.list(2).map((p) => p.text)).toEqual(["new"]);
+    expect(plugins.anna.last("notify")?.text).toBe("Ben hat Beiträge, die älter als 14 Tage sind, von der Pinnwand entfernt.");
+  });
+
+  it("room: export as ZIP for admins only", async () => {
+    const { app, store, as } = await setup();
+    const att = store.putFile(PNG, "image/png");
+    store.create({ channelId: 2, kind: "image", text: "Sketch", attachmentId: att.id, attachmentName: "sketch.png", authorHash: A, authorName: "Anna" });
+    expect((await app.inject({ url: "/api/care/rooms/2/export", headers: as("anna") })).statusCode).toBe(403);
+    const res = await app.inject({ url: "/api/care/rooms/2/export", headers: as("ben") });
+    expect(res.headers["content-type"]).toBe("application/zip");
+    expect(res.headers["content-disposition"]).toMatch(/^attachment; filename\*=UTF-8''board-Office-\d{4}-\d\d-\d\d\.zip$/);
+    const body = res.rawPayload;
+    expect(body.readUInt32LE(0)).toBe(0x04034b50);
+    expect(body.includes(Buffer.from("files/sketch.png"))).toBe(true);
+    expect(body.includes(PNG)).toBe(true); // images are stored, not deflated
+  });
+
+  it("floor: all rooms with their numbers, boards from anywhere can be moved here", async () => {
+    const { app, store, source, poller, hub, plugins, as } = await setup();
+    source.channels.push({ id: 4, parent: 0, name: "2F", position: 1, links: [], temporary: false }, { id: 5, parent: 4, name: "Archive", position: 0, links: [], temporary: false });
+    await poller.poll();
+    store.create({ channelId: 2, kind: "text", text: "office", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 5, kind: "text", text: "archive", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 9, kind: "text", text: "unknown place", authorHash: A, authorName: "Anna" });
+    const floor = (await app.inject({ url: "/api/care/floors/1", headers: as("ben") })).json();
+    expect(floor.rooms).toEqual([
+      { channelId: 2, name: "Office", posts: 1, bytes: 0, newest: expect.any(Number) },
+      { channelId: 3, name: "Secret", posts: 0, bytes: 0, newest: null },
+    ]);
+    expect(floor.sources).toEqual([
+      { channelId: 9, name: "#9", floorName: "", posts: 1, gone: true },
+      { channelId: 2, name: "Office", floorName: "1F", posts: 1, gone: false },
+      { channelId: 5, name: "Archive", floorName: "2F", posts: 1, gone: false },
+    ]);
+    const move = (from: number, to: number, who = "ben") => app.inject({ method: "POST", url: "/api/care/floors/1/transfer", headers: as(who), payload: { from, to } });
+    expect((await move(5, 5)).statusCode).toBe(400); // target not on this floor
+    expect((await move(2, 2)).statusCode).toBe(400);
+    expect((await move(7, 3)).statusCode).toBe(404); // no data
+    expect((await move(5, 3, "anna")).statusCode).toBe(403);
+    const ui = recorder<BridgeToUi>();
+    hub.uiConnected(ui.conn, A);
+    expect((await move(5, 2)).json()).toEqual({ posts: 1 });
+    expect(store.list(2).map((p) => p.text).sort()).toEqual(["archive", "office"]);
+    expect(ui.last("board")).toEqual({ v: 1, type: "board", channelId: 2 });
+    expect(plugins.anna.last("notify")?.text).toBe("Ben hat einen Beitrag aus „Archive“ an diese Pinnwand gebracht.");
+  });
+
+  it("building: storage use and the floors with their numbers", async () => {
+    const { app, store, as } = await setup();
+    store.putFile(PNG, "image/png");
+    store.create({ channelId: 2, kind: "text", text: "x", authorHash: A, authorName: "Anna" });
+    const building = (await app.inject({ url: "/api/care/building", headers: as("ben") })).json();
+    expect(building.storage).toEqual({ usedBytes: PNG.length, quotaBytes: 2048 * 1024 * 1024, retentionDays: 365 });
+    expect(building.floors).toEqual([{ channelId: 1, name: "1F", rooms: 1, posts: 1, bytes: 0 }]);
   });
 
   it("orphaned floors: grouped by last floor, unknown floor as null, earliest date", () => {
@@ -661,5 +767,49 @@ describe("REST /api/care (ADR-0014)", () => {
     for (let i = 0; i < 4; i++) await app.inject({ method: "DELETE", url: "/api/care/rooms/2/posts", headers: as("ben") });
     expect((await app.inject({ method: "DELETE", url: "/api/care/rooms/2/posts", headers: as("ben") })).statusCode).toBe(429);
     expect((await app.inject({ method: "POST", url: "/api/care/floors/1/cleanup", headers: as("ben"), payload: { rooms: "all" } })).statusCode).toBe(400);
+  });
+});
+
+describe("board export (ADR-0014)", () => {
+  /** read a ZIP written by zip(): name → content */
+  function unzip(buf: Buffer): Map<string, Buffer> {
+    const files = new Map<string, Buffer>();
+    let at = 0;
+    while (buf.readUInt32LE(at) === 0x04034b50) {
+      const method = buf.readUInt16LE(at + 8), size = buf.readUInt32LE(at + 18), nameLen = buf.readUInt16LE(at + 26);
+      const name = buf.subarray(at + 30, at + 30 + nameLen).toString("utf8");
+      const body = buf.subarray(at + 30 + nameLen, at + 30 + nameLen + size);
+      files.set(name, method === 8 ? inflateRawSync(body) : Buffer.from(body));
+      at += 30 + nameLen + size;
+    }
+    expect(buf.readUInt32LE(buf.length - 22)).toBe(0x06054b50);
+    expect(buf.readUInt16LE(buf.length - 12)).toBe(files.size);
+    return files;
+  }
+
+  it("zip: stored and deflated entries, UTF-8 names", () => {
+    const files = unzip(zip([{ name: "board.md", data: Buffer.from("# Größe"), compress: true }, { name: "files/ä.png", data: PNG }]));
+    expect(files.get("board.md")!.toString()).toBe("# Größe");
+    expect(files.get("files/ä.png")).toEqual(PNG);
+  });
+
+  it("markdown: oldest first, code fenced, attachments linked, reactions, pin and origin", () => {
+    const base = { channelId: 2, authorHash: A, updatedAt: 0, reactions: [] };
+    const md = boardMarkdown("Office", [
+      { ...base, id: "b", kind: "code", text: "a ``` b", language: "ts", authorName: "Ben", createdAt: 2 * DAY },
+      { ...base, id: "a", kind: "image", text: "Sketch", authorName: "Anna", createdAt: DAY, attachment: { id: "f".repeat(64), name: "a b.png", mime: "image/png", size: 1 },
+        reactions: [{ kind: "agree", authorHash: B, authorName: "Ben" }], copiedFrom: { roomName: "Lab", authorName: "Clara" } },
+    ], new Map([["f".repeat(64), "a b.png"]]), "a", 3 * DAY);
+    expect(md).toContain('# Board of "Office"');
+    expect(md.indexOf("## Anna")).toBeLessThan(md.indexOf("## Ben"));
+    expect(md).toContain('## Anna · 1970-01-02 00:00 UTC · image · kept on top · from "Lab" by Clara');
+    expect(md).toContain("![a b.png](files/a%20b.png)");
+    expect(md).toContain("````ts\na ``` b\n````");
+    expect(md).toContain("*Reactions: agree (Ben)*");
+  });
+
+  it("unique file names inside the archive", () => {
+    const taken = new Set<string>();
+    expect(["a.png", "A.png", "../x", "a.png"].map((n) => uniqueName(n, taken))).toEqual(["a.png", "A (2).png", "__x", "a (3).png"]);
   });
 });

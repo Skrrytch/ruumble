@@ -31,3 +31,4 @@ Current state (code):
 - The configuration key for opening the browser is `autoOpen` in `plugin.json`; the pairing is stored per service in `pairedWith` (ADR-0010).
 - The service can optionally run in preview mode (`PREVIEW=true`): then an unpaired web UI sees the building read-only. See [operations](../operations.md).
 - Further browsers, profiles and web apps can pair at any time with a code that the service writes to the Mumble log ([ADR-0012](0012-pairing-with-a-code.md)).
+- Paired browsers ("keys") can be seen and revoked in the key cabinet at the entrance: one's own by everyone, everyone's by admins ([ADR-0015](0015-key-cabinet.md)). A token also stores a coarse device label and when it was last used.

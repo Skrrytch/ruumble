@@ -27,18 +27,27 @@ export function notifyRoom(
   return targets.length;
 }
 
-const CLEARED: Record<Locale, (name: string) => string> = {
-  de: (name) => `${name} hat die Pinnwand geleert.`,
-  en: (name) => `${name} cleared the board.`,
+/** what care did to a board (ADR-0014) */
+export type CareChange = { kind: "cleared" } | { kind: "pruned"; days: number } | { kind: "moved"; posts: number; from: string };
+
+const CARE: Record<Locale, (name: string, change: CareChange) => string> = {
+  de: (name, c) =>
+    c.kind === "cleared" ? `${name} hat die Pinnwand geleert.`
+    : c.kind === "pruned" ? `${name} hat Beiträge, die älter als ${c.days} Tage sind, von der Pinnwand entfernt.`
+    : `${name} hat ${c.posts === 1 ? "einen Beitrag" : `${c.posts} Beiträge`} aus „${c.from}“ an diese Pinnwand gebracht.`,
+  en: (name, c) =>
+    c.kind === "cleared" ? `${name} cleared the board.`
+    : c.kind === "pruned" ? `${name} removed posts older than ${c.days} days from the board.`
+    : `${name} moved ${c.posts === 1 ? "a post" : `${c.posts} posts`} from "${c.from}" to this board.`,
 };
 
-export function clearedText(name: string, locale: Locale = "de"): string {
-  return CLEARED[locale](name.slice(0, 120));
+export function careText(name: string, change: CareChange, locale: Locale = "de"): string {
+  return CARE[locale](name.slice(0, 120), change.kind === "moved" ? { ...change, from: change.from.slice(0, 80) } : change);
 }
 
-/** care (ADR-0014): the board of a room was cleared; to the people present, except whoever did it */
-export function notifyCleared(hub: Pick<Hub, "pluginsIn">, channelId: number, by: { name: string; certHash: string }): number {
+/** care (ADR-0014) changed the board of a room; to the people present, except whoever did it */
+export function notifyCare(hub: Pick<Hub, "pluginsIn">, channelId: number, by: { name: string; certHash: string }, change: CareChange): number {
   const targets = hub.pluginsIn(channelId, by.certHash);
-  for (const plugin of targets) plugin.send({ v: PROTOCOL_VERSION, type: "notify", text: clearedText(by.name, plugin.locale) });
+  for (const plugin of targets) plugin.send({ v: PROTOCOL_VERSION, type: "notify", text: careText(by.name, change, plugin.locale) });
   return targets.length;
 }

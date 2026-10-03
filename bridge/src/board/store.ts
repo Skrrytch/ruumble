@@ -149,7 +149,7 @@ export class BoardStore {
   private places: { floors: Set<number>; rooms: Set<number> } | null = null;
 
   constructor(dir: string, opts: StoreOptions = {}) {
-    this.opts = { retentionDays: 30, quotaBytes: 2048 * 1024 * 1024, orphanMinutes: 60, now: Date.now, ...opts };
+    this.opts = { retentionDays: 365, quotaBytes: 2048 * 1024 * 1024, orphanMinutes: 60, now: Date.now, ...opts };
     this.dir = join(dir, "board");
     mkdirSync(this.dir, { recursive: true });
     this.db = new Database(join(dir, "board.sqlite"));
@@ -170,6 +170,15 @@ export class BoardStore {
 
   close(): void {
     this.db.close();
+  }
+
+  /** posts are deleted automatically after this many days (ADR-0011) */
+  get retentionDays(): number {
+    return this.opts.retentionDays;
+  }
+
+  get quotaBytes(): number {
+    return this.opts.quotaBytes;
   }
 
   // ---------------------------------------------------------------- Posts
@@ -316,10 +325,55 @@ export class BoardStore {
 
   /** clear a room's board: all posts with their reactions, pin and attachments; returns the number of posts */
   clearRoom(channelId: number): number {
-    const rows = this.db.prepare("DELETE FROM posts WHERE channel_id = ? RETURNING attachment_id AS a").all(channelId) as { a: string | null }[];
+    return this.deletePosts("channel_id = ?", channelId);
+  }
+
+  /** delete the posts of a room created before `before` (with reactions, pin, attachments); returns their number */
+  pruneRoom(channelId: number, before: number): number {
+    return this.deletePosts("channel_id = ? AND created_at < ?", channelId, before);
+  }
+
+  private deletePosts(where: string, ...args: unknown[]): number {
+    const rows = this.db.prepare(`DELETE FROM posts WHERE ${where} RETURNING attachment_id AS a`).all(...args) as { a: string | null }[];
     this.tickets = null;
     for (const a of new Set(rows.flatMap((r) => (r.a ? [r.a] : [])))) this.removeIfUnreferenced(a);
     return rows.length;
+  }
+
+  /** per room with posts: number, attachment size, creation time of the newest and the oldest post */
+  channelStats(): Map<number, { posts: number; bytes: number; newest: number; oldest: number }> {
+    const rows = this.db
+      .prepare("SELECT p.channel_id AS id, COUNT(*) AS posts, COALESCE(SUM(a.size), 0) AS bytes, MAX(p.created_at) AS newest, MIN(p.created_at) AS oldest FROM posts p LEFT JOIN attachments a ON a.id = p.attachment_id GROUP BY p.channel_id")
+      .all() as { id: number; posts: number; bytes: number; newest: number; oldest: number }[];
+    return new Map(rows.map(({ id, ...r }) => [id, r]));
+  }
+
+  /** creation times of a room's posts, oldest first */
+  postTimes(channelId: number): number[] {
+    return (this.db.prepare("SELECT created_at AS t FROM posts WHERE channel_id = ? ORDER BY created_at").all(channelId) as { t: number }[]).map((r) => r.t);
+  }
+
+  /**
+   * move every post of one room to another (care: a room recreated in Mumble gets a new ID). Authors, times and
+   * reactions stay; the target keeps its own post on top, otherwise the source's comes along. Returns the number.
+   */
+  moveRoom(from: number, to: number): number {
+    if (from === to) return 0;
+    let moved = 0;
+    this.db.transaction(() => {
+      moved = this.db.prepare("UPDATE posts SET channel_id = ? WHERE channel_id = ?").run(to, from).changes;
+      if (this.db.prepare("SELECT 1 FROM pins WHERE channel_id = ?").get(to)) this.db.prepare("DELETE FROM pins WHERE channel_id = ?").run(from);
+      else this.db.prepare("UPDATE pins SET channel_id = ? WHERE channel_id = ?").run(to, from);
+      this.db.prepare("DELETE FROM removed_channels WHERE channel_id = ?").run(from);
+    })();
+    this.pruneChannels();
+    return moved;
+  }
+
+  /** last known floor of a room (parent in `channels`), null if not known */
+  placeFloor(channelId: number): number | null {
+    const r = this.db.prepare("SELECT parent_id AS p FROM channels WHERE channel_id = ?").get(channelId) as { p: number } | undefined;
+    return r && r.p !== 0 ? r.p : null;
   }
 
   /** board data of channels that are no longer rooms, with their last known place; empty before the first sync */

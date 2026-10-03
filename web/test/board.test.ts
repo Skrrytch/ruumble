@@ -105,7 +105,7 @@ describe("Unseen posts", () => {
 
 describe("Attachments (AP11.3)", () => {
   it("readable sizes", () => {
-    expect([812, 34 * 1024, 1.25 * 1024 * 1024].map(formatSize)).toEqual(["812 B", "34 KB", "1.3 MB"]);
+    expect([812, 34 * 1024, 1.25 * 1024 * 1024, 2048 * 1024 * 1024].map(formatSize)).toEqual(["812 B", "34 KB", "1.3 MB", "2 GB"]);
   });
 
   it("file kind by type and extension", () => {

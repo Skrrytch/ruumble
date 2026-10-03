@@ -14,6 +14,7 @@
   import { countText, initials, ownPlace, type Building, type Floor } from "../model/building.ts";
   import type { RuumbleState } from "../state.svelte.ts";
   import Avatar from "./Avatar.svelte";
+  import KeyCabinet from "./KeyCabinet.svelte";
   import Plant from "./Plant.svelte";
 
   // Top bar instead of the elevator column, made of signs: left the floor sign (opens the elevator, which shows
@@ -118,16 +119,22 @@
               </span>
             </button>
           {/each}
-          {#if building.entrance.length > 0 || tendBuilding}
+          {#if building.entrance.length > 0 || !app.readonly}
             <section class="entrance" aria-label={t().common.entrance}>
               <div class="entrance-head">
                 <span>{t().common.entrance} · {countText(building.entrance.length)}</span>
-                <!-- the plant at the entrance: building care (ADR-0014) -->
-                {#if tendBuilding}
-                  <button type="button" class="plant tend" aria-label={t().care.buildingPlant} title={t().care.buildingPlant} onclick={() => { open = null; void app.openCare({ kind: "building" }); }}><Plant size={26} /></button>
-                {:else}
-                  <span class="plant"><Plant size={26} /></span>
-                {/if}
+                <span class="fixtures">
+                  <!-- the key cabinet: every paired browser is a key, everyone sees their own (ADR-0015) -->
+                  {#if !app.readonly}
+                    <button type="button" class="plant tend" aria-label={t().keys.cabinet} title={t().keys.cabinet} onclick={() => { open = null; void app.openKeys(); }}><KeyCabinet size={24} /></button>
+                  {/if}
+                  <!-- the plant at the entrance: building care (ADR-0014) -->
+                  {#if tendBuilding}
+                    <button type="button" class="plant tend" aria-label={t().care.buildingPlant} title={t().care.buildingPlant} onclick={() => { open = null; void app.openCare({ kind: "building" }); }}><Plant size={26} /></button>
+                  {:else}
+                    <span class="plant"><Plant size={26} /></span>
+                  {/if}
+                </span>
               </div>
               {#if building.entrance.length > 0}
                 <div class="entrance-people">
@@ -285,6 +292,7 @@
   .floor.active .sub { color: var(--color-blue-700); }
   .entrance { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding: 10px 6px 2px; border-top: 1px solid rgb(255 255 255 / 0.2); }
   .entrance-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; font-size: 13px; font-weight: 700; color: var(--color-blue-100); }
+  .fixtures { display: flex; align-items: flex-end; gap: 2px; }
   .plant { display: inline-flex; align-items: flex-end; justify-content: center; min-width: 40px; min-height: 40px; padding: 2px; border: 0; background: transparent; border-radius: var(--radius-md); }
   .plant.tend { cursor: pointer; transition: transform var(--dur) var(--ease-out); }
   .plant.tend:hover { transform: translateY(-2px) rotate(3deg) scale(1.08); }

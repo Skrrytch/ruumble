@@ -24,7 +24,7 @@ The templates already set these.
 | `SERVER_ID` | first running | Which virtual server, if the Mumble process runs several |
 | `PORT`, `HOST` | `64080`, `0.0.0.0` | Port and interface inside the container |
 | `PREVIEW` | `false` | `true`: unpaired browsers see the building read-only |
-| `RETENTION_DAYS` | `30` | How long board posts are kept |
+| `RETENTION_DAYS` | `365` | How long board posts are kept; admins can delete older posts per room earlier (room care) |
 | `BOARD_QUOTA_MB` | `2048` | Storage for board attachments; when full, the oldest posts with attachments are deleted |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 

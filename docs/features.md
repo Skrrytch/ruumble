@@ -69,7 +69,7 @@ Every room has a board next to the floor plan. It shows the board of the room yo
 | Where | Only in rooms (not in the entrance, corridors, open floors or temporary channels) |
 | Read, post, edit | Everyone currently in the room; copying a post in from another room: anyone who may enter it |
 | Delete | Author and Mumble admins (Write permission on the channel) |
-| Retention | 30 days (`RETENTION_DAYS`) |
+| Retention | 1 year (`RETENTION_DAYS`); admins can delete older posts per room earlier |
 | Limits | Images and files up to 10 MB, text up to 100 KB, 2 GB in total (`BOARD_QUOTA_MB`); when full, the oldest posts go first |
 | Deleted channel | Posts stay 7 days for admins, then they are removed (earlier by floor or building care) |
 | Care | Mumble admins (Write permission) via the plants, see below |
@@ -81,11 +81,15 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 
 A potted plant stands in every room (bottom right), at the end of every corridor and at the entrance in the elevator. For everyone it is decoration; whoever has Mumble's Write permission there can click it ([ADR-0014](decisions/0014-care-of-the-stored-data.md)):
 
-- **Room care**: how many posts and how much attachment space the board holds; **clear the board** (all posts with reactions, "kept on top" and attachments, with a Mumble notice to the people present).
-- **Floor care**: rooms of this floor that were deleted in Mumble or moved out of the floor plan and still hold data, one line each (name, posts, size, gone since), removed one by one or all.
-- **Building care**: floors that are gone, with their rooms, posts and size; rooms whose floor is not known as "Unknown floor". And every **learned ticket link** of the building (project → base URL), each with a reset, e.g. after a first link to the wrong Jira; a newer link teaches the project again.
+- **Room care**: posts, attachment space, newest and oldest post, the retention period; **delete posts older than** 7 days, 14 days, 1, 3 or 6 months (with the count per choice); **clear the board** (all posts with reactions, "kept on top" and attachments); both send a Mumble notice to the people present. **Export** the board as a ZIP (`board.md` and the attachments).
+- **Floor care**: all rooms of the floor with posts, size and last post (a line opens the room's care, "back" returns); **move a board** from any room in the database, current or gone, to a room on this floor (e.g. a room recreated in Mumble with a new ID); rooms of this floor that were deleted in Mumble or moved out of the floor plan and still hold data, one line each (name, posts, size, gone since), removed one by one or all.
+- **Building care**: **storage** (used of the quota, retention, every floor with its numbers, a line opens the floor's care); floors that are gone, with their rooms, posts and size; rooms whose floor is not known as "Unknown floor"; every **learned ticket link** of the building (project → base URL), each with a reset, e.g. after a first link to the wrong Jira; a newer link teaches the project again.
 
-Care works from anywhere in the building and never shows the content of posts. Every removal asks first.
+Care works from anywhere in the building and shows counts and sizes, not the content of posts; the export is the one exception. Every removal asks first.
+
+### Key cabinet
+
+Next to the plant at the entrance hangs a key cabinet: every paired browser is a key. Everyone sees their own keys (browser and system, paired on, last used, "this browser") and can revoke one, e.g. after losing a laptop; that browser then has to be paired again. Admins (Write permission on the root channel) also see everyone else's keys, by person ([ADR-0015](decisions/0015-key-cabinet.md)).
 
 ### Pairing and security
 
@@ -200,7 +204,7 @@ Done (0.10.0), see *Board* above: work reactions first, then social ones, in a f
 
 **A2 – Shared task lists.** Done (0.12.0), see *Board* above. The detection is strict: after an optional introduction only task lines (`[ ]`, `[]`, `[x]`, with or without a list marker) and blank lines, otherwise the post stays ordinary Markdown. A tick changes exactly that line in the service (`protocol/src/tasks.ts`), so two people ticking at the same time do not overwrite each other.
 
-**A3 – Kept on top.** Done (0.13.0), see *Board* above. The post kept on top expires after 30 days like any other (ADR-0011 unchanged).
+**A3 – Kept on top.** Done (0.13.0), see *Board* above. The post kept on top expires with the retention period like any other (ADR-0011 unchanged).
 
 **A4 – Clickable links everywhere.** Done (0.23.0), see *Board* above. Captions turned out to be Markdown with links already, so the change concerns code posts; the list of links is shown below code posts only, where the links would otherwise be hidden in the text. Text posts already turn URLs into links (Markdown with linkify). Code posts, stack traces and image or file captions do not: there a URL is plain text today. Links in these posts become clickable too, and in addition every post shows the links it contains as a compact list below its content: duplicates removed, at most three entries, then "+ N more". That way a ticket link in a code comment or log is one click away without searching the text.
 
@@ -225,7 +229,7 @@ Symbols come from Lucide (no brand logos). The recognition is a pure function in
 
 The display is tailored to reading: the exception type and message become the headline of the card, the preview shows them together with the first frame outside libraries. Frames from well-known library and runtime paths (`java.`, `jdk.`, `org.springframework.`, `node_modules/`, `site-packages/`, `runtime/` …) are dimmed and collapsed into "… 38 frames in libraries". `Caused by` chains become their own sections, with the root cause emphasised. Lines never wrap; copy and download always return the original text unchanged.
 
-**A7 – Full-text search.** Current state: the search field and the plain search are there (all words, not case-sensitive); highlighting and opening at the match are still open. A search field in the board header searches the text, captions, file names, code language and author names of all posts of the room, combined with the existing filter by kind. Matches are highlighted, and posts shortened to 8 lines open where the match is. The search runs in the web UI over the posts that are already loaded; with one room and 30 days that is enough. A full-text index in SQLite (FTS5) only comes if a measurement makes it necessary. No export for now.
+**A7 – Full-text search.** Current state: the search field and the plain search are there (all words, not case-sensitive); highlighting and opening at the match are still open. A search field in the board header searches the text, captions, file names, code language and author names of all posts of the room, combined with the existing filter by kind. Matches are highlighted, and posts shortened to 8 lines open where the match is. The search runs in the web UI over the posts that are already loaded; this was planned with 30 days of retention; with one year a measurement will show whether a full-text index in SQLite (FTS5) becomes necessary. An export exists for admins in room care (ADR-0014).
 
 **A8 – Several images in one post.** Pasting or dropping several images at once creates **one** post with all of them, for example before and after, or several steps of a bug. The card shows them as a small gallery; the full-screen view pages through them with the arrow keys. One caption applies to the whole post; when editing, single images can be removed or added.
 

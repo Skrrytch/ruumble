@@ -12,7 +12,7 @@
  *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004; behind hairpin NAT only warn works, P7)
  *   TRUST_PROXY (false)                          true behind a reverse proxy (X-Forwarded-For)
  *   PREVIEW (false)                              true: building visible read-only without pairing
- *   RETENTION_DAYS (30), BOARD_QUOTA_MB (2048)    board: retention and quota (ADR-0011)
+ *   RETENTION_DAYS (365), BOARD_QUOTA_MB (2048)   board: retention and quota (ADR-0011)
  *   LOG_LEVEL (info)                             Fastify/pino logging
  *
  * Board backup:  node dist/main.mjs backup <target-directory>  (needs only DATA_DIR, no Ice)
@@ -27,11 +27,12 @@ import type { WebSocket } from "ws";
 import pkg from "../package.json" with { type: "json" };
 import { AvatarCache } from "./avatars.ts";
 import { careRoutes } from "./board/care.ts";
-import { notifyCleared, notifyRoom } from "./board/notify.ts";
+import { notifyCare, notifyRoom } from "./board/notify.ts";
 import { boardRoutes } from "./board/routes.ts";
 import { BoardStore } from "./board/store.ts";
 import { Hub, type AddressCheck } from "./hub.ts";
 import { keepAlive } from "./keepalive.ts";
+import { keyRoutes } from "./keys.ts";
 import { IceMumbleSource } from "./mumble.ts";
 import { Pairing } from "./pairing.ts";
 import { Poller } from "./poller.ts";
@@ -55,7 +56,7 @@ const readSecret = (file: string) => {
 // board storage (ADR-0011); the backup needs nothing else, hence before the rest of the configuration
 const dataDir = resolve(env.DATA_DIR ?? "data");
 const quotaMB = Number(env.BOARD_QUOTA_MB ?? 2048);
-const store = new BoardStore(dataDir, { retentionDays: Number(env.RETENTION_DAYS ?? 30), quotaBytes: quotaMB * 1024 * 1024 });
+const store = new BoardStore(dataDir, { retentionDays: Number(env.RETENTION_DAYS ?? 365), quotaBytes: quotaMB * 1024 * 1024 });
 if (process.argv[2] === "backup") {
   const target = resolve(process.argv[3] ?? "backup");
   await store.backup(target);
@@ -179,12 +180,13 @@ app.get("/ws/plugin", { websocket: true }, (socket, req) => {
 });
 
 app.get("/ws/ui", { websocket: true }, (socket, req) => {
-  const certHash = pairing.certHashOf(cookieOf(req.headers.cookie, TOKEN_COOKIE));
-  wire(socket, hub.uiConnected(conn(socket), certHash));
+  const token = cookieOf(req.headers.cookie, TOKEN_COOKIE);
+  pairing.touch(token, req.headers["user-agent"]); // key cabinet: last used, device (ADR-0015)
+  wire(socket, hub.uiConnected(conn(socket), pairing.certHashOf(token), pairing.keyIdOf(token)));
 });
 
 app.get<{ Querystring: { code?: string } }>("/pair", async (req, reply) => {
-  const token = req.query.code ? pairing.redeem(req.query.code) : null;
+  const token = req.query.code ? pairing.redeem(req.query.code, Date.now(), req.headers["user-agent"]) : null;
   if (!token) {
     // language like the web UI: German if the browser prefers it, otherwise English
     const de = /^\s*de\b/i.test(String(req.headers["accept-language"] ?? "").split(",").find((l) => /^\s*(de|en)\b/i.test(l)) ?? "");
@@ -214,10 +216,20 @@ app.post("/api/pair/request", async (req, reply) => {
 app.post("/api/pair/confirm", async (req, reply) => {
   const body = PairConfirm.safeParse(req.body);
   if (!body.success) return reply.code(400).send({ error: "invalid" });
-  const result = pairing.confirmCode(body.data.request, body.data.code);
+  const result = pairing.confirmCode(body.data.request, body.data.code, Date.now(), req.headers["user-agent"]);
   if (result === "wrong-code" || result === "expired") return reply.code(PAIR_STATUS[result]).send({ error: result });
   setTokenCookie(req, reply, result);
   return { ok: true };
+});
+
+// key cabinet: the own paired browsers, everyone's for admins (ADR-0015)
+await app.register(keyRoutes, {
+  pairing,
+  hub,
+  source,
+  tokenOf: (cookie) => cookieOf(cookie, TOKEN_COOKIE),
+  clearCookie: (reply) => void reply.header("Set-Cookie", `${TOKEN_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`),
+  log,
 });
 
 app.post("/logout", async (req, reply) => {
@@ -253,7 +265,7 @@ await app.register(careRoutes, {
   hub,
   source,
   certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)),
-  onCleared: (channelId, viewer) => void notifyCleared(hub, channelId, viewer),
+  onChanged: (channelId, viewer, change) => void notifyCare(hub, channelId, viewer, change),
   log,
 });
 const cleanupTimer = setInterval(() => {

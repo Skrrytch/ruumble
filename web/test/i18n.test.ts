@@ -86,4 +86,26 @@ describe("UI language", () => {
     expect(relativeTime(now - 3 * 3600_000, now)).toBe("3 hours ago");
     expect(relativeTime(now - 3600_000, now)).toBe("1 hour ago");
   });
+
+  it("care and key cabinet texts: singular and plural, retention in days or years, choices", () => {
+    for (const m of [de, en]) {
+      const c = m.care;
+      expect(c.posts(1)).not.toBe(c.posts(2));
+      expect(c.rooms(1)).not.toBe(c.rooms(2));
+      expect(c.floors(1)).not.toBe(c.floors(2));
+      expect(c.ticketsForgotten(1)).not.toBe(c.ticketsForgotten(2));
+      expect(new Set([c.retention(365), c.retention(730), c.retention(30)]).size).toBe(3);
+      expect([7, 14, 30, 90, 180, 5].map(c.pruneChoice)).toHaveLength(6);
+      expect(c.pruneOption("x", 1)).not.toBe(c.pruneOption("x", 2));
+      expect(c.transferSource("A", "1F", 1, true)).not.toBe(c.transferSource("A", "", 2, false));
+      expect(c.boardHolds("4", "")).not.toBe(c.boardHolds("4", "1 MB"));
+    }
+    expect(de.care.retention(365)).toBe("Beiträge werden nach einem Jahr automatisch gelöscht.");
+    expect(en.care.retention(730)).toBe("Posts are deleted automatically after 2 years.");
+    expect(en.care.retention(30)).toBe("Posts are deleted automatically after 30 days.");
+    expect(de.care.pruneChoice(30)).toBe("1 Monat");
+    expect(en.care.pruneChoice(5)).toBe("5 days");
+    expect(de.care.transferSource("Lab", "1F", 1, true)).toBe("Lab (1F) · 1 Beitrag · nicht mehr da");
+    expect(en.care.transferSource("Lab", "", 3, false)).toBe("Lab · 3 posts");
+  });
 });

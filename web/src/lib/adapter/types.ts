@@ -2,7 +2,7 @@
  * Interface between web UI and Mumble (ADR-0007).
  * Implementations: MockAdapter (fixtures, simulated Mumble) and LiveAdapter (WebSocket and REST to the service).
  */
-import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, CareDone, FloorCare, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
+import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, CareDone, FloorCare, KeyCabinet, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
 
 export type BoardErrorCode = ServerBoardError | "offline";
 export type BoardResult<T> = { ok: true; value: T } | { ok: false; error: BoardErrorCode };
@@ -44,14 +44,27 @@ export interface CareApi {
   room(channelId: number): Promise<BoardResult<RoomCare>>;
   /** delete every post of the room's board */
   clearRoom(channelId: number): Promise<BoardResult<CareDone>>;
+  /** delete the posts older than `days` (one of PRUNE_DAYS) */
+  pruneRoom(channelId: number, days: number): Promise<BoardResult<CareDone>>;
+  /** the whole board as a file to save (ZIP with board.md and the attachments) */
+  exportRoom(channelId: number): Promise<BoardResult<{ blob: Blob; name: string }>>;
   floor(channelId: number): Promise<BoardResult<FloorCare>>;
   /** remove these rooms that are gone from the floor, with all their data */
   cleanFloor(channelId: number, rooms: number[]): Promise<BoardResult<CareDone>>;
+  /** move the board of room `from` (anywhere) to room `to` on this floor */
+  transfer(channelId: number, from: number, to: number): Promise<BoardResult<CareDone>>;
   building(): Promise<BoardResult<BuildingCare>>;
   /** remove these floors that are gone, with all their data (null: rooms of an unknown floor) */
   cleanBuilding(floors: (number | null)[]): Promise<BoardResult<CareDone>>;
   /** forget the learned ticket links of these projects (building-wide) */
   forgetTickets(projects: string[]): Promise<BoardResult<true>>;
+}
+
+/** Key cabinet (ADR-0015): the paired browsers, the own ones for everyone and everyone's for admins */
+export interface KeysApi {
+  list(): Promise<BoardResult<KeyCabinet>>;
+  /** revoking the own browser's key unpairs it */
+  revoke(id: string): Promise<BoardResult<true>>;
 }
 
 export type PluginStatus = "connected" | "disconnected";
@@ -78,6 +91,7 @@ export interface MumbleAdapter {
   command(body: CommandBody): Promise<CommandResult>;
   board: BoardApi;
   care: CareApi;
+  keys: KeysApi;
   pairing: PairApi;
   /** versions of service and offered plugin (notice pages); null if unknown */
   versions(): Promise<Versions | null>;
