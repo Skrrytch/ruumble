@@ -69,7 +69,18 @@
   let plateWidth = $state(0);
   const fit = $derived(variant === "room" ? fitPeople(space.users, peopleWidth, peopleHeight) : { shown: space.users, hidden: [] });
   const doorState = $derived(disabled && !readonly ? "closed" : "ajar");
-  const countLine = $derived(pending ? t().space.enteringText : (subtitle ?? countText(space.users.length)));
+  // "entering …" only when Mumble takes a while: a quick move would only make it flicker (the aria-label says it at once)
+  const ENTERING_TEXT_AFTER_MS = 600;
+  let slow = $state(false);
+  $effect(() => {
+    if (!pending) return;
+    const timer = setTimeout(() => (slow = true), ENTERING_TEXT_AFTER_MS);
+    return () => {
+      clearTimeout(timer);
+      slow = false;
+    };
+  });
+  const countLine = $derived(pending && slow ? t().space.enteringText : (subtitle ?? countText(space.users.length)));
 
   function click() {
     if (space.isSelf || disabled || pending) return;
@@ -95,6 +106,7 @@
   class:locked={disabled && !readonly}
   class:readonly
   class:pending
+  class:slow={pending && slow}
   aria-label={ariaLabel}
   aria-disabled={disabled || space.isSelf || undefined}
   aria-busy={pending || undefined}
@@ -103,7 +115,7 @@
 >
   {#if variant === "room"}
     <!-- door at the corridor wall: the white strip cuts the opening into the wall; mirrored in the lower row.
-         Ajar (25°) where the user may enter, closed where Mumble does not let them in -->
+         Ajar (45°) where the user may enter, closed where Mumble does not let them in -->
     <svg class="door {doorState}" width="48" height="52" viewBox="0 0 48 52" fill="none" aria-hidden="true">
       <rect x="2" y="48" width="44" height="4" class="opening" />
       <path d="M46 50A44 44 0 0 0 2 6" class="swing" />
@@ -191,7 +203,7 @@
   .room.readonly { cursor: default; }
   .room.locked:hover { background: var(--color-white); }
   .room.pending { cursor: progress; }
-  .room.pending .count { color: var(--color-blue-500); }
+  .room.pending.slow .count { color: var(--color-blue-500); }
 
   /* Rooms (design "Grundriss: Flurseite"): a 48 px door strip on the corridor side holds the plant behind the door,
      the door and, right-aligned, the board and the door plate; the people fill the rest from the far wall.
@@ -204,9 +216,9 @@
   /* the leaf turns about its hinge (2, 50); the swing shows the part of the quarter circle (length 69.12) it has opened */
   .door .leaf {
     stroke: var(--color-blue-700); stroke-width: 2; stroke-linecap: round;
-    transform-box: view-box; transform-origin: 2px 50px; transform: rotate(-25deg);
+    transform-box: view-box; transform-origin: 2px 50px; transform: rotate(-45deg);
   }
-  .door .swing { stroke: var(--color-blue-300); stroke-width: 1.5; stroke-dasharray: 69.12; stroke-dashoffset: 49.92; }
+  .door .swing { stroke: var(--color-blue-300); stroke-width: 1.5; stroke-dasharray: 69.12; stroke-dashoffset: 34.56; }
   .door.closed .leaf { transform: none; stroke: var(--color-blue-500); stroke-width: 3; stroke-linecap: butt; }
   .door.closed .swing { stroke-dashoffset: 69.12; }
   .wrap-room .people { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 6px 3px; }

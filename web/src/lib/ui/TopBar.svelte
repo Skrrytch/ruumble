@@ -97,7 +97,7 @@
             {#if floor}<span class="people" title={t().header.onFloorTitle} aria-hidden="true"><Users size={15} />{floor.population}</span>{/if}
           </span>
         </span>
-        <span class="call" aria-hidden="true"><ArrowDownUp size={18} /><ChevronDown size={16} class="chevron" /></span>
+        <span class="call" aria-hidden="true"><ChevronDown size={18} class="chevron" /></span>
       </button>
       {#if open === "floors"}
         <!-- elevator panel: highest floor at the top, the entrance below the ground floor -->
@@ -165,12 +165,12 @@
       {#if away}
         <button type="button" class="sign room-sign" aria-label={`${label} – ${t().core.home}`} title={t().core.home} onclick={() => app.goHome()}>
           <span class="caption">{t().core.youAreHere}</span>
-          <span class="plate-name"><span class="room-name">{place.name}</span><span class="people"><Users size={14} />{place.people}</span><LocateFixed size={15} class="back" /></span>
+          <span class="plate-name"><span class="room-name">{place.name}</span><LocateFixed size={15} class="back" /></span>
         </button>
       {:else}
         <div class="sign room-sign" role="status" aria-label={label}>
           <span class="caption">{t().core.youAreHere}</span>
-          <span class="plate-name"><span class="room-name">{place.name}</span><span class="people"><Users size={14} />{place.people}</span></span>
+          <span class="plate-name"><span class="room-name">{place.name}</span></span>
         </div>
       {/if}
     {/if}
@@ -254,7 +254,7 @@
   h1 { margin: 0; font-size: 20px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .floor-sign .people { color: var(--color-blue-100); }
   .call {
-    display: flex; align-items: center; gap: 2px; height: 44px; padding: 0 8px; margin-left: 4px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; width: 28px; height: 44px; margin-left: 2px; flex-shrink: 0;
     border-radius: var(--radius-md); background: rgb(255 255 255 / 0.14); color: var(--color-white);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25);
   }
@@ -324,7 +324,6 @@
   }
   .room-sign .caption { color: var(--color-blue-700); }
   .room-name { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .room-sign .people { color: var(--color-blue-700); }
   button.room-sign { cursor: pointer; transition: transform var(--dur) var(--ease-out); }
   button.room-sign:hover { transform: translateY(-1px); }
   .room-sign :global(.back) { flex-shrink: 0; align-self: center; color: var(--color-blue-500); }
