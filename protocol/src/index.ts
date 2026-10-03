@@ -140,6 +140,11 @@ export const Snapshot = z.object({
   listeners: z.record(channelKey, z.array(session)),
   /** channel ID → may the own user enter the channel (PermissionEnter). A missing channel means `true`. */
   canEnter: z.record(channelKey, z.boolean()),
+  /**
+   * Channels whose stored data the own user may tend (Mumble Write permission, ADR-0014): rooms, floors and the
+   * root channel (0) for the whole building. Missing: none.
+   */
+  care: z.array(channelId).optional(),
 });
 export type Snapshot = z.infer<typeof Snapshot>;
 
@@ -211,6 +216,9 @@ export type Pinned = z.infer<typeof Pinned>;
 export const PinRequest = z.object({ postId: z.string().min(1), title: z.string().trim().min(1).max(40) });
 export type PinRequest = z.infer<typeof PinRequest>;
 
+/** project key → base URL of its issues (tickets.ts) */
+const TicketLinksSchema = z.record(z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/), z.url({ protocol: /^https?$/ }));
+
 /** GET /api/board: board of the room the own user is currently in */
 export const BoardView = z.object({
   channelId,
@@ -218,9 +226,65 @@ export const BoardView = z.object({
   posts: z.array(Post),
   pinned: Pinned.nullable(),
   /** learned ticket links (tickets.ts), only for projects whose keys appear in this room's posts */
-  tickets: z.record(z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/), z.url({ protocol: /^https?$/ })).optional(),
+  tickets: TicketLinksSchema.optional(),
 });
 export type BoardView = z.infer<typeof BoardView>;
+
+// ---------------------------------------------------------------- Care (ADR-0014, REST under /api/care)
+
+const count = z.number().int().min(0);
+
+/** GET /api/care/rooms/:id: what a room's board holds */
+export const RoomCare = z.object({
+  channelId,
+  name: z.string(),
+  posts: count,
+  /** size of the attachments in bytes */
+  bytes: count,
+  /** learned ticket links of the projects named in this room (keys or issue links) */
+  tickets: TicketLinksSchema,
+});
+export type RoomCare = z.infer<typeof RoomCare>;
+
+/** board data of a room that is gone (deleted in Mumble, or no longer a room) */
+export const OrphanedRoom = z.object({
+  channelId,
+  /** last known name */
+  name: z.string(),
+  posts: count,
+  bytes: count,
+  /** when the service found the channel missing; null: it still exists, but is no longer a room */
+  goneSince: z.number().int().nullable(),
+});
+export type OrphanedRoom = z.infer<typeof OrphanedRoom>;
+
+/** GET /api/care/floors/:id: rooms of this floor that are gone but still hold data */
+export const FloorCare = z.object({ channelId, name: z.string(), orphans: z.array(OrphanedRoom) });
+export type FloorCare = z.infer<typeof FloorCare>;
+
+/** a floor that is gone, with the data of its rooms; `channelId` null: rooms whose floor is not known */
+export const OrphanedFloor = z.object({
+  channelId: channelId.nullable(),
+  name: z.string(),
+  rooms: z.number().int().min(1),
+  posts: count,
+  bytes: count,
+  goneSince: z.number().int().nullable(),
+});
+export type OrphanedFloor = z.infer<typeof OrphanedFloor>;
+
+/** GET /api/care/building: floors that are gone but still hold data */
+export const BuildingCare = z.object({ orphans: z.array(OrphanedFloor) });
+export type BuildingCare = z.infer<typeof BuildingCare>;
+
+/** POST /api/care/floors/:id/cleanup: remove these rooms (as shown) with all their data */
+export const FloorCleanup = z.object({ rooms: z.array(channelId).min(1).max(1000) });
+/** POST /api/care/building/cleanup: remove these floors (as shown) with all their data */
+export const BuildingCleanup = z.object({ floors: z.array(channelId.nullable()).min(1).max(1000) });
+
+/** answer to a care action: number of posts removed */
+export const CareDone = z.object({ posts: count });
+export type CareDone = z.infer<typeof CareDone>;
 
 /** POST /api/board/posts/:id/copy: copy a post of the own room to another room the user may enter */
 export const CopyRequest = z.object({ channelId });

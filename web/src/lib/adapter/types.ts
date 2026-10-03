@@ -2,7 +2,7 @@
  * Interface between web UI and Mumble (ADR-0007).
  * Implementations: MockAdapter (fixtures, simulated Mumble) and LiveAdapter (WebSocket and REST to the service).
  */
-import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
+import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, CareDone, FloorCare, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
 
 export type BoardErrorCode = ServerBoardError | "offline";
 export type BoardResult<T> = { ok: true; value: T } | { ok: false; error: BoardErrorCode };
@@ -39,6 +39,21 @@ export interface BoardApi {
   fileUrl(attachment: Attachment, download?: boolean): string;
 }
 
+/** Care of the stored data (ADR-0014): only with Mumble's Write permission on the room, floor or root channel */
+export interface CareApi {
+  room(channelId: number): Promise<BoardResult<RoomCare>>;
+  /** delete every post of the room's board */
+  clearRoom(channelId: number): Promise<BoardResult<CareDone>>;
+  /** forget the learned ticket links of the projects named in the room */
+  forgetTickets(channelId: number): Promise<BoardResult<true>>;
+  floor(channelId: number): Promise<BoardResult<FloorCare>>;
+  /** remove these rooms that are gone from the floor, with all their data */
+  cleanFloor(channelId: number, rooms: number[]): Promise<BoardResult<CareDone>>;
+  building(): Promise<BoardResult<BuildingCare>>;
+  /** remove these floors that are gone, with all their data (null: rooms of an unknown floor) */
+  cleanBuilding(floors: (number | null)[]): Promise<BoardResult<CareDone>>;
+}
+
 export type PluginStatus = "connected" | "disconnected";
 
 /** Connection of the web UI to the service (LiveAdapter only) */
@@ -62,6 +77,7 @@ export interface MumbleAdapter {
   /** Runs a command in the own Mumble client. The result only arrives after confirmation (ADR-0003). */
   command(body: CommandBody): Promise<CommandResult>;
   board: BoardApi;
+  care: CareApi;
   pairing: PairApi;
   /** versions of service and offered plugin (notice pages); null if unknown */
   versions(): Promise<Versions | null>;

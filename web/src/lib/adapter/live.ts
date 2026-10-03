@@ -2,8 +2,8 @@
  * LiveAdapter: WebSocket to the Ruumble service (`/ws/ui`, ADR-0007).
  * Reconnects with increasing delay after a drop. Results are matched to commands by ID.
  */
-import { BoardError, BoardView, BridgeToUi, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
-import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, MumbleAdapter, PairApi, PairResult } from "./types.ts";
+import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, BoardResult, MumbleAdapter, PairApi, PairResult } from "./types.ts";
 
 /** REST of the board; the pairing cookie is sent automatically (same-origin) */
 async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit = {}): Promise<BoardResult<T>> {
@@ -35,6 +35,16 @@ const liveBoard: BoardApi = {
   react: (id, kind, on) => call(Post, `/api/board/posts/${encodeURIComponent(id)}/reactions/${kind}`, { method: on ? "PUT" : "DELETE" }),
   upload,
   fileUrl: (a, download = false) => `/api/board/files/${a.id}${download ? "?download" : ""}`,
+};
+
+const liveCare: CareApi = {
+  room: (id) => call(RoomCare, `/api/care/rooms/${id}`),
+  clearRoom: (id) => call(CareDone, `/api/care/rooms/${id}/posts`, { method: "DELETE" }),
+  forgetTickets: (id) => call<true>(null, `/api/care/rooms/${id}/tickets`, { method: "DELETE" }),
+  floor: (id) => call(FloorCare, `/api/care/floors/${id}`),
+  cleanFloor: (id, rooms) => call(CareDone, `/api/care/floors/${id}/cleanup`, { method: "POST", body: JSON.stringify({ rooms }) }),
+  building: () => call(BuildingCare, "/api/care/building"),
+  cleanBuilding: (floors) => call(CareDone, "/api/care/building/cleanup", { method: "POST", body: JSON.stringify({ floors }) }),
 };
 
 /** Errors that Fastify reports itself (e.g. body too large) have no code of their own */
@@ -92,6 +102,7 @@ export class LiveAdapter implements MumbleAdapter {
   private readonly pending = new Map<string, { resolve: (r: CommandResult) => void; timer: ReturnType<typeof setTimeout> }>();
   private nextId = 1;
   readonly board: BoardApi = liveBoard;
+  readonly care: CareApi = liveCare;
   readonly pairing: PairApi = {
     request: async () => {
       const r = await pairCall("/api/pair/request");

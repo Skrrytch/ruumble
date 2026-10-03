@@ -5,6 +5,7 @@
   import { countText, type Room, type Space } from "../model/building.ts";
   import Avatar from "./Avatar.svelte";
   import BoardNotes from "./board/BoardNotes.svelte";
+  import Plant from "./Plant.svelte";
   import { t } from "../i18n/index.svelte.ts";
   import { SHORTCUT_KEYS } from "../shortcuts.ts";
 
@@ -21,6 +22,7 @@
     boardOpen = false,
     boardUnseen = 0,
     ontoggleboard,
+    ontend,
   }: {
     space: Space | Room;
     variant: "room" | "corridor" | "open";
@@ -39,6 +41,8 @@
     /** posts by others not seen yet in this room: an extra note on the closed toggle */
     boardUnseen?: number;
     ontoggleboard?: () => void;
+    /** open the care dialog of this room or floor (plant, ADR-0014) */
+    ontend?: () => void;
   } = $props();
 
 
@@ -48,6 +52,9 @@
   const boardFresh = $derived(!boardOpen && boardUnseen > 0);
   const boardLabel = $derived(boardOpen ? t().board.hide : boardFresh ? t().board.showUnseen(boardUnseen) : t().board.show);
   const disabled = $derived((space.locked && !space.isSelf) || readonly);
+  // the plant: decoration for everyone, a button for whoever may tend the stored data here
+  const tendable = $derived(space.canTend && !readonly && !!ontend);
+  const tendLabel = $derived(variant === "room" ? t().care.roomPlant(space.name) : t().care.floorPlant(space.name));
   const ariaLabel = $derived.by(() => {
     const s = t().space;
     const name = variant === "corridor" ? s.corridorName(space.name) : space.name;
@@ -125,6 +132,11 @@
     {#key boardFresh && boardUnseen}<BoardNotes fresh={boardFresh} />{/key}
   </button>
 {/if}
+{#if tendable}
+  <button type="button" class="plant-spot plant-{variant} tend" aria-label={tendLabel} title={tendLabel} onclick={ontend}><Plant /></button>
+{:else}
+  <span class="plant-spot plant-{variant}"><Plant /></span>
+{/if}
 </div>
 
 <style>
@@ -150,6 +162,17 @@
   }
   .notes.toggle:hover { transform: translateY(-2px) rotate(-2deg) scale(1.06); }
   .notes.toggle:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
+  /* plant (care, ADR-0014): bottom right in a room and an open floor, at the right end of the corridor */
+  .plant-spot {
+    position: absolute; right: 10px; bottom: 8px; display: flex; align-items: flex-end; justify-content: center;
+    min-width: 44px; min-height: 44px; padding: 2px; border: 0; background: transparent; border-radius: var(--radius-md);
+    pointer-events: none;
+  }
+  .plant-spot.plant-corridor { bottom: auto; top: 50%; right: 14px; transform: translateY(-50%); }
+  .plant-spot.tend { pointer-events: auto; cursor: pointer; transition: transform var(--dur) var(--ease-out); }
+  .plant-spot.tend:hover { transform: translateY(-2px) rotate(3deg) scale(1.08); }
+  .plant-spot.plant-corridor.tend:hover { transform: translateY(calc(-50% - 2px)) rotate(3deg) scale(1.08); }
+  .plant-spot.tend:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
   .room:hover { background: var(--color-surface); }
   .room:focus-visible { outline: 3px solid var(--color-sky); outline-offset: -7px; }
   .room.mine, .room.mine:hover { background: var(--color-blue-100); cursor: default; }

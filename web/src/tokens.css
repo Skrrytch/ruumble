@@ -10,6 +10,11 @@
   --color-navy-light: #0f4b8c;
   --color-alert: #c62828;      /* ONLY: recording indicator (AP10) and deleting a post */
 
+  /* Plant (care, ADR-0014): ONLY the potted plant in rooms, corridors and at the entrance */
+  --color-leaf: #4f9a6b;
+  --color-leaf-dark: #2f6e47;
+  --color-pot: #c97d4e;
+
   /* Blues */
   --color-blue-700: #00508c;   /* secondary text (contrast ≥ 4.5:1 on white) */
   --color-blue-500: #0078be;   /* avatar fill of other users, floor kicker */

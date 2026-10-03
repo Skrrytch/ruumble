@@ -288,3 +288,20 @@ describe("Avatars (AP9) and presence (AP10)", () => {
     expect(b.floors.find((f) => f.name === "DEVELOPMENT")!.rooms.some((r) => r.recording)).toBe(false);
   });
 });
+
+describe("Care (ADR-0014)", () => {
+  const channels = [ch(0, null, "Root"), ch(1, 0, "1F"), ch(2, 1, "Office"), ch(3, 1, "Lab")];
+
+  it("the plants are buttons only where the snapshot allows care", () => {
+    const b = buildBuilding(snapshot(channels, [user(1, "Anna", 2)], 1, { care: [0, 1, 3] }));
+    expect(b.canTendBuilding).toBe(true);
+    expect(b.floors[0]!.corridor.canTend).toBe(true);
+    expect(b.floors[0]!.rooms.map((r) => [r.name, r.canTend])).toEqual([["Lab", true], ["Office", false]]);
+  });
+
+  it("without `care` (older service, no permission) nothing can be tended", () => {
+    const b = buildBuilding(snapshot(channels, [user(1, "Anna", 2)], 1));
+    expect(b.canTendBuilding).toBe(false);
+    expect([b.floors[0]!.corridor, ...b.floors[0]!.rooms].some((s) => s.canTend)).toBe(false);
+  });
+});

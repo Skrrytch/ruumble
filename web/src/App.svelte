@@ -11,6 +11,7 @@
   import PluginHelp from "./lib/ui/PluginHelp.svelte";
   import TopBar from "./lib/ui/TopBar.svelte";
   import BoardPanel from "./lib/ui/board/BoardPanel.svelte";
+  import CareDialog from "./lib/ui/CareDialog.svelte";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
 
@@ -68,6 +69,7 @@
           boardOpen={app.boardOpen}
           boardUnseen={app.boardUnseen}
           ontoggleboard={() => app.toggleBoard()}
+          ontend={(target) => app.openCare(target)}
         />
       {:else}
         <div class="vacancy" role="status">
@@ -77,6 +79,7 @@
       {/if}
       {#if app.boardOpen && !app.readonly}<BoardPanel {app} />{/if}
     </div>
+    {#if app.care}<CareDialog {app} />{/if}
   {/if}
 
   {#if app.connection === "reconnecting" && building}

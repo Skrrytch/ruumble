@@ -17,5 +17,6 @@ Format: short MADR. Status: **accepted** = decided by the project owner. **propo
 | [0011](0011-own-storage-for-the-board.md) | Own storage for the board | accepted |
 | [0012](0012-pairing-with-a-code.md) | Pairing further browsers with a code from the Mumble log | accepted (approach) / proposed (details) |
 | [0013](0013-windows-plugin.md) | Windows plugin, cross-compiled into the same bundle | proposed |
+| [0014](0014-care-of-the-stored-data.md) | Care of the stored data (the plants) | proposed |
 
 ADRs record a decision as it was made. Where the code has moved on since, the ADR has a short "Current state" note instead of a silent rewrite.

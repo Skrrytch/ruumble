@@ -48,6 +48,8 @@ export interface Space {
   listeners: number[];
   /** Someone in the room is recording (AP10) */
   recording: boolean;
+  /** The own user may tend its stored data: the plant is a button (Mumble Write, ADR-0014) */
+  canTend: boolean;
 }
 
 export interface Room extends Space {
@@ -90,6 +92,8 @@ export interface Building {
   online: number;
   /** `null` as long as no paired plugin is connected */
   self: SelfLocation | null;
+  /** The own user may tend the whole building: the plant at the entrance (Write on the root channel, ADR-0014) */
+  canTendBuilding: boolean;
 }
 
 // ---------------------------------------------------------------- individual rules
@@ -218,6 +222,7 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
     (usersIn.get(id) ?? []).slice().sort((a, b) => collator.compare(a.name, b.name)).map(userView);
 
   const selfUser = snapshot.users.find((u) => u.session === selfSession);
+  const care = new Set(snapshot.care ?? []);
   const space = (c: Channel): Space => ({
     channelId: c.id,
     name: c.name,
@@ -226,6 +231,7 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
     locked: snapshot.canEnter[String(c.id)] === false,
     listeners: snapshot.listeners[String(c.id)] ?? [],
     recording: (usersIn.get(c.id) ?? []).some((u) => u.recording),
+    canTend: care.has(c.id),
   });
   const subtreePopulation = (id: number): number =>
     (usersIn.get(id)?.length ?? 0) + childrenOf(id).reduce((n, c) => n + subtreePopulation(c.id), 0);
@@ -269,6 +275,7 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
     entrance: viewsIn(0),
     online: snapshot.users.length,
     self,
+    canTendBuilding: care.has(0),
   };
 }
 

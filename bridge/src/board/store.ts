@@ -1,12 +1,14 @@
 /**
  * Board storage (ADR-0011): SQLite for posts, attachments as files by SHA-256.
  * Retention, quota and deleted channels are cleaned up by `cleanup()` (hourly from main.ts).
+ * Care (ADR-0014): the last known place of every floor and room, so the data of rooms that are gone can be
+ * found from their floor and removed by hand.
  */
 import { createHash, randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import Database from "better-sqlite3";
-import { learnTicketLinks, type PostKind, type ReactionKind, type TicketLinks } from "@ruumble/protocol";
+import { learnTicketLinks, type Channel, type PostKind, type ReactionKind, type TicketLinks } from "@ruumble/protocol";
 
 export interface StoredAttachment {
   id: string;
@@ -55,6 +57,23 @@ const REMOVED_CHANNEL_GRACE_DAYS = 7;
 export interface CleanupResult {
   removed: number;
   channels: number[];
+}
+
+/** a channel as far as the place of floors and rooms is concerned */
+export type ChannelPlace = Pick<Channel, "id" | "parent" | "name" | "temporary">;
+
+/**
+ * Board data of a room that is no longer a room (deleted, or moved out of the floor plan), with its last known place.
+ * `floorId` null: not known (data from before migration 5, or the room became a floor itself).
+ */
+export interface OrphanedRoom {
+  channelId: number;
+  floorId: number | null;
+  name: string;
+  posts: number;
+  bytes: number;
+  /** when the channel was found missing; null if it still exists elsewhere */
+  goneSince: number | null;
 }
 
 /** Schema migrations, in this order, never change them afterwards (exported for the migration test) */
@@ -115,6 +134,9 @@ export const MIGRATIONS = [
   // copy to another room: where it came from
   `ALTER TABLE posts ADD COLUMN copied_from_room TEXT;
    ALTER TABLE posts ADD COLUMN copied_from_author TEXT;`,
+  // care (ADR-0014): last known place of floors (parent 0) and rooms; ticket links reset per project
+  `CREATE TABLE channels (channel_id INTEGER PRIMARY KEY, parent_id INTEGER NOT NULL, name TEXT NOT NULL);
+   CREATE TABLE forgotten_tickets (project TEXT PRIMARY KEY, forgotten_at INTEGER NOT NULL);`,
 ];
 
 export class BoardStore {
@@ -123,6 +145,8 @@ export class BoardStore {
   private readonly opts: Required<StoreOptions>;
   /** learned ticket links, recomputed after a change to the posts */
   private tickets: TicketLinks | null = null;
+  /** current floors and rooms with a board, from the last `syncChannels`; null before the first one */
+  private places: { floors: Set<number>; rooms: Set<number> } | null = null;
 
   constructor(dir: string, opts: StoreOptions = {}) {
     this.opts = { retentionDays: 30, quotaBytes: 2048 * 1024 * 1024, orphanMinutes: 60, now: Date.now, ...opts };
@@ -259,12 +283,93 @@ export class BoardStore {
   ticketLinks(): TicketLinks {
     if (!this.tickets) {
       const links: TicketLinks = {};
-      for (const { text } of this.db.prepare("SELECT text FROM posts WHERE text LIKE '%/browse/%' ORDER BY created_at, rowid").all() as { text: string }[]) {
-        learnTicketLinks(text, links);
+      // forgotten projects (care): only posts created after the reset teach them again
+      const forgotten = new Map((this.db.prepare("SELECT project, forgotten_at AS at FROM forgotten_tickets").all() as { project: string; at: number }[]).map((r) => [r.project, r.at]));
+      for (const { text, created_at } of this.db.prepare("SELECT text, created_at FROM posts WHERE text LIKE '%/browse/%' ORDER BY created_at, rowid").all() as { text: string; created_at: number }[]) {
+        for (const [project, base] of Object.entries(learnTicketLinks(text))) {
+          if (!Object.hasOwn(links, project) && created_at > (forgotten.get(project) ?? -Infinity)) links[project] = base;
+        }
       }
       this.tickets = links;
     }
     return this.tickets;
+  }
+
+  /** forget the learned links of these projects: posts created until now no longer teach them (care, ADR-0014) */
+  forgetTickets(projects: Iterable<string>): void {
+    const now = this.opts.now();
+    const stmt = this.db.prepare("INSERT INTO forgotten_tickets (project, forgotten_at) VALUES (?, ?) ON CONFLICT(project) DO UPDATE SET forgotten_at = excluded.forgotten_at");
+    this.db.transaction(() => {
+      for (const p of projects) stmt.run(p, now);
+    })();
+    this.tickets = null;
+  }
+
+  // ---------------------------------------------------------------- Care (ADR-0014)
+
+  /** number of posts and size of their attachments in a room */
+  roomStats(channelId: number): { posts: number; bytes: number } {
+    return this.db
+      .prepare("SELECT COUNT(*) AS posts, COALESCE(SUM(a.size), 0) AS bytes FROM posts p LEFT JOIN attachments a ON a.id = p.attachment_id WHERE p.channel_id = ?")
+      .get(channelId) as { posts: number; bytes: number };
+  }
+
+  /** clear a room's board: all posts with their reactions, pin and attachments; returns the number of posts */
+  clearRoom(channelId: number): number {
+    const rows = this.db.prepare("DELETE FROM posts WHERE channel_id = ? RETURNING attachment_id AS a").all(channelId) as { a: string | null }[];
+    this.tickets = null;
+    for (const a of new Set(rows.flatMap((r) => (r.a ? [r.a] : [])))) this.removeIfUnreferenced(a);
+    return rows.length;
+  }
+
+  /** board data of channels that are no longer rooms, with their last known place; empty before the first sync */
+  orphanedRooms(): OrphanedRoom[] {
+    const rooms = this.places?.rooms;
+    if (!rooms) return [];
+    const rows = this.db
+      .prepare(`SELECT p.channel_id AS id, c.parent_id AS parent, c.name, COUNT(*) AS posts, COALESCE(SUM(a.size), 0) AS bytes, r.removed_at AS gone
+                FROM posts p LEFT JOIN channels c ON c.channel_id = p.channel_id LEFT JOIN attachments a ON a.id = p.attachment_id
+                LEFT JOIN removed_channels r ON r.channel_id = p.channel_id
+                GROUP BY p.channel_id ORDER BY c.name IS NULL, c.name, p.channel_id`)
+      .all() as { id: number; parent: number | null; name: string | null; posts: number; bytes: number; gone: number | null }[];
+    return rows
+      .filter((r) => !rooms.has(r.id))
+      .map((r) => ({ channelId: r.id, floorId: r.parent ? r.parent : null, name: r.name ?? "", posts: r.posts, bytes: r.bytes, goneSince: r.gone }));
+  }
+
+  /** last known name of a floor or room */
+  placeName(channelId: number): string {
+    return (this.db.prepare("SELECT name FROM channels WHERE channel_id = ?").get(channelId) as { name: string } | undefined)?.name ?? "";
+  }
+
+  /** remove all data of these rooms, as far as they are no longer rooms; returns the number of posts removed */
+  removeRooms(channelIds: Iterable<number>): number {
+    const orphaned = new Set(this.orphanedRooms().map((r) => r.channelId));
+    let removed = 0;
+    for (const id of channelIds) {
+      if (!orphaned.has(id)) continue;
+      removed += this.clearRoom(id);
+      this.db.prepare("DELETE FROM removed_channels WHERE channel_id = ?").run(id);
+    }
+    this.pruneChannels();
+    return removed;
+  }
+
+  /** forget the places of floors and rooms that are gone and hold no data any more */
+  private pruneChannels(): void {
+    const places = this.places;
+    if (!places) return;
+    const withPosts = new Set(this.channelsWithPosts());
+    const rows = this.db.prepare("SELECT channel_id AS id, parent_id AS parent FROM channels").all() as { id: number; parent: number }[];
+    const rooms = rows.filter((r) => r.parent !== 0 && (places.rooms.has(r.id) || withPosts.has(r.id)));
+    const floorsInUse = new Set(rooms.map((r) => r.parent));
+    const drop = this.db.prepare("DELETE FROM channels WHERE channel_id = ?");
+    this.db.transaction(() => {
+      for (const r of rows) {
+        const keep = r.parent === 0 ? places.floors.has(r.id) || floorsInUse.has(r.id) : places.rooms.has(r.id) || withPosts.has(r.id);
+        if (!keep) drop.run(r.id);
+      }
+    })();
   }
 
   // ---------------------------------------------------------------- Attachments
@@ -302,15 +407,26 @@ export class BoardStore {
 
   // ---------------------------------------------------------------- Cleanup
 
-  /** reconcile with the existing channels: remember deleted ones, forget ones that reappeared */
-  syncChannels(existing: Iterable<number>): void {
-    const ids = new Set(existing);
+  /**
+   * reconcile with the existing channels: remember deleted ones, forget ones that reappeared, and note the place
+   * of every floor (child of the root) and room (not temporary, on a floor) for care (ADR-0014)
+   */
+  syncChannels(channels: readonly ChannelPlace[]): void {
+    const ids = new Set(channels.map((c) => c.id));
+    const floors = new Set(channels.filter((c) => c.parent === 0).map((c) => c.id));
+    const rooms = channels.filter((c) => c.parent !== null && floors.has(c.parent) && !c.temporary);
+    this.places = { floors, rooms: new Set(rooms.map((c) => c.id)) };
     const now = this.opts.now();
+    const place = this.db.prepare(
+      "INSERT INTO channels (channel_id, parent_id, name) VALUES (?, ?, ?) ON CONFLICT(channel_id) DO UPDATE SET parent_id = excluded.parent_id, name = excluded.name WHERE parent_id != excluded.parent_id OR name != excluded.name",
+    );
     const tx = this.db.transaction(() => {
       for (const c of this.channelsWithPosts()) {
         if (ids.has(c)) this.db.prepare("DELETE FROM removed_channels WHERE channel_id = ?").run(c);
         else this.db.prepare("INSERT INTO removed_channels (channel_id, removed_at) VALUES (?, ?) ON CONFLICT DO NOTHING").run(c, now);
       }
+      for (const c of channels) if (floors.has(c.id)) place.run(c.id, 0, c.name);
+      for (const c of rooms) place.run(c.id, c.parent, c.name);
     });
     tx();
   }
@@ -328,6 +444,8 @@ export class BoardStore {
     let removed = removeWhere("created_at < ?", now - this.opts.retentionDays * DAY);
     removed += removeWhere("channel_id IN (SELECT channel_id FROM removed_channels WHERE removed_at < ?)", now - REMOVED_CHANNEL_GRACE_DAYS * DAY);
     this.db.prepare("DELETE FROM removed_channels WHERE channel_id NOT IN (SELECT DISTINCT channel_id FROM posts)").run();
+    // every post a reset was about has expired by now
+    this.db.prepare("DELETE FROM forgotten_tickets WHERE forgotten_at < ?").run(now - this.opts.retentionDays * DAY);
     this.removeOrphans(this.opts.orphanMinutes * 60_000);
     // quota: oldest posts with an attachment first, until it fits again (ADR-0011)
     while (this.usedBytes() > this.opts.quotaBytes) {
@@ -338,6 +456,7 @@ export class BoardStore {
       removed++;
       this.removeIfUnreferenced(oldest.a);
     }
+    this.pruneChannels();
     return { removed, channels: [...channels] };
   }
 

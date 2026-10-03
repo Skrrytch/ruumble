@@ -7,12 +7,12 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, REACTION_KINDS, learnTicketLinks, setTask, ticketProjects, type Attachment, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, REACTION_KINDS, learnTicketLinks, setTask, ticketProjects, type Attachment, type OrphanedFloor, type OrphanedRoom, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
 import vacant from "@ruumble/protocol/fixtures/vacant.json";
-import type { AdapterEvents, BoardApi, BoardResult, MumbleAdapter, PairApi, PluginStatus } from "./types.ts";
+import type { AdapterEvents, BoardApi, BoardResult, CareApi, MumbleAdapter, PairApi, PluginStatus } from "./types.ts";
 
 const MINUTE = 60_000;
 
@@ -108,6 +108,17 @@ function samplePosts(now: number, files: Map<string, MockFile>): Map<number, Pos
   ]);
 }
 
+/** board data of rooms that are gone, with their last floor (care, ADR-0014); floor 40 is gone as well */
+function sampleOrphans(now: number): { floorId: number | null; floorName: string; room: OrphanedRoom }[] {
+  return [
+    { floorId: 2, floorName: "Development", room: { channelId: 30, name: "Design review", posts: 4, bytes: 2_400_000, goneSince: now - 2 * 24 * 60 * MINUTE } },
+    { floorId: 2, floorName: "Development", room: { channelId: 31, name: "Hackathon 2026", posts: 12, bytes: 0, goneSince: null } },
+    { floorId: 40, floorName: "Marketing", room: { channelId: 41, name: "Campaigns", posts: 7, bytes: 5_100_000, goneSince: now - 5 * 24 * 60 * MINUTE } },
+    { floorId: 40, floorName: "Marketing", room: { channelId: 42, name: "Events", posts: 2, bytes: 0, goneSince: now - 5 * 24 * 60 * MINUTE } },
+    { floorId: null, floorName: "", room: { channelId: 50, name: "", posts: 1, bytes: 0, goneSince: now - 24 * 60 * MINUTE } },
+  ];
+}
+
 export const FIXTURES = {
   sample,
   "edge-cases": edgeCases,
@@ -148,6 +159,53 @@ export class MockAdapter implements MumbleAdapter {
   private nextPostId = 1;
   /** room → post kept on top (A3) */
   private pins = new Map<number, Pinned>();
+  private orphans = sampleOrphans(Date.now());
+  /** projects whose learned link was reset (care); a newer post teaches it again */
+  private forgotten = new Map<string, number>();
+  readonly care: CareApi = {
+    room: async (id) =>
+      this.caretaker(id, () => {
+        const posts = this.posts.get(id) ?? [];
+        const texts = posts.map((p) => p.text);
+        const projects = ticketProjects(texts.join("\n"));
+        for (const t of texts) for (const p of Object.keys(learnTicketLinks(t))) projects.add(p);
+        const learned = this.learnedLinks();
+        const tickets = Object.fromEntries([...projects].sort().flatMap((p) => (Object.hasOwn(learned, p) ? [[p, learned[p]!]] : [])));
+        return { channelId: id, name: this.channelName(id), posts: posts.length, bytes: posts.reduce((n, p) => n + (p.attachment?.size ?? 0), 0), tickets };
+      }, this.isRoom(id)),
+    clearRoom: async (id) =>
+      this.caretaker(id, () => {
+        const posts = (this.posts.get(id) ?? []).length;
+        this.posts.delete(id);
+        this.pins.delete(id);
+        if (posts) this.boardChanged(id);
+        return { posts };
+      }, this.isRoom(id)),
+    forgetTickets: async (id) =>
+      this.caretaker(id, () => {
+        const now = Date.now();
+        for (const p of (this.posts.get(id) ?? []).flatMap((x) => [...ticketProjects(x.text), ...Object.keys(learnTicketLinks(x.text))])) this.forgotten.set(p, now);
+        this.boardChanged(id);
+        return true as const;
+      }, this.isRoom(id)),
+    floor: async (id) =>
+      this.caretaker(id, () => ({ channelId: id, name: this.channelName(id), orphans: this.orphans.filter((o) => o.floorId === id).map((o) => o.room) }), this.isFloor(id)),
+    cleanFloor: async (id, rooms) =>
+      this.caretaker(id, () => this.removeOrphans((o) => o.floorId === id && rooms.includes(o.room.channelId)), this.isFloor(id)),
+    building: async () =>
+      this.caretaker(0, () => {
+        const floors = new Map<number | null, OrphanedFloor>();
+        for (const o of this.orphans) {
+          if (o.floorId !== null && this.isFloor(o.floorId)) continue;
+          const f = floors.get(o.floorId) ?? { channelId: o.floorId, name: o.floorName, rooms: 0, posts: 0, bytes: 0, goneSince: null };
+          const gone = o.room.goneSince;
+          floors.set(o.floorId, { ...f, rooms: f.rooms + 1, posts: f.posts + o.room.posts, bytes: f.bytes + o.room.bytes, goneSince: gone === null ? f.goneSince : Math.min(gone, f.goneSince ?? gone) });
+        }
+        return { orphans: [...floors.values()] };
+      }, true),
+    cleanBuilding: async (floors) =>
+      this.caretaker(0, () => this.removeOrphans((o) => floors.includes(o.floorId) && (o.floorId === null || !this.isFloor(o.floorId))), true),
+  };
   readonly board: BoardApi = {
     load: async () =>
       this.boardRoom((channelId) => {
@@ -365,6 +423,8 @@ export class MockAdapter implements MumbleAdapter {
     for (const f of this.files.values()) if (f.url.startsWith("blob:")) URL.revokeObjectURL(f.url);
     this.files.clear();
     this.posts = samplePosts(Date.now(), this.files);
+    this.orphans = sampleOrphans(Date.now());
+    this.forgotten.clear();
     this.unmuteOnUndeaf = false;
     this.setPlugin(this.state.self ? "connected" : "disconnected");
     this.emit();
@@ -422,13 +482,46 @@ export class MockAdapter implements MumbleAdapter {
 
   // ---------------------------------------------------------------- internal
 
-  /** like the service: learned from the issue links in all rooms (oldest first), only projects mentioned here */
-  private ticketLinks(posts: Post[]): TicketLinks {
+  /** like the service: learned from the issue links in all rooms (oldest first); a reset project only from newer posts */
+  private learnedLinks(): TicketLinks {
     const all = [...this.posts.values()].flat().sort((a, b) => a.createdAt - b.createdAt);
     const learned: TicketLinks = {};
-    for (const p of all) learnTicketLinks(p.text, learned);
+    for (const p of all) {
+      for (const [project, base] of Object.entries(learnTicketLinks(p.text))) {
+        if (!Object.hasOwn(learned, project) && p.createdAt > (this.forgotten.get(project) ?? -Infinity)) learned[project] = base;
+      }
+    }
+    return learned;
+  }
+
+  /** only projects mentioned in this room */
+  private ticketLinks(posts: Post[]): TicketLinks {
+    const learned = this.learnedLinks();
     const projects = ticketProjects(posts.map((p) => p.text).join("\n"));
     return Object.fromEntries(Object.entries(learned).filter(([project]) => projects.has(project)));
+  }
+
+  private isFloor(id: number): boolean {
+    return this.state.channels.some((c) => c.id === id && c.parent === 0);
+  }
+
+  private isRoom(id: number): boolean {
+    const c = this.state.channels.find((x) => x.id === id);
+    return !!c && !c.temporary && c.parent !== null && this.isFloor(c.parent);
+  }
+
+  /** like the service: Write permission on the channel (the snapshot's `care`), from anywhere in the building */
+  private caretaker<T>(channelId: number, fn: () => T, exists: boolean): BoardResult<T> {
+    if (this.plugin === "disconnected" || !this.me()) return { ok: false, error: "not-paired" };
+    if (!exists) return { ok: false, error: "not-found" };
+    if (!this.state.care?.includes(channelId)) return { ok: false, error: "forbidden" };
+    return { ok: true, value: fn() };
+  }
+
+  private removeOrphans(match: (o: (typeof this.orphans)[number]) => boolean): { posts: number } {
+    const gone = this.orphans.filter(match);
+    this.orphans = this.orphans.filter((o) => !match(o));
+    return { posts: gone.reduce((n, o) => n + o.room.posts, 0) };
   }
 
   private channelName(id: number): string {

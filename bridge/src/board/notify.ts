@@ -26,3 +26,19 @@ export function notifyRoom(
   for (const plugin of targets) plugin.send({ v: PROTOCOL_VERSION, type: "notify", text: notifyText(author.name, post.kind, plugin.locale, post.copiedFrom?.roomName) });
   return targets.length;
 }
+
+const CLEARED: Record<Locale, (name: string) => string> = {
+  de: (name) => `${name} hat die Pinnwand geleert.`,
+  en: (name) => `${name} cleared the board.`,
+};
+
+export function clearedText(name: string, locale: Locale = "de"): string {
+  return CLEARED[locale](name.slice(0, 120));
+}
+
+/** care (ADR-0014): the board of a room was cleared; to the people present, except whoever did it */
+export function notifyCleared(hub: Pick<Hub, "pluginsIn">, channelId: number, by: { name: string; certHash: string }): number {
+  const targets = hub.pluginsIn(channelId, by.certHash);
+  for (const plugin of targets) plugin.send({ v: PROTOCOL_VERSION, type: "notify", text: clearedText(by.name, plugin.locale) });
+  return targets.length;
+}

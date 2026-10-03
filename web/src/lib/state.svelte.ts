@@ -2,7 +2,7 @@
  * State of the web UI: holds the latest snapshot, derives the building and runs commands.
  * No optimistic switching: the own channel only changes with the next snapshot (ADR-0003).
  */
-import { BOARD_LIMITS, type Attachment, type BoardView, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_LIMITS, type Attachment, type BoardView, type BuildingCare, type FloorCare, type RoomCare, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairErrorCode, PluginStatus } from "./adapter/types.ts";
 import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter, type CopyTarget } from "./board/model.ts";
 import { t } from "./i18n/index.svelte.ts";
@@ -15,6 +15,15 @@ export function boardErrorText(error: BoardErrorCode): string {
   const m = t().boardErrors[error];
   return typeof m === "function" ? m(formatSize(BOARD_LIMITS.fileBytes)) : m;
 }
+
+/** Plain text for an error of a care action */
+export function careErrorText(error: BoardErrorCode): string {
+  return error === "not-found" || error === "forbidden" ? t().care.errors[error] : boardErrorText(error);
+}
+
+/** whose stored data the care dialog is about (the plant that was clicked, ADR-0014) */
+export type CareTarget = { kind: "room" | "floor"; channelId: number } | { kind: "building" };
+export type CareView = { kind: "room"; value: RoomCare } | { kind: "floor"; value: FloorCare } | { kind: "building"; value: BuildingCare };
 
 /** per room: creation time of the newest post the user has seen on its board (only in this browser) */
 const SEEN_KEY = "ruumble.boardSeen";
@@ -47,6 +56,12 @@ export class RuumbleState {
   boardUnseen = $state(0);
   /** the posts that were unseen when the board was opened: they light up once in the sidebar */
   boardRevealed: string[] = [];
+  /** care dialog (ADR-0014): target, what the service reported, a running action, its result or error */
+  care = $state<CareTarget | null>(null);
+  careView = $state<CareView | null>(null);
+  careBusy = $state(false);
+  careMessage = $state<string | null>(null);
+  careError = $state<BoardErrorCode | null>(null);
   private boardChannel: number | null = null;
   private boardSeen = readSeen();
 
@@ -293,6 +308,70 @@ export class RuumbleState {
     return false;
   }
 
+  // ---------------------------------------------------------------- Care (ADR-0014)
+
+  async openCare(target: CareTarget): Promise<void> {
+    this.care = target;
+    this.careView = null;
+    this.careMessage = null;
+    this.careError = null;
+    await this.loadCare();
+  }
+
+  closeCare(): void {
+    this.care = null;
+    this.careView = null;
+  }
+
+  private async loadCare(): Promise<void> {
+    const target = this.care;
+    if (!target) return;
+    const api = this.adapter.care;
+    const r: BoardResult<CareView> =
+      target.kind === "room" ? wrap("room", await api.room(target.channelId))
+      : target.kind === "floor" ? wrap("floor", await api.floor(target.channelId))
+      : wrap("building", await api.building());
+    if (this.care !== target) return; // closed or another plant meanwhile
+    if (r.ok) this.careView = r.value;
+    else this.careError = r.error;
+  }
+
+  /** run a care action, then show its result and what the service reports now */
+  private async careAction<T>(run: () => Promise<BoardResult<T>>, message: (value: T) => string): Promise<boolean> {
+    this.careBusy = true;
+    this.careMessage = null;
+    this.careError = null;
+    const r = await run();
+    this.careBusy = false;
+    if (!r.ok) {
+      this.careError = r.error;
+      return false;
+    }
+    this.careMessage = message(r.value);
+    await this.loadCare();
+    return true;
+  }
+
+  clearRoom(): Promise<boolean> {
+    const target = this.care;
+    if (target?.kind !== "room") return Promise.resolve(false);
+    return this.careAction(() => this.adapter.care.clearRoom(target.channelId), (v) => t().care.cleared(t().care.posts(v.posts)));
+  }
+
+  forgetTickets(): Promise<boolean> {
+    const target = this.care;
+    if (target?.kind !== "room") return Promise.resolve(false);
+    return this.careAction(() => this.adapter.care.forgetTickets(target.channelId), () => t().care.ticketsForgotten);
+  }
+
+  /** floor: rooms that are gone; building: floors that are gone (null: unknown floor) */
+  removeOrphans(ids: (number | null)[]): Promise<boolean> {
+    const target = this.care;
+    if (!target || target.kind === "room" || !ids.length) return Promise.resolve(false);
+    const run = target.kind === "floor" ? () => this.adapter.care.cleanFloor(target.channelId, ids.filter((id) => id !== null)) : () => this.adapter.care.cleanBuilding(ids);
+    return this.careAction(run, (v) => t().care.removed(t().care.posts(v.posts)));
+  }
+
   dismissNotice(): void {
     this.notice = null;
   }
@@ -331,6 +410,10 @@ export class RuumbleState {
   private onTalking(session: number, state: TalkingState): void {
     this.talking = { ...this.talking, [session]: state !== "passive" };
   }
+}
+
+function wrap<K extends CareView["kind"]>(kind: K, r: BoardResult<Extract<CareView, { kind: K }>["value"]>): BoardResult<CareView> {
+  return r.ok ? { ok: true, value: { kind, value: r.value } as CareView } : r;
 }
 
 function readSeen(): Record<string, number> {

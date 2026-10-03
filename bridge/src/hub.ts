@@ -112,6 +112,11 @@ export class Hub {
     return !!c && !c.temporary && !!floor && floor.parent === 0;
   }
 
+  /** Is this channel a floor? A child of the root channel (care, ADR-0014) */
+  isFloor(channelId: number): boolean {
+    return !!this.state?.channels.some((c) => c.id === channelId && c.parent === 0);
+  }
+
   /** may this user enter the channel (Mumble ACLs, as for moving); unknown counts as yes, like in the snapshot */
   mayEnter(session: number, channelId: number): boolean {
     return this.state?.canEnter.get(session)?.[String(channelId)] !== false;
@@ -332,6 +337,7 @@ export class Hub {
       users: s.users.map(({ address: _address, ...u }) => ({ ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null })),
       listeners: s.listeners,
       canEnter: session ? (s.canEnter.get(session) ?? {}) : {},
+      care: session ? (s.care.get(session) ?? []) : [],
     };
     ui.conn.send(snapshot);
   }

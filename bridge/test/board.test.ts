@@ -6,7 +6,8 @@ import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
 import type { BridgeToPlugin, BridgeToUi, PostKind } from "@ruumble/protocol";
 import { imageSize, safeFileName } from "../src/board/media.ts";
-import { notifyRoom, notifyText } from "../src/board/notify.ts";
+import { careRoutes, orphanedFloors } from "../src/board/care.ts";
+import { clearedText, notifyCleared, notifyRoom, notifyText } from "../src/board/notify.ts";
 import { boardRoutes } from "../src/board/routes.ts";
 import { BoardStore, MIGRATIONS } from "../src/board/store.ts";
 import { Hub } from "../src/hub.ts";
@@ -18,6 +19,8 @@ const DAY = 24 * 60 * 60 * 1000;
 const PNG = Buffer.from("89504e470d0a1a0a0000000d4948445200000040000000200806000000", "hex"); // 64×32
 const A = "a".repeat(40), B = "b".repeat(40);
 
+/** channels for syncChannels: root, floors and rooms (`[id, parent, name]`) */
+const places = (...list: [number, number | null, string][]) => list.map(([id, parent, name]) => ({ id, parent, name, temporary: false }));
 const tempStore = (opts: ConstructorParameters<typeof BoardStore>[1] = {}) => {
   const dir = mkdtempSync(join(tmpdir(), "ruumble-board-"));
   return { store: new BoardStore(dir, opts), dir };
@@ -82,7 +85,7 @@ describe("BoardStore", () => {
     store.create({ channelId: 3, kind: "text", text: "old", authorHash: A, authorName: "Anna" });
     now += 10 * DAY;
     store.create({ channelId: 5, kind: "text", text: "channel disappears", authorHash: A, authorName: "Anna" });
-    store.syncChannels([3]); // channel 5 is gone
+    store.syncChannels(places([0, null, "Root"], [1, 0, "1F"], [3, 1, "Office"])); // channel 5 is gone
     now += 8 * DAY;
     expect(store.cleanup()).toEqual({ removed: 1, channels: [5] }); // channel 5 after 7 days
     now += 13 * DAY; // post in 3 is now 31 days old
@@ -96,7 +99,7 @@ describe("BoardStore", () => {
     store.create({ channelId: 5, kind: "text", text: "x", authorHash: A, authorName: "Anna" });
     store.syncChannels([]);
     now += 3 * DAY;
-    store.syncChannels([5]);
+    store.syncChannels(places([0, null, "Root"], [1, 0, "1F"], [5, 1, "Office"]));
     now += 5 * DAY;
     expect(store.cleanup().removed).toBe(0);
   });
@@ -169,6 +172,60 @@ describe("BoardStore", () => {
     expect(store.ticketLinks().TAG).toBe("https://evil.example/browse/");
     store.delete(store.list(4)[0]!.id);
     expect(store.ticketLinks()).toEqual({});
+  });
+
+  it("ticket links: forgetting a project ignores older posts, newer ones teach it again (care)", () => {
+    let now = 1_000;
+    const { store } = tempStore({ now: () => now });
+    store.create({ channelId: 3, kind: "text", text: "https://wrong.example/browse/TAG-1 and https://jira.example/browse/VKB-3", authorHash: A, authorName: "Anna" });
+    expect(store.ticketLinks().TAG).toBe("https://wrong.example/browse/");
+    store.forgetTickets(["TAG"]);
+    expect(store.ticketLinks()).toEqual({ VKB: "https://jira.example/browse/" });
+    now += 1;
+    store.create({ channelId: 4, kind: "text", text: "https://jira.example/browse/TAG-2", authorHash: B, authorName: "Ben" });
+    expect(store.ticketLinks().TAG).toBe("https://jira.example/browse/");
+  });
+
+  it("care: clear a room, find and remove rooms and floors that are gone", () => {
+    let now = 0;
+    const { store } = tempStore({ now: () => now, orphanMinutes: 0 });
+    const building = places([0, null, "Root"], [1, 0, "1F"], [2, 1, "Office"], [3, 1, "Lab"], [4, 0, "2F"], [5, 4, "Archive"]);
+    store.syncChannels(building);
+    expect(store.orphanedRooms()).toEqual([]);
+    const att = store.putFile(PNG, "image/png");
+    store.create({ channelId: 2, kind: "text", text: "a", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 3, kind: "image", text: "", attachmentId: att.id, attachmentName: "a.png", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 3, kind: "text", text: "b", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 5, kind: "text", text: "c", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 9, kind: "text", text: "from before the places were known", authorHash: A, authorName: "Anna" });
+    expect(store.roomStats(3)).toEqual({ posts: 2, bytes: PNG.length });
+    // Lab is deleted, the whole 2nd floor too; Office is renamed
+    now = 5;
+    store.syncChannels(places([0, null, "Root"], [1, 0, "1F"], [2, 1, "Office 1"]));
+    expect(store.orphanedRooms()).toEqual([
+      { channelId: 5, floorId: 4, name: "Archive", posts: 1, bytes: 0, goneSince: 5 },
+      { channelId: 3, floorId: 1, name: "Lab", posts: 2, bytes: PNG.length, goneSince: 5 },
+      { channelId: 9, floorId: null, name: "", posts: 1, bytes: 0, goneSince: 5 },
+    ]);
+    expect(store.placeName(4)).toBe("2F");
+    expect(store.placeName(2)).toBe("Office 1");
+    // existing rooms are never removed this way
+    expect(store.removeRooms([2, 3])).toBe(2);
+    expect(store.roomStats(2).posts).toBe(1);
+    expect(store.attachment(att.id)).toBeNull();
+    expect(store.placeName(3)).toBe(""); // forgotten with its data
+    expect(store.removeRooms([5])).toBe(1);
+    expect(store.placeName(4)).toBe(""); // its floor holds nothing any more
+    expect(store.clearRoom(2)).toBe(1);
+    expect(store.orphanedRooms().map((r) => r.channelId)).toEqual([9]);
+  });
+
+  it("care: a room moved out of the floor plan keeps its last floor", () => {
+    const { store } = tempStore();
+    store.syncChannels(places([0, null, "Root"], [1, 0, "1F"], [2, 1, "Office"], [3, 1, "Lab"]));
+    store.create({ channelId: 3, kind: "text", text: "x", authorHash: A, authorName: "Anna" });
+    store.syncChannels(places([0, null, "Root"], [1, 0, "1F"], [2, 1, "Office"], [3, 2, "Lab"])); // now below Office
+    expect(store.orphanedRooms()).toEqual([{ channelId: 3, floorId: 1, name: "Lab", posts: 1, bytes: 0, goneSince: null }]);
   });
 
   it("migration 3 keeps existing reactions and allows the new kinds", () => {
@@ -495,5 +552,114 @@ describe("REST /api/board", () => {
     await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "text", text: "x" } });
     expect(uiAnna.last("board")).toEqual({ v: 1, type: "board", channelId: 2 });
     expect(uiAnna.last("snapshot")).not.toHaveProperty("boards");
+  });
+});
+
+describe("REST /api/care (ADR-0014)", () => {
+  async function setup() {
+    const source = new FakeSource();
+    source.users[0]!.channel = 2; // Anna in Office, Ben (admin) in the corridor
+    source.admins.add(8);
+    const { store } = tempStore({ orphanMinutes: 0 });
+    const hub = new Hub({ source, pairing: new Pairing(null), publicUrl: "http://r", addressCheck: "off", preview: false });
+    const poller = new Poller(source, { onChange: (s) => { store.syncChannels(s.channels); hub.setState(s); } });
+    await poller.poll();
+    const plugins = { anna: recorder<BridgeToPlugin>(), ben: recorder<BridgeToPlugin>() };
+    for (const [session, hash, rec] of [[7, A, plugins.anna], [8, B, plugins.ben]] as const) {
+      await hub.pluginConnected(rec.conn, "x").onMessage(JSON.stringify({ v: 1, type: "hello", session, certHash: hash, pluginVersion: "0", paired: true }));
+    }
+    const app = Fastify();
+    await app.register(careRoutes, {
+      store, hub, source,
+      certHashOf: (c) => (c === "anna" ? A : c === "ben" ? B : null),
+      onCleared: (id, viewer) => notifyCleared(hub, id, viewer),
+      actionsPerMinute: 4,
+    });
+    const as = (cookie: string) => ({ cookie });
+    return { app, store, hub, source, poller, plugins, as };
+  }
+
+  it("the snapshot names the channels the user may tend: root, floors, rooms", async () => {
+    const { hub, poller } = await setup();
+    poller.watchSessions([7, 8]); // main.ts: onSessionsChanged
+    await poller.poll();
+    const ben = recorder<BridgeToUi>(), anna = recorder<BridgeToUi>();
+    hub.uiConnected(ben.conn, B);
+    hub.uiConnected(anna.conn, A);
+    expect(ben.last("snapshot")?.care).toEqual([0, 1, 2, 3]);
+    expect(anna.last("snapshot")?.care).toEqual([]);
+    expect(poller.state?.care.get(8)).toEqual([0, 1, 2, 3]);
+  });
+
+  it("room: only with Write permission, from anywhere; clear the board with a notice to those present", async () => {
+    const { app, store, hub, plugins, as } = await setup();
+    store.create({ channelId: 2, kind: "text", text: "see https://jira.example/browse/TAG-1, VKB-2", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 3, kind: "text", text: "https://jira.example/browse/VKB-1", authorHash: A, authorName: "Anna" });
+    expect((await app.inject({ url: "/api/care/rooms/2" })).statusCode).toBe(401);
+    expect((await app.inject({ url: "/api/care/rooms/2", headers: as("anna") })).json()).toEqual({ error: "forbidden" });
+    expect((await app.inject({ url: "/api/care/rooms/1", headers: as("ben") })).json()).toEqual({ error: "not-found" }); // a floor
+    expect((await app.inject({ url: "/api/care/rooms/2", headers: as("ben") })).json()).toEqual({
+      channelId: 2, name: "Office", posts: 1, bytes: 0, tickets: { TAG: "https://jira.example/browse/", VKB: "https://jira.example/browse/" },
+    });
+    const ui = recorder<BridgeToUi>();
+    hub.uiConnected(ui.conn, A);
+    expect((await app.inject({ method: "DELETE", url: "/api/care/rooms/2/posts", headers: as("anna") })).statusCode).toBe(403);
+    expect((await app.inject({ method: "DELETE", url: "/api/care/rooms/2/posts", headers: as("ben") })).json()).toEqual({ posts: 1 });
+    expect(store.list(2)).toEqual([]);
+    expect(ui.last("board")).toEqual({ v: 1, type: "board", channelId: 2 });
+    expect(plugins.anna.last("notify")?.text).toBe("Ben hat die Pinnwand geleert.");
+    expect(clearedText("Ben", "en")).toBe("Ben cleared the board.");
+  });
+
+  it("room: forget the learned ticket links named there", async () => {
+    const { app, store, as } = await setup();
+    store.create({ channelId: 3, kind: "text", text: "https://wrong.example/browse/TAG-1", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 2, kind: "text", text: "TAG-7", authorHash: A, authorName: "Anna" });
+    expect((await app.inject({ method: "DELETE", url: "/api/care/rooms/2/tickets", headers: as("ben") })).statusCode).toBe(204);
+    expect(store.ticketLinks()).toEqual({});
+    expect((await app.inject({ url: "/api/care/rooms/2", headers: as("ben") })).json().tickets).toEqual({});
+  });
+
+  it("floor and building: list what is gone, remove only what is still gone", async () => {
+    const { app, store, source, poller, as } = await setup();
+    source.channels.push(
+      { id: 4, parent: 0, name: "2F", position: 1, links: [], temporary: false },
+      { id: 5, parent: 4, name: "Archive", position: 0, links: [], temporary: false },
+    );
+    await poller.poll();
+    for (const id of [2, 3, 5]) store.create({ channelId: id, kind: "text", text: `in ${id}`, authorHash: A, authorName: "Anna" });
+    source.channels = source.channels.filter((c) => c.id !== 3 && c.id !== 4 && c.id !== 5); // Secret and the 2nd floor are deleted
+    await poller.poll();
+    expect((await app.inject({ url: "/api/care/floors/2", headers: as("ben") })).json()).toEqual({ error: "not-found" }); // a room
+    expect((await app.inject({ url: "/api/care/floors/1", headers: as("anna") })).statusCode).toBe(403);
+    const floor = (await app.inject({ url: "/api/care/floors/1", headers: as("ben") })).json();
+    expect(floor).toMatchObject({ channelId: 1, name: "1F", orphans: [{ channelId: 3, name: "Secret", posts: 1, bytes: 0 }] });
+    expect(floor.orphans[0].goneSince).toEqual(expect.any(Number));
+    const building = (await app.inject({ url: "/api/care/building", headers: as("ben") })).json();
+    expect(building).toMatchObject({ orphans: [{ channelId: 4, name: "2F", rooms: 1, posts: 1, bytes: 0 }] });
+    // the existing room 2 and the other floor's room 5 are not touched from floor 1
+    expect((await app.inject({ method: "POST", url: "/api/care/floors/1/cleanup", headers: as("ben"), payload: { rooms: [2, 3, 5] } })).json()).toEqual({ posts: 1 });
+    expect(store.channelsWithPosts()).toEqual([2, 5]);
+    expect((await app.inject({ method: "POST", url: "/api/care/building/cleanup", headers: as("ben"), payload: { floors: [] } })).statusCode).toBe(400);
+    expect((await app.inject({ method: "POST", url: "/api/care/building/cleanup", headers: as("ben"), payload: { floors: [4, 1] } })).json()).toEqual({ posts: 1 });
+    expect(store.channelsWithPosts()).toEqual([2]);
+    expect((await app.inject({ url: "/api/care/building", headers: as("ben") })).json()).toEqual({ orphans: [] });
+    expect((await app.inject({ method: "POST", url: "/api/care/building/cleanup", headers: as("anna"), payload: { floors: [4] } })).statusCode).toBe(403);
+  });
+
+  it("orphaned floors: grouped by last floor, unknown floor as null, earliest date", () => {
+    const room = (channelId: number, floorId: number | null, goneSince: number | null) => ({ channelId, floorId, name: "", posts: 2, bytes: 10, goneSince });
+    expect(orphanedFloors([room(1, 9, 50), room(2, 9, 20), room(3, null, null), room(4, 1, 5)], (id) => id === 1, (id) => `F${id}`)).toEqual([
+      { channelId: 9, name: "F9", rooms: 2, posts: 4, bytes: 20, goneSince: 20 },
+      { channelId: null, name: "", rooms: 1, posts: 2, bytes: 10, goneSince: null },
+    ]);
+  });
+
+  it("rate limit and invalid ids", async () => {
+    const { app, as } = await setup();
+    expect((await app.inject({ url: "/api/care/rooms/x", headers: as("ben") })).statusCode).toBe(404);
+    for (let i = 0; i < 4; i++) await app.inject({ method: "DELETE", url: "/api/care/rooms/2/posts", headers: as("ben") });
+    expect((await app.inject({ method: "DELETE", url: "/api/care/rooms/2/posts", headers: as("ben") })).statusCode).toBe(429);
+    expect((await app.inject({ method: "POST", url: "/api/care/floors/1/cleanup", headers: as("ben"), payload: { rooms: "all" } })).statusCode).toBe(400);
   });
 });

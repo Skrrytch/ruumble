@@ -26,7 +26,8 @@ import { PairConfirm, type PairErrorCode, type Versions } from "@ruumble/protoco
 import type { WebSocket } from "ws";
 import pkg from "../package.json" with { type: "json" };
 import { AvatarCache } from "./avatars.ts";
-import { notifyRoom } from "./board/notify.ts";
+import { careRoutes } from "./board/care.ts";
+import { notifyCleared, notifyRoom } from "./board/notify.ts";
 import { boardRoutes } from "./board/routes.ts";
 import { BoardStore } from "./board/store.ts";
 import { Hub, type AddressCheck } from "./hub.ts";
@@ -119,7 +120,7 @@ const hub: Hub = new Hub({
 const poller: Poller = new Poller(source, {
   onChange: (state) => {
     avatars.sync(state.users.flatMap((u) => (u.userId === null ? [] : [u.userId])));
-    store.syncChannels(state.channels.map((c) => c.id));
+    store.syncChannels(state.channels);
     hub.setState(state);
   },
   onPolled: () => {
@@ -245,6 +246,15 @@ await app.register(boardRoutes, {
   certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)),
   // notice in the Mumble log of the other people present (AP11.4)
   onNewPost: (post, viewer) => void notifyRoom(hub, post, viewer),
+});
+// care of the stored data: the plants (ADR-0014)
+await app.register(careRoutes, {
+  store,
+  hub,
+  source,
+  certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)),
+  onCleared: (channelId, viewer) => void notifyCleared(hub, channelId, viewer),
+  log,
 });
 const cleanupTimer = setInterval(() => {
   const { removed, channels } = store.cleanup();
