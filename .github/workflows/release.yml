@@ -148,4 +148,4 @@ jobs:
           PLUGIN: ${{ steps.version.outputs.plugin }}
         run: |
           gh release create "$GITHUB_REF_NAME" assets/* --verify-tag \
-            --title "Ruumble $SERVICE · Plugin $PLUGIN" --notes-file notes.md
+            --title "Ruumble $SERVICE" --notes-file notes.md
