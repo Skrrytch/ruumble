@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { elevator } from "./topbar.ts";
+import { elevator, userMenu } from "./topbar.ts";
 
 // care of the stored data (ADR-0014): the sample fixture's own user (Anna) may tend everything, edge-cases nothing
 test.describe("Care (ADR-0014)", () => {
@@ -115,34 +115,71 @@ test.describe("Care (ADR-0014)", () => {
   });
 });
 
-// key cabinet (ADR-0015): everyone sees their own keys, admins everyone's
-test.describe("Key cabinet (ADR-0015)", () => {
-  test("own keys with this browser marked, everyone else's for an admin, revoke after asking", async ({ page }) => {
+// my keys (ADR-0015): everyone sees their own in the user menu; admins everyone else's in the building maintenance
+test.describe("Keys (ADR-0015)", () => {
+  test("my keys in the user menu, this browser marked, revoke after asking", async ({ page }) => {
     await page.goto("/?fixture=sample&talking=0");
-    await (await elevator(page)).getByRole("button", { name: "Key cabinet" }).click();
-    const dialog = page.getByRole("dialog", { name: "Key cabinet" });
-    const mine = dialog.getByRole("list").first().getByRole("listitem");
+    await (await userMenu(page)).getByRole("button", { name: "My keys" }).click();
+    const dialog = page.getByRole("dialog", { name: "My keys" });
+    const mine = dialog.getByRole("listitem");
     await expect(mine).toHaveCount(3);
     await expect(mine.first()).toContainText(/Firefox on Linux\s*this browser/);
     await expect(mine.last()).toContainText("Unknown browser");
-    await expect(dialog.getByRole("heading", { name: "Everyone else's keys" })).toBeVisible();
-    await expect(dialog.getByRole("heading", { name: "Clara" })).toBeVisible();
+    await expect(dialog.getByText("Ben")).toHaveCount(0); // others are in the building maintenance
     page.once("dialog", (d) => void d.accept());
     await dialog.getByRole("button", { name: 'Revoke the key "Safari on iOS"' }).click();
     await expect(mine).toHaveCount(2);
   });
 
-  test("not an admin: only the own keys; revoking this browser's key unpairs it", async ({ page }) => {
+  test("revoking this browser's key unpairs it", async ({ page }) => {
     await page.goto("/?fixture=edge-cases&talking=0");
-    await (await elevator(page)).getByRole("button", { name: "Key cabinet" }).click();
-    const dialog = page.getByRole("dialog", { name: "Key cabinet" });
-    await expect(dialog.getByRole("heading", { name: "Your keys" })).toBeVisible();
-    await expect(dialog.getByRole("heading", { name: "Everyone else's keys" })).toHaveCount(0);
+    await (await userMenu(page)).getByRole("button", { name: "My keys" }).click();
+    const dialog = page.getByRole("dialog", { name: "My keys" });
     page.once("dialog", (d) => {
       expect(d.message()).toContain("This is the key of this browser");
       void d.accept();
     });
     await dialog.getByRole("button", { name: 'Revoke the key "Firefox on Linux"' }).click();
     await expect(page.getByText("This device is not paired yet.")).toBeVisible();
+  });
+});
+
+// building maintenance (ADR-0016): the wrench at the entrance, for admins only
+test.describe("Building maintenance (ADR-0016)", () => {
+  test("settings with defaults, saved, the largest file reaches the board; everyone else's keys", async ({ page }) => {
+    await page.goto("/?fixture=sample&talking=0");
+    await (await elevator(page)).getByRole("button", { name: "Building maintenance" }).click();
+    const dialog = page.getByRole("dialog", { name: "Building maintenance" });
+    const retention = dialog.getByLabel("Keep posts for");
+    await expect(retention).toHaveValue("365");
+    await expect(dialog.getByText("Default: 2048 · used:", { exact: false })).toBeVisible();
+    const save = dialog.getByRole("button", { name: "Save" });
+    await expect(save).toBeDisabled();
+    await retention.fill("0");
+    await expect(dialog.getByText("Please enter whole numbers within the allowed range.")).toBeVisible();
+    await expect(save).toBeDisabled();
+    await retention.fill("90");
+    await expect(dialog.getByText(/^Shorter retention/)).toBeVisible();
+    await dialog.getByLabel("Largest file").fill("25");
+    await dialog.getByLabel("Notice in Mumble for new posts").uncheck();
+    page.once("dialog", (d) => void d.accept()); // shorter retention deletes posts: asked first
+    await save.click();
+    await expect(dialog.getByRole("status")).toHaveText("Saved.");
+    await expect(save).toBeDisabled();
+    await dialog.getByRole("button", { name: "All to default" }).click();
+    await expect(retention).toHaveValue("365");
+    // everyone else's keys
+    await expect(dialog.getByRole("heading", { name: "Access" })).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "Clara" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Close" }).last().click();
+    await page.getByRole("button", { name: "Show board" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    await board.getByRole("textbox", { name: "New post" }).click(); // the tools appear with focus
+    await expect(board.getByRole("button", { name: "Attach image or file" })).toHaveAttribute("title", /25 MB/);
+  });
+
+  test("no wrench and no maintenance without the permission", async ({ page }) => {
+    await page.goto("/?fixture=edge-cases&talking=0");
+    await expect((await elevator(page)).getByRole("button", { name: "Building maintenance" })).toHaveCount(0);
   });
 });

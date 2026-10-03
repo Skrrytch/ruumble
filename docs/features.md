@@ -70,7 +70,7 @@ Every room has a board next to the floor plan. It shows the board of the room yo
 | Read, post, edit | Everyone currently in the room; copying a post in from another room: anyone who may enter it |
 | Delete | Author and Mumble admins (Write permission on the channel) |
 | Retention | 1 year (`RETENTION_DAYS`); admins can delete older posts per room earlier |
-| Limits | Images and files up to 10 MB, text up to 100 KB, 2 GB in total (`BOARD_QUOTA_MB`); when full, the oldest posts go first |
+| Limits | Images and files up to 10 MB, text up to 100 KB, 2 GB in total (`BOARD_QUOTA_MB`); when full, the oldest posts go first; admins can change the limits in the building maintenance |
 | Deleted channel | Posts stay 7 days for admins, then they are removed (earlier by floor or building care) |
 | Care | Mumble admins (Write permission) via the plants, see below |
 | Storage | SQLite plus attachments by SHA-256 in the data volume; `backup` command |
@@ -87,9 +87,13 @@ A potted plant stands in every room (bottom right), at the end of every corridor
 
 Care works from anywhere in the building and shows counts and sizes, not the content of posts; the export is the one exception. Every removal asks first.
 
-### Key cabinet
+### Keys
 
-Next to the plant at the entrance hangs a key that opens the key cabinet: every paired browser is a key. Everyone sees their own keys (browser and system, paired on, last used, "this browser") and can revoke one, e.g. after losing a laptop; that browser then has to be paired again. Admins (Write permission on the root channel) also see everyone else's keys, by person ([ADR-0015](decisions/0015-key-cabinet.md)).
+Every paired browser is a key. "My keys" in the user menu lists one's own (browser and system, paired on, last used, "this browser"); each can be revoked, e.g. after losing a laptop, and that browser then has to be paired again ([ADR-0015](decisions/0015-key-cabinet.md)).
+
+### Building maintenance
+
+Next to the plant at the entrance lies a wrench for admins (Write permission on the root channel). It opens the building's settings: how long posts are kept, the storage quota, the largest attachment, how long data of deleted rooms is kept, and whether a new post sends a Mumble notice. The environment variables are the defaults; "All to default" goes back to them. Changes that make the next cleanup delete posts are pointed out and confirmed. The section "Access" lists everyone else's keys, each revocable ([ADR-0016](decisions/0016-building-maintenance.md)).
 
 ### Pairing and security
 

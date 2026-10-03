@@ -10,6 +10,7 @@ import { careRoutes, orphanedFloors } from "../src/board/care.ts";
 import { boardMarkdown, uniqueName } from "../src/board/export.ts";
 import { careText, notifyCare, notifyRoom, notifyText } from "../src/board/notify.ts";
 import { zip } from "../src/board/zip.ts";
+import { maintenanceRoutes } from "../src/maintenance.ts";
 import { inflateRawSync } from "node:zlib";
 import { boardRoutes } from "../src/board/routes.ts";
 import { BoardStore, MIGRATIONS } from "../src/board/store.ts";
@@ -252,6 +253,26 @@ describe("BoardStore", () => {
     expect(store.placeFloor(3)).toBe(1);
     expect(store.placeFloor(1)).toBeNull();
     expect(store.retentionDays).toBe(365);
+  });
+
+  it("building settings: defaults from the options, only differences stored, applied at once (ADR-0016)", () => {
+    let now = 100 * DAY;
+    const { store, dir } = tempStore({ retentionDays: 30, now: () => now });
+    expect(store.settings).toEqual({ retentionDays: 30, quotaMB: 2048, maxFileMB: 10, graceDays: 7, notifyNewPosts: true });
+    store.create({ channelId: 3, kind: "text", text: "old", authorHash: A, authorName: "Anna" });
+    now += 20 * DAY;
+    store.saveSettings({ retentionDays: 14, quotaMB: 2048, maxFileMB: 2, graceDays: 0, notifyNewPosts: false });
+    expect(store.retentionDays).toBe(14);
+    expect(store.maxFileBytes).toBe(2 * 1024 * 1024);
+    expect(store.quotaBytes).toBe(2048 * 1024 * 1024);
+    expect(store.cleanup().removed).toBe(1); // 20 days old, 14 days retention
+    store.close();
+    // reopened with another default: unchanged values follow the new default, changed ones stay
+    const again = new BoardStore(dir, { retentionDays: 60, quotaBytes: 4096 * 1024 * 1024 });
+    expect(again.settings).toEqual({ retentionDays: 14, quotaMB: 4096, maxFileMB: 2, graceDays: 0, notifyNewPosts: false });
+    expect(again.settingDefaults.retentionDays).toBe(60);
+    again.saveSettings(again.settingDefaults);
+    expect(again.settings).toEqual(again.settingDefaults);
   });
 
   it("care: a room moved out of the floor plan keeps its last floor", () => {
@@ -811,5 +832,43 @@ describe("board export (ADR-0014)", () => {
   it("unique file names inside the archive", () => {
     const taken = new Set<string>();
     expect(["a.png", "A.png", "../x", "a.png"].map((n) => uniqueName(n, taken))).toEqual(["a.png", "A (2).png", "__x", "a (3).png"]);
+  });
+});
+
+describe("REST /api/maintenance (ADR-0016)", () => {
+  async function setup() {
+    const source = new FakeSource();
+    source.users[0]!.channel = 2;
+    source.admins.add(8);
+    const { store } = tempStore();
+    const hub = new Hub({ source, pairing: new Pairing(null), publicUrl: "http://r", addressCheck: "off", preview: false });
+    const poller = new Poller(source, { onChange: (s) => hub.setState(s) });
+    await poller.poll();
+    for (const [session, hash] of [[7, A], [8, B]] as const) {
+      await hub.pluginConnected(recorder<BridgeToPlugin>().conn, "x").onMessage(JSON.stringify({ v: 1, type: "hello", session, certHash: hash, pluginVersion: "0", paired: true }));
+    }
+    const logged: Record<string, unknown>[] = [];
+    const app = Fastify();
+    const certHashOf = (c: string | undefined) => (c === "anna" ? A : c === "ben" ? B : null);
+    await app.register(maintenanceRoutes, { store, hub, source, certHashOf, log: (_m, extra) => void logged.push(extra ?? {}) });
+    await app.register(boardRoutes, { store, hub, source, certHashOf });
+    return { app, store, logged, as: (cookie: string) => ({ cookie }) };
+  }
+
+  it("only admins read and change the settings; the board reports the largest attachment and enforces it", async () => {
+    const { app, store, logged, as } = await setup();
+    expect((await app.inject({ url: "/api/maintenance" })).statusCode).toBe(401);
+    expect((await app.inject({ url: "/api/maintenance", headers: as("anna") })).statusCode).toBe(403);
+    const view = (await app.inject({ url: "/api/maintenance", headers: as("ben") })).json();
+    expect(view).toEqual({ settings: store.settingDefaults, defaults: store.settingDefaults, usedBytes: 0 });
+    const put = (who: string, payload: object) => app.inject({ method: "PUT", url: "/api/maintenance/settings", headers: as(who), payload });
+    expect((await put("ben", { ...view.settings, maxFileMB: 500 })).statusCode).toBe(400);
+    expect((await put("anna", { ...view.settings, maxFileMB: 1 })).statusCode).toBe(403);
+    expect((await put("ben", { ...view.settings, maxFileMB: 1 })).json().settings.maxFileMB).toBe(1);
+    expect(logged.at(-1)).toEqual({ maxFileMB: 1, by: "Ben" });
+    expect((await app.inject({ url: "/api/board", headers: as("anna") })).json().maxFileBytes).toBe(1024 * 1024);
+    const upload = (size: number) => app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream" }, payload: Buffer.alloc(size, 1) });
+    expect((await upload(1024 * 1024 + 1)).json()).toEqual({ error: "too-large" });
+    expect((await upload(1024 * 1024)).statusCode).toBe(201);
   });
 });

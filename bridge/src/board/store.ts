@@ -8,7 +8,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import Database from "better-sqlite3";
-import { learnTicketLinks, type Channel, type PostKind, type ReactionKind, type TicketLinks } from "@ruumble/protocol";
+import { learnTicketLinks, type BuildingSettings, type Channel, type PostKind, type ReactionKind, type TicketLinks } from "@ruumble/protocol";
 
 export interface StoredAttachment {
   id: string;
@@ -42,16 +42,19 @@ export interface StoredReaction {
 }
 
 export interface StoreOptions {
+  /** defaults of the building settings (environment variables); maintenance may override them (ADR-0016) */
   retentionDays?: number;
   quotaBytes?: number;
+  maxFileMB?: number;
+  graceDays?: number;
+  notifyNewPosts?: boolean;
   /** attachments without a post (uploaded, never pinned) are deleted after this */
   orphanMinutes?: number;
   now?: () => number;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
-/** posts of deleted channels are kept this long (ADR-0011) */
-const REMOVED_CHANNEL_GRACE_DAYS = 7;
+const MB = 1024 * 1024;
 
 /** Result of `cleanup()`: number of deleted posts and the affected rooms */
 export interface CleanupResult {
@@ -137,25 +140,30 @@ export const MIGRATIONS = [
   // care (ADR-0014): last known place of floors (parent 0) and rooms; ticket links reset per project
   `CREATE TABLE channels (channel_id INTEGER PRIMARY KEY, parent_id INTEGER NOT NULL, name TEXT NOT NULL);
    CREATE TABLE forgotten_tickets (project TEXT PRIMARY KEY, forgotten_at INTEGER NOT NULL);`,
+  // building maintenance (ADR-0016): settings that differ from the defaults, as JSON values
+  `CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);`,
 ];
 
 export class BoardStore {
   private readonly db: Database.Database;
   private readonly dir: string;
   private readonly opts: Required<StoreOptions>;
+  /** effective building settings: defaults with the stored overrides */
+  private current: BuildingSettings;
   /** learned ticket links, recomputed after a change to the posts */
   private tickets: TicketLinks | null = null;
   /** current floors and rooms with a board, from the last `syncChannels`; null before the first one */
   private places: { floors: Set<number>; rooms: Set<number> } | null = null;
 
   constructor(dir: string, opts: StoreOptions = {}) {
-    this.opts = { retentionDays: 365, quotaBytes: 2048 * 1024 * 1024, orphanMinutes: 60, now: Date.now, ...opts };
+    this.opts = { retentionDays: 365, quotaBytes: 2048 * MB, maxFileMB: 10, graceDays: 7, notifyNewPosts: true, orphanMinutes: 60, now: Date.now, ...opts };
     this.dir = join(dir, "board");
     mkdirSync(this.dir, { recursive: true });
     this.db = new Database(join(dir, "board.sqlite"));
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("foreign_keys = ON");
     this.migrate();
+    this.current = this.loadSettings();
   }
 
   private migrate(): void {
@@ -172,13 +180,50 @@ export class BoardStore {
     this.db.close();
   }
 
-  /** posts are deleted automatically after this many days (ADR-0011) */
-  get retentionDays(): number {
-    return this.opts.retentionDays;
+  // ---------------------------------------------------------------- Building settings (ADR-0016)
+
+  /** the defaults: environment variables, else built in */
+  get settingDefaults(): BuildingSettings {
+    const o = this.opts;
+    return { retentionDays: o.retentionDays, quotaMB: Math.round(o.quotaBytes / MB), maxFileMB: o.maxFileMB, graceDays: o.graceDays, notifyNewPosts: o.notifyNewPosts };
   }
 
+  get settings(): BuildingSettings {
+    return { ...this.current };
+  }
+
+  /** store the settings; only values that differ from the defaults are kept, so a changed default still applies */
+  saveSettings(next: BuildingSettings): BuildingSettings {
+    const defaults = this.settingDefaults;
+    this.db.transaction(() => {
+      this.db.prepare("DELETE FROM settings").run();
+      const put = this.db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
+      for (const key of Object.keys(defaults) as (keyof BuildingSettings)[]) if (next[key] !== defaults[key]) put.run(key, JSON.stringify(next[key]));
+    })();
+    this.current = this.loadSettings();
+    return this.settings;
+  }
+
+  private loadSettings(): BuildingSettings {
+    const merged: Record<string, unknown> = { ...this.settingDefaults };
+    for (const { key, value } of this.db.prepare("SELECT key, value FROM settings").all() as { key: string; value: string }[]) {
+      if (key in merged && typeof JSON.parse(value) === typeof merged[key]) merged[key] = JSON.parse(value);
+    }
+    return merged as unknown as BuildingSettings;
+  }
+
+  /** posts are deleted automatically after this many days (ADR-0011) */
+  get retentionDays(): number {
+    return this.current.retentionDays;
+  }
+
+  /** in bytes: without an override exactly the default (tests use quotas below one MB) */
   get quotaBytes(): number {
-    return this.opts.quotaBytes;
+    return this.current.quotaMB === this.settingDefaults.quotaMB ? this.opts.quotaBytes : this.current.quotaMB * MB;
+  }
+
+  get maxFileBytes(): number {
+    return this.current.maxFileMB * MB;
   }
 
   // ---------------------------------------------------------------- Posts
@@ -495,14 +540,14 @@ export class BoardStore {
       for (const r of rows) channels.add(r.c);
       return rows.length;
     };
-    let removed = removeWhere("created_at < ?", now - this.opts.retentionDays * DAY);
-    removed += removeWhere("channel_id IN (SELECT channel_id FROM removed_channels WHERE removed_at < ?)", now - REMOVED_CHANNEL_GRACE_DAYS * DAY);
+    let removed = removeWhere("created_at < ?", now - this.retentionDays * DAY);
+    removed += removeWhere("channel_id IN (SELECT channel_id FROM removed_channels WHERE removed_at < ?)", now - this.current.graceDays * DAY);
     this.db.prepare("DELETE FROM removed_channels WHERE channel_id NOT IN (SELECT DISTINCT channel_id FROM posts)").run();
     // every post a reset was about has expired by now
-    this.db.prepare("DELETE FROM forgotten_tickets WHERE forgotten_at < ?").run(now - this.opts.retentionDays * DAY);
+    this.db.prepare("DELETE FROM forgotten_tickets WHERE forgotten_at < ?").run(now - this.retentionDays * DAY);
     this.removeOrphans(this.opts.orphanMinutes * 60_000);
     // quota: oldest posts with an attachment first, until it fits again (ADR-0011)
-    while (this.usedBytes() > this.opts.quotaBytes) {
+    while (this.usedBytes() > this.quotaBytes) {
       const oldest = this.db.prepare("SELECT id, channel_id AS c, attachment_id AS a FROM posts WHERE attachment_id IS NOT NULL ORDER BY created_at ASC, rowid ASC LIMIT 1").get() as { id: string; c: number; a: string } | undefined;
       if (!oldest) break;
       this.db.prepare("DELETE FROM posts WHERE id = ?").run(oldest.id);

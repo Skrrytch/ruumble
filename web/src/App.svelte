@@ -13,6 +13,7 @@
   import BoardPanel from "./lib/ui/board/BoardPanel.svelte";
   import CareDialog from "./lib/ui/CareDialog.svelte";
   import KeysDialog from "./lib/ui/KeysDialog.svelte";
+  import MaintenanceDialog from "./lib/ui/MaintenanceDialog.svelte";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
 
@@ -82,6 +83,7 @@
     </div>
     {#if app.care}<CareDialog {app} />{/if}
     {#if app.keysOpen}<KeysDialog {app} />{/if}
+    {#if app.maintenanceOpen}<MaintenanceDialog {app} />{/if}
   {/if}
 
   {#if app.connection === "reconnecting" && building}

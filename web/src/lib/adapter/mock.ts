@@ -7,12 +7,12 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, PRUNE_DAYS, REACTION_KINDS, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, PRUNE_DAYS, type BuildingSettings, REACTION_KINDS, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
 import vacant from "@ruumble/protocol/fixtures/vacant.json";
-import type { AdapterEvents, BoardApi, BoardResult, CareApi, KeysApi, MumbleAdapter, PairApi, PluginStatus } from "./types.ts";
+import type { AdapterEvents, BoardApi, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus } from "./types.ts";
 
 const MINUTE = 60_000;
 
@@ -121,9 +121,8 @@ function sampleOrphans(now: number): { floorId: number | null; floorName: string
 }
 
 const DAY = 24 * 60 * MINUTE;
-/** retention and quota as the service reports them (defaults) */
-const MOCK_RETENTION_DAYS = 365;
-const MOCK_QUOTA_BYTES = 2048 * 1024 * 1024;
+/** building settings as the service reports them without overrides (ADR-0016) */
+const MOCK_DEFAULTS: BuildingSettings = { retentionDays: 365, quotaMB: 2048, maxFileMB: BOARD_LIMITS.fileBytes / (1024 * 1024), graceDays: 7, notifyNewPosts: true };
 
 /** paired browsers (key cabinet, ADR-0015): the own ones (first: this browser) and others' */
 function sampleKeys(now: number): { mine: DeviceKey[]; others: KeyCabinet["others"] } {
@@ -183,6 +182,15 @@ export class MockAdapter implements MumbleAdapter {
   /** projects whose learned link was reset (care); a newer post teaches it again */
   private forgotten = new Map<string, number>();
   private keyring = sampleKeys(Date.now());
+  private settings: BuildingSettings = { ...MOCK_DEFAULTS };
+  readonly maintenance: MaintenanceApi = {
+    load: async () => this.caretaker(0, () => ({ settings: this.settings, defaults: MOCK_DEFAULTS, usedBytes: this.usedBytes() }), true),
+    save: async (next) =>
+      this.caretaker(0, () => {
+        this.settings = { ...next };
+        return { settings: this.settings, defaults: MOCK_DEFAULTS, usedBytes: this.usedBytes() };
+      }, true),
+  };
   readonly keys: KeysApi = {
     list: async () => {
       if (!this.me()) return { ok: false, error: "not-paired" };
@@ -213,7 +221,7 @@ export class MockAdapter implements MumbleAdapter {
         const now = Date.now();
         return {
           channelId: id, name: this.channelName(id), posts: posts.length, bytes: posts.reduce((n, p) => n + (p.attachment?.size ?? 0), 0),
-          newest: times.at(-1) ?? null, oldest: times[0] ?? null, retentionDays: MOCK_RETENTION_DAYS,
+          newest: times.at(-1) ?? null, oldest: times[0] ?? null, retentionDays: this.settings.retentionDays,
           olderThan: PRUNE_DAYS.map((days) => ({ days, posts: times.filter((t) => t < now - days * DAY).length })),
         };
       }, this.isRoom(id)),
@@ -282,7 +290,7 @@ export class MockAdapter implements MumbleAdapter {
         const roomBytes = (id: number) => (this.posts.get(id) ?? []).reduce((n, p) => n + (p.attachment?.size ?? 0), 0);
         const used = [...this.posts.keys()].reduce((n, id) => n + roomBytes(id), 0) + this.orphans.reduce((n, o) => n + o.room.bytes, 0);
         return {
-          storage: { usedBytes: used, quotaBytes: MOCK_QUOTA_BYTES, retentionDays: MOCK_RETENTION_DAYS },
+          storage: { usedBytes: used, quotaBytes: this.settings.quotaMB * 1024 * 1024, retentionDays: this.settings.retentionDays },
           floors: this.state.channels.filter((c) => c.parent === 0).sort((a, b) => a.position - b.position).map((f) => {
             const rooms = this.roomsOf(f.id).filter((r) => (this.posts.get(r.id) ?? []).length > 0);
             return { channelId: f.id, name: f.name, rooms: rooms.length, posts: rooms.reduce((n, r) => n + this.posts.get(r.id)!.length, 0), bytes: rooms.reduce((n, r) => n + roomBytes(r.id), 0) };
@@ -308,7 +316,7 @@ export class MockAdapter implements MumbleAdapter {
         // like the service: the pin goes away with its post
         const pin = this.pins.get(channelId);
         const pinned = pin && posts.some((p) => p.id === pin.postId) ? pin : null;
-        return { channelId, channelName: this.channelName(channelId), posts, pinned, tickets: this.ticketLinks(posts) };
+        return { channelId, channelName: this.channelName(channelId), posts, pinned, tickets: this.ticketLinks(posts), maxFileBytes: this.settings.maxFileMB * 1024 * 1024 };
       }),
     pin: async (postId: string, title: string) =>
       this.boardRoom((channelId) => {
@@ -417,7 +425,7 @@ export class MockAdapter implements MumbleAdapter {
     upload: async (file: Blob, _name: string, onProgress?: (fraction: number) => void) => {
       const room = this.boardRoom(() => true as const);
       if (!room.ok) return room;
-      if (file.size > BOARD_LIMITS.fileBytes) return { ok: false, error: "too-large" };
+      if (file.size > this.settings.maxFileMB * 1024 * 1024) return { ok: false, error: "too-large" };
       // make progress visible, as with a real transfer
       for (const f of [0.25, 0.5, 0.75, 1]) {
         await new Promise((r) => setTimeout(r, 40));
@@ -521,6 +529,7 @@ export class MockAdapter implements MumbleAdapter {
     this.orphans = sampleOrphans(Date.now());
     this.forgotten.clear();
     this.keyring = sampleKeys(Date.now());
+    this.settings = { ...MOCK_DEFAULTS };
     this.unmuteOnUndeaf = false;
     this.setPlugin(this.state.self ? "connected" : "disconnected");
     this.emit();
@@ -599,6 +608,10 @@ export class MockAdapter implements MumbleAdapter {
 
   private isFloor(id: number): boolean {
     return this.state.channels.some((c) => c.id === id && c.parent === 0);
+  }
+
+  private usedBytes(): number {
+    return [...this.posts.values()].flat().reduce((n, p) => n + (p.attachment?.size ?? 0), 0) + this.orphans.reduce((n, o) => n + o.room.bytes, 0);
   }
 
   private roomsOf(floorId: number) {

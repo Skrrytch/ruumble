@@ -12,7 +12,9 @@
  *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004; behind hairpin NAT only warn works, P7)
  *   TRUST_PROXY (false)                          true behind a reverse proxy (X-Forwarded-For)
  *   PREVIEW (false)                              true: building visible read-only without pairing
- *   RETENTION_DAYS (365), BOARD_QUOTA_MB (2048)   board: retention and quota (ADR-0011)
+ *   RETENTION_DAYS (365), BOARD_QUOTA_MB (2048)   board: retention and quota (ADR-0011); defaults, admins may change
+ *                                                them in the building maintenance (ADR-0016), like the largest
+ *                                                attachment (10 MB), the grace for deleted rooms (7 days) and notices
  *   LOG_LEVEL (info)                             Fastify/pino logging
  *
  * Board backup:  node dist/main.mjs backup <target-directory>  (needs only DATA_DIR, no Ice)
@@ -33,6 +35,7 @@ import { BoardStore } from "./board/store.ts";
 import { Hub, type AddressCheck } from "./hub.ts";
 import { keepAlive } from "./keepalive.ts";
 import { keyRoutes } from "./keys.ts";
+import { maintenanceRoutes } from "./maintenance.ts";
 import { IceMumbleSource } from "./mumble.ts";
 import { Pairing } from "./pairing.ts";
 import { Poller } from "./poller.ts";
@@ -55,8 +58,7 @@ const readSecret = (file: string) => {
 
 // board storage (ADR-0011); the backup needs nothing else, hence before the rest of the configuration
 const dataDir = resolve(env.DATA_DIR ?? "data");
-const quotaMB = Number(env.BOARD_QUOTA_MB ?? 2048);
-const store = new BoardStore(dataDir, { retentionDays: Number(env.RETENTION_DAYS ?? 365), quotaBytes: quotaMB * 1024 * 1024 });
+const store = new BoardStore(dataDir, { retentionDays: Number(env.RETENTION_DAYS ?? 365), quotaBytes: Number(env.BOARD_QUOTA_MB ?? 2048) * 1024 * 1024 });
 if (process.argv[2] === "backup") {
   const target = resolve(process.argv[3] ?? "backup");
   await store.backup(target);
@@ -232,6 +234,9 @@ await app.register(keyRoutes, {
   log,
 });
 
+// building maintenance: settings that used to be fixed (ADR-0016)
+await app.register(maintenanceRoutes, { store, hub, source, certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)), log });
+
 app.post("/logout", async (req, reply) => {
   const token = cookieOf(req.headers.cookie, TOKEN_COOKIE);
   if (token) pairing.revoke(token);
@@ -257,7 +262,7 @@ await app.register(boardRoutes, {
   source,
   certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)),
   // notice in the Mumble log of the other people present (AP11.4)
-  onNewPost: (post, viewer) => void notifyRoom(hub, post, viewer),
+  onNewPost: (post, viewer) => void (store.settings.notifyNewPosts && notifyRoom(hub, post, viewer)),
 });
 // care of the stored data: the plants (ADR-0014)
 await app.register(careRoutes, {
@@ -285,7 +290,7 @@ app.get("/healthz", async (_req, reply) => {
     plugins: hub.pluginCount,
     mumbleServer: hub.serverVersion,
     clients: hub.clientVersions(),
-    board: { usedMB: Math.round(store.usedBytes() / 1024 / 1024), quotaMB },
+    board: { usedMB: Math.round(store.usedBytes() / 1024 / 1024), quotaMB: store.settings.quotaMB },
   });
 });
 

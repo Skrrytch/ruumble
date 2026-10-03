@@ -14,10 +14,13 @@
     onpin,
     onupload,
     onattach,
+    maxFileBytes = BOARD_LIMITS.fileBytes,
   }: {
     onpin: (kind: PostKind, text: string, language?: string) => Promise<boolean>;
     onupload: (file: Blob, name: string, onProgress: (fraction: number) => void) => Promise<BoardResult<Uploaded>>;
     onattach: (attachment: Uploaded, caption: string) => Promise<boolean>;
+    /** largest attachment the service takes (building maintenance, ADR-0016) */
+    maxFileBytes?: number;
   } = $props();
 
   /** one attachment per post (AP11.3): uploaded immediately, pinned only on send */
@@ -35,14 +38,14 @@
     pending = { name, size: file.size, preview, progress: 0, uploaded: null, error: null };
     codeMode = false;
     suggestCode = false;
-    if (file.size > BOARD_LIMITS.fileBytes) {
-      pending.error = boardErrorText("too-large");
+    if (file.size > maxFileBytes) {
+      pending.error = boardErrorText("too-large", maxFileBytes);
       return;
     }
     const r = await onupload(file, name, (f) => { if (pending && run === uploadRun) pending.progress = f; });
     if (!pending || run !== uploadRun) return; // removed or replaced in the meantime
     if (r.ok) pending.uploaded = r.value;
-    else pending.error = boardErrorText(r.error);
+    else pending.error = boardErrorText(r.error, maxFileBytes);
   }
 
   function clearAttachment() {
@@ -133,7 +136,7 @@
   ></textarea>
   <div class="bar">
     <input bind:this={picker} type="file" hidden onchange={() => { const f = picker.files?.[0]; if (f) void attach(f); picker.value = ""; }} />
-    <button type="button" class="tool" aria-label={t().board.attach} title={t().board.attachTitle(formatSize(BOARD_LIMITS.fileBytes))} onclick={() => picker.click()}>
+    <button type="button" class="tool" aria-label={t().board.attach} title={t().board.attachTitle(formatSize(maxFileBytes))} onclick={() => picker.click()}>
       <Paperclip size={18} />
     </button>
     <button type="button" class="tool" aria-pressed={codeMode} aria-label={t().board.codeMode} title={t().board.codeMode} disabled={!!pending} onclick={() => (codeMode = !codeMode)}>

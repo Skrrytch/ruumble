@@ -16,6 +16,7 @@
   import Avatar from "./Avatar.svelte";
   import Key from "./Key.svelte";
   import Plant from "./Plant.svelte";
+  import Wrench from "./Wrench.svelte";
 
   // Top bar instead of the elevator column, made of signs: left the floor sign (opens the elevator, which shows
   // the server and everyone online in its status bar), in the middle the sign of the own room, right mute,
@@ -119,14 +120,14 @@
               </span>
             </button>
           {/each}
-          {#if building.entrance.length > 0 || !app.readonly}
+          {#if building.entrance.length > 0 || tendBuilding}
             <section class="entrance" aria-label={t().common.entrance}>
               <div class="entrance-head">
                 <span>{t().common.entrance} · {countText(building.entrance.length)}</span>
                 <span class="fixtures">
-                  <!-- the key: opens the key cabinet, every paired browser is a key, everyone sees their own (ADR-0015) -->
-                  {#if !app.readonly}
-                    <button type="button" class="plant tend" aria-label={t().keys.cabinet} title={t().keys.cabinet} onclick={() => { open = null; void app.openKeys(); }}><Key size={28} /></button>
+                  <!-- the wrench: building maintenance, settings and everyone's keys, for admins (ADR-0016) -->
+                  {#if tendBuilding}
+                    <button type="button" class="plant tend" aria-label={t().maintenance.title} title={t().maintenance.title} onclick={() => { open = null; void app.openMaintenance(); }}><Wrench size={28} /></button>
                   {/if}
                   <!-- the plant at the entrance: building care (ADR-0014) -->
                   {#if tendBuilding}
@@ -198,6 +199,10 @@
           {/if}
           <button type="button" class="item" disabled={!myFloor} onclick={() => { app.goHome(); open = null; }}>
             <LocateFixed size={18} aria-hidden="true" />{t().core.home}
+          </button>
+          <!-- my keys: the own paired browsers (ADR-0015) -->
+          <button type="button" class="item" disabled={!me} onclick={() => { open = null; void app.openKeys(); }}>
+            <span class="key-icon" aria-hidden="true"><Key size={18} /></span>{t().keys.myKeys}
           </button>
           <!-- language: German or English (browser setting), switchable here and remembered -->
           <button type="button" class="item" onclick={() => setLocale(other)}>
@@ -292,6 +297,7 @@
   .floor.active .sub { color: var(--color-blue-700); }
   .entrance { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding: 10px 6px 2px; border-top: 1px solid rgb(255 255 255 / 0.2); }
   .entrance-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; font-size: 13px; font-weight: 700; color: var(--color-blue-100); }
+  .key-icon { display: inline-flex; }
   .fixtures { display: flex; align-items: flex-end; gap: 2px; }
   .plant { display: inline-flex; align-items: flex-end; justify-content: center; min-width: 40px; min-height: 40px; padding: 2px; border: 0; background: transparent; border-radius: var(--radius-md); }
   .plant.tend { cursor: pointer; transition: transform var(--dur) var(--ease-out); }

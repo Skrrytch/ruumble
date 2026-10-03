@@ -2,8 +2,8 @@
  * LiveAdapter: WebSocket to the Ruumble service (`/ws/ui`, ADR-0007).
  * Reconnects with increasing delay after a drop. Results are matched to commands by ID.
  */
-import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, KeyCabinet, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
-import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, KeysApi, BoardResult, MumbleAdapter, PairApi, PairResult } from "./types.ts";
+import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, KeysApi, MaintenanceApi, BoardResult, MumbleAdapter, PairApi, PairResult } from "./types.ts";
 
 /** REST of the board; the pairing cookie is sent automatically (same-origin) */
 async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit = {}): Promise<BoardResult<T>> {
@@ -53,6 +53,11 @@ const liveCare: CareApi = {
 const liveKeys: KeysApi = {
   list: () => call(KeyCabinet, "/api/keys"),
   revoke: (id) => call<true>(null, `/api/keys/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};
+
+const liveMaintenance: MaintenanceApi = {
+  load: () => call(Maintenance, "/api/maintenance"),
+  save: (settings) => call(Maintenance, "/api/maintenance/settings", { method: "PUT", body: JSON.stringify(settings) }),
 };
 
 /** a file from the service (export): the content and the name from Content-Disposition */
@@ -128,6 +133,7 @@ export class LiveAdapter implements MumbleAdapter {
   readonly board: BoardApi = liveBoard;
   readonly care: CareApi = liveCare;
   readonly keys: KeysApi = liveKeys;
+  readonly maintenance: MaintenanceApi = liveMaintenance;
   readonly pairing: PairApi = {
     request: async () => {
       const r = await pairCall("/api/pair/request");

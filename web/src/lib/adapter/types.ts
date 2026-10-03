@@ -2,7 +2,7 @@
  * Interface between web UI and Mumble (ADR-0007).
  * Implementations: MockAdapter (fixtures, simulated Mumble) and LiveAdapter (WebSocket and REST to the service).
  */
-import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, CareDone, FloorCare, KeyCabinet, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
+import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, BuildingSettings, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
 
 export type BoardErrorCode = ServerBoardError | "offline";
 export type BoardResult<T> = { ok: true; value: T } | { ok: false; error: BoardErrorCode };
@@ -67,6 +67,12 @@ export interface KeysApi {
   revoke(id: string): Promise<BoardResult<true>>;
 }
 
+/** Building maintenance (ADR-0016): the settings admins change, the environment variables are the defaults */
+export interface MaintenanceApi {
+  load(): Promise<BoardResult<Maintenance>>;
+  save(settings: BuildingSettings): Promise<BoardResult<Maintenance>>;
+}
+
 export type PluginStatus = "connected" | "disconnected";
 
 /** Connection of the web UI to the service (LiveAdapter only) */
@@ -92,6 +98,7 @@ export interface MumbleAdapter {
   board: BoardApi;
   care: CareApi;
   keys: KeysApi;
+  maintenance: MaintenanceApi;
   pairing: PairApi;
   /** versions of service and offered plugin (notice pages); null if unknown */
   versions(): Promise<Versions | null>;

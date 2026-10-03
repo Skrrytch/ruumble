@@ -65,7 +65,8 @@ The plugin's messages in the Mumble log follow the system language (Linux: `LC_A
 - **Search and filter** in the header of the board.
 - Posts are kept for one year (unless your admin set something else).
 - The **plant** in a room, at the end of the corridor and at the entrance (in the elevator) is for Mumble admins: it opens room, floor or building care, e.g. to delete old posts, clear or export a board (room), see all rooms or move a board to a recreated room (floor), or check the storage and reset a wrong ticket link (building, at the entrance). For everyone else it is just a plant.
-- The **key** next to the plant at the entrance opens the key cabinet with your paired browsers ("keys"). Revoke one you no longer use or have lost; that browser then has to be paired again.
+- **My keys** in the menu behind your name badge lists your paired browsers ("keys"). Revoke one you no longer use or have lost; that browser then has to be paired again.
+- Admins also find a **wrench** next to the plant at the entrance: the building maintenance with settings such as how long posts are kept and the largest file, and everyone's keys.
 
 ## Questions and problems
 

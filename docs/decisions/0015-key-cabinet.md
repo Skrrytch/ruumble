@@ -23,3 +23,6 @@ Every paired browser holds a long-lived device token (ADR-0004, ADR-0012). Until
 ## Consequences
 - `tokens.json` gains `device` and `lastUsed` per token; keys from before this change get their device label at their next use.
 - Revoking all keys of a user does not change the plugin's `pairedWith`, so the plugin does not open a pairing link again by itself; pairing with a code works as usual.
+
+## Current state (code)
+- (2026-10-03, [ADR-0016](0016-building-maintenance.md)) The key no longer hangs at the entrance. Everyone opens their own keys from the user menu ("My keys"); admins see everyone else's keys in the building maintenance (the wrench at the entrance), section "Access". The API is unchanged.

@@ -3,7 +3,7 @@
  *
  *   GET    /api/board                 board of the current room
  *   POST   /api/board/posts           text/code or image/file (with attachmentId)
- *   POST   /api/board/uploads         raw data up to 10 MB, headers X-File-Name (URI-encoded), X-File-Type (else Content-Type)
+ *   POST   /api/board/uploads         raw data up to the maximum file size (building maintenance, default 10 MB), headers X-File-Name (URI-encoded), X-File-Type (else Content-Type)
  *   PATCH  /api/board/posts/:id       edit (everyone present)
  *   DELETE /api/board/posts/:id       delete (author or Mumble admin)
  *   POST   /api/board/posts/:id/copy  copy to another room { channelId } the user may enter (everyone present)
@@ -16,7 +16,7 @@
  */
 import { createReadStream } from "node:fs";
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { BOARD_LIMITS, CopyRequest, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, ticketProjects, type BoardView, type Post, type Reaction, type TicketLinks } from "@ruumble/protocol";
+import { CopyRequest, MAX_FILE_MB, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, ticketProjects, type BoardView, type Post, type Reaction, type TicketLinks } from "@ruumble/protocol";
 import type { Hub, Viewer } from "../hub.ts";
 import type { MumbleSource } from "../mumble.ts";
 import { detectImage, imageSize, safeFileName } from "./media.ts";
@@ -98,7 +98,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     const learned = o.store.ticketLinks();
     const tickets: TicketLinks = {};
     for (const project of ticketProjects(stored.map((p) => p.text).join("\n"))) if (Object.hasOwn(learned, project)) tickets[project] = learned[project]!;
-    const view: BoardView = { channelId: viewer.channelId, channelName: o.hub.channelName(viewer.channelId), posts, pinned: o.store.pinned(viewer.channelId), tickets };
+    const view: BoardView = { channelId: viewer.channelId, channelName: o.hub.channelName(viewer.channelId), posts, pinned: o.store.pinned(viewer.channelId), tickets, maxFileBytes: o.store.maxFileBytes };
     return view;
   });
 
@@ -130,14 +130,17 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     return reply.code(201).send(toView(post, viewer, await o.source.canWrite(viewer.session, viewer.channelId)));
   });
 
-  // raw data upload (images and files), own limit instead of the global 1 MB
-  app.addContentTypeParser("*", { parseAs: "buffer", bodyLimit: BOARD_LIMITS.fileBytes }, (_req, body, done) => done(null, body));
-  app.post("/api/board/uploads", { bodyLimit: BOARD_LIMITS.fileBytes }, async (req, reply) => {
+  // raw data upload (images and files), own limit instead of the global 1 MB: the route takes up to the largest
+  // size maintenance may set, the handler checks the size set now (ADR-0016)
+  const uploadLimit = MAX_FILE_MB * 1024 * 1024;
+  app.addContentTypeParser("*", { parseAs: "buffer", bodyLimit: uploadLimit }, (_req, body, done) => done(null, body));
+  app.post("/api/board/uploads", { bodyLimit: uploadLimit }, async (req, reply) => {
     const r = room(req.headers.cookie);
     if ("error" in r) return fail(reply, r.error);
-    if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     const bytes = req.body;
     if (!(bytes instanceof Buffer) || bytes.length === 0) return fail(reply, "invalid");
+    if (bytes.length > o.store.maxFileBytes) return fail(reply, "too-large");
+    if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     // always check the image type from the bytes; SVG and everything else counts as a file (never inline, ADR-0011)
     const imageMime = detectImage(bytes);
     // The web UI always sends application/octet-stream (otherwise Fastify's JSON and text parsers kick in)

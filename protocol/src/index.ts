@@ -227,6 +227,8 @@ export const BoardView = z.object({
   pinned: Pinned.nullable(),
   /** learned ticket links (tickets.ts), only for projects whose keys appear in this room's posts */
   tickets: TicketLinksSchema.optional(),
+  /** largest attachment the service accepts (building maintenance, ADR-0016); missing: BOARD_LIMITS.fileBytes */
+  maxFileBytes: z.number().int().min(1).optional(),
 });
 export type BoardView = z.infer<typeof BoardView>;
 
@@ -336,6 +338,30 @@ export const TicketsForget = z.object({ projects: z.array(z.string().regex(/^[A-
 /** answer to a care action: number of posts removed or moved */
 export const CareDone = z.object({ posts: count });
 export type CareDone = z.infer<typeof CareDone>;
+
+// ---------------------------------------------------------------- Building maintenance (ADR-0016, REST under /api/maintenance)
+
+/** upper bound for the attachment size an admin may set (the upload route accepts at most this) */
+export const MAX_FILE_MB = 100;
+
+/** settings of the building that admins change in the web UI; the environment variables are the defaults */
+export const BuildingSettings = z.object({
+  /** posts are deleted automatically after this many days */
+  retentionDays: z.number().int().min(1).max(3650),
+  /** storage for attachments; when full, the oldest posts with attachments go first */
+  quotaMB: z.number().int().min(10).max(1024 * 1024),
+  /** largest attachment */
+  maxFileMB: z.number().int().min(1).max(MAX_FILE_MB),
+  /** data of deleted rooms is kept this many days before the cleanup removes it */
+  graceDays: z.number().int().min(0).max(90),
+  /** notice in the Mumble log of the others in the room when someone pins or brings a post */
+  notifyNewPosts: z.boolean(),
+});
+export type BuildingSettings = z.infer<typeof BuildingSettings>;
+
+/** GET /api/maintenance (and the answer to PUT /api/maintenance/settings): current values, defaults, storage used */
+export const Maintenance = z.object({ settings: BuildingSettings, defaults: BuildingSettings, usedBytes: count });
+export type Maintenance = z.infer<typeof Maintenance>;
 
 // ---------------------------------------------------------------- Key cabinet (ADR-0015, REST under /api/keys)
 

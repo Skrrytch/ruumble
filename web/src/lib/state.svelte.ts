@@ -2,7 +2,7 @@
  * State of the web UI: holds the latest snapshot, derives the building and runs commands.
  * No optimistic switching: the own channel only changes with the next snapshot (ADR-0003).
  */
-import { BOARD_LIMITS, type Attachment, type BoardView, type BuildingCare, type FloorCare, type KeyCabinet, type RoomCare, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_LIMITS, type Attachment, type BoardView, type BuildingCare, type BuildingSettings, type FloorCare, type KeyCabinet, type Maintenance, type RoomCare, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairErrorCode, PluginStatus } from "./adapter/types.ts";
 import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter, type CopyTarget } from "./board/model.ts";
 import { t } from "./i18n/index.svelte.ts";
@@ -10,10 +10,10 @@ import { avatarUrlOf, buildBuilding, homeFloor, type Building, type Floor } from
 
 export type Notice = { text: string };
 
-/** Plain text for a board error in the web UI's language */
-export function boardErrorText(error: BoardErrorCode): string {
+/** Plain text for a board error in the web UI's language; `maxFileBytes`: the largest attachment the service takes */
+export function boardErrorText(error: BoardErrorCode, maxFileBytes: number = BOARD_LIMITS.fileBytes): string {
   const m = t().boardErrors[error];
-  return typeof m === "function" ? m(formatSize(BOARD_LIMITS.fileBytes)) : m;
+  return typeof m === "function" ? m(formatSize(maxFileBytes)) : m;
 }
 
 /** Plain text for an error of a care action */
@@ -64,7 +64,13 @@ export class RuumbleState {
   careError = $state<BoardErrorCode | null>(null);
   /** care levels opened from an overview (building → floor → room), for "back" */
   careTrail = $state<CareTarget[]>([]);
-  /** key cabinet (ADR-0015): open, what the service reported, a running revoke, its error */
+  /** building maintenance (ADR-0016): open, what the service reported, saving, the result or error */
+  maintenanceOpen = $state(false);
+  maintenance = $state<Maintenance | null>(null);
+  maintenanceBusy = $state(false);
+  maintenanceMessage = $state<string | null>(null);
+  maintenanceError = $state<BoardErrorCode | null>(null);
+  /** key cabinet (ADR-0015): open (own keys, user menu), what the service reported, a running revoke, its error */
   keysOpen = $state(false);
   keys = $state<KeyCabinet | null>(null);
   keysBusy = $state(false);
@@ -96,6 +102,9 @@ export class RuumbleState {
     return b.floors.find((f) => f.channelId === this.viewFloorId && (!f.lock || f.isSelf)) ?? homeFloor(b);
   });
 
+  /** largest attachment the service takes (building maintenance), known once a board was loaded */
+  maxFileBytes = $derived(this.board?.maxFileBytes ?? BOARD_LIMITS.fileBytes);
+
   /** Without an own user everything is read-only. */
   readonly = $derived(!this.snapshot?.self);
 
@@ -117,7 +126,11 @@ export class RuumbleState {
       },
       connection: (state) => {
         this.connection = state;
-        if (state === "unpaired") this.closeKeys(); // e.g. this browser's key was just revoked
+        if (state === "unpaired") {
+          // e.g. this browser's key was just revoked
+          this.closeKeys();
+          this.closeMaintenance();
+        }
       },
       // also while closed: the toggle shows posts the user has not seen yet
       board: (channelId) => {
@@ -314,7 +327,7 @@ export class RuumbleState {
   }
 
   private boardFailed(error: BoardErrorCode): false {
-    this.setNotice({ text: boardErrorText(error) });
+    this.setNotice({ text: boardErrorText(error, this.maxFileBytes) });
     return false;
   }
 
@@ -433,7 +446,7 @@ export class RuumbleState {
 
   private async loadKeys(): Promise<void> {
     const r = await this.adapter.keys.list();
-    if (!this.keysOpen) return;
+    if (!this.keysOpen && !this.maintenanceOpen) return;
     if (r.ok) this.keys = r.value;
     else this.keysError = r.error;
   }
@@ -449,6 +462,44 @@ export class RuumbleState {
       return false;
     }
     await this.loadKeys();
+    return true;
+  }
+
+  // ---------------------------------------------------------------- Building maintenance (ADR-0016)
+
+  /** settings and, in the same dialog, the keys of all users */
+  async openMaintenance(): Promise<void> {
+    this.maintenanceOpen = true;
+    this.maintenance = null;
+    this.maintenanceMessage = null;
+    this.maintenanceError = null;
+    this.keys = null;
+    this.keysError = null;
+    const [r] = await Promise.all([this.adapter.maintenance.load(), this.loadKeys()]);
+    if (!this.maintenanceOpen) return;
+    if (r.ok) this.maintenance = r.value;
+    else this.maintenanceError = r.error;
+  }
+
+  closeMaintenance(): void {
+    this.maintenanceOpen = false;
+    this.maintenance = null;
+    this.keys = null;
+  }
+
+  async saveSettings(settings: BuildingSettings): Promise<boolean> {
+    this.maintenanceBusy = true;
+    this.maintenanceMessage = null;
+    this.maintenanceError = null;
+    const r = await this.adapter.maintenance.save(settings);
+    this.maintenanceBusy = false;
+    if (!r.ok) {
+      this.maintenanceError = r.error;
+      return false;
+    }
+    this.maintenance = r.value;
+    this.maintenanceMessage = t().maintenance.saved;
+    if (this.board) void this.loadBoard(); // the largest attachment may have changed
     return true;
   }
 

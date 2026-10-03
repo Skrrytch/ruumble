@@ -242,6 +242,7 @@
       onpin={(kind, text, language) => app.pin(kind, text, language)}
       onupload={(file, name, progress) => app.upload(file, name, progress)}
       onattach={(attachment, caption) => app.pinAttachment(attachment, caption)}
+      maxFileBytes={app.maxFileBytes}
     />
   {/if}
 </aside>
