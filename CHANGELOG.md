@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Changed
+- Ruumble may be reachable from the internet behind an HTTPS reverse proxy; the operations guide says what the service protects itself and what the operator should do ([HTTPS → On the internet](docs/operations/https.md#on-the-internet)). Plain HTTP stays for LAN and VPN.
+
 ## [0.25.0] - 2026-10-03
 
 Plugin 0.5.0 (unchanged). Care of the stored data for Mumble admins, settings and keys in the web UI, a richer and more compact board, and protection against forged identities. 0.20.0 to 0.24.0 were not published; their changes are included here.

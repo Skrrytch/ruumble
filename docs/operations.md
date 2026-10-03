@@ -117,7 +117,7 @@ curl http://192.168.1.10:64080/healthz      # → {"ice":"ok",…}
 
 Then send users to `http://192.168.1.10:64080`. The page offers the plugin for download, and the [user guide](user-guide.md) explains the rest.
 
-> **Ruumble belongs in a LAN or VPN, not on the internet** ([SECURITY.md](../SECURITY.md)). The templates publish port 64080 on all network interfaces. On a server with a public address, bind it to the LAN or VPN address instead: `ports: ["192.168.1.10:64080:64080"]`.
+> **Plain HTTP belongs in a LAN or VPN.** The templates publish port 64080 on all network interfaces; on a server with a public address, bind it to the LAN or VPN address instead: `ports: ["192.168.1.10:64080:64080"]`. Ruumble may be reachable from the internet, but only through an HTTPS reverse proxy, and whoever exposes it is responsible for securing it: see [HTTPS → On the internet](operations/https.md#on-the-internet).
 
 ## More
 

@@ -39,7 +39,7 @@ services:
         volumes:
             - ruumble-data:/data
         ports:
-            # Ruumble belongs in a LAN or VPN, not on the internet: on a server with a public address,
+            # Plain HTTP belongs in a LAN or VPN (the internet only through HTTPS): on a server with a public address,
             # bind it to the LAN/VPN address instead, e.g. "192.168.1.10:64080:64080"
             - 64080:64080
 

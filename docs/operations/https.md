@@ -32,6 +32,23 @@ Example: Nginx Proxy Manager, address `ruumble.example.com`.
 Ruumble compares the network address of the plugin with the address Mumble sees for that user, so that nobody can pose as someone else from another computer. Behind the proxy, Ruumble takes the client address from `X-Forwarded-For`. `enforce` only works if the proxy sees the same client address as Mumble; with hairpin NAT (the proxy is reached through the router's public address) they never match. Check the log for `Plugin address does not match Mumble's` before switching to `enforce`.
 </details>
 
+## On the internet
+
+Ruumble may be reachable from the internet, e.g. so that people can use it from home or on the road. Whoever exposes an instance is responsible for securing it.
+
+**What Ruumble protects itself** ([ADR-0017](../decisions/0017-threat-model-after-board-and-care.md)):
+- Without pairing there is no data: strangers get the static web UI and nothing else. Pairing needs a Mumble client with the plugin, connected to your Mumble server. Keep `PREVIEW` off (the default), or anyone sees the building.
+- A connected plugin cannot be replaced from another address, every new browser key is announced in its owner's Mumble log, and only Ruumble's own pages may use the login cookie.
+- Ice stays inside the Docker network; the service holds only the read secret.
+
+**What you do:**
+1. **Only HTTPS from outside.** Publish the reverse proxy, never port 64080: bind it to the LAN address or remove it ([steps](#steps)). In Nginx Proxy Manager enable **Force SSL** and **HSTS**.
+2. **`TRUST_PROXY` set to the proxy's address**, not `"true"`, so nobody can fake their address through `X-Forwarded-For`. If the proxy reaches Ruumble through the published LAN port, that is the gateway of Ruumble's Docker network (`docker network inspect <network>`, e.g. `"172.26.0.1"`).
+3. **Block Common Exploits** in Nginx Proxy Manager; scanners will try paths like `/js/…` or `/wp-login.php`. Optionally a rate limit in the proxy host's Advanced tab.
+4. **Keep Ruumble and Mumble up to date**, and read the Mumble notice "A browser was paired …": if it was not you, revoke the key under "My keys"; admins see every key in the building maintenance.
+
+**Access lists** in the proxy only fit when everyone comes from known networks: an IP list (LAN, VPN) shuts out everyone else, and behind hairpin NAT even your own LAN shows up with the router's public, often changing address. Basic authentication does not work for Ruumble: the plugin cannot log in to `/ws/plugin`, so the building would stay empty.
+
 ## HTTP and HTTPS side by side
 
 Possible, e.g. HTTPS for everyday use and `http://192.168.1.10:64080` for testing: keep the port binding for that, and set `TRUST_PROXY` to the proxy's address, not `"true"`, so that clients on the plain port cannot send their own `X-Forwarded-For`. The plugins connect to the address in the root channel description (a single client can use `bridgeUrl` instead), pairing links use the address the plugin connected to (or `PUBLIC_URL`, if set), and a browser pairs separately for each address.
