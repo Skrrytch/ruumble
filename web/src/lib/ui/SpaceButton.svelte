@@ -68,21 +68,7 @@
   /** the board toggle sits left of the door plate */
   let plateWidth = $state(0);
   const fit = $derived(variant === "room" ? fitPeople(space.users, peopleWidth, peopleHeight) : { shown: space.users, hidden: [] });
-  // the door swings open on the click and stays open a moment after arriving (Mumble often answers within a
-  // fraction of a second), then falls back to ajar
-  const DOOR_HOLD_MS = 1200;
-  let arrived = $state(false);
-  let wasSelf: boolean | null = null; // null: first run, nothing was entered
-  $effect(() => {
-    const self = space.isSelf;
-    const before = wasSelf;
-    wasSelf = self;
-    if (before === null || self === before || !self) return;
-    arrived = true;
-    const timer = setTimeout(() => (arrived = false), DOOR_HOLD_MS);
-    return () => clearTimeout(timer);
-  });
-  const doorState = $derived(disabled && !readonly ? "closed" : pending || arrived ? "open" : "ajar");
+  const doorState = $derived(disabled && !readonly ? "closed" : "ajar");
   const countLine = $derived(pending ? t().space.enteringText : (subtitle ?? countText(space.users.length)));
 
   function click() {
@@ -117,7 +103,7 @@
 >
   {#if variant === "room"}
     <!-- door at the corridor wall: the white strip cuts the opening into the wall; mirrored in the lower row.
-         Ajar (25°) where the user may enter, swinging fully open while entering, closed where Mumble does not let them in -->
+         Ajar (25°) where the user may enter, closed where Mumble does not let them in -->
     <svg class="door {doorState}" width="48" height="52" viewBox="0 0 48 52" fill="none" aria-hidden="true">
       <rect x="2" y="48" width="44" height="4" class="opening" />
       <path d="M46 50A44 44 0 0 0 2 6" class="swing" />
@@ -219,15 +205,8 @@
   .door .leaf {
     stroke: var(--color-blue-700); stroke-width: 2; stroke-linecap: round;
     transform-box: view-box; transform-origin: 2px 50px; transform: rotate(-25deg);
-    transition: transform 900ms ease-in-out, stroke var(--dur) var(--ease-out); /* falling back to ajar: slowly */
   }
-  .door .swing {
-    stroke: var(--color-blue-300); stroke-width: 1.5; stroke-dasharray: 69.12; stroke-dashoffset: 49.92;
-    transition: stroke-dashoffset 900ms ease-in-out;
-  }
-  /* opening on the click: quicker, but long enough to be seen */
-  .door.open .leaf { transform: rotate(-90deg); transition: transform 500ms var(--ease-out), stroke var(--dur) var(--ease-out); }
-  .door.open .swing { stroke-dashoffset: 0; transition: stroke-dashoffset 500ms var(--ease-out); }
+  .door .swing { stroke: var(--color-blue-300); stroke-width: 1.5; stroke-dasharray: 69.12; stroke-dashoffset: 49.92; }
   .door.closed .leaf { transform: none; stroke: var(--color-blue-500); stroke-width: 3; stroke-linecap: butt; }
   .door.closed .swing { stroke-dashoffset: 69.12; }
   .wrap-room .people { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 6px 3px; }
