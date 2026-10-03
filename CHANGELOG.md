@@ -2,9 +2,13 @@
 
 All notable changes to Ruumble. The service and the web UI share one version; the plugin has its own, noted where it changed. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [Semantic Versioning](https://semver.org/).
 
-0.14.0 is the first published release. Earlier versions were only run by the author and are listed for reference.
+0.14.0 is the first published release. Earlier versions, and 0.16.0–0.18.0 and 0.20.0–0.24.0, were only run by the author and are listed for reference: there is no image for them. Coming from a published release, read the Upgrading notes of every version in between.
 
 ## [Unreleased]
+
+Includes everything since 0.19.0, the last published release: see 0.20.0 to 0.24.0 below, which were not published, and their Upgrading notes (board settings in the web UI, posts kept for a year by default, care and keys).
+
+Plugin 0.5.0 (unchanged).
 
 ### Security
 - **Nobody can take over a connected identity.** A second plugin connection for a user who is already connected is refused unless it comes from the same address or from the address Mumble sees for that user. Before, it replaced the real plugin and could receive a pairing link for that user.
@@ -15,8 +19,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 ### Changed
 - **Large boards export without strain.** The ZIP is streamed while it downloads instead of being built in memory, so the service stays responsive and within its memory limit; archives above 4 GB work too (ZIP64). An attachment missing on the server is named in `board.md` instead of failing the export.
 - **Uploads go straight to disk.** A file is written while it arrives and stops at the size limit, instead of being held in memory first.
+- An image built from an untagged commit shows that commit under `/api/version` and in the start log (`BUILD_VERSION`, docs/development.md).
 
 ### Upgrading
+- Back up the volume, change the image tag to this version and restart; the board database migrates itself (also from 0.19.0).
 - Behind a reverse proxy, set `TRUST_PROXY` to the proxy's address or Docker network (e.g. `"172.18.0.0/16"`); `"true"` still works but logs a warning. If the proxy does not pass the original `Host`, set `PUBLIC_URL`, otherwise the web UI cannot post or save.
 
 ## [0.24.0] - 2026-10-03

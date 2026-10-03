@@ -43,7 +43,7 @@ jobs:
             echo "::error::tag $GITHUB_REF_NAME does not match the service version $service"; exit 1
           fi
           grep -q "^## \[$service\]" CHANGELOG.md || { echo "::error::CHANGELOG.md has no section for $service"; exit 1; }
-          for f in deploy/compose/ruumble.docker-compose.yml deploy/compose/mumble-with-ruumble.docker-compose.yml docs/operations.md; do
+          for f in deploy/compose/ruumble.docker-compose.yml deploy/compose/mumble-with-ruumble.docker-compose.yml docs/operations.md docs/operations/maintenance.md; do
             grep -q "ghcr.io/skrrytch/ruumble:$service" "$f" || { echo "::error::$f does not use the image tag $service"; exit 1; }
           done
           echo "service=$service" >> "$GITHUB_OUTPUT"

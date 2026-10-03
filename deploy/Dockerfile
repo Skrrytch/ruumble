@@ -65,7 +65,9 @@ LABEL org.opencontainers.image.title="Ruumble" \
       org.opencontainers.image.description="Mumble server as an office building" \
       org.opencontainers.image.source="https://github.com/Skrrytch/ruumble" \
       org.opencontainers.image.licenses="GPL-2.0-only AND BSD-3-Clause"
-ENV NODE_ENV=production WEB_DIST=/app/web DATA_DIR=/data PORT=64080 PLUGIN_BUNDLE_DIR=/app/plugin
+# a build from an untagged commit names itself, e.g. --build-arg BUILD_VERSION="$(git describe --tags --dirty | sed 's/^v//')"
+ARG BUILD_VERSION=""
+ENV NODE_ENV=production WEB_DIST=/app/web DATA_DIR=/data PORT=64080 PLUGIN_BUNDLE_DIR=/app/plugin BUILD_VERSION=$BUILD_VERSION
 WORKDIR /app
 COPY --from=deps /out/node_modules node_modules
 COPY --from=build /src/bridge/dist dist

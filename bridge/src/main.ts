@@ -19,6 +19,8 @@
  *                                                attachment (10 MB), the grace for deleted rooms (7 days) and notices
  *                                                (whole numbers: 1–3650 days, at least 10 MB, else the start fails)
  *   LOG_LEVEL (info)                             Fastify/pino logging
+ *   BUILD_VERSION                                set by the image build: the exact build (git describe), shown instead of
+ *                                                the package version under /api/version and in the log
  *
  * Board backup:  node dist/main.mjs backup <target-directory>  (needs only DATA_DIR, no Ice)
  */
@@ -324,7 +326,7 @@ app.get("/healthz", async (_req, reply) => {
 
 // shown on the notice pages of the web UI; the plugin version comes from the bundle's file name (ruumble-<version>.mumble_plugin)
 const versions: Versions = {
-  service: pkg.version,
+  service: env.BUILD_VERSION || pkg.version,
   plugin: config.pluginBundle && existsSync(config.pluginBundle) ? (/-(\d+\.\d+\.\d+)\.mumble_plugin$/.exec(config.pluginBundle)?.[1] ?? null) : null,
 };
 app.get("/api/version", async () => versions);
@@ -343,6 +345,7 @@ if (existsSync(config.webDist)) {
 }
 
 await app.listen({ port: config.port, host: config.host });
+log("Ruumble started", { version: versions.service });
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, async () => {
