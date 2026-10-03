@@ -32,3 +32,6 @@ Mumble already has a notion of who administers a channel: the Write permission (
 - The default retention (`RETENTION_DAYS`) goes from 30 days to **one year**, so boards keep their history and "delete older than" is the tool for tidying up.
 - The service now remembers the names of floors and rooms that have boards; they are deleted with the data.
 - `REST /api/care/*` (`bridge/src/board/care.ts`), schemas in `protocol/src/index.ts`.
+
+## Current state (code)
+- (2026-10-03) The dialogs follow the "Hausmeister" design: one dialog that moves between building, floor and room, with a site plan of the level, a door plate or floor button, a breadcrumb (parent levels are links only where the viewer may tend them) and "back". The footer shows the house rules with the current settings (retention, grace for deleted rooms) or the result of the last action. Confirmations are a bar in place of the footer, not a browser dialog; the rest of the dialog is locked meanwhile. Moving a board asks too (neutral, not red), since the posts mix with the target's. Building maintenance (ADR-0016) and "My keys" (ADR-0015) use the same frame. Components in `web/src/lib/ui/care/`, pure helpers in `web/src/lib/care/model.ts`.

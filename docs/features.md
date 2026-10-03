@@ -85,7 +85,7 @@ A potted plant stands in every room (bottom right), at the end of every corridor
 - **Floor care**: all rooms of the floor with posts, size and last post (a line opens the room's care, "back" returns); **move a board** from any room in the database, current or gone, to a room on this floor (e.g. a room recreated in Mumble with a new ID); rooms of this floor that were deleted in Mumble or moved out of the floor plan and still hold data, one line each (name, posts, size, gone since), removed one by one or all.
 - **Building care**: **storage** (used of the quota, retention, every floor with its numbers, a line opens the floor's care); floors that are gone, with their rooms, posts and size; rooms whose floor is not known as "Unknown floor"; every **learned ticket link** of the building (project → base URL), each with a reset, e.g. after a first link to the wrong Jira; a newer link teaches the project again.
 
-Care works from anywhere in the building and shows counts and sizes, not the content of posts; the export is the one exception. Every removal asks first.
+Care works from anywhere in the building and shows counts and sizes, not the content of posts; the export is the one exception. It is one dialog that moves between building, floor and room (a line of an overview opens the level below; "back" and a breadcrumb return), with the house rules (current retention and grace) in its footer. Every removal, and moving a board, asks first in a bar inside the dialog.
 
 ### Keys
 

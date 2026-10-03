@@ -5,106 +5,113 @@ import { elevator, userMenu } from "./topbar.ts";
 test.describe("Care (ADR-0014)", () => {
   test.beforeEach(async ({ page }) => page.goto("/?fixture=sample&talking=0"));
 
-  test("room care: what the board holds, the retention, clear after asking", async ({ page }) => {
+  test("room care: what the board holds, house rules, clear after confirming in the dialog", async ({ page }) => {
     await page.getByRole("button", { name: "Room care: Let's talk" }).click();
-    const dialog = page.getByRole("dialog", { name: "Room care · Let's talk" });
-    await expect(dialog.getByText(/^On the board: 4 posts/)).toBeVisible();
-    await expect(dialog.getByText("Posts are deleted automatically after one year.")).toBeVisible();
-    page.once("dialog", (d) => void d.dismiss()); // asked first: cancelled, nothing happens
-    await dialog.getByRole("button", { name: "Clear the board" }).click();
-    await expect(dialog.getByText(/^On the board: 4 posts/)).toBeVisible();
-    page.once("dialog", (d) => void d.accept());
-    await dialog.getByRole("button", { name: "Clear the board" }).click();
+    const dialog = page.getByRole("dialog", { name: "Room care" });
+    await expect(dialog.getByRole("region", { name: "What the board holds" })).toContainText(/Posts\s*4/);
+    await expect(dialog.getByText("Posts are deleted automatically after one year. Deleting is final.")).toBeVisible();
+    await expect(dialog.getByRole("navigation", { name: "Breadcrumb" })).toContainText(/Building\s*›\s*Development\s*›\s*Let's talk/);
+    await dialog.getByRole("button", { name: "Clear the board …" }).click();
+    const confirm = dialog.getByRole("alertdialog", { name: "Delete all 4 posts for good?" });
+    await expect(confirm).toBeVisible();
+    await expect(confirm.getByRole("button", { name: "Cancel" })).toBeFocused();
+    await page.keyboard.press("Escape"); // only the confirmation closes
+    await expect(confirm).toHaveCount(0);
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Clear the board …" }).click();
+    await dialog.getByRole("button", { name: "Delete for good" }).click();
     await expect(dialog.getByRole("status")).toHaveText("Board cleared, 4 posts deleted.");
-    await expect(dialog.getByText("The board is empty.")).toBeVisible();
+    await expect(dialog.getByRole("region", { name: "What the board holds" })).toContainText(/Posts\s*0/);
     await dialog.getByRole("button", { name: "Close" }).last().click();
     await expect(dialog).toHaveCount(0);
     await page.getByRole("button", { name: "Show board" }).click();
     await expect(page.getByRole("complementary", { name: "Board" }).getByText("Nothing pinned here yet.", { exact: false })).toBeVisible();
   });
 
-  test("room care: delete posts older than a choice (no 1 year: that is the retention)", async ({ page }) => {
+  test("room care: delete posts older than a chosen age (no 1 year: that is the retention)", async ({ page }) => {
     await page.getByRole("button", { name: "Room care: Clara's office" }).click();
-    const dialog = page.getByRole("dialog", { name: "Room care · Clara's office" });
-    const older = dialog.getByLabel("Posts older than");
-    await expect(older.locator("option")).toHaveText(["7 days (1 post)", "14 days (1 post)", "1 month (0 posts)", "3 months (0 posts)", "6 months (0 posts)"]);
-    await older.selectOption({ label: "1 month (0 posts)" });
-    await expect(dialog.getByRole("button", { name: "Delete old posts" })).toBeDisabled();
-    await older.selectOption({ label: "14 days (1 post)" });
-    page.once("dialog", (d) => void d.accept());
-    await dialog.getByRole("button", { name: "Delete old posts" }).click();
+    const dialog = page.getByRole("dialog", { name: "Room care" });
+    const ages = dialog.getByRole("group", { name: "Delete posts older than" });
+    await expect(ages.getByRole("radio")).toHaveCount(5);
+    await expect(ages.getByRole("radio", { name: "1 month 0" })).toBeDisabled();
+    await expect(dialog.getByRole("button", { name: "Delete posts …" })).toBeDisabled(); // nothing chosen yet
+    await ages.getByText("14 days").click();
+    await dialog.getByRole("button", { name: "Delete 1 post …" }).click();
+    await expect(dialog.getByRole("alertdialog")).toContainText("Older than 14 days");
+    await dialog.getByRole("button", { name: "Delete for good" }).click();
     await expect(dialog.getByRole("status")).toHaveText("1 post deleted.");
-    await expect(dialog.getByText("The board is empty.")).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Delete posts …" })).toBeDisabled();
   });
 
   test("room care: export the board as a file", async ({ page }) => {
     await page.getByRole("button", { name: "Room care: Let's talk" }).click();
-    const dialog = page.getByRole("dialog", { name: "Room care · Let's talk" });
+    const dialog = page.getByRole("dialog", { name: "Room care" });
     const download = page.waitForEvent("download");
-    await dialog.getByRole("button", { name: "Export the board" }).click();
+    await dialog.getByRole("button", { name: "Export as ZIP" }).click();
     expect((await download).suggestedFilename()).toBe("board-Let-s-talk.md"); // the mock exports Markdown, the service a ZIP
     await expect(dialog.getByRole("status")).toHaveText("Saved: board-Let-s-talk.md");
   });
 
-  test("floor care: all rooms with their numbers, a line opens room care, back returns", async ({ page }) => {
+  test("floor care: rooms as a list, a line opens room care, back and the breadcrumb return", async ({ page }) => {
     await page.getByRole("button", { name: "Floor care: Development" }).click();
-    const dialog = page.getByRole("dialog", { name: "Floor care · Development" });
-    const rooms = dialog.getByRole("list").first().getByRole("listitem");
-    await expect(rooms).toHaveCount(5);
-    await expect(rooms.first()).toContainText(/Let's talk\s*4 posts · \d+ KB · last/);
-    await expect(rooms.nth(1)).toContainText(/Let's play\s*empty/);
-    await dialog.getByRole("button", { name: "Room care: Let's talk" }).click();
-    await expect(page.getByRole("dialog", { name: "Room care · Let's talk" })).toBeVisible();
-    await page.getByRole("button", { name: "Back" }).click();
-    await expect(page.getByRole("dialog", { name: "Floor care · Development" })).toBeVisible();
+    const dialog = page.getByRole("dialog", { name: "Floor care" });
+    await expect(dialog.getByText("5 rooms · 5 posts", { exact: false })).toBeVisible();
+    const rooms = dialog.getByRole("button", { name: /^Let's talk/ });
+    await expect(rooms).toContainText(/Let's talk\s*4/);
+    await expect(dialog.getByRole("button", { name: /^Let's play/ })).toContainText("empty");
+    await rooms.click();
+    await expect(page.getByRole("dialog", { name: "Room care" })).toBeVisible();
+    await page.getByRole("button", { name: "Back to floor care" }).click();
+    await expect(page.getByRole("dialog", { name: "Floor care" })).toBeVisible();
+    await page.getByRole("dialog", { name: "Floor care" }).getByRole("button", { name: /^Clara's office/ }).click();
+    await page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("button", { name: "Building" }).click();
+    await expect(page.getByRole("dialog", { name: "Building care" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Back to/ })).toHaveCount(0);
   });
 
-  test("floor care: move the board of a room that is gone to a room of this floor", async ({ page }) => {
+  test("floor care: move the board of a room that is gone, after confirming", async ({ page }) => {
     await page.getByRole("button", { name: "Floor care: Development" }).click();
-    const dialog = page.getByRole("dialog", { name: "Floor care · Development" });
-    await expect(dialog.getByRole("button", { name: "Move", exact: true })).toBeDisabled();
-    await dialog.getByLabel("From").selectOption({ label: "Design review (Development) · 4 posts · gone" });
+    const dialog = page.getByRole("dialog", { name: "Floor care" });
+    await expect(dialog.getByRole("button", { name: "Move the board" })).toBeDisabled();
+    await dialog.getByLabel("From").selectOption({ label: "Design review · 4 posts · gone" });
     await dialog.getByLabel("To").selectOption({ label: "Retrospective" });
-    page.once("dialog", (d) => void d.accept());
+    await dialog.getByRole("button", { name: "Move the board" }).click();
+    await expect(dialog.getByRole("alertdialog", { name: "Move 4 posts from Design review to Retrospective?" })).toBeVisible();
     await dialog.getByRole("button", { name: "Move", exact: true }).click();
     await expect(dialog.getByRole("status")).toHaveText("4 posts moved.");
-    await expect(dialog.getByRole("list").first().getByRole("listitem").filter({ hasText: "Retrospective" })).toContainText("4 posts");
-    await expect(dialog.getByText("Design review").first()).toHaveCount(0);
+    await expect(dialog.getByRole("button", { name: /^Retrospective/ })).toContainText(/Retrospective\s*4/);
   });
 
-  test("floor care: the rooms that are gone, removed one by one", async ({ page }) => {
+  test("floor care: rooms that are gone, removed one by one", async ({ page }) => {
     await page.getByRole("button", { name: "Floor care: Development" }).click();
-    const dialog = page.getByRole("dialog", { name: "Floor care · Development" });
-    const gone = dialog.getByRole("list").last().getByRole("listitem");
-    await expect(gone).toHaveCount(2);
-    await expect(gone.first()).toContainText(/Design review\s*4 posts · 2\.\d MB · gone since/);
-    await expect(gone.last()).toContainText("12 posts · moved");
-    page.once("dialog", (d) => void d.accept());
-    await dialog.getByRole("button", { name: 'Remove "Design review" with its data' }).click();
+    const dialog = page.getByRole("dialog", { name: "Floor care" });
+    await expect(dialog.getByRole("heading", { name: "Gone (2)" })).toBeVisible();
+    await expect(dialog.getByText(/^4 posts · 2\.\d MB · goes in \d days$/)).toBeVisible();
+    await expect(dialog.getByText("12 posts · moved")).toBeVisible();
+    await dialog.getByRole("button", { name: "Remove Design review" }).click();
+    await expect(dialog.getByRole("alertdialog", { name: "Remove Design review for good?" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Remove for good" }).click();
     await expect(dialog.getByRole("status")).toHaveText("Removed: 4 posts.");
-    await expect(gone).toHaveCount(1);
+    await expect(dialog.getByRole("heading", { name: "Gone (1)" })).toBeVisible();
   });
 
-  test("building care: storage and floors, floors that are gone, ticket links", async ({ page }) => {
+  test("building care: meter reading, floors from the top, floors that are gone, ticket links", async ({ page }) => {
     await (await elevator(page)).getByRole("button", { name: "Building care" }).click();
     const dialog = page.getByRole("dialog", { name: "Building care" });
-    await expect(dialog.getByText(/^[\d.]+ MB of 2 GB used$/)).toBeVisible();
     await expect(dialog.getByRole("meter", { name: "Storage used" })).toBeVisible();
-    const lists = dialog.getByRole("list");
-    await expect(lists.first().getByRole("listitem").filter({ hasText: "Development" })).toContainText(/2 rooms · 5 posts/);
-    const floors = lists.nth(1).getByRole("listitem");
-    await expect(floors).toHaveCount(2);
-    await expect(floors.first()).toContainText(/Marketing\s*2 rooms · 9 posts/);
-    await expect(floors.last()).toContainText("Unknown floor");
-    page.once("dialog", (d) => void d.accept());
-    await dialog.getByRole("button", { name: "Remove all with their data" }).click();
-    await expect(dialog.getByText("No orphaned floors.")).toBeVisible();
-    await expect(dialog.getByRole("listitem").filter({ hasText: "RUU" })).toContainText("jira.example.org/browse/");
+    await expect(dialog.getByRole("region", { name: "Meter reading" })).toContainText(/MB of 2 GB/);
+    await expect(dialog.getByRole("button", { name: /Development/ })).toContainText("5 rooms · 5 posts");
+    await expect(dialog.getByRole("button", { name: /Support|Development|Lobby/ })).toHaveText([/Support/, /Development/, /Lobby/]);
+    await expect(dialog.getByRole("heading", { name: "Gone (2)" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Remove all …" }).click();
+    await expect(dialog.getByRole("alertdialog", { name: "Remove 2 orphaned floors for good?" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Remove for good" }).click();
+    await expect(dialog.getByText("No floors that are gone.")).toBeVisible();
     await dialog.getByRole("button", { name: "Reset RUU" }).click();
     await expect(dialog.getByRole("status")).toHaveText("Ticket link reset.");
-    await expect(dialog.getByText("No ticket link is learned yet.")).toBeVisible();
-    await dialog.getByRole("button", { name: "Floor care: Support" }).click();
-    await expect(page.getByRole("dialog", { name: "Floor care · Support" })).toBeVisible();
+    await expect(dialog.getByText("No ticket links learned yet.")).toBeVisible();
+    await dialog.getByRole("button", { name: /Support/ }).click();
+    await expect(page.getByRole("dialog", { name: "Floor care" })).toBeVisible();
   });
 
   test("without the permission the plants are only decoration", async ({ page }) => {
@@ -117,7 +124,7 @@ test.describe("Care (ADR-0014)", () => {
 
 // my keys (ADR-0015): everyone sees their own in the user menu; admins everyone else's in the building maintenance
 test.describe("Keys (ADR-0015)", () => {
-  test("my keys in the user menu, this browser marked, revoke after asking", async ({ page }) => {
+  test("my keys in the user menu, this browser marked, revoke after confirming", async ({ page }) => {
     await page.goto("/?fixture=sample&talking=0");
     await (await userMenu(page)).getByRole("button", { name: "My keys" }).click();
     const dialog = page.getByRole("dialog", { name: "My keys" });
@@ -126,8 +133,9 @@ test.describe("Keys (ADR-0015)", () => {
     await expect(mine.first()).toContainText(/Firefox on Linux\s*this browser/);
     await expect(mine.last()).toContainText("Unknown browser");
     await expect(dialog.getByText("Ben")).toHaveCount(0); // others are in the building maintenance
-    page.once("dialog", (d) => void d.accept());
     await dialog.getByRole("button", { name: 'Revoke the key "Safari on iOS"' }).click();
+    await expect(dialog.getByRole("alertdialog", { name: 'Revoke the key "Safari on iOS"?' })).toBeVisible();
+    await dialog.getByRole("button", { name: "Revoke", exact: true }).click();
     await expect(mine).toHaveCount(2);
   });
 
@@ -135,24 +143,23 @@ test.describe("Keys (ADR-0015)", () => {
     await page.goto("/?fixture=edge-cases&talking=0");
     await (await userMenu(page)).getByRole("button", { name: "My keys" }).click();
     const dialog = page.getByRole("dialog", { name: "My keys" });
-    page.once("dialog", (d) => {
-      expect(d.message()).toContain("This is the key of this browser");
-      void d.accept();
-    });
     await dialog.getByRole("button", { name: 'Revoke the key "Firefox on Linux"' }).click();
+    await expect(dialog.getByRole("alertdialog")).toContainText("This is the key of this browser");
+    await dialog.getByRole("button", { name: "Revoke", exact: true }).click();
     await expect(page.getByText("This device is not paired yet.")).toBeVisible();
   });
 });
 
 // building maintenance (ADR-0016): the wrench at the entrance, for admins only
 test.describe("Building maintenance (ADR-0016)", () => {
-  test("settings with defaults, saved, the largest file reaches the board; everyone else's keys", async ({ page }) => {
+  test("settings with defaults, saved after confirming, the largest file reaches the board; everyone else's keys", async ({ page }) => {
     await page.goto("/?fixture=sample&talking=0");
     await (await elevator(page)).getByRole("button", { name: "Building maintenance" }).click();
     const dialog = page.getByRole("dialog", { name: "Building maintenance" });
     const retention = dialog.getByLabel("Keep posts for");
     await expect(retention).toHaveValue("365");
     await expect(dialog.getByText("Default: 2048 · used:", { exact: false })).toBeVisible();
+    await expect(dialog.getByText("Changes apply at once. The cleanup runs hourly.")).toBeVisible();
     const save = dialog.getByRole("button", { name: "Save" });
     await expect(save).toBeDisabled();
     await retention.fill("0");
@@ -162,8 +169,9 @@ test.describe("Building maintenance (ADR-0016)", () => {
     await expect(dialog.getByText(/^Shorter retention/)).toBeVisible();
     await dialog.getByLabel("Largest file").fill("25");
     await dialog.getByLabel("Notice in Mumble for new posts").uncheck();
-    page.once("dialog", (d) => void d.accept()); // shorter retention deletes posts: asked first
     await save.click();
+    await expect(dialog.getByRole("alertdialog", { name: "Save, although posts will then be deleted?" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Save anyway" }).click();
     await expect(dialog.getByRole("status")).toHaveText("Saved.");
     await expect(save).toBeDisabled();
     await dialog.getByRole("button", { name: "All to default" }).click();

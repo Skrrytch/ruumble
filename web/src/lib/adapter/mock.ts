@@ -252,6 +252,7 @@ export class MockAdapter implements MumbleAdapter {
       this.caretaker(id, () => ({
         channelId: id,
         name: this.channelName(id),
+        graceDays: this.settings.graceDays,
         rooms: this.roomsOf(id).map((c) => {
           const posts = this.posts.get(c.id) ?? [];
           return { channelId: c.id, name: c.name, posts: posts.length, bytes: posts.reduce((n, p) => n + (p.attachment?.size ?? 0), 0), newest: posts.length ? Math.max(...posts.map((p) => p.createdAt)) : null };
@@ -290,7 +291,7 @@ export class MockAdapter implements MumbleAdapter {
         const roomBytes = (id: number) => (this.posts.get(id) ?? []).reduce((n, p) => n + (p.attachment?.size ?? 0), 0);
         const used = [...this.posts.keys()].reduce((n, id) => n + roomBytes(id), 0) + this.orphans.reduce((n, o) => n + o.room.bytes, 0);
         return {
-          storage: { usedBytes: used, quotaBytes: this.settings.quotaMB * 1024 * 1024, retentionDays: this.settings.retentionDays },
+          storage: { usedBytes: used, quotaBytes: this.settings.quotaMB * 1024 * 1024, retentionDays: this.settings.retentionDays, graceDays: this.settings.graceDays },
           floors: this.state.channels.filter((c) => c.parent === 0).sort((a, b) => a.position - b.position).map((f) => {
             const rooms = this.roomsOf(f.id).filter((r) => (this.posts.get(r.id) ?? []).length > 0);
             return { channelId: f.id, name: f.name, rooms: rooms.length, posts: rooms.reduce((n, r) => n + this.posts.get(r.id)!.length, 0), bytes: rooms.reduce((n, r) => n + roomBytes(r.id), 0) };

@@ -5,6 +5,7 @@
 import { BOARD_LIMITS, type Attachment, type BoardView, type BuildingCare, type BuildingSettings, type FloorCare, type KeyCabinet, type Maintenance, type RoomCare, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairErrorCode, PluginStatus } from "./adapter/types.ts";
 import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter, type CopyTarget } from "./board/model.ts";
+import type { CareTarget } from "./care/model.ts";
 import { t } from "./i18n/index.svelte.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
 
@@ -21,8 +22,7 @@ export function careErrorText(error: BoardErrorCode): string {
   return error === "not-found" || error === "forbidden" ? t().care.errors[error] : boardErrorText(error);
 }
 
-/** whose stored data the care dialog is about (the plant that was clicked, ADR-0014) */
-export type CareTarget = { kind: "room" | "floor"; channelId: number } | { kind: "building" };
+export type { CareTarget };
 export type CareView = { kind: "room"; value: RoomCare } | { kind: "floor"; value: FloorCare } | { kind: "building"; value: BuildingCare };
 
 /** per room: creation time of the newest post the user has seen on its board (only in this browser) */
@@ -347,6 +347,15 @@ export class RuumbleState {
     this.care = null;
     this.careView = null;
     this.careTrail = [];
+  }
+
+  /** breadcrumb: go to a parent level; the trail is cut there, or starts anew if that level was not on it */
+  async careJump(target: CareTarget): Promise<void> {
+    const same = (a: CareTarget) => a.kind === target.kind && (a.kind === "building" || (target.kind !== "building" && a.channelId === target.channelId));
+    const at = this.careTrail.findIndex(same);
+    const trail = at >= 0 ? this.careTrail.slice(0, at) : [];
+    await this.openCare(target);
+    this.careTrail = trail;
   }
 
   async careBack(): Promise<void> {

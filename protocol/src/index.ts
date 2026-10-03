@@ -289,6 +289,8 @@ export type TransferSource = z.infer<typeof TransferSource>;
 export const FloorCare = z.object({
   channelId,
   name: z.string(),
+  /** data of deleted rooms is kept this many days after they were found missing (building maintenance) */
+  graceDays: z.number().int().min(0),
   rooms: z.array(RoomSummary),
   orphans: z.array(OrphanedRoom),
   sources: z.array(TransferSource),
@@ -315,7 +317,7 @@ export type FloorSummary = z.infer<typeof FloorSummary>;
  * link (one per project, building-wide)
  */
 export const BuildingCare = z.object({
-  storage: z.object({ usedBytes: count, quotaBytes: count, retentionDays: z.number().int().min(1) }),
+  storage: z.object({ usedBytes: count, quotaBytes: count, retentionDays: z.number().int().min(1), graceDays: z.number().int().min(0) }),
   floors: z.array(FloorSummary),
   orphans: z.array(OrphanedFloor),
   tickets: TicketLinksSchema,

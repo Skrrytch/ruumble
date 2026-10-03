@@ -172,6 +172,7 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
     const view: FloorCare = {
       channelId: id,
       name: o.hub.channelName(id),
+      graceDays: o.store.settings.graceDays,
       rooms: rooms.map((room) => {
         const st = stats.get(room.id);
         return { channelId: room.id, name: room.name, posts: st?.posts ?? 0, bytes: st?.bytes ?? 0, newest: st?.newest ?? null };
@@ -252,7 +253,7 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
       return { channelId: f.id, name: f.name, rooms: used.length, posts: used.reduce((n, x) => n + x.posts, 0), bytes: used.reduce((n, x) => n + x.bytes, 0) };
     });
     const view: BuildingCare = {
-      storage: { usedBytes: o.store.usedBytes(), quotaBytes: o.store.quotaBytes, retentionDays: o.store.retentionDays },
+      storage: { usedBytes: o.store.usedBytes(), quotaBytes: o.store.quotaBytes, retentionDays: o.store.retentionDays, graceDays: o.store.settings.graceDays },
       floors,
       orphans: buildingOrphans(),
       tickets,

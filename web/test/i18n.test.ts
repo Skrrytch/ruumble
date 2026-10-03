@@ -87,25 +87,31 @@ describe("UI language", () => {
     expect(relativeTime(now - 3600_000, now)).toBe("1 hour ago");
   });
 
-  it("care and key cabinet texts: singular and plural, retention in days or years, choices", () => {
+  it("care texts: singular and plural, periods in days or years, choices", () => {
     for (const m of [de, en]) {
       const c = m.care;
       expect(c.posts(1)).not.toBe(c.posts(2));
+      expect(c.postsShort(1)).not.toBe(c.postsShort(2));
       expect(c.rooms(1)).not.toBe(c.rooms(2));
       expect(c.floors(1)).not.toBe(c.floors(2));
       expect(c.ticketsForgotten(1)).not.toBe(c.ticketsForgotten(2));
-      expect(new Set([c.retention(365), c.retention(730), c.retention(30)]).size).toBe(3);
-      expect([7, 14, 30, 90, 180, 5].map(c.pruneChoice)).toHaveLength(6);
-      expect(c.pruneOption("x", 1)).not.toBe(c.pruneOption("x", 2));
-      expect(c.transferSource("A", "1F", 1, true)).not.toBe(c.transferSource("A", "", 2, false));
-      expect(c.boardHolds("4", "")).not.toBe(c.boardHolds("4", "1 MB"));
+      expect(new Set([0, 1, 30, 365, 730].map(c.ruleFloor)).size).toBe(5);
+      expect(new Set([1, 30, 365, 730].map(c.retentionShort)).size).toBe(4);
+      expect([7, 14, 30, 90, 180, 5].map(c.ageChoice)).toHaveLength(6);
+      expect(new Set([null, 1, 3].map(c.pruneButton)).size).toBe(3);
+      expect(c.confirmClearTitle(1)).not.toBe(c.confirmClearTitle(4));
+      expect(new Set([0, 1, 5].map(c.purgeIn)).size).toBe(3);
+      expect(c.sourceOption("A", 1, "1F", true)).not.toBe(c.sourceOption("A", 2, "", false));
+      expect(c.share(0.0001)).not.toBe(c.share(0.25));
+      expect(c.ruleRoom(365)).toContain(c.ruleRoom(365).includes("Jahr") ? "einem Jahr" : "one year");
+      expect(c.ruleBuilding(365, 7)).toBeTruthy();
     }
-    expect(de.care.retention(365)).toBe("Beiträge werden nach einem Jahr automatisch gelöscht.");
-    expect(en.care.retention(730)).toBe("Posts are deleted automatically after 2 years.");
-    expect(en.care.retention(30)).toBe("Posts are deleted automatically after 30 days.");
-    expect(de.care.pruneChoice(30)).toBe("1 Monat");
-    expect(en.care.pruneChoice(5)).toBe("5 days");
-    expect(de.care.transferSource("Lab", "1F", 1, true)).toBe("Lab (1F) · 1 Beitrag · nicht mehr da");
-    expect(en.care.transferSource("Lab", "", 3, false)).toBe("Lab · 3 posts");
+    expect(de.care.ruleFloor(7)).toBe("Daten gelöschter Räume verschwinden nach 7 Tagen von selbst.");
+    expect(en.care.ruleRoom(730)).toBe("Posts are deleted automatically after 2 years. Deleting is final.");
+    expect(de.care.share(0.25)).toBe("25 %");
+    expect(en.care.retentionShort(365)).toBe("kept 1 year");
+    expect(de.care.ageChoice(30)).toBe("1 Monat");
+    expect(en.care.ageChoice(5)).toBe("5 days");
+    expect(de.care.sourceOption("Lab", 1, "1F", true)).toBe("Lab (1F) · 1 Beitrag · nicht mehr da");
   });
 });

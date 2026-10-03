@@ -770,7 +770,7 @@ describe("REST /api/care (ADR-0014)", () => {
     store.putFile(PNG, "image/png");
     store.create({ channelId: 2, kind: "text", text: "x", authorHash: A, authorName: "Anna" });
     const building = (await app.inject({ url: "/api/care/building", headers: as("ben") })).json();
-    expect(building.storage).toEqual({ usedBytes: PNG.length, quotaBytes: 2048 * 1024 * 1024, retentionDays: 365 });
+    expect(building.storage).toEqual({ usedBytes: PNG.length, quotaBytes: 2048 * 1024 * 1024, retentionDays: 365, graceDays: 7 });
     expect(building.floors).toEqual([{ channelId: 1, name: "1F", rooms: 1, posts: 1, bytes: 0 }]);
   });
 
