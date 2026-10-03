@@ -61,7 +61,6 @@ export const en: Messages = {
   },
   header: {
     preview: "Preview, read-only",
-    onFloorTitle: "People on this floor",
     onlineTitle: "Online on the server",
     online: (n) => `${n} online`,
   },

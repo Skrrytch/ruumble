@@ -94,7 +94,6 @@
           {#if floor}<span class="caption" aria-hidden="true">{floor.level}</span>{/if}
           <span class="plate-name">
             <h1>{floor?.name ?? t().screens.vacancyTitle}</h1>
-            {#if floor}<span class="people" title={t().header.onFloorTitle} aria-hidden="true"><Users size={15} />{floor.population}</span>{/if}
           </span>
         </span>
         <span class="call" aria-hidden="true"><ChevronDown size={18} class="chevron" /></span>
@@ -223,7 +222,6 @@
   .note { font-size: 13px; font-weight: 700; color: var(--color-blue-500); white-space: nowrap; }
   .caption { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; }
   .plate-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-  .people { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .sign:focus-visible, .me:focus-visible, .tool:focus-visible, .item:focus-visible, .floor:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
 
   /* signs: plates with a screw in every corner */
@@ -252,13 +250,10 @@
   .plate-text { min-width: 0; }
   .floor-sign .caption { color: var(--color-blue-100); }
   h1 { margin: 0; font-size: 20px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .floor-sign .people { color: var(--color-blue-100); }
   .call {
-    display: flex; align-items: center; justify-content: center; width: 28px; height: 44px; margin-left: 2px; flex-shrink: 0;
-    border-radius: var(--radius-md); background: rgb(255 255 255 / 0.14); color: var(--color-white);
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25);
+    display: flex; align-items: center; justify-content: center; width: 24px; height: 44px; margin-left: 2px; flex-shrink: 0;
+    color: var(--color-white);
   }
-  .floor-sign:hover .call { background: rgb(255 255 255 / 0.22); }
   .call :global(.chevron), .me :global(.chevron) { flex-shrink: 0; transition: transform var(--dur) var(--ease-out); }
   .floor-sign[aria-expanded="true"] :global(.chevron), .me[aria-expanded="true"] :global(.chevron) { transform: rotate(180deg); }
 
@@ -319,7 +314,7 @@
   .center { display: flex; justify-content: center; min-width: 0; }
   .room-sign {
     --plate: linear-gradient(var(--color-blue-100), var(--color-blue-100)); --screw-color: var(--color-blue-500);
-    display: flex; flex-direction: column; justify-content: center; min-height: 52px; max-width: 360px; padding: 5px 22px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 52px; max-width: 360px; padding: 5px 22px;
     border: 2px solid var(--color-navy); color: var(--color-navy); box-shadow: 0 2px 0 rgb(0 56 105 / 0.2);
   }
   .room-sign .caption { color: var(--color-blue-700); }

@@ -56,7 +56,6 @@ export const de = {
   },
   header: {
     preview: "Vorschau, nur lesend",
-    onFloorTitle: "Personen auf dieser Etage",
     onlineTitle: "Online auf dem Server",
     online: (n: number) => `${n} online`,
   },
