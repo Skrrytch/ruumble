@@ -102,6 +102,9 @@
   .floorplan.wide { scrollbar-color: var(--color-blue-300) var(--color-navy); }
   .track { flex: 1 0 auto; min-width: 100%; display: flex; flex-direction: column; gap: var(--wall); }
   .row { display: flex; gap: var(--wall); flex: 1 1 0; min-height: 0; }
+  /* never lower than two rows of people (tokens.css) */
+  .row.top { min-height: var(--room-min-top); }
+  .row.bottom { min-height: var(--room-min-bottom); }
   .notice {
     flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 40px;
     background: var(--color-white); font-size: 15px; color: var(--color-blue-700);

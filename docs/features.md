@@ -173,7 +173,7 @@ On hold (2026-10-02): this does not work. The plugin API's `requestSetLocalUserC
 
 **Smaller items**
 
-- A layout for small windows (today: minimum height 720 px, width up to 1440 px).
+- A layout for small windows (today the web UI scales down to 1000 px wide and to the height where every room still holds two rows of people, about 780 px; smaller windows scroll).
 - Old raw avatar format (600×60 BGRA) from very old clients; treated as "no avatar" today.
 
 ### Board for developers (A1–A9)

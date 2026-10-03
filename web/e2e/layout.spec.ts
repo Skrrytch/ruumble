@@ -80,10 +80,10 @@ test("layout matches the prototype (sample building, DEVELOPMENT floor)", async 
   expect(rooms(ours)).toEqual(rooms(reference));
 });
 
-test("width: at least 1440 px, a wider window is used in full and the open board gets half of the extra width", async ({ page }) => {
+test("width: scales down to 1000 px, a wider window is used in full, the open board grows beyond 1440 px", async ({ page }) => {
   await page.goto("/?fixture=sample&talking=0");
   const width = async (selector: string) => (await page.locator(selector).boundingBox())!.width;
-  for (const [window, board] of [[1440, 340], [1920, 340 + 240], [2560, 340 + 560]] as const) {
+  for (const [window, board] of [[1000, 340], [1280, 340], [1440, 340], [1920, 340 + 240], [2560, 340 + 560]] as const) {
     await page.setViewportSize({ width: window, height: 900 });
     expect(await width(".app")).toBeCloseTo(window, 0);
     await page.getByRole("button", { name: "Show board" }).click();
@@ -91,7 +91,21 @@ test("width: at least 1440 px, a wider window is used in full and the open board
     await page.getByRole("button", { name: "Hide board" }).first().click();
   }
   // narrower than the minimum: the app keeps its width and the page scrolls
-  await page.setViewportSize({ width: 1280, height: 900 });
-  expect(await width(".app")).toBeCloseTo(1440, 0);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeGreaterThan(1280);
+  await page.setViewportSize({ width: 900, height: 900 });
+  expect(await width(".app")).toBeCloseTo(1000, 0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeGreaterThan(900);
+});
+
+test("height: rooms keep room for two rows of people, a lower window scrolls", async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 600 });
+  await page.goto("/?fixture=sample&talking=0");
+  const box = async (selector: string) => (await page.locator(selector).first().boundingBox())!;
+  const person = (await box(".person")).height;
+  // upper rooms: title and count, two rows of people and the door arc below; lower rooms: the door arc above
+  expect((await box(".row.top .room")).height).toBeGreaterThanOrEqual(20 + 40 + 14 + 2 * person + 12 + 48 - 1);
+  expect((await box(".row.bottom .room")).height).toBeGreaterThanOrEqual(56 + 40 + 14 + 2 * person + 12 + 20 - 1);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeGreaterThan(600);
+  // a tall window is used in full
+  await page.setViewportSize({ width: 1000, height: 1000 });
+  expect((await box(".app")).height).toBeCloseTo(1000, 0);
 });

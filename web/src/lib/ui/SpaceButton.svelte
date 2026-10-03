@@ -201,7 +201,7 @@
     background-image: radial-gradient(var(--raster-dot) 2px, transparent 2.4px);
     background-size: 10px 10px;
   }
-  .room.corridor { height: 110px; flex: none; flex-direction: row; align-items: center; gap: 24px; }
+  .room.corridor { height: var(--corridor-height); flex: none; flex-direction: row; align-items: center; gap: 24px; }
   .room.corridor:hover { background-color: var(--color-surface); }
   .room.corridor.mine { background-color: var(--color-blue-100); }
   .room.corridor .label { min-width: 120px; }

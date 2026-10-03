@@ -7,6 +7,7 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 ## [Unreleased]
 
 ### Changed
+- **Smaller windows.** The web UI scales down to 1000 px wide (before: 1440 px) and in height until every room still holds two rows of people (about 780 px); only below that does the page scroll. From 1440 px on nothing changes: the open board keeps 340 px and gets half of every pixel beyond.
 - Ruumble may be reachable from the internet behind an HTTPS reverse proxy; the operations guide says what the service protects itself and what the operator should do ([HTTPS → On the internet](docs/operations/https.md#on-the-internet)). Plain HTTP stays for LAN and VPN.
 
 ## [0.25.0] - 2026-10-03

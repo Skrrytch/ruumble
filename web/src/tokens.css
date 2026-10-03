@@ -39,9 +39,17 @@
   --wall: 4px;
   --radius-md: 4px;
 
-  /* Layout: the app never gets narrower than this; a wider window is used in full (like the height) */
-  --app-min-width: 1440px;
-  --board-width: 340px;        /* open board at the minimum width; it gets half of every pixel beyond */
+  /* Layout: the app scales down to this width (narrower windows scroll); a wider window is used in full */
+  --app-min-width: 1000px;
+  --board-width: 340px;        /* open board up to this window width; it gets half of every pixel beyond */
+  --board-grow-from: 1440px;
+  /* Height: the window may shrink until every room still holds two rows of people (shorter windows scroll) */
+  --two-people: 144px;         /* 2 × person (avatar 44 + gap 6 + name 16) + 12 px between the rows */
+  /* padding, title and count, gap, people, padding; the door arc (48 px) is below the people in the upper row, above them in the lower */
+  --room-min-top: calc(20px + 40px + 14px + var(--two-people) + 48px);
+  --room-min-bottom: calc(56px + 40px + 14px + var(--two-people) + 20px);
+  --corridor-height: 110px;
+  --topbar-height: 60px;
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);

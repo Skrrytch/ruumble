@@ -216,7 +216,7 @@
 </header>
 
 <style>
-  .topbar { position: relative; z-index: 5; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; min-height: 60px; }
+  .topbar { position: relative; z-index: 5; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; min-height: var(--topbar-height); }
   .left, .right { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .right { justify-self: end; }
   .dropdown { position: relative; min-width: 0; }

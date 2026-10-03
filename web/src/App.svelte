@@ -100,8 +100,10 @@
 
 <style>
   .app {
-    /* at least the minimum width (narrower windows scroll), otherwise the full width; the board measures against it */
-    width: 100%; min-width: var(--app-min-width); height: 100vh; min-height: 640px; padding: 16px 32px 24px;
+    /* the full window, scaled down to the minimum width and to the height where rooms still hold two rows of people;
+       below that the page scrolls. The board measures against the width. */
+    width: 100%; min-width: var(--app-min-width); height: 100vh;
+    min-height: calc(16px + var(--topbar-height) + 12px + var(--plan-min-height) + 24px); padding: 16px 32px 24px;
     display: flex; flex-direction: column; gap: 12px; overflow: hidden; container-type: inline-size;
   }
 
@@ -109,8 +111,9 @@
   .plan.few :global(.floorplan), .plan.few :global(.board) { flex: 1 1 0; width: auto; min-width: 340px; }
 
   /* floor plan: walls = 4 px dark blue as gap */
+  .app { --plan-min-height: calc(var(--room-min-top) + var(--corridor-height) + var(--room-min-bottom) + 4 * var(--wall)); }
   .plan {
-    flex: 1 1 auto; min-height: 520px; padding: var(--wall); background: var(--color-navy);
+    flex: 1 1 auto; min-height: var(--plan-min-height); padding: var(--wall); background: var(--color-navy);
     display: flex; gap: var(--wall);
   }
   .vacancy, .screen {
