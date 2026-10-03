@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
 import type { BridgeToPlugin, BridgeToUi } from "@ruumble/protocol";
+import { Gate } from "../src/access.ts";
 import { Hub } from "../src/hub.ts";
 import { keyRoutes } from "../src/keys.ts";
 import { Pairing, deviceLabel } from "../src/pairing.ts";
@@ -59,7 +60,8 @@ describe("REST /api/keys (ADR-0015)", () => {
     const cleared: string[] = [];
     const app = Fastify();
     await app.register(keyRoutes, {
-      pairing, hub, source,
+      pairing, hub,
+      gate: new Gate({ hub, source, certHashOf: (cookie) => pairing.certHashOf(cookie) }),
       tokenOf: (cookie) => cookie,
       clearCookie: () => void cleared.push("cleared"),
     });

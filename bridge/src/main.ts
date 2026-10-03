@@ -27,9 +27,10 @@ import { basename, resolve } from "node:path";
 import fastifyStatic from "@fastify/static";
 import fastifyWebsocket from "@fastify/websocket";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
-import { BuildingSettings, PairConfirm, type PairErrorCode, type Versions } from "@ruumble/protocol";
+import { BuildingSettings, PAIR_ERROR_STATUS, PairConfirm, type Versions } from "@ruumble/protocol";
 import type { WebSocket } from "ws";
 import pkg from "../package.json" with { type: "json" };
+import { Gate } from "./access.ts";
 import { AvatarCache } from "./avatars.ts";
 import { careRoutes } from "./board/care.ts";
 import { notifyCare, notifyRoom } from "./board/notify.ts";
@@ -186,6 +187,9 @@ app.addHook("onSend", async (_req, reply, payload) => {
 const TOKEN_COOKIE = "ruumble_token";
 const cookieOf = (header: string | undefined, name: string) =>
   header?.split(";").map((c) => c.trim().split("=")).find(([k]) => k === name)?.[1];
+const tokenOf = (cookieHeader: string | undefined) => cookieOf(cookieHeader, TOKEN_COOKIE);
+// who is asking, their Write permission, and how a refusal looks: one gate for every REST module (access.ts)
+const gate = new Gate({ hub, source, certHashOf: (cookieHeader) => pairing.certHashOf(tokenOf(cookieHeader)) });
 
 function wire(socket: WebSocket, handler: { onMessage(raw: string): unknown; onClose(): void }) {
   keepAlive(socket);
@@ -207,7 +211,7 @@ app.get("/ws/plugin", { websocket: true }, (socket, req) => {
 });
 
 app.get("/ws/ui", { websocket: true }, (socket, req) => {
-  const token = cookieOf(req.headers.cookie, TOKEN_COOKIE);
+  const token = tokenOf(req.headers.cookie);
   pairing.touch(token, req.headers["user-agent"]); // key cabinet: last used, device (ADR-0015)
   wire(socket, hub.uiConnected(conn(socket), pairing.certHashOf(token), pairing.keyIdOf(token)));
 });
@@ -236,16 +240,15 @@ function setTokenCookie(req: FastifyRequest, reply: FastifyReply, token: string)
 }
 
 // pairing further browsers with a code from the Mumble log (ADR-0012)
-const PAIR_STATUS: Record<PairErrorCode, number> = { "no-plugin": 404, "rate-limited": 429, "wrong-code": 400, expired: 410, invalid: 400 };
 app.post("/api/pair/request", async (req, reply) => {
   const result = hub.requestPairing(req.ip);
-  return typeof result === "string" ? reply.code(PAIR_STATUS[result]).send({ error: result }) : result;
+  return typeof result === "string" ? reply.code(PAIR_ERROR_STATUS[result]).send({ error: result }) : result;
 });
 app.post("/api/pair/confirm", async (req, reply) => {
   const body = PairConfirm.safeParse(req.body);
   if (!body.success) return reply.code(400).send({ error: "invalid" });
   const result = pairing.confirmCode(body.data.request, body.data.code, Date.now(), req.headers["user-agent"]);
-  if (result === "wrong-code" || result === "expired") return reply.code(PAIR_STATUS[result]).send({ error: result });
+  if (result === "wrong-code" || result === "expired") return reply.code(PAIR_ERROR_STATUS[result]).send({ error: result });
   setTokenCookie(req, reply, result);
   hub.keyIssued(pairing.certHashOf(result)!);
   return { ok: true };
@@ -255,17 +258,17 @@ app.post("/api/pair/confirm", async (req, reply) => {
 await app.register(keyRoutes, {
   pairing,
   hub,
-  source,
-  tokenOf: (cookie) => cookieOf(cookie, TOKEN_COOKIE),
+  gate,
+  tokenOf,
   clearCookie: (reply) => void reply.header("Set-Cookie", `${TOKEN_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`),
   log,
 });
 
 // building maintenance: settings that used to be fixed (ADR-0016)
-await app.register(maintenanceRoutes, { store, hub, source, certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)), log });
+await app.register(maintenanceRoutes, { store, gate, log });
 
 app.post("/logout", async (req, reply) => {
-  const token = cookieOf(req.headers.cookie, TOKEN_COOKIE);
+  const token = tokenOf(req.headers.cookie);
   if (token) pairing.revoke(token);
   reply.header("Set-Cookie", `${TOKEN_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
   return { ok: true };
@@ -273,7 +276,7 @@ app.post("/logout", async (req, reply) => {
 
 // avatar images (AP9): only for paired web UIs or in preview; URL is versioned (?v=)
 app.get<{ Params: { userId: string } }>("/avatar/:userId", async (req, reply) => {
-  if (!hub.canView(pairing.certHashOf(cookieOf(req.headers.cookie, TOKEN_COOKIE)))) return reply.code(401).send();
+  if (!hub.canView(gate.certHash(req))) return reply.code(401).send();
   const avatar = /^\d+$/.test(req.params.userId) ? avatars.get(Number(req.params.userId)) : null;
   if (!avatar) return reply.code(404).send();
   return reply
@@ -286,8 +289,7 @@ app.get<{ Params: { userId: string } }>("/avatar/:userId", async (req, reply) =>
 await app.register(boardRoutes, {
   store,
   hub,
-  source,
-  certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)),
+  gate,
   // notice in the Mumble log of the other people present (AP11.4)
   onNewPost: (post, viewer) => void (store.settings.notifyNewPosts && notifyRoom(hub, post, viewer)),
 });
@@ -295,8 +297,7 @@ await app.register(boardRoutes, {
 await app.register(careRoutes, {
   store,
   hub,
-  source,
-  certHashOf: (cookie) => pairing.certHashOf(cookieOf(cookie, TOKEN_COOKIE)),
+  gate,
   onChanged: (channelId, viewer, change) => void notifyCare(hub, channelId, viewer, change),
   log,
 });

@@ -18,28 +18,21 @@ import { createReadStream } from "node:fs";
 import { readFile } from "node:fs/promises";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { CopyRequest, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, ticketProjects, type BoardView, type Post, type Reaction, type TicketLinks } from "@ruumble/protocol";
+import { fail, RateLimiter, type Gate } from "../access.ts";
 import type { Hub, Viewer } from "../hub.ts";
-import type { MumbleSource } from "../mumble.ts";
 import { detectImage, imageSize, safeFileName } from "./media.ts";
 import type { BoardStore, StoredPost } from "./store.ts";
 
 export interface BoardRouteOptions {
   store: BoardStore;
   hub: Hub;
-  source: Pick<MumbleSource, "canWrite">;
-  /** device token from the cookie → certificate hash */
-  certHashOf: (cookieHeader: string | undefined) => string | null;
+  /** who is asking and their Write permission (access.ts) */
+  gate: Gate;
   /** after pinning: notice to the plugins of those present (AP11.4) */
   onNewPost?: (post: StoredPost, viewer: Viewer) => void;
   /** write operations per user and minute */
   writesPerMinute?: number;
 }
-
-type ErrorCode = "not-paired" | "not-in-room" | "no-board-here" | "not-found" | "forbidden" | "too-large" | "bad-type" | "invalid" | "rate-limited";
-const STATUS: Record<ErrorCode, number> = {
-  "not-paired": 401, "not-in-room": 403, "no-board-here": 404, "not-found": 404, forbidden: 403, "too-large": 413, "bad-type": 415, invalid: 400, "rate-limited": 429,
-};
-const fail = (reply: FastifyReply, error: ErrorCode) => reply.code(STATUS[error]).send({ error });
 
 /** per kind in the fixed order: count, names at the time (oldest first) and whether the viewer is among them */
 function aggregate(post: StoredPost, viewerHash: string): Reaction[] {
@@ -50,26 +43,15 @@ function aggregate(post: StoredPost, viewerHash: string): Reaction[] {
 }
 
 export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): Promise<void> {
-  const writes = new Map<string, number[]>();
-  const limit = o.writesPerMinute ?? 30;
+  const writes = new RateLimiter(o.writesPerMinute ?? 30);
+  const rateLimited = (certHash: string) => writes.over(certHash);
 
-  /** identify the user and check that they are in a room with a board */
-  function room(cookie: string | undefined): { viewer: Viewer } | { error: ErrorCode } {
-    const certHash = o.certHashOf(cookie);
-    if (!certHash) return { error: "not-paired" };
-    const viewer = o.hub.whoIs(certHash);
-    if (!viewer) return { error: "not-paired" }; // paired, but Mumble currently not connected
+  /** paired, Mumble connected (else not-paired), and in a room with a board */
+  function room(req: FastifyRequest): { viewer: Viewer } | { error: "not-paired" | "no-board-here" } {
+    const viewer = o.gate.viewer(req);
+    if (!viewer) return { error: "not-paired" };
     if (!o.hub.isBoardRoom(viewer.channelId)) return { error: "no-board-here" };
     return { viewer };
-  }
-
-  function rateLimited(certHash: string): boolean {
-    const now = Date.now();
-    const list = (writes.get(certHash) ?? []).filter((t) => now - t < 60_000);
-    if (list.length >= limit) return true;
-    list.push(now);
-    writes.set(certHash, list);
-    return false;
   }
 
   /** `isAdmin`: Mumble write permission in the post's room (queried once per request) */
@@ -89,10 +71,10 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
   }
 
   app.get("/api/board", async (req, reply) => {
-    const r = room(req.headers.cookie);
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     const { viewer } = r;
-    const isAdmin = await o.source.canWrite(viewer.session, viewer.channelId);
+    const isAdmin = await o.gate.mayWrite(viewer, viewer.channelId);
     const stored = o.store.list(viewer.channelId);
     const posts = stored.map((p) => toView(p, viewer, isAdmin));
     // only projects mentioned in this room: which projects other rooms link stays there
@@ -104,7 +86,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
   });
 
   app.post("/api/board/posts", async (req, reply) => {
-    const r = room(req.headers.cookie);
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     const { viewer } = r;
     const body = NewPost.safeParse(req.body);
@@ -128,7 +110,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     });
     o.hub.boardChanged(viewer.channelId);
     o.onNewPost?.(post, viewer);
-    return reply.code(201).send(toView(post, viewer, await o.source.canWrite(viewer.session, viewer.channelId)));
+    return reply.code(201).send(toView(post, viewer, await o.gate.mayWrite(viewer, viewer.channelId)));
   });
 
   // raw data upload (images and files): streamed into a temporary file while it is hashed, never held in memory.
@@ -136,7 +118,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
   // away before anything is read, a body that turns out larger stops being read at the limit.
   app.addContentTypeParser("*", (_req, payload, done) => done(null, payload));
   const uploadGate = async (req: FastifyRequest, reply: FastifyReply) => {
-    const r = room(req.headers.cookie);
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     if (Number(req.headers["content-length"]) > o.store.maxFileBytes) return fail(reply, "too-large");
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
@@ -163,7 +145,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
   });
 
   app.patch<{ Params: { id: string } }>("/api/board/posts/:id", async (req, reply) => {
-    const r = room(req.headers.cookie);
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     const post = o.store.get(req.params.id);
     if (!post) return fail(reply, "not-found");
@@ -173,16 +155,16 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     const updated = o.store.update(post.id, { text: body.data.text, ...(body.data.language ? { language: body.data.language } : {}) }, r.viewer.name)!;
     o.hub.boardChanged(post.channelId);
-    return toView(updated, r.viewer, await o.source.canWrite(r.viewer.session, post.channelId));
+    return toView(updated, r.viewer, await o.gate.mayWrite(r.viewer, post.channelId));
   });
 
   app.delete<{ Params: { id: string } }>("/api/board/posts/:id", async (req, reply) => {
-    const r = room(req.headers.cookie);
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     const post = o.store.get(req.params.id);
     if (!post) return fail(reply, "not-found");
     if (post.channelId !== r.viewer.channelId) return fail(reply, "not-in-room");
-    const allowed = post.authorHash === r.viewer.certHash || (await o.source.canWrite(r.viewer.session, post.channelId));
+    const allowed = post.authorHash === r.viewer.certHash || (await o.gate.mayWrite(r.viewer, post.channelId));
     if (!allowed) return fail(reply, "forbidden");
     o.store.delete(post.id);
     o.hub.boardChanged(post.channelId);
@@ -193,7 +175,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
   // Mumble, so nobody reaches a board they could not open. A new post by the user there, with where it came from;
   // tasks keep their ticks, reactions and "kept on top" stay behind. The people in the target room get the notice.
   app.post<{ Params: { id: string } }>("/api/board/posts/:id/copy", async (req, reply) => {
-    const r = room(req.headers.cookie);
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     const { viewer } = r;
     const body = CopyRequest.safeParse(req.body);
@@ -215,12 +197,12 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     });
     o.hub.boardChanged(target);
     o.onNewPost?.(copy, viewer);
-    return reply.code(201).send(toView(copy, viewer, await o.source.canWrite(viewer.session, target)));
+    return reply.code(201).send(toView(copy, viewer, await o.gate.mayWrite(viewer, target)));
   });
 
   // kept on top (A3): one post per room, everyone present may set, replace and remove it; no Mumble notice
   app.put("/api/board/pin", async (req, reply) => {
-    const r = room(req.headers.cookie);
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     const body = PinRequest.safeParse(req.body);
     if (!body.success) return fail(reply, "invalid");
@@ -230,7 +212,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     return o.store.pinned(r.viewer.channelId);
   });
   app.delete("/api/board/pin", async (req, reply) => {
-    const r = room(req.headers.cookie);
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     o.store.unpin(r.viewer.channelId);
@@ -242,7 +224,7 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
   // write run without an await in between, so two people ticking at the same time do not overwrite each other.
   // Counts as an edit ("last edited by"), no Mumble notice.
   app.put<{ Params: { id: string; index: string } }>("/api/board/posts/:id/tasks/:index", async (req, reply) => {
-    const r = room(req.headers.cookie);
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     const body = TaskToggle.safeParse(req.body);
     if (!body.success || !/^\d{1,4}$/.test(req.params.index)) return fail(reply, "invalid");
@@ -255,12 +237,12 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     // already in that state (e.g. two people ticked the same task): no edit
     const updated = text === post.text ? post : o.store.update(post.id, { text, ...(post.language ? { language: post.language } : {}) }, r.viewer.name)!;
     if (updated !== post) o.hub.boardChanged(post.channelId);
-    return toView(updated, r.viewer, await o.source.canWrite(r.viewer.session, post.channelId));
+    return toView(updated, r.viewer, await o.gate.mayWrite(r.viewer, post.channelId));
   });
 
   // quick reactions (A1): no Mumble notice and no "edited by"; those present reload the board
-  const reactRoute = (on: boolean) => async (req: { params: { id: string; kind: string }; headers: { cookie?: string } }, reply: FastifyReply) => {
-    const r = room(req.headers.cookie);
+  const reactRoute = (on: boolean) => async (req: FastifyRequest<{ Params: { id: string; kind: string } }>, reply: FastifyReply) => {
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     const kind = ReactionKind.safeParse(req.params.kind);
     if (!kind.success) return fail(reply, "invalid");
@@ -270,13 +252,13 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     o.store.react(post.id, kind.data, on, { hash: r.viewer.certHash, name: r.viewer.name });
     o.hub.boardChanged(post.channelId);
-    return toView(o.store.get(post.id)!, r.viewer, await o.source.canWrite(r.viewer.session, post.channelId));
+    return toView(o.store.get(post.id)!, r.viewer, await o.gate.mayWrite(r.viewer, post.channelId));
   };
   app.put<{ Params: { id: string; kind: string } }>("/api/board/posts/:id/reactions/:kind", reactRoute(true));
   app.delete<{ Params: { id: string; kind: string } }>("/api/board/posts/:id/reactions/:kind", reactRoute(false));
 
   app.get<{ Params: { id: string }; Querystring: { download?: string } }>("/api/board/files/:id", async (req, reply) => {
-    const r = room(req.headers.cookie);
+    const r = room(req);
     if ("error" in r) return fail(reply, r.error);
     if (!/^[0-9a-f]{64}$/.test(req.params.id)) return fail(reply, "not-found");
     // only attachments of posts in the current room

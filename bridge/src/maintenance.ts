@@ -7,46 +7,32 @@
  *   GET /api/maintenance            { settings, defaults, usedBytes }
  *   PUT /api/maintenance/settings   BuildingSettings → the same as GET
  */
-import type { FastifyInstance, FastifyReply } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { BuildingSettings, type Maintenance } from "@ruumble/protocol";
+import { fail, type Gate } from "./access.ts";
 import type { BoardStore } from "./board/store.ts";
-import type { Hub, Viewer } from "./hub.ts";
-import type { MumbleSource } from "./mumble.ts";
 
 export interface MaintenanceRouteOptions {
   store: BoardStore;
-  hub: Hub;
-  source: Pick<MumbleSource, "canWrite">;
-  certHashOf: (cookieHeader: string | undefined) => string | null;
+  /** who is asking and their Write permission (access.ts): admins have Write on the root channel */
+  gate: Gate;
   log?: (msg: string, extra?: Record<string, unknown>) => void;
 }
 
 export async function maintenanceRoutes(app: FastifyInstance, o: MaintenanceRouteOptions): Promise<void> {
-  async function admin(cookie: string | undefined, reply: FastifyReply): Promise<Viewer | null> {
-    const viewer = o.hub.whoIs(o.certHashOf(cookie));
-    if (!viewer) {
-      void reply.code(401).send({ error: "not-paired" });
-      return null;
-    }
-    if (!(await o.source.canWrite(viewer.session, 0))) {
-      void reply.code(403).send({ error: "forbidden" });
-      return null;
-    }
-    return viewer;
-  }
-
   const view = (): Maintenance => ({ settings: o.store.settings, defaults: o.store.settingDefaults, usedBytes: o.store.usedBytes() });
 
   app.get("/api/maintenance", async (req, reply) => {
-    if (!(await admin(req.headers.cookie, reply))) return reply;
+    const viewer = await o.gate.writer(req, 0);
+    if (typeof viewer === "string") return fail(reply, viewer);
     return view();
   });
 
   app.put("/api/maintenance/settings", async (req, reply) => {
-    const viewer = await admin(req.headers.cookie, reply);
-    if (!viewer) return reply;
+    const viewer = await o.gate.writer(req, 0);
+    if (typeof viewer === "string") return fail(reply, viewer);
     const body = BuildingSettings.safeParse(req.body);
-    if (!body.success) return reply.code(400).send({ error: "invalid" });
+    if (!body.success) return fail(reply, "invalid");
     const before = o.store.settings;
     const after = o.store.saveSettings(body.data);
     const changed = Object.fromEntries(Object.entries(after).filter(([k, v]) => before[k as keyof typeof before] !== v));

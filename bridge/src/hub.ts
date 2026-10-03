@@ -15,6 +15,7 @@ import {
   type Locale,
   type Snapshot,
 } from "@ruumble/protocol";
+import { RateLimiter } from "./access.ts";
 import type { MumbleSource } from "./mumble.ts";
 import { newKeyText, pairingCodeText, type Pairing } from "./pairing.ts";
 import type { ServerState } from "./poller.ts";
@@ -70,7 +71,6 @@ interface UiEntry {
   certHash: string | null;
   /** public name of the device token it connected with (key cabinet, ADR-0015) */
   keyId: string | null;
-  commandTimes: number[];
 }
 
 const v = PROTOCOL_VERSION;
@@ -82,6 +82,7 @@ export class Hub {
   private readonly uis = new Set<UiEntry>();
   /** command ID in the plugin → web UI and its ID */
   private readonly pending = new Map<string, { ui: UiEntry; id: string; certHash: string }>();
+  private readonly commands = new RateLimiter(MAX_COMMANDS_PER_SECOND, 1000);
 
   constructor(opts: HubOptions) {
     this.opts = opts;
@@ -332,7 +333,7 @@ export class Hub {
       conn.close(4401, "not-paired");
       return { onMessage: () => {}, onClose: () => {} };
     }
-    const ui: UiEntry = { conn, certHash, keyId, commandTimes: [] };
+    const ui: UiEntry = { conn, certHash, keyId };
     this.uis.add(ui);
     const plugin = certHash ? this.plugins.get(certHash) : undefined;
     conn.send({ v, type: "status", plugin: plugin ? "connected" : "disconnected", ...(certHash ? {} : { preview: true }) });
@@ -353,10 +354,7 @@ export class Hub {
     const reply = (result: CommandResult) => ui.conn.send({ v, type: "result", id, result });
     const plugin = ui.certHash ? this.plugins.get(ui.certHash) : undefined;
     if (!plugin) return reply("offline");
-    const now = Date.now();
-    ui.commandTimes = ui.commandTimes.filter((t) => now - t < 1000);
-    if (ui.commandTimes.length >= MAX_COMMANDS_PER_SECOND) return reply("rejected");
-    ui.commandTimes.push(now);
+    if (this.commands.over(plugin.certHash)) return reply("rejected");
     if (body.cmd === "join") {
       const exists = this.state?.channels.some((c) => c.id === body.channel);
       const allowed = this.mayEnter(plugin.session, body.channel);

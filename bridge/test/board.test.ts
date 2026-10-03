@@ -5,6 +5,7 @@ import Database from "better-sqlite3";
 import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
 import type { BridgeToPlugin, BridgeToUi, PostKind } from "@ruumble/protocol";
+import { Gate } from "../src/access.ts";
 import { imageSize, safeFileName } from "../src/board/media.ts";
 import { careRoutes, orphanedFloors } from "../src/board/care.ts";
 import { boardMarkdown, uniqueName } from "../src/board/export.ts";
@@ -380,8 +381,8 @@ describe("REST /api/board", () => {
     const notified: string[] = [];
     const app = Fastify();
     await app.register(boardRoutes, {
-      store, hub, source,
-      certHashOf: (c) => (c === "anna" ? A : c === "ben" ? B : c === "stranger" ? "c".repeat(40) : null),
+      store, hub,
+      gate: new Gate({ hub, source, certHashOf: (c) => (c === "anna" ? A : c === "ben" ? B : c === "stranger" ? "c".repeat(40) : null) }),
       onNewPost: (p) => notified.push(p.id),
       writesPerMinute: 5,
     });
@@ -702,8 +703,8 @@ describe("REST /api/care (ADR-0014)", () => {
     }
     const app = Fastify();
     await app.register(careRoutes, {
-      store, hub, source,
-      certHashOf: (c) => (c === "anna" ? A : c === "ben" ? B : null),
+      store, hub,
+      gate: new Gate({ hub, source, certHashOf: (c) => (c === "anna" ? A : c === "ben" ? B : null) }),
       onChanged: (id, viewer, change) => notifyCare(hub, id, viewer, change),
       actionsPerMinute: 4,
       now: () => clock.now,
@@ -946,8 +947,9 @@ describe("REST /api/maintenance (ADR-0016)", () => {
     const logged: Record<string, unknown>[] = [];
     const app = Fastify();
     const certHashOf = (c: string | undefined) => (c === "anna" ? A : c === "ben" ? B : null);
-    await app.register(maintenanceRoutes, { store, hub, source, certHashOf, log: (_m, extra) => void logged.push(extra ?? {}) });
-    await app.register(boardRoutes, { store, hub, source, certHashOf });
+    const gate = new Gate({ hub, source, certHashOf });
+    await app.register(maintenanceRoutes, { store, gate, log: (_m, extra) => void logged.push(extra ?? {}) });
+    await app.register(boardRoutes, { store, hub, gate });
     return { app, store, logged, as: (cookie: string) => ({ cookie }) };
   }
 

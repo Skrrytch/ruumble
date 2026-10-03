@@ -9,6 +9,7 @@ import { createHash, randomBytes, randomInt } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { DeviceKey, Locale } from "@ruumble/protocol";
+import { RateLimiter } from "./access.ts";
 
 interface TokenEntry {
   certHash: string;
@@ -85,8 +86,8 @@ export class Pairing {
   private readonly codeTtlMs: number;
   private readonly codes = new Map<string, { certHash: string; name: string; expires: number }>();
   private readonly requests = new Map<string, CodeRequest>();
-  /** address → time of the last request with codes (rate limit) */
-  private readonly lastRequest = new Map<string, number>();
+  /** one request with codes per address and 10 s */
+  private readonly codeRequests = new RateLimiter(1, CODE_REQUEST_INTERVAL_MS);
   private tokens: Record<string, TokenEntry> = {};
 
   /** `file = null`: in memory only (tests) */
@@ -127,10 +128,8 @@ export class Pairing {
     now = Date.now(),
   ): { request: string; codes: { certHash: string; code: string }[] } | "no-plugin" | "rate-limited" {
     for (const [id, r] of this.requests) if (r.expires < now) this.requests.delete(id);
-    for (const [a, t] of this.lastRequest) if (now - t >= CODE_REQUEST_INTERVAL_MS) this.lastRequest.delete(a);
     if (targets.length === 0) return "no-plugin";
-    if (this.lastRequest.has(address)) return "rate-limited";
-    this.lastRequest.set(address, now);
+    if (this.codeRequests.over(address, now)) return "rate-limited";
     const codes = new Map<string, { certHash: string; name: string }>();
     for (const t of targets) {
       let code: string;

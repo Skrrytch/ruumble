@@ -403,6 +403,8 @@ export const PairConfirm = z.object({ request: z.string().min(1).max(64), code: 
 export type PairConfirm = z.infer<typeof PairConfirm>;
 export const PairErrorCode = z.enum(["no-plugin", "rate-limited", "wrong-code", "expired", "invalid"]);
 export type PairErrorCode = z.infer<typeof PairErrorCode>;
+/** HTTP status of each pairing error (/api/pair/*) */
+export const PAIR_ERROR_STATUS: Record<PairErrorCode, number> = { "no-plugin": 404, "rate-limited": 429, "wrong-code": 400, expired: 410, invalid: 400 };
 export const PairError = z.object({ error: PairErrorCode });
 
 /** GET /api/version: version of the service and of the plugin offered under /download (null: none) */
@@ -431,6 +433,11 @@ export const BoardError = z.object({
 });
 
 export type BoardErrorCode = z.infer<typeof BoardError>["error"];
+
+/** HTTP status of each REST error (board, care, keys, maintenance); one table for the whole service */
+export const API_ERROR_STATUS: Record<BoardErrorCode, number> = {
+  "not-paired": 401, "not-in-room": 403, "no-board-here": 404, "not-found": 404, forbidden: 403, "too-large": 413, "bad-type": 415, invalid: 400, "rate-limited": 429,
+};
 
 /** Minimal schema type so consumers need not import zod themselves */
 export interface Parser<T> {
