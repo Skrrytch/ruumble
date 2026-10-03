@@ -14,7 +14,7 @@
   import { countText, initials, ownPlace, type Building, type Floor } from "../model/building.ts";
   import type { RuumbleState } from "../state.svelte.ts";
   import Avatar from "./Avatar.svelte";
-  import KeyCabinet from "./KeyCabinet.svelte";
+  import Key from "./Key.svelte";
   import Plant from "./Plant.svelte";
 
   // Top bar instead of the elevator column, made of signs: left the floor sign (opens the elevator, which shows
@@ -124,9 +124,9 @@
               <div class="entrance-head">
                 <span>{t().common.entrance} · {countText(building.entrance.length)}</span>
                 <span class="fixtures">
-                  <!-- the key cabinet: every paired browser is a key, everyone sees their own (ADR-0015) -->
+                  <!-- the key: opens the key cabinet, every paired browser is a key, everyone sees their own (ADR-0015) -->
                   {#if !app.readonly}
-                    <button type="button" class="plant tend" aria-label={t().keys.cabinet} title={t().keys.cabinet} onclick={() => { open = null; void app.openKeys(); }}><KeyCabinet size={24} /></button>
+                    <button type="button" class="plant tend" aria-label={t().keys.cabinet} title={t().keys.cabinet} onclick={() => { open = null; void app.openKeys(); }}><Key size={28} /></button>
                   {/if}
                   <!-- the plant at the entrance: building care (ADR-0014) -->
                   {#if tendBuilding}

@@ -89,7 +89,7 @@ Care works from anywhere in the building and shows counts and sizes, not the con
 
 ### Key cabinet
 
-Next to the plant at the entrance hangs a key cabinet: every paired browser is a key. Everyone sees their own keys (browser and system, paired on, last used, "this browser") and can revoke one, e.g. after losing a laptop; that browser then has to be paired again. Admins (Write permission on the root channel) also see everyone else's keys, by person ([ADR-0015](decisions/0015-key-cabinet.md)).
+Next to the plant at the entrance hangs a key that opens the key cabinet: every paired browser is a key. Everyone sees their own keys (browser and system, paired on, last used, "this browser") and can revoke one, e.g. after losing a laptop; that browser then has to be paired again. Admins (Write permission on the root channel) also see everyone else's keys, by person ([ADR-0015](decisions/0015-key-cabinet.md)).
 
 ### Pairing and security
 

@@ -5,7 +5,7 @@
   import { relativeTime } from "../board/model.ts";
   import { locale, t } from "../i18n/index.svelte.ts";
   import { careErrorText, type RuumbleState } from "../state.svelte.ts";
-  import KeyCabinet from "./KeyCabinet.svelte";
+  import Key from "./Key.svelte";
 
   // Key cabinet (ADR-0015): the own paired browsers for everyone, everyone else's for admins (Write on the root
   // channel). Revoking asks first; revoking this browser's key unpairs it.
@@ -45,7 +45,7 @@
 
 <dialog bind:this={dialog} aria-label={t().keys.cabinet} onclose={() => app.closeKeys()}>
   <header>
-    <span class="symbol" aria-hidden="true"><KeyCabinet size={20} /></span>
+    <span class="symbol" aria-hidden="true"><Key size={22} /></span>
     <h2>{t().keys.cabinet}</h2>
     <button type="button" class="icon" aria-label={t().common.close} onclick={() => app.closeKeys()}><X size={18} /></button>
   </header>

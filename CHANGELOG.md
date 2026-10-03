@@ -15,7 +15,7 @@ Plugin 0.5.0 (unchanged).
   - **Room care**: see how many posts and how much attachment space a board holds, delete posts older than 7 days, 14 days, 1, 3 or 6 months, clear the board (the people in the room get a notice in the Mumble log for both), and export the board as a ZIP (all posts as Markdown plus the attachments).
   - **Floor care**: all rooms of the floor with their numbers; move a board from any room, current or deleted, to a room of the floor (e.g. after a room was recreated in Mumble); rooms of the floor that were deleted in Mumble or moved out of the floor plan and still hold data, removed one by one or all.
   - **Building care**: storage used and per floor; floors that were deleted, with their data; every learned ticket link of the building with a reset per project, e.g. after a first link to the wrong Jira.
-- **Key cabinet.** Next to the plant at the entrance: every paired browser is a key. Everyone sees their own (browser and system, paired on, last used) and can revoke one, e.g. after losing a laptop; admins see and revoke everyone's.
+- **Key cabinet.** The key next to the plant at the entrance opens it: every paired browser is a key. Everyone sees their own (browser and system, paired on, last used) and can revoke one, e.g. after losing a laptop; admins see and revoke everyone's.
 
 ### Changed
 - **Posts are kept for one year** by default instead of 30 days (`RETENTION_DAYS`).

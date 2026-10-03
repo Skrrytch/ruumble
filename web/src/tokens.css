@@ -14,6 +14,8 @@
   --color-leaf: #4f9a6b;
   --color-leaf-dark: #2f6e47;
   --color-pot: #c97d4e;
+  /* Key (key cabinet, ADR-0015): ONLY the key at the entrance */
+  --color-brass: #d9a93b;
 
   /* Blues */
   --color-blue-700: #00508c;   /* secondary text (contrast ≥ 4.5:1 on white) */

@@ -8,7 +8,7 @@ Every paired browser holds a long-lived device token (ADR-0004, ADR-0012). Until
 ## Decision
 | Topic | Decision |
 |---|---|
-| **Metaphor** | Every paired browser is a **key**. A **key cabinet** hangs at the entrance in the elevator, next to the plant (building care, ADR-0014). Keys are about access, not about stored board data, so they get their own symbol rather than a section in building care. |
+| **Metaphor** | Every paired browser is a **key**. A **key** (brass, the symbol of the key cabinet) hangs at the entrance in the elevator, next to the plant (building care, ADR-0014); it opens the key cabinet. Keys are about access, not about stored board data, so they get their own symbol rather than a section in building care. |
 | **Who sees what** | **Everyone** sees and may revoke their **own** keys. **Admins** (Mumble Write permission on the root channel, the same as building care) also see everyone else's, grouped by person, and may revoke them. |
 | **Per key** | A coarse device label from the User-Agent at pairing or first use ("Firefox on Linux": browser family and system, no versions), the pairing date, and "last used" (written when a web UI connects, at most once an hour). No IP addresses. The browser asking is marked "this browser". |
 | **Public name** | `id` = the first 16 hex digits of the stored SHA-256 of the token. The token cannot be derived from it. |

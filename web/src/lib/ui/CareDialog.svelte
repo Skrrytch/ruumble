@@ -1,7 +1,6 @@
 <script lang="ts">
   import ArrowLeft from "@lucide/svelte/icons/arrow-left";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
-  import RotateCcw from "@lucide/svelte/icons/rotate-ccw";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import X from "@lucide/svelte/icons/x";
   import { formatSize, relativeTime } from "../board/model.ts";
@@ -207,7 +206,7 @@
               <li>
                 <span class="name">{project}</span>
                 <span class="details" title={base}>{base.replace(/^https?:\/\//, "")}</span>
-                <button type="button" class="icon" aria-label={t().care.forgetTicket(project)} title={t().care.forgetTicket(project)} disabled={app.careBusy} onclick={() => app.forgetTickets([project])}><RotateCcw size={16} /></button>
+                <button type="button" class="icon" aria-label={t().care.forgetTicket(project)} title={t().care.forgetTicket(project)} disabled={app.careBusy} onclick={() => app.forgetTickets([project])}><X size={16} /></button>
               </li>
             {/each}
           </ul>
