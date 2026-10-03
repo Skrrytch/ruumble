@@ -5,14 +5,10 @@ import { elevator } from "./topbar.ts";
 test.describe("Care (ADR-0014)", () => {
   test.beforeEach(async ({ page }) => page.goto("/?fixture=sample&talking=0"));
 
-  test("room care: shows what the board holds, clears it after asking, resets the learned ticket links", async ({ page }) => {
+  test("room care: shows what the board holds and clears it after asking", async ({ page }) => {
     await page.getByRole("button", { name: "Room care: Let's talk" }).click();
     const dialog = page.getByRole("dialog", { name: "Room care · Let's talk" });
     await expect(dialog.getByText(/^On the board: 4 posts/)).toBeVisible();
-    await expect(dialog.getByRole("listitem").filter({ hasText: "RUU" })).toContainText("jira.example.org/browse/");
-    await dialog.getByRole("button", { name: "Reset ticket links" }).click();
-    await expect(dialog.getByRole("status")).toHaveText("Ticket links reset.");
-    await expect(dialog.getByText("No ticket link is learned for this room.")).toBeVisible();
     page.once("dialog", (d) => void d.dismiss()); // asked first: cancelled, nothing happens
     await dialog.getByRole("button", { name: "Clear the board" }).click();
     await expect(dialog.getByText(/^On the board: 4 posts/)).toBeVisible();
@@ -44,12 +40,22 @@ test.describe("Care (ADR-0014)", () => {
   test("building care: the plant at the entrance lists the floors that are gone", async ({ page }) => {
     await (await elevator(page)).getByRole("button", { name: "Building care" }).click();
     const dialog = page.getByRole("dialog", { name: "Building care" });
-    await expect(dialog.getByRole("listitem")).toHaveCount(2);
-    await expect(dialog.getByRole("listitem").first()).toContainText(/Marketing\s*2 rooms · 9 posts/);
-    await expect(dialog.getByRole("listitem").last()).toContainText("Unknown floor");
+    const floors = dialog.getByRole("list").first().getByRole("listitem");
+    await expect(floors).toHaveCount(2);
+    await expect(floors.first()).toContainText(/Marketing\s*2 rooms · 9 posts/);
+    await expect(floors.last()).toContainText("Unknown floor");
     page.once("dialog", (d) => void d.accept());
     await dialog.getByRole("button", { name: "Remove all with their data" }).click();
     await expect(dialog.getByText("No orphaned floors.")).toBeVisible();
+  });
+
+  test("building care: the learned ticket links of the whole building, reset per project", async ({ page }) => {
+    await (await elevator(page)).getByRole("button", { name: "Building care" }).click();
+    const dialog = page.getByRole("dialog", { name: "Building care" });
+    await expect(dialog.getByRole("listitem").filter({ hasText: "RUU" })).toContainText("jira.example.org/browse/");
+    await dialog.getByRole("button", { name: "Reset RUU" }).click();
+    await expect(dialog.getByRole("status")).toHaveText("Ticket link reset.");
+    await expect(dialog.getByText("No ticket link is learned yet.")).toBeVisible();
   });
 
   test("without the permission the plants are only decoration", async ({ page }) => {

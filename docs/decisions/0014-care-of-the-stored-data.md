@@ -16,15 +16,15 @@ Mumble already has a notion of who administers a channel: the Write permission (
 | **Where** | A potted plant: in **every room** (bottom right), at the **right end of every corridor** (or bottom right of an open floor) and at the **entrance** in the elevator. Room care, floor care, building care. |
 | **Who** | Mumble **Write permission** on that room, floor or the root channel. The plants are decoration for everyone else. The snapshot carries `care`, the channels the own user may tend (queried with the access permissions, every 10 s and on structure changes); the service checks the permission again on every request. |
 | **From where** | From anywhere in the building, unlike the board itself: care never shows the content of posts, only counts and sizes. |
-| **Room care** | Shows posts and attachment size. **Clear the board**: all posts with reactions, "kept on top" and attachments; the people present get a Mumble notice. **Reset ticket links**: lists the learned links of the projects named in the room (keys or issue links) and forgets them, in every room, until a post created after the reset teaches them again. |
+| **Room care** | Shows posts and attachment size. **Clear the board**: all posts with reactions, "kept on top" and attachments; the people present get a Mumble notice. |
 | **Floor care** | Lists the rooms that were last seen on this floor and are no longer rooms but still hold data: name, posts, size, "gone since" or "moved". Remove one or all, with all their data. |
-| **Building care** | Lists floors that are gone, with the number of rooms, posts and size; rooms whose floor is not known appear as "Unknown floor". Remove one or all. |
+| **Building care** | Lists floors that are gone, with the number of rooms, posts and size; rooms whose floor is not known appear as "Unknown floor". Remove one or all. Also lists **every learned ticket link** (project → base URL) with a reset per project or for all: the project is forgotten until a post created after the reset teaches it again. |
 | **Safety** | Every destructive action asks first. The web UI sends the IDs it showed; the service removes only those that are still gone (and on that floor), so a room that came back in the meantime keeps its board. |
 | **Storage** | Migration 5: `channels` (last known parent and name of every floor and room; rows of places that are gone and hold no data are pruned) and `forgotten_tickets` (project, time of the reset; dropped after the retention period). |
 
 ## Rejected options
 - **Separate admin page or a role in Ruumble**: a second permission system next to Mumble's, and one more thing to find. The plant sits where the data is.
-- **Reset ticket links per room only**: the learned links are global (one project, one base URL), so a reset that only applied to one room would leave the wrong link everywhere else.
+- **Ticket links in room or floor care**: the learned links are building-wide (one project, one base URL, learned from every room), so a reset offered from one room would still act everywhere, and it would only show part of the list. They belong to building care.
 - **Remove orphaned data immediately and automatically**: a room renamed by deleting and recreating it, or moved by mistake, would lose its board at once. The 7-day grace (ADR-0011) stays; care is the early way out.
 
 ## Consequences

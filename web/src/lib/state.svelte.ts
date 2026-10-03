@@ -358,10 +358,10 @@ export class RuumbleState {
     return this.careAction(() => this.adapter.care.clearRoom(target.channelId), (v) => t().care.cleared(t().care.posts(v.posts)));
   }
 
-  forgetTickets(): Promise<boolean> {
-    const target = this.care;
-    if (target?.kind !== "room") return Promise.resolve(false);
-    return this.careAction(() => this.adapter.care.forgetTickets(target.channelId), () => t().care.ticketsForgotten);
+  /** building care: forget the learned links of these projects */
+  forgetTickets(projects: string[]): Promise<boolean> {
+    if (this.care?.kind !== "building" || !projects.length) return Promise.resolve(false);
+    return this.careAction(() => this.adapter.care.forgetTickets(projects), () => t().care.ticketsForgotten(projects.length));
   }
 
   /** floor: rooms that are gone; building: floors that are gone (null: unknown floor) */

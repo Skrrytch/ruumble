@@ -3,16 +3,16 @@
  * Only for paired users with Mumble's Write permission on that room, floor or the root channel (building). Unlike
  * the board itself, care works from anywhere in the building: it never shows the content of posts.
  *
- *   GET    /api/care/rooms/:id           what the room's board holds and its learned ticket links
+ *   GET    /api/care/rooms/:id           what the room's board holds
  *   DELETE /api/care/rooms/:id/posts     clear the board (all posts with reactions, pin and attachments)
- *   DELETE /api/care/rooms/:id/tickets   forget the learned ticket links of the projects named in the room
  *   GET    /api/care/floors/:id          rooms that were on this floor, are gone and still hold data
  *   POST   /api/care/floors/:id/cleanup  { rooms } remove them with all their data
- *   GET    /api/care/building            floors that are gone and still hold data
+ *   GET    /api/care/building            floors that are gone and still hold data, all learned ticket links
  *   POST   /api/care/building/cleanup    { floors } remove them with all their data (null: rooms of an unknown floor)
+ *   POST   /api/care/building/tickets/forget  { projects } forget their learned links (they are building-wide)
  */
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { BuildingCleanup, FloorCleanup, learnTicketLinks, ticketProjects, type BuildingCare, type CareDone, type FloorCare, type OrphanedFloor, type RoomCare, type TicketLinks } from "@ruumble/protocol";
+import { BuildingCleanup, FloorCleanup, TicketsForget, type BuildingCare, type CareDone, type FloorCare, type OrphanedFloor, type RoomCare, type TicketLinks } from "@ruumble/protocol";
 import type { Hub, Viewer } from "../hub.ts";
 import type { MumbleSource } from "../mumble.ts";
 import type { BoardStore, OrphanedRoom } from "./store.ts";
@@ -77,24 +77,13 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
 
   const channelParam = (raw: string) => (/^\d{1,9}$/.test(raw) ? Number(raw) : -1);
 
-  /** projects named in a room, as keys or issue links, that have a learned link */
-  function roomTickets(channelId: number): TicketLinks {
-    const texts = o.store.list(channelId).map((p) => p.text);
-    const projects = ticketProjects(texts.join("\n"));
-    for (const t of texts) for (const p of Object.keys(learnTicketLinks(t))) projects.add(p);
-    const learned = o.store.ticketLinks();
-    const tickets: TicketLinks = {};
-    for (const p of [...projects].sort()) if (Object.hasOwn(learned, p)) tickets[p] = learned[p]!;
-    return tickets;
-  }
-
   // ---------------------------------------------------------------- Room
 
   app.get<{ Params: { id: string } }>("/api/care/rooms/:id", async (req, reply) => {
     const id = channelParam(req.params.id);
     const r = await caretaker(req.headers.cookie, id, o.hub.isBoardRoom(id));
     if ("error" in r) return fail(reply, r.error);
-    const view: RoomCare = { channelId: id, name: o.hub.channelName(id), ...o.store.roomStats(id), tickets: roomTickets(id) };
+    const view: RoomCare = { channelId: id, name: o.hub.channelName(id), ...o.store.roomStats(id) };
     return view;
   });
 
@@ -111,21 +100,6 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
     }
     const done: CareDone = { posts };
     return done;
-  });
-
-  app.delete<{ Params: { id: string } }>("/api/care/rooms/:id/tickets", async (req, reply) => {
-    const id = channelParam(req.params.id);
-    const r = await caretaker(req.headers.cookie, id, o.hub.isBoardRoom(id));
-    if ("error" in r) return fail(reply, r.error);
-    if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
-    const projects = Object.keys(roomTickets(id));
-    if (projects.length) {
-      o.store.forgetTickets(projects);
-      o.log?.("Ticket links forgotten", { channel: id, projects, by: r.viewer.name });
-      // learned links count in every room naming the project
-      for (const c of o.store.channelsWithPosts()) o.hub.boardChanged(c);
-    }
-    return reply.code(204).send();
   });
 
   // ---------------------------------------------------------------- Floor
@@ -167,7 +141,10 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
   app.get("/api/care/building", async (req, reply) => {
     const r = await caretaker(req.headers.cookie, 0, true);
     if ("error" in r) return fail(reply, r.error);
-    const view: BuildingCare = { orphans: buildingOrphans() };
+    const learned = o.store.ticketLinks();
+    const tickets: TicketLinks = {};
+    for (const p of Object.keys(learned).sort()) tickets[p] = learned[p]!;
+    const view: BuildingCare = { orphans: buildingOrphans(), tickets };
     return view;
   });
 
@@ -183,5 +160,22 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
     o.log?.("Floors removed from storage", { floors: [...floors], rooms: rooms.length, posts, by: r.viewer.name });
     const done: CareDone = { posts };
     return done;
+  });
+
+  app.post("/api/care/building/tickets/forget", async (req, reply) => {
+    const r = await caretaker(req.headers.cookie, 0, true);
+    if ("error" in r) return fail(reply, r.error);
+    const body = TicketsForget.safeParse(req.body);
+    if (!body.success) return fail(reply, "invalid");
+    if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
+    const learned = o.store.ticketLinks();
+    const projects = body.data.projects.filter((p) => Object.hasOwn(learned, p));
+    if (projects.length) {
+      o.store.forgetTickets(projects);
+      o.log?.("Ticket links forgotten", { projects, by: r.viewer.name });
+      // learned links count in every room naming the project: open boards reload
+      for (const c of o.store.channelsWithPosts()) o.hub.boardChanged(c);
+    }
+    return reply.code(204).send();
   });
 }

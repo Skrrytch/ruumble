@@ -241,8 +241,6 @@ export const RoomCare = z.object({
   posts: count,
   /** size of the attachments in bytes */
   bytes: count,
-  /** learned ticket links of the projects named in this room (keys or issue links) */
-  tickets: TicketLinksSchema,
 });
 export type RoomCare = z.infer<typeof RoomCare>;
 
@@ -273,14 +271,17 @@ export const OrphanedFloor = z.object({
 });
 export type OrphanedFloor = z.infer<typeof OrphanedFloor>;
 
-/** GET /api/care/building: floors that are gone but still hold data */
-export const BuildingCare = z.object({ orphans: z.array(OrphanedFloor) });
+/** GET /api/care/building: floors that are gone but still hold data, and every learned ticket link (one per project, building-wide) */
+export const BuildingCare = z.object({ orphans: z.array(OrphanedFloor), tickets: TicketLinksSchema });
 export type BuildingCare = z.infer<typeof BuildingCare>;
 
 /** POST /api/care/floors/:id/cleanup: remove these rooms (as shown) with all their data */
 export const FloorCleanup = z.object({ rooms: z.array(channelId).min(1).max(1000) });
 /** POST /api/care/building/cleanup: remove these floors (as shown) with all their data */
 export const BuildingCleanup = z.object({ floors: z.array(channelId.nullable()).min(1).max(1000) });
+
+/** POST /api/care/building/tickets/forget: forget the learned links of these projects */
+export const TicketsForget = z.object({ projects: z.array(z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/)).min(1).max(1000) });
 
 /** answer to a care action: number of posts removed */
 export const CareDone = z.object({ posts: count });

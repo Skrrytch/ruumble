@@ -166,12 +166,7 @@ export class MockAdapter implements MumbleAdapter {
     room: async (id) =>
       this.caretaker(id, () => {
         const posts = this.posts.get(id) ?? [];
-        const texts = posts.map((p) => p.text);
-        const projects = ticketProjects(texts.join("\n"));
-        for (const t of texts) for (const p of Object.keys(learnTicketLinks(t))) projects.add(p);
-        const learned = this.learnedLinks();
-        const tickets = Object.fromEntries([...projects].sort().flatMap((p) => (Object.hasOwn(learned, p) ? [[p, learned[p]!]] : [])));
-        return { channelId: id, name: this.channelName(id), posts: posts.length, bytes: posts.reduce((n, p) => n + (p.attachment?.size ?? 0), 0), tickets };
+        return { channelId: id, name: this.channelName(id), posts: posts.length, bytes: posts.reduce((n, p) => n + (p.attachment?.size ?? 0), 0) };
       }, this.isRoom(id)),
     clearRoom: async (id) =>
       this.caretaker(id, () => {
@@ -180,13 +175,6 @@ export class MockAdapter implements MumbleAdapter {
         this.pins.delete(id);
         if (posts) this.boardChanged(id);
         return { posts };
-      }, this.isRoom(id)),
-    forgetTickets: async (id) =>
-      this.caretaker(id, () => {
-        const now = Date.now();
-        for (const p of (this.posts.get(id) ?? []).flatMap((x) => [...ticketProjects(x.text), ...Object.keys(learnTicketLinks(x.text))])) this.forgotten.set(p, now);
-        this.boardChanged(id);
-        return true as const;
       }, this.isRoom(id)),
     floor: async (id) =>
       this.caretaker(id, () => ({ channelId: id, name: this.channelName(id), orphans: this.orphans.filter((o) => o.floorId === id).map((o) => o.room) }), this.isFloor(id)),
@@ -201,10 +189,18 @@ export class MockAdapter implements MumbleAdapter {
           const gone = o.room.goneSince;
           floors.set(o.floorId, { ...f, rooms: f.rooms + 1, posts: f.posts + o.room.posts, bytes: f.bytes + o.room.bytes, goneSince: gone === null ? f.goneSince : Math.min(gone, f.goneSince ?? gone) });
         }
-        return { orphans: [...floors.values()] };
+        const learned = this.learnedLinks();
+        return { orphans: [...floors.values()], tickets: Object.fromEntries(Object.keys(learned).sort().map((p) => [p, learned[p]!])) };
       }, true),
     cleanBuilding: async (floors) =>
       this.caretaker(0, () => this.removeOrphans((o) => floors.includes(o.floorId) && (o.floorId === null || !this.isFloor(o.floorId))), true),
+    forgetTickets: async (projects) =>
+      this.caretaker(0, () => {
+        const now = Date.now();
+        for (const p of projects) this.forgotten.set(p, now);
+        for (const id of this.posts.keys()) this.boardChanged(id);
+        return true as const;
+      }, true),
   };
   readonly board: BoardApi = {
     load: async () =>

@@ -44,14 +44,14 @@ export interface CareApi {
   room(channelId: number): Promise<BoardResult<RoomCare>>;
   /** delete every post of the room's board */
   clearRoom(channelId: number): Promise<BoardResult<CareDone>>;
-  /** forget the learned ticket links of the projects named in the room */
-  forgetTickets(channelId: number): Promise<BoardResult<true>>;
   floor(channelId: number): Promise<BoardResult<FloorCare>>;
   /** remove these rooms that are gone from the floor, with all their data */
   cleanFloor(channelId: number, rooms: number[]): Promise<BoardResult<CareDone>>;
   building(): Promise<BoardResult<BuildingCare>>;
   /** remove these floors that are gone, with all their data (null: rooms of an unknown floor) */
   cleanBuilding(floors: (number | null)[]): Promise<BoardResult<CareDone>>;
+  /** forget the learned ticket links of these projects (building-wide) */
+  forgetTickets(projects: string[]): Promise<BoardResult<true>>;
 }
 
 export type PluginStatus = "connected" | "disconnected";

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import RotateCcw from "@lucide/svelte/icons/rotate-ccw";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import X from "@lucide/svelte/icons/x";
   import { formatSize } from "../board/model.ts";
@@ -6,8 +7,8 @@
   import { careErrorText, type RuumbleState } from "../state.svelte.ts";
   import Plant from "./Plant.svelte";
 
-  // Care of the stored data (ADR-0014), opened from a plant: room care (board, learned ticket links), floor care
-  // (rooms of this floor that are gone) or building care (floors that are gone). Every action asks first.
+  // Care of the stored data (ADR-0014), opened from a plant: room care (the board), floor care (rooms of this
+  // floor that are gone) or building care (floors that are gone, learned ticket links). Every removal asks first.
   let { app }: { app: RuumbleState } = $props();
 
   let dialog: HTMLDialogElement;
@@ -69,24 +70,11 @@
       {#if app.careError}<p class="error" role="alert">{careErrorText(app.careError)}</p>{:else}<p class="muted">{t().care.loading}</p>{/if}
     {:else if view.kind === "room"}
       {@const room = view.value}
-      {@const projects = Object.entries(room.tickets)}
       <section>
         <h3>{t().board.title}</h3>
         <p>{room.posts ? t().care.boardHolds(t().care.posts(room.posts), room.bytes ? formatSize(room.bytes) : "") : t().care.boardEmpty}</p>
         <p class="hint">{t().care.clearBoardHint}</p>
         <button type="button" class="danger" disabled={app.careBusy || room.posts === 0} onclick={clear}>{t().care.clearBoard}</button>
-      </section>
-      <section>
-        <h3>{t().care.tickets}</h3>
-        {#if projects.length}
-          <ul class="tickets">
-            {#each projects as [project, base] (project)}<li><strong>{project}</strong> <span class="base" title={base}>{base.replace(/^https?:\/\//, "")}</span></li>{/each}
-          </ul>
-        {:else}
-          <p class="muted">{t().care.noTickets}</p>
-        {/if}
-        <p class="hint">{t().care.ticketsHint}</p>
-        <button type="button" disabled={app.careBusy || projects.length === 0} onclick={() => app.forgetTickets()}>{t().care.forgetTickets}</button>
       </section>
     {:else}
       <section>
@@ -107,6 +95,28 @@
         <p class="hint">{view.kind === "floor" ? t().care.orphanRoomsHint : t().care.orphanFloorsHint}</p>
         {#if rows.length > 1}<button type="button" class="danger" disabled={app.careBusy} onclick={() => remove(rows)}>{t().care.removeAll}</button>{/if}
       </section>
+      {#if view.kind === "building"}
+        <!-- learned ticket links are building-wide: one base URL per project, learned from every room -->
+        {@const projects = Object.entries(view.value.tickets)}
+        <section>
+          <h3>{t().care.tickets}</h3>
+          {#if projects.length}
+            <ul class="orphans tickets">
+              {#each projects as [project, base] (project)}
+                <li>
+                  <span class="name">{project}</span>
+                  <span class="details" title={base}>{base.replace(/^https?:\/\//, "")}</span>
+                  <button type="button" class="icon" aria-label={t().care.forgetTicket(project)} title={t().care.forgetTicket(project)} disabled={app.careBusy} onclick={() => app.forgetTickets([project])}><RotateCcw size={16} /></button>
+                </li>
+              {/each}
+            </ul>
+          {:else}
+            <p class="muted">{t().care.noTickets}</p>
+          {/if}
+          <p class="hint">{t().care.ticketsHint}</p>
+          {#if projects.length > 1}<button type="button" disabled={app.careBusy} onclick={() => app.forgetTickets(projects.map(([p]) => p))}>{t().care.forgetTickets}</button>{/if}
+        </section>
+      {/if}
     {/if}
     {#if view && app.careError}<p class="error" role="alert">{careErrorText(app.careError)}</p>{/if}
     {#if app.careMessage}<p class="done" role="status">{app.careMessage}</p>{/if}
@@ -132,9 +142,6 @@
   .hint, .muted { font-size: 13px; color: var(--color-blue-700); }
   .error { color: var(--color-alert); margin-top: 8px; }
   .done { font-weight: 700; margin-top: 8px; }
-  .tickets { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; width: 100%; }
-  .tickets li { display: flex; gap: 8px; min-width: 0; }
-  .base { color: var(--color-blue-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* one line per room or floor; long lists scroll inside the dialog */
   .orphans { list-style: none; margin: 0; padding: 0; width: 100%; max-height: 40vh; overflow-y: auto; border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); }
   .orphans li { display: flex; align-items: center; gap: 10px; padding: 2px 4px 2px 10px; min-height: 40px; }
@@ -146,6 +153,7 @@
   button.danger { border-color: var(--color-alert); color: var(--color-alert); }
   button.icon { border: 0; min-height: 36px; min-width: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .orphans button.icon { color: var(--color-alert); }
+  .orphans.tickets button.icon { color: var(--color-navy); }
   button:disabled { opacity: 0.5; cursor: default; }
   button:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
 </style>

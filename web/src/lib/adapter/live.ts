@@ -40,11 +40,11 @@ const liveBoard: BoardApi = {
 const liveCare: CareApi = {
   room: (id) => call(RoomCare, `/api/care/rooms/${id}`),
   clearRoom: (id) => call(CareDone, `/api/care/rooms/${id}/posts`, { method: "DELETE" }),
-  forgetTickets: (id) => call<true>(null, `/api/care/rooms/${id}/tickets`, { method: "DELETE" }),
   floor: (id) => call(FloorCare, `/api/care/floors/${id}`),
   cleanFloor: (id, rooms) => call(CareDone, `/api/care/floors/${id}/cleanup`, { method: "POST", body: JSON.stringify({ rooms }) }),
   building: () => call(BuildingCare, "/api/care/building"),
   cleanBuilding: (floors) => call(CareDone, "/api/care/building/cleanup", { method: "POST", body: JSON.stringify({ floors }) }),
+  forgetTickets: (projects) => call<true>(null, "/api/care/building/tickets/forget", { method: "POST", body: JSON.stringify({ projects }) }),
 };
 
 /** Errors that Fastify reports itself (e.g. body too large) have no code of their own */

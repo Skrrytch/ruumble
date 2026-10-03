@@ -12,9 +12,9 @@ Plugin 0.5.0 (unchanged).
 
 ### Added
 - **Care of the stored data.** A potted plant stands in every room, at the end of every corridor and at the entrance in the elevator. Mumble admins (Write permission on that room, floor or the root channel) can click it; for everyone else it is decoration.
-  - **Room care**: see how many posts and how much attachment space a board holds, clear the board (the people in the room get a notice in the Mumble log), and see and reset the learned ticket links of the room's projects, e.g. after a link to the wrong Jira.
+  - **Room care**: see how many posts and how much attachment space a board holds, and clear the board (the people in the room get a notice in the Mumble log).
   - **Floor care**: rooms of the floor that were deleted in Mumble or moved out of the floor plan and still hold data, one line each, removed one by one or all.
-  - **Building care**: the same for floors that were deleted.
+  - **Building care**: the same for floors that were deleted, plus every learned ticket link of the building with a reset per project, e.g. after a first link to the wrong Jira.
 
 ### Upgrading
 - No configuration changes: change the image tag to `0.24.0` and restart. The board database migrates itself; rooms deleted before the upgrade appear under "Unknown floor" in building care.

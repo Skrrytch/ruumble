@@ -593,14 +593,11 @@ describe("REST /api/care (ADR-0014)", () => {
 
   it("room: only with Write permission, from anywhere; clear the board with a notice to those present", async () => {
     const { app, store, hub, plugins, as } = await setup();
-    store.create({ channelId: 2, kind: "text", text: "see https://jira.example/browse/TAG-1, VKB-2", authorHash: A, authorName: "Anna" });
-    store.create({ channelId: 3, kind: "text", text: "https://jira.example/browse/VKB-1", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 2, kind: "text", text: "see TAG-2", authorHash: A, authorName: "Anna" });
     expect((await app.inject({ url: "/api/care/rooms/2" })).statusCode).toBe(401);
     expect((await app.inject({ url: "/api/care/rooms/2", headers: as("anna") })).json()).toEqual({ error: "forbidden" });
     expect((await app.inject({ url: "/api/care/rooms/1", headers: as("ben") })).json()).toEqual({ error: "not-found" }); // a floor
-    expect((await app.inject({ url: "/api/care/rooms/2", headers: as("ben") })).json()).toEqual({
-      channelId: 2, name: "Office", posts: 1, bytes: 0, tickets: { TAG: "https://jira.example/browse/", VKB: "https://jira.example/browse/" },
-    });
+    expect((await app.inject({ url: "/api/care/rooms/2", headers: as("ben") })).json()).toEqual({ channelId: 2, name: "Office", posts: 1, bytes: 0 });
     const ui = recorder<BridgeToUi>();
     hub.uiConnected(ui.conn, A);
     expect((await app.inject({ method: "DELETE", url: "/api/care/rooms/2/posts", headers: as("anna") })).statusCode).toBe(403);
@@ -611,13 +608,16 @@ describe("REST /api/care (ADR-0014)", () => {
     expect(clearedText("Ben", "en")).toBe("Ben cleared the board.");
   });
 
-  it("room: forget the learned ticket links named there", async () => {
+  it("building: every learned ticket link, forgotten per project for the whole building", async () => {
     const { app, store, as } = await setup();
-    store.create({ channelId: 3, kind: "text", text: "https://wrong.example/browse/TAG-1", authorHash: A, authorName: "Anna" });
+    store.create({ channelId: 3, kind: "text", text: "https://wrong.example/browse/TAG-1 https://jira.example/browse/VKB-1", authorHash: A, authorName: "Anna" });
     store.create({ channelId: 2, kind: "text", text: "TAG-7", authorHash: A, authorName: "Anna" });
-    expect((await app.inject({ method: "DELETE", url: "/api/care/rooms/2/tickets", headers: as("ben") })).statusCode).toBe(204);
-    expect(store.ticketLinks()).toEqual({});
-    expect((await app.inject({ url: "/api/care/rooms/2", headers: as("ben") })).json().tickets).toEqual({});
+    expect((await app.inject({ url: "/api/care/building", headers: as("ben") })).json().tickets).toEqual({ TAG: "https://wrong.example/browse/", VKB: "https://jira.example/browse/" });
+    const forget = (who: string, projects: unknown) => app.inject({ method: "POST", url: "/api/care/building/tickets/forget", headers: as(who), payload: { projects } });
+    expect((await forget("anna", ["TAG"])).statusCode).toBe(403);
+    expect((await forget("ben", [])).statusCode).toBe(400);
+    expect((await forget("ben", ["TAG", "NOPE"])).statusCode).toBe(204);
+    expect(store.ticketLinks()).toEqual({ VKB: "https://jira.example/browse/" });
   });
 
   it("floor and building: list what is gone, remove only what is still gone", async () => {
@@ -643,7 +643,7 @@ describe("REST /api/care (ADR-0014)", () => {
     expect((await app.inject({ method: "POST", url: "/api/care/building/cleanup", headers: as("ben"), payload: { floors: [] } })).statusCode).toBe(400);
     expect((await app.inject({ method: "POST", url: "/api/care/building/cleanup", headers: as("ben"), payload: { floors: [4, 1] } })).json()).toEqual({ posts: 1 });
     expect(store.channelsWithPosts()).toEqual([2]);
-    expect((await app.inject({ url: "/api/care/building", headers: as("ben") })).json()).toEqual({ orphans: [] });
+    expect((await app.inject({ url: "/api/care/building", headers: as("ben") })).json()).toEqual({ orphans: [], tickets: {} });
     expect((await app.inject({ method: "POST", url: "/api/care/building/cleanup", headers: as("anna"), payload: { floors: [4] } })).statusCode).toBe(403);
   });
 

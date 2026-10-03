@@ -81,9 +81,9 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 
 A potted plant stands in every room (bottom right), at the end of every corridor and at the entrance in the elevator. For everyone it is decoration; whoever has Mumble's Write permission there can click it ([ADR-0014](decisions/0014-care-of-the-stored-data.md)):
 
-- **Room care**: how many posts and how much attachment space the board holds; **clear the board** (all posts with reactions, "kept on top" and attachments, with a Mumble notice to the people present); the **learned ticket links** of the projects named in the room, with a reset (in every room, until a newer link teaches them again).
+- **Room care**: how many posts and how much attachment space the board holds; **clear the board** (all posts with reactions, "kept on top" and attachments, with a Mumble notice to the people present).
 - **Floor care**: rooms of this floor that were deleted in Mumble or moved out of the floor plan and still hold data, one line each (name, posts, size, gone since), removed one by one or all.
-- **Building care**: floors that are gone, with their rooms, posts and size; rooms whose floor is not known as "Unknown floor".
+- **Building care**: floors that are gone, with their rooms, posts and size; rooms whose floor is not known as "Unknown floor". And every **learned ticket link** of the building (project → base URL), each with a reset, e.g. after a first link to the wrong Jira; a newer link teaches the project again.
 
 Care works from anywhere in the building and never shows the content of posts. Every removal asks first.
 
