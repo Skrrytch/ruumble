@@ -119,11 +119,12 @@ jobs:
           (cd assets && sha256sum * > SHA256SUMS)
           cat assets/SHA256SUMS
           {
-            awk -v v="$SERVICE" '$0 ~ "^## \\[" v "\\]" {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md
+            awk -v v="$SERVICE" '$0 ~ "^## \\[" v "\\]" {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md \
+              | sed "s#](docs/#](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/#g"  # links work on the release page
             echo
             echo "## Install"
             echo
-            echo "- **Service and web UI:** \`docker pull $IMAGE:$SERVICE\` (linux/amd64, linux/arm64). Setup: [docs/operations.md](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/operations.md), Compose templates attached (`mumble-with-ruumble` for a new setup, `ruumble` next to an existing Mumble container)."
+            echo "- **Service and web UI:** \`docker pull $IMAGE:$SERVICE\` (linux/amd64, linux/arm64). Setup: [docs/operations.md](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/operations.md), Compose templates attached (\`mumble-with-ruumble\` for a new setup, \`ruumble\` next to an existing Mumble container)."
             echo "- **Plugin $PLUGIN** for Mumble 1.4+ on Linux x86_64 and Windows x64: \`ruumble-$PLUGIN.mumble_plugin\`, attached and also served by the service under \`/download\`. Guide: [docs/user-guide.md](https://github.com/$GITHUB_REPOSITORY/blob/v$SERVICE/docs/user-guide.md)."
             echo "- **Icons** (SVG, PNG 192/512 also as maskable, Apple touch icon, favicon.ico): \`ruumble-icons.zip\`, also served by every instance at its root (e.g. \`/icon-512.png\`)."
             echo

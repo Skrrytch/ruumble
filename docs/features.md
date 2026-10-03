@@ -149,10 +149,10 @@ Tested versions: see [operations](operations.md#requirements).
 | A1 – Quick reactions | done (0.10.0) |
 | A2 – Shared task lists | done (0.12.0) |
 | A3 – Kept on top | done (0.13.0) |
-| Ticket keys as links (learned from issue links) | done (0.20.0) |
-| Copy a post to another room | done (0.21.0) |
-| A4 – Clickable links everywhere | done (0.23.0) |
-| A5 – Short form for well-known URLs | done (0.23.0) |
+| Ticket keys as links (learned from issue links) | done (0.25.0) |
+| Copy a post to another room | done (0.25.0) |
+| A4 – Clickable links everywhere | done (0.25.0) |
+| A5 – Short form for well-known URLs | done (0.25.0) |
 | A6–A9 – Board for developers | planned, in this order |
 | Report the Mumble avatar bug | open (O16) |
 | Address check over proxy and VPN | proxy with hairpin NAT: `warn` required, VPN untested (see [P7](mumble-interfaces.md#5-checkpoints-of-the-feasibility-studies)). |
@@ -210,11 +210,11 @@ Done (0.10.0), see *Board* above: work reactions first, then social ones, in a f
 
 **A3 – Kept on top.** Done (0.13.0), see *Board* above. The post kept on top expires with the retention period like any other (ADR-0011 unchanged).
 
-**A4 – Clickable links everywhere.** Done (0.23.0), see *Board* above. Captions turned out to be Markdown with links already, so the change concerns code posts; the list of links is shown below code posts only, where the links would otherwise be hidden in the text. Text posts already turn URLs into links (Markdown with linkify). Code posts, stack traces and image or file captions do not: there a URL is plain text today. Links in these posts become clickable too, and in addition every post shows the links it contains as a compact list below its content: duplicates removed, at most three entries, then "+ N more". That way a ticket link in a code comment or log is one click away without searching the text.
+**A4 – Clickable links everywhere.** Done (0.25.0), see *Board* above. Captions turned out to be Markdown with links already, so the change concerns code posts; the list of links is shown below code posts only, where the links would otherwise be hidden in the text. Text posts already turn URLs into links (Markdown with linkify). Code posts, stack traces and image or file captions do not: there a URL is plain text today. Links in these posts become clickable too, and in addition every post shows the links it contains as a compact list below its content: duplicates removed, at most three entries, then "+ N more". That way a ticket link in a code comment or log is one click away without searching the text.
 
 Only `http(s)` links are offered, always in a new tab and without access to the Ruumble window (as today). In the list the full URL appears as a tooltip; the entries use the short form from A5.
 
-**A5 – Short form for well-known URLs.** Done (0.23.0), see *Board* above; GitLab merge requests read "MR !42", CI links name the run, pipeline, job or Jenkins build. Instead of a long URL, a link shows a symbol and a short text, derived only from the **shape of the URL**, never by fetching it. This works for self-hosted instances too, because the path is recognised, not the host:
+**A5 – Short form for well-known URLs.** Done (0.25.0), see *Board* above; GitLab merge requests read "MR !42", CI links name the run, pipeline, job or Jenkins build. Instead of a long URL, a link shows a symbol and a short text, derived only from the **shape of the URL**, never by fetching it. This works for self-hosted instances too, because the path is recognised, not the host:
 
 | URL shape | Shown as |
 |---|---|
