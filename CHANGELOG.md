@@ -6,6 +6,8 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-10-03
+
 Plugin 0.5.0 (unchanged). A new floor plan with flatter rooms, and exports through a "Save as" dialog.
 
 ### Changed
@@ -17,7 +19,7 @@ Plugin 0.5.0 (unchanged). A new floor plan with flatter rooms, and exports throu
 - Building maintenance: hints about invalid values or changes that delete data are shorter and stand in the footer instead of the house rules, so the dialog keeps its height.
 
 ### Upgrading
-- No configuration changes: change the image tag to the new version and restart.
+- No configuration changes: change the image tag to `0.26.0` and restart.
 
 ## [0.25.1] - 2026-10-03
 
@@ -263,6 +265,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.26.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.26.0
 [0.25.1]: https://github.com/Skrrytch/ruumble/releases/tag/v0.25.1
 [0.25.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.25.0
 [0.19.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.19.0
