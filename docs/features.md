@@ -145,7 +145,7 @@ Tested versions: see [operations](operations.md#requirements).
 | B – Status line | on hold: the Mumble comment cannot be set from the plugin (see below) |
 | C – Knocking | idea, decision open |
 | F – More controls | idea, decision open |
-| G – "Door closed" | idea, after B and C |
+| G – "Door closed" | dropped (2026-10-03): Mumble has no knocking |
 | A1 – Quick reactions | done (0.10.0) |
 | A2 – Shared task lists | done (0.12.0) |
 | A3 – Kept on top | done (0.13.0) |
@@ -167,7 +167,7 @@ On hold (2026-10-02): this does not work. The plugin API's `requestSetLocalUserC
 
 **F – More controls.** Mute someone only for yourself, switch the transmission mode, a push-to-talk button in Ruumble, and a settings dialog (transmission mode, open the UI on every connect, unpair this device). All via the plugin, no storage of its own.
 
-**G – "Door closed".** Your own room shows a closed door; others knock instead of entering. A request, not a lock: Mumble's permissions stay unchanged. Builds on B and C.
+**G – "Door closed".** Dropped (2026-10-03): Mumble has no knocking or join request, and a request only Ruumble knows about would not reach users of the plain Mumble client. The door in the floor plan shows instead whether you may enter: ajar (25°) where you may, closed where Mumble does not let you in, swinging open while you enter.
 
 **Mumble avatar bug (O16).** Whether to report the inverted condition in Mumble 1.6's Ice `getTexture`/`setTexture` as an issue at mumble-voip/mumble.
 

@@ -68,6 +68,7 @@
   /** the board toggle sits left of the door plate */
   let plateWidth = $state(0);
   const fit = $derived(variant === "room" ? fitPeople(space.users, peopleWidth, peopleHeight) : { shown: space.users, hidden: [] });
+  const doorState = $derived(disabled && !readonly ? "closed" : pending ? "open" : "ajar");
   const countLine = $derived(pending ? t().space.enteringText : (subtitle ?? countText(space.users.length)));
 
   function click() {
@@ -101,11 +102,12 @@
   onclick={click}
 >
   {#if variant === "room"}
-    <!-- door at the corridor wall: the white strip cuts the opening into the wall; mirrored in the lower row -->
-    <svg class="door" width="48" height="52" viewBox="0 0 48 52" fill="none" aria-hidden="true">
+    <!-- door at the corridor wall: the white strip cuts the opening into the wall; mirrored in the lower row.
+         Ajar (25°) where the user may enter, swinging fully open while entering, closed where Mumble does not let them in -->
+    <svg class="door {doorState}" width="48" height="52" viewBox="0 0 48 52" fill="none" aria-hidden="true">
       <rect x="2" y="48" width="44" height="4" class="opening" />
-      <path d="M2 48V4" class="leaf" />
-      <path d="M2 4A44 44 0 0 1 46 48" class="swing" />
+      <path d="M46 50A44 44 0 0 0 2 6" class="swing" />
+      <path d="M2 50H46" class="leaf" />
     </svg>
     <span class="people" bind:clientWidth={peopleWidth} bind:clientHeight={peopleHeight}>
       {#each fit.shown as user (user.session)}
@@ -194,14 +196,28 @@
   /* Rooms (design "Grundriss: Flurseite"): a 48 px door strip on the corridor side holds the plant behind the door,
      the door and, right-aligned, the board and the door plate; the people fill the rest from the far wall.
      Upper row: corridor side below; lower row (.lower): mirrored. */
-  .room.room { padding: 12px 14px calc(var(--door-strip) + 8px); gap: 0; }
-  .lower .room.room { padding: calc(var(--door-strip) + 8px) 14px 12px; }
+  .wrap-room > .room { padding: 12px 14px calc(var(--door-strip) + 8px); gap: 0; }
+  .wrap-room.lower > .room { padding: calc(var(--door-strip) + 8px) 14px 12px; }
   .door { position: absolute; left: 34px; bottom: calc(-1 * var(--wall)); z-index: 2; overflow: visible; }
   .lower .door { bottom: auto; top: calc(-1 * var(--wall)); transform: scaleY(-1); }
   .door .opening { fill: var(--color-white); }
-  .door .leaf { stroke: var(--color-blue-300); stroke-width: 2; }
-  .door .swing { stroke: var(--color-blue-300); stroke-width: 1.5; }
-  .room.room .people { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px 3px; overflow: hidden; }
+  /* the leaf turns about its hinge (2, 50); the swing shows the part of the quarter circle (length 69.12) it has opened */
+  .door .leaf {
+    stroke: var(--color-blue-700); stroke-width: 2; stroke-linecap: round;
+    transform-box: view-box; transform-origin: 2px 50px; transform: rotate(-25deg);
+    transition: transform var(--dur-slow) var(--ease-out), stroke var(--dur) var(--ease-out);
+  }
+  .door .swing {
+    stroke: var(--color-blue-300); stroke-width: 1.5; stroke-dasharray: 69.12; stroke-dashoffset: 49.92;
+    transition: stroke-dashoffset var(--dur-slow) var(--ease-out);
+  }
+  .door.open .leaf { transform: rotate(-90deg); }
+  .door.open .swing { stroke-dashoffset: 0; }
+  .door.closed .leaf { transform: none; stroke: var(--color-blue-500); stroke-width: 3; stroke-linecap: butt; }
+  .door.closed .swing { stroke-dashoffset: 69.12; }
+  .wrap-room .people { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 6px 3px; }
+  /* the people stand in the middle of their area: one alone, two side by side, every row centred */
+  /* no clipping: fitPeople renders only the tiles that fit, and the rings of the own and talking people reach beyond the tile */
   .more { display: flex; flex-direction: column; align-items: center; width: 60px; height: 63px; }
   .more-tile {
     width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -212,13 +228,13 @@
     display: flex; flex-direction: column; align-items: flex-end; text-align: right; line-height: 1.25;
   }
   .lower .plate { bottom: auto; top: 8px; }
-  .room.room .title { gap: 6px; flex-wrap: nowrap; max-width: 100%; font-size: 15px; }
+  .wrap-room .title { gap: 6px; flex-wrap: nowrap; max-width: 100%; font-size: 15px; }
   .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  .room.room .count { margin-top: 1px; font-size: 12px; color: var(--color-blue-700); }
+  .wrap-room .count { margin-top: 1px; font-size: 12px; color: var(--color-blue-700); }
   .mini-count { display: none; align-items: center; gap: 2px; flex: none; font-size: 12px; font-weight: 700; color: var(--color-blue-700); }
   /* narrow rooms: the count moves behind the name, the board gets smaller */
   @container (max-width: 220px) {
-    .room.room .count { display: none; }
+    .wrap-room .count { display: none; }
     .mini-count { display: inline-flex; }
   }
   @container (max-width: 170px) {
