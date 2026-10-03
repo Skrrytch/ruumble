@@ -15,6 +15,7 @@
  *   RETENTION_DAYS (365), BOARD_QUOTA_MB (2048)   board: retention and quota (ADR-0011); defaults, admins may change
  *                                                them in the building maintenance (ADR-0016), like the largest
  *                                                attachment (10 MB), the grace for deleted rooms (7 days) and notices
+ *                                                (whole numbers: 1–3650 days, at least 10 MB, else the start fails)
  *   LOG_LEVEL (info)                             Fastify/pino logging
  *
  * Board backup:  node dist/main.mjs backup <target-directory>  (needs only DATA_DIR, no Ice)
@@ -24,7 +25,7 @@ import { basename, resolve } from "node:path";
 import fastifyStatic from "@fastify/static";
 import fastifyWebsocket from "@fastify/websocket";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
-import { PairConfirm, type PairErrorCode, type Versions } from "@ruumble/protocol";
+import { BuildingSettings, PairConfirm, type PairErrorCode, type Versions } from "@ruumble/protocol";
 import type { WebSocket } from "ws";
 import pkg from "../package.json" with { type: "json" };
 import { AvatarCache } from "./avatars.ts";
@@ -56,9 +57,17 @@ const readSecret = (file: string) => {
   }
 };
 
+/** a default of the building maintenance (ADR-0016): within the range admins may set, else the settings could not be saved */
+const settingDefault = (name: string, key: "retentionDays" | "quotaMB", fallback: number) => {
+  const value = Number(env[name] ?? fallback);
+  const { minValue, maxValue } = BuildingSettings.shape[key];
+  if (Number.isInteger(value) && value >= minValue! && value <= maxValue!) return value;
+  throw new Error(`${name} must be a whole number from ${minValue} to ${maxValue}`);
+};
+
 // board storage (ADR-0011); the backup needs nothing else, hence before the rest of the configuration
 const dataDir = resolve(env.DATA_DIR ?? "data");
-const store = new BoardStore(dataDir, { retentionDays: Number(env.RETENTION_DAYS ?? 365), quotaBytes: Number(env.BOARD_QUOTA_MB ?? 2048) * 1024 * 1024 });
+const store = new BoardStore(dataDir, { retentionDays: settingDefault("RETENTION_DAYS", "retentionDays", 365), quotaBytes: settingDefault("BOARD_QUOTA_MB", "quotaMB", 2048) * 1024 * 1024 });
 if (process.argv[2] === "backup") {
   const target = resolve(process.argv[3] ?? "backup");
   await store.backup(target);

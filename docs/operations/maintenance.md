@@ -49,7 +49,7 @@ Mumble keeps running unchanged. `docker volume rm ruumble-data` also deletes the
 ## The board's storage
 
 - **Where:** `/data/board.sqlite` (SQLite) and attachments under `/data/board/` in the volume. Identical files are stored only once.
-- **Limits:** files up to 10 MB each; posts are kept for `RETENTION_DAYS` (365); attachments may use `BOARD_QUOTA_MB` (2048) in total, and when that is full the oldest posts with attachments are deleted. Posts of deleted channels are kept for 7 days. Cleanup runs hourly.
+- **Limits** (defaults, see Settings below): files up to 10 MB each; posts are kept for `RETENTION_DAYS` (365, 1–3650); attachments may use `BOARD_QUOTA_MB` (2048, at least 10) in total, and when that is full the oldest posts with attachments are deleted. Posts of deleted channels are kept for 7 days. Cleanup runs hourly. A value outside its range stops the service at start with a message naming it.
 - **Usage:** building care (the plant at the entrance, for Mumble admins) shows storage per floor; `curl http://<address>:64080/healthz` shows `"board":{"usedMB":…,"quotaMB":…}`.
 - **Care:** Mumble admins delete old posts, clear or export a board, move a board to a recreated room and remove the data of deleted rooms and floors from the plants in the web UI ([ADR-0014](../decisions/0014-care-of-the-stored-data.md)).
 - **Paired browsers:** everyone sees their own under "My keys" in the user menu; admins see and revoke everyone's in the building maintenance ([ADR-0015](../decisions/0015-key-cabinet.md)).

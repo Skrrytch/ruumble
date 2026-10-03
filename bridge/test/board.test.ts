@@ -203,6 +203,11 @@ describe("BoardStore", () => {
     store.create({ channelId: 5, kind: "text", text: "c", authorHash: A, authorName: "Anna" });
     store.create({ channelId: 9, kind: "text", text: "from before the places were known", authorHash: A, authorName: "Anna" });
     expect(store.roomStats(3)).toEqual({ posts: 2, bytes: PNG.length });
+    // the same file posted twice is stored once and counts once
+    const twice = store.create({ channelId: 3, kind: "image", text: "", attachmentId: att.id, attachmentName: "b.png", authorHash: A, authorName: "Anna" });
+    expect(store.roomStats(3)).toEqual({ posts: 3, bytes: PNG.length });
+    expect(store.channelStats().get(3)).toMatchObject({ posts: 3, bytes: PNG.length });
+    store.delete(twice.id);
     // Lab is deleted, the whole 2nd floor too; Office is renamed
     now = 5;
     store.syncChannels(places([0, null, "Root"], [1, 0, "1F"], [2, 1, "Office 1"]));
@@ -539,6 +544,9 @@ describe("REST /api/board", () => {
     expect(svg.json()).toMatchObject({ mime: "application/octet-stream", image: false });
     const big = await app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream" }, payload: Buffer.alloc(10 * 1024 * 1024 + 1) });
     expect(big.statusCode).toBe(413);
+    // turned away before the body is read: without pairing, or declared above the limit set now
+    const stranger = await app.inject({ method: "POST", url: "/api/board/uploads", headers: { "content-type": "application/octet-stream" }, payload: Buffer.alloc(20 * 1024 * 1024) });
+    expect(stranger.json()).toEqual({ error: "not-paired" });
     // pin SVG as "image" → rejected; as file → download
     const svgId = svg.json().id;
     expect((await app.inject({ method: "POST", url: "/api/board/posts", headers: as("anna"), payload: { kind: "image", text: "", attachmentId: svgId } })).json()).toEqual({ error: "bad-type" });
@@ -757,6 +765,13 @@ describe("REST /api/care (ADR-0014)", () => {
     expect((await move(2, 2)).statusCode).toBe(400);
     expect((await move(7, 3)).statusCode).toBe(404); // no data
     expect((await move(5, 3, "anna")).statusCode).toBe(403);
+    // Write on this floor only: no boards from other floors, no building care
+    source.writeOn[7] = [1];
+    const annaFloor = (await app.inject({ url: "/api/care/floors/1", headers: as("anna") })).json();
+    expect(annaFloor.sources).toEqual([{ channelId: 2, name: "Office", floorName: "1F", posts: 1, gone: false }]);
+    expect((await move(5, 3, "anna")).statusCode).toBe(403);
+    expect((await app.inject({ url: "/api/care/building", headers: as("anna") })).statusCode).toBe(403);
+    source.writeOn = {};
     const ui = recorder<BridgeToUi>();
     hub.uiConnected(ui.conn, A);
     expect((await move(5, 2)).json()).toEqual({ posts: 1 });
@@ -820,11 +835,13 @@ describe("board export (ADR-0014)", () => {
       { ...base, id: "b", kind: "code", text: "a ``` b", language: "ts", authorName: "Ben", createdAt: 2 * DAY },
       { ...base, id: "a", kind: "image", text: "Sketch", authorName: "Anna", createdAt: DAY, attachment: { id: "f".repeat(64), name: "a b.png", mime: "image/png", size: 1 },
         reactions: [{ kind: "agree", authorHash: B, authorName: "Ben" }], copiedFrom: { roomName: "Lab", authorName: "Clara" } },
-    ], new Map([["f".repeat(64), "a b.png"]]), "a", 3 * DAY);
+      { ...base, id: "c", kind: "file", text: "", authorName: "Anna", createdAt: 3 * DAY, attachment: { id: "e".repeat(64), name: "x", mime: "application/pdf", size: 1 } },
+    ], new Map([["f".repeat(64), "a b.png"], ["e".repeat(64), "report#2 [final]?.pdf"]]), "a", 4 * DAY);
     expect(md).toContain('# Board of "Office"');
     expect(md.indexOf("## Anna")).toBeLessThan(md.indexOf("## Ben"));
     expect(md).toContain('## Anna · 1970-01-02 00:00 UTC · image · kept on top · from "Lab" by Clara');
     expect(md).toContain("![a b.png](files/a%20b.png)");
+    expect(md).toContain("[report#2 \\[final\\]?.pdf](files/report%232%20%5Bfinal%5D%3F.pdf)");
     expect(md).toContain("````ts\na ``` b\n````");
     expect(md).toContain("*Reactions: agree (Ben)*");
   });

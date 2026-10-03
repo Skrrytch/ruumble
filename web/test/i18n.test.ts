@@ -113,5 +113,9 @@ describe("UI language", () => {
     expect(de.care.ageChoice(30)).toBe("1 Monat");
     expect(en.care.ageChoice(5)).toBe("5 days");
     expect(de.care.sourceOption("Lab", 1, "1F", true)).toBe("Lab (1F) · 1 Beitrag · nicht mehr da");
+    expect(de.care.confirmForgetOne("TAG")).toBe("Ticket-Link von TAG zurücksetzen?");
+    expect(en.care.confirmForgetAll(3)).toBe("Reset all 3 ticket links?");
+    expect(de.keys.device("Firefox", "Linux")).toBe("Firefox unter Linux");
+    expect(en.keys.device("Safari", "iOS")).toBe("Safari on iOS");
   });
 });

@@ -107,7 +107,12 @@ test.describe("Care (ADR-0014)", () => {
     await expect(dialog.getByRole("alertdialog", { name: "Remove 2 orphaned floors for good?" })).toBeVisible();
     await dialog.getByRole("button", { name: "Remove for good" }).click();
     await expect(dialog.getByText("No floors that are gone.")).toBeVisible();
+    // one ticket link, so no "Reset all"; a reset asks first
+    await expect(dialog.getByRole("button", { name: "Reset all …" })).toHaveCount(0);
     await dialog.getByRole("button", { name: "Reset RUU" }).click();
+    const reset = dialog.getByRole("alertdialog", { name: "Reset the ticket link of RUU?" });
+    await expect(reset).toContainText("Links in older posts then no longer lead to the ticket.");
+    await reset.getByRole("button", { name: "Reset" }).click();
     await expect(dialog.getByRole("status")).toHaveText("Ticket link reset.");
     await expect(dialog.getByText("No ticket links learned yet.")).toBeVisible();
     await dialog.getByRole("button", { name: /Support/ }).click();
@@ -174,6 +179,16 @@ test.describe("Building maintenance (ADR-0016)", () => {
     await dialog.getByRole("button", { name: "Save anyway" }).click();
     await expect(dialog.getByRole("status")).toHaveText("Saved.");
     await expect(save).toBeDisabled();
+    // a shorter grace for deleted rooms deletes data too: asks first; Escape cancels only the popup
+    await dialog.getByLabel("Keep data of deleted rooms").fill("0");
+    await expect(dialog.getByText(/^Shorter grace period/)).toBeVisible();
+    await save.click();
+    const grace = dialog.getByRole("alertdialog", { name: "Save, although posts will then be deleted?" });
+    await expect(grace).toContainText("Shorter grace period");
+    await expect(grace.getByRole("button", { name: "Cancel" })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(grace).toHaveCount(0);
+    await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: "All to default" }).click();
     await expect(retention).toHaveValue("365");
     // everyone else's keys

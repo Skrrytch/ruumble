@@ -1,13 +1,5 @@
 <script lang="ts" module>
-  /** a step that needs a yes first: shown instead of the footer (no second modal) */
-  export interface ConfirmRequest {
-    title: string;
-    detail: string;
-    confirmLabel: string;
-    /** danger: deletes for good; neutral: changes that cannot be undone cleanly (moving a board) */
-    tone: "danger" | "neutral";
-    run: () => Promise<unknown>;
-  }
+  export type { ConfirmRequest } from "./ConfirmDialog.svelte";
   export interface ShellCrumb {
     label: string;
     /** set: a parent level the viewer may jump to */
@@ -18,11 +10,12 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { t } from "../../i18n/index.svelte.ts";
+  import ConfirmDialog, { type ConfirmRequest } from "./ConfirmDialog.svelte";
   import Icon from "./Icon.svelte";
 
   // The frame of the care dialogs, the building maintenance and "my keys" (design handoff "Hausmeister"): header
   // with site plan, title, plate, breadcrumb and summary, the yellow mark and the dot raster; the body; a grey footer
-  // with the house rules, a status line after an action, or the confirmation bar.
+  // with the house rules or a status line after an action. A confirmation opens in its own popup above (ConfirmDialog).
   let {
     title,
     level,
@@ -58,8 +51,6 @@
 
   let dialog: HTMLDialogElement;
   let heading = $state<HTMLHeadingElement | null>(null);
-  let cancelButton = $state<HTMLButtonElement | null>(null);
-  let running = $state(false);
   const titleId = `care-title-${Math.random().toString(36).slice(2)}`;
 
   $effect(() => {
@@ -72,26 +63,10 @@
     if (level !== shownLevel && shownLevel) heading?.focus();
     shownLevel = level;
   });
-  $effect(() => {
-    if (confirm) cancelButton?.focus();
-  });
 
-  /** Escape: closes the confirmation if one is open, otherwise the dialog */
+  /** Escape while the confirmation is open belongs to it, never closes the dialog below */
   function oncancel(e: Event): void {
-    if (!confirm) return;
-    e.preventDefault();
-    if (!running) oncancelconfirm?.();
-  }
-
-  async function yes(): Promise<void> {
-    if (!confirm || running) return;
-    running = true;
-    try {
-      await confirm.run();
-    } finally {
-      running = false;
-      oncancelconfirm?.();
-    }
+    if (confirm) e.preventDefault();
   }
 </script>
 
@@ -130,33 +105,25 @@
     <div class="mark" aria-hidden="true"></div>
   </header>
 
-  <main inert={!!confirm} class:confirming={!!confirm}>
+  <main class:confirming={!!confirm}>
     {@render children()}
   </main>
 
+  <footer class="bar">
+    {#if status}
+      <span class="status" class:error={status.error} role={status.error ? "alert" : "status"}>
+        <Icon name={status.error ? "warning" : "check"} size={15} color={status.error ? "var(--danger)" : "var(--accent)"} />{status.text}
+      </span>
+    {:else if houseRule}
+      <span class="rule"><Icon name="rules" size={15} color="var(--accent)" /><span><strong>{t().care.houseRule}</strong> · {houseRule}</span></span>
+    {:else}
+      <span></span>
+    {/if}
+    <button type="button" class="btn primary close" onclick={onclose}>{t().common.close}</button>
+  </footer>
+
   {#if confirm}
-    <div class="bar confirm {confirm.tone}" role="alertdialog" aria-labelledby={`${titleId}-confirm`} aria-describedby={`${titleId}-detail`}>
-      <Icon name={confirm.tone === "danger" ? "warning" : "move"} size={20} color={confirm.tone === "danger" ? "var(--danger)" : "var(--ink)"} />
-      <div class="confirm-text">
-        <strong id={`${titleId}-confirm`}>{confirm.title}</strong>
-        <span id={`${titleId}-detail`}>{confirm.detail}</span>
-      </div>
-      <button type="button" class="btn secondary" bind:this={cancelButton} disabled={running} onclick={() => oncancelconfirm?.()}>{t().common.cancel}</button>
-      <button type="button" class="btn {confirm.tone === 'danger' ? 'danger-solid' : 'primary'}" disabled={running} onclick={yes}>{confirm.confirmLabel}</button>
-    </div>
-  {:else}
-    <footer class="bar">
-      {#if status}
-        <span class="status" class:error={status.error} role={status.error ? "alert" : "status"}>
-          <Icon name={status.error ? "warning" : "check"} size={15} color={status.error ? "var(--danger)" : "var(--accent)"} />{status.text}
-        </span>
-      {:else if houseRule}
-        <span class="rule"><Icon name="rules" size={15} color="var(--accent)" /><span><strong>{t().care.houseRule}</strong> · {houseRule}</span></span>
-      {:else}
-        <span></span>
-      {/if}
-      <button type="button" class="btn primary close" onclick={onclose}>{t().common.close}</button>
-    </footer>
+    <ConfirmDialog request={confirm} oncancel={() => oncancelconfirm?.()} />
   {/if}
 </dialog>
 
@@ -192,13 +159,6 @@
   .rule, .status { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--ink-2); min-width: 0; }
   .status { font-size: 13px; font-weight: 700; color: var(--ink); }
   .status.error { color: var(--danger); }
-  .confirm { border-top: 2px solid var(--danger); background: var(--danger-tint); justify-content: flex-start; }
-  .confirm.neutral { border-top-color: var(--ink); background: var(--tint); }
-  .confirm-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .confirm-text strong { color: var(--danger-ink); font-size: 14px; }
-  .confirm.neutral .confirm-text strong { color: var(--ink); }
-  .confirm-text span { font-size: 12px; color: #5c1a14; }
-  .confirm.neutral .confirm-text span { color: var(--ink-2); }
   /* buttons of the care dialogs, also used by the views (global within .care) */
   .care :global(.btn) {
     height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 1px solid var(--control); border-radius: 4px;

@@ -7,12 +7,12 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, PRUNE_DAYS, type BuildingSettings, REACTION_KINDS, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
 import vacant from "@ruumble/protocol/fixtures/vacant.json";
-import type { AdapterEvents, BoardApi, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus } from "./types.ts";
+import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus } from "./types.ts";
 
 const MINUTE = 60_000;
 
@@ -122,6 +122,11 @@ function sampleOrphans(now: number): { floorId: number | null; floorName: string
 
 const DAY = 24 * 60 * MINUTE;
 /** building settings as the service reports them without overrides (ADR-0016) */
+/** a care action the service would refuse (caretaker turns it into the error) */
+class Refused {
+  constructor(readonly error: BoardErrorCode) {}
+}
+
 const MOCK_DEFAULTS: BuildingSettings = { retentionDays: 365, quotaMB: 2048, maxFileMB: BOARD_LIMITS.fileBytes / (1024 * 1024), graceDays: 7, notifyNewPosts: true };
 
 /** paired browsers (key cabinet, ADR-0015): the own ones (first: this browser) and others' */
@@ -187,6 +192,7 @@ export class MockAdapter implements MumbleAdapter {
     load: async () => this.caretaker(0, () => ({ settings: this.settings, defaults: MOCK_DEFAULTS, usedBytes: this.usedBytes() }), true),
     save: async (next) =>
       this.caretaker(0, () => {
+        if (!BuildingSettings.safeParse(next).success) return new Refused("invalid");
         this.settings = { ...next };
         return { settings: this.settings, defaults: MOCK_DEFAULTS, usedBytes: this.usedBytes() };
       }, true),
@@ -258,12 +264,16 @@ export class MockAdapter implements MumbleAdapter {
           return { channelId: c.id, name: c.name, posts: posts.length, bytes: posts.reduce((n, p) => n + (p.attachment?.size ?? 0), 0), newest: posts.length ? Math.max(...posts.map((p) => p.createdAt)) : null };
         }),
         orphans: this.orphans.filter((o) => o.floorId === id).map((o) => o.room),
-        sources: this.transferSources(),
+        sources: this.transferSources().filter((s) => this.state.care?.includes(s.floorId)).map(({ floorId: _, ...s }) => s),
       }), this.isFloor(id)),
     transfer: async (id, from, to) =>
       this.caretaker(id, () => {
         const target = this.state.channels.find((c) => c.id === to);
-        if (target?.parent !== id || from === to) return { posts: 0 };
+        if (target?.parent !== id || from === to) return new Refused("invalid");
+        // like the service: a board with posts, and Write on the floor it comes from as well
+        const source = this.transferSources().find((s) => s.channelId === from);
+        if (!source) return new Refused("not-found");
+        if (!this.state.care?.includes(source.floorId)) return new Refused("forbidden");
         const orphan = this.orphans.find((o) => o.room.channelId === from);
         const now = Date.now();
         // a gone room in the mock has only numbers: it brings that many notes
@@ -620,12 +630,13 @@ export class MockAdapter implements MumbleAdapter {
   }
 
   /** like the service: every room with posts, current or gone, with its floor */
-  private transferSources(): TransferSource[] {
+  /** every board with posts, with the floor it is on (0: not known, like the service) */
+  private transferSources(): (TransferSource & { floorId: number })[] {
     const current = [...this.posts].filter(([, posts]) => posts.length > 0).map(([id, posts]) => {
       const floor = this.state.channels.find((c) => c.id === this.state.channels.find((x) => x.id === id)?.parent);
-      return { channelId: id, name: this.channelName(id), floorName: floor?.name ?? "", posts: posts.length, gone: false };
+      return { channelId: id, name: this.channelName(id), floorName: floor?.name ?? "", floorId: floor?.id ?? 0, posts: posts.length, gone: false };
     });
-    const gone = this.orphans.map((o) => ({ channelId: o.room.channelId, name: o.room.name || `#${o.room.channelId}`, floorName: o.floorName, posts: o.room.posts, gone: true }));
+    const gone = this.orphans.map((o) => ({ channelId: o.room.channelId, name: o.room.name || `#${o.room.channelId}`, floorName: o.floorName, floorId: o.floorId ?? 0, posts: o.room.posts, gone: true }));
     return [...current, ...gone].sort((a, b) => a.floorName.localeCompare(b.floorName) || a.name.localeCompare(b.name));
   }
 
@@ -635,11 +646,12 @@ export class MockAdapter implements MumbleAdapter {
   }
 
   /** like the service: Write permission on the channel (the snapshot's `care`), from anywhere in the building */
-  private caretaker<T>(channelId: number, fn: () => T, exists: boolean): BoardResult<T> {
+  private caretaker<T>(channelId: number, fn: () => T | Refused, exists: boolean): BoardResult<T> {
     if (this.plugin === "disconnected" || !this.me()) return { ok: false, error: "not-paired" };
     if (!exists) return { ok: false, error: "not-found" };
     if (!this.state.care?.includes(channelId)) return { ok: false, error: "forbidden" };
-    return { ok: true, value: fn() };
+    const value = fn();
+    return value instanceof Refused ? { ok: false, error: value.error } : { ok: true, value };
   }
 
   private removeOrphans(match: (o: (typeof this.orphans)[number]) => boolean): { posts: number } {

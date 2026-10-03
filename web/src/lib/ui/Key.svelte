@@ -1,6 +1,6 @@
 <script lang="ts">
-  // the key at the entrance (key cabinet, ADR-0015): one brass key, next to the plant. Every paired browser is a key;
-  // the button around it opens the list of keys.
+  // a key (key cabinet, ADR-0015): one brass key, the sign of "My keys" in the user menu and of its dialog. Every
+  // paired browser is a key.
   let { size = 28 }: { size?: number } = $props();
 </script>
 

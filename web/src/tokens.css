@@ -8,7 +8,7 @@
   --color-surface: #f5f5f5;    /* elevator core, hover */
   --color-white: #ffffff;
   --color-navy-light: #0f4b8c;
-  --color-alert: #c62828;      /* ONLY: recording indicator (AP10) and deleting a post */
+  --color-alert: #c62828;      /* ONLY: recording indicator (AP10), deleting a post, destructive steps of care, keys and maintenance */
 
   /* Plant (care, ADR-0014): ONLY the potted plant in rooms, corridors and at the entrance */
   --color-leaf: #4f9a6b;

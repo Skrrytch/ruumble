@@ -15,7 +15,7 @@
  *   GET    /api/board/files/:id       attachment (images inline, everything else as download)
  */
 import { createReadStream } from "node:fs";
-import type { FastifyInstance, FastifyReply } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { CopyRequest, MAX_FILE_MB, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, ticketProjects, type BoardView, type Post, type Reaction, type TicketLinks } from "@ruumble/protocol";
 import type { Hub, Viewer } from "../hub.ts";
 import type { MumbleSource } from "../mumble.ts";
@@ -131,10 +131,16 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
   });
 
   // raw data upload (images and files), own limit instead of the global 1 MB: the route takes up to the largest
-  // size maintenance may set, the handler checks the size set now (ADR-0016)
+  // size maintenance may set, the handler checks the size set now (ADR-0016). Before the body is read, a request
+  // without a board or with a declared size above the current limit is turned away, so nobody buffers 100 MB for nothing.
   const uploadLimit = MAX_FILE_MB * 1024 * 1024;
   app.addContentTypeParser("*", { parseAs: "buffer", bodyLimit: uploadLimit }, (_req, body, done) => done(null, body));
-  app.post("/api/board/uploads", { bodyLimit: uploadLimit }, async (req, reply) => {
+  const uploadGate = async (req: FastifyRequest, reply: FastifyReply) => {
+    const r = room(req.headers.cookie);
+    if ("error" in r) return fail(reply, r.error);
+    if (Number(req.headers["content-length"]) > o.store.maxFileBytes) return fail(reply, "too-large");
+  };
+  app.post("/api/board/uploads", { bodyLimit: uploadLimit, onRequest: uploadGate }, async (req, reply) => {
     const r = room(req.headers.cookie);
     if ("error" in r) return fail(reply, r.error);
     const bytes = req.body;

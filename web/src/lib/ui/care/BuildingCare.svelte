@@ -10,7 +10,7 @@
   import OrphanList, { type OrphanItem } from "./OrphanList.svelte";
   import StorageMeter from "./StorageMeter.svelte";
 
-  // building care: the meter reading (storage), the floors from the top (a line opens floor care), floors that are
+  // building care: the meter reading (storage), the floors from the top (a line opens floor care where the viewer may tend it), floors that are
   // gone, and the learned ticket links
   let { app, data, ask, confirming }: { app: RuumbleState; data: BuildingCare; ask: (key: string, request: ConfirmRequest) => void; confirming: string | null } = $props();
 
@@ -18,6 +18,8 @@
   /** highest floor first, like the elevator */
   const floors = $derived([...data.floors].reverse());
   const building = $derived(app.building);
+  /** floors whose care the viewer may open (Mumble Write, from the snapshot); the service checks again */
+  const tendable = $derived(new Set(app.snapshot?.care ?? []));
 
   const orphans = $derived<OrphanItem[]>(
     data.orphans.map((f) => {
@@ -42,6 +44,18 @@
   }
 
   const tickets = $derived(Object.entries(data.tickets));
+
+  function forget(projects: string[]): void {
+    const c = t().care;
+    ask("tickets", {
+      title: projects.length === 1 ? c.confirmForgetOne(projects[0]!) : c.confirmForgetAll(projects.length),
+      detail: c.confirmForgetDetail,
+      confirmLabel: c.forgetConfirm,
+      tone: "neutral",
+      icon: "tag",
+      run: () => app.forgetTickets(projects),
+    });
+  }
 </script>
 
 <section class="meter-strip" aria-label={t().care.storage} class:faded={!!confirming}>
@@ -49,6 +63,12 @@
   <StorageMeter {share} label={t().care.storageBar} />
   <span class="meta">{t().care.share(share)} · {t().care.retentionShort(data.storage.retentionDays)}</span>
 </section>
+
+{#snippet cells(f: BuildingCare["floors"][number], rooms: number)}
+  <FloorButton label={(building && floorBadge(building, f.channelId)) ?? "?"} />
+  <strong class="name">{f.name}</strong>
+  <span class="meta">{f.posts ? [t().care.rooms(rooms), t().care.postsShort(f.posts), f.bytes ? formatSize(f.bytes) : ""].filter(Boolean).join(" · ") : t().care.empty}</span>
+{/snippet}
 
 <div class="columns">
   <div class="left">
@@ -59,12 +79,14 @@
           {#each floors as f (f.channelId)}
             {@const rooms = building ? roomCount(building, f.channelId) : f.rooms}
             <li>
-              <button type="button" class="floor-row" title={t().care.floorPlant(f.name)} onclick={() => app.openCare({ kind: "floor", channelId: f.channelId }, true)}>
-                <FloorButton label={(building && floorBadge(building, f.channelId)) ?? "?"} />
-                <strong class="name">{f.name}</strong>
-                <span class="meta">{f.posts ? [t().care.rooms(rooms), t().care.postsShort(f.posts), f.bytes ? formatSize(f.bytes) : ""].filter(Boolean).join(" · ") : t().care.empty}</span>
-                <Icon name="next" size={16} color="var(--link)" />
-              </button>
+              {#if tendable.has(f.channelId)}
+                <button type="button" class="floor-row" title={t().care.floorPlant(f.name)} onclick={() => app.openCare({ kind: "floor", channelId: f.channelId }, true)}>
+                  {@render cells(f, rooms)}
+                  <Icon name="next" size={16} color="var(--link)" />
+                </button>
+              {:else}
+                <div class="floor-row">{@render cells(f, rooms)}<span class="spacer"></span></div>
+              {/if}
             </li>
           {/each}
         </ul>
@@ -75,15 +97,18 @@
     </div>
   </div>
 
-  <section class:faded={!!confirming}>
-    <h3>{t().care.tickets}</h3>
+  <section class:faded={!!confirming && confirming !== "tickets"}>
+    <div class="head">
+      <h3>{t().care.tickets}</h3>
+      {#if tickets.length > 1}<button type="button" class="text-link" disabled={app.careBusy} onclick={() => forget(tickets.map(([p]) => p))}>{t().care.forgetAll}</button>{/if}
+    </div>
     {#if tickets.length}
       <ul class="list">
         {#each tickets as [project, base] (project)}
           <li class="ticket">
             <span class="chip"><Icon name="tag" size={13} color="var(--accent)" />{project}</span>
             <span class="url" title={base}>{base.replace(/^https?:\/\//, "")}</span>
-            <button type="button" class="reset" aria-label={t().care.forgetTicket(project)} title={t().care.forgetTicket(project)} disabled={app.careBusy} onclick={() => app.forgetTickets([project])}><Icon name="close" size={15} /></button>
+            <button type="button" class="reset" aria-label={t().care.forgetTicket(project)} title={t().care.forgetTicket(project)} disabled={app.careBusy} onclick={() => forget([project])}><Icon name="close" size={15} /></button>
           </li>
         {/each}
       </ul>
@@ -103,8 +128,10 @@
   .left { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
   .list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
   .list li + li { border-top: 1px solid var(--line-soft); }
-  .floor-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 10px; border: 0; background: #fff; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
-  .floor-row:hover { background: #f4f8fc; }
+  .floor-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 10px; border: 0; background: #fff; font: inherit; color: var(--ink); text-align: left; }
+  button.floor-row { cursor: pointer; }
+  button.floor-row:hover { background: #f4f8fc; }
+  .spacer { flex: none; width: 16px; }
   .floor-row .name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .floor-row .meta { flex: 1; text-align: right; }
   .ticket { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px 0 8px; }
@@ -112,5 +139,9 @@
   .url { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .reset { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; }
   .reset:hover { background: var(--tint); }
+  .head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .text-link { border: 0; padding: 0; background: none; font: inherit; font-size: 13px; font-weight: 700; color: var(--link); cursor: pointer; }
+  .text-link:hover { text-decoration: underline; }
+  .text-link:disabled { opacity: 0.45; cursor: default; text-decoration: none; }
   .reset:disabled { opacity: 0.45; cursor: default; }
 </style>

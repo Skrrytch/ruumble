@@ -4,7 +4,7 @@
   import { careErrorText, type RuumbleState } from "../state.svelte.ts";
   import CareShell, { type ConfirmRequest } from "./care/CareShell.svelte";
   import Key from "./Key.svelte";
-  import KeyList from "./KeyList.svelte";
+  import KeyList, { deviceName } from "./KeyList.svelte";
 
   // My keys (ADR-0015), from the user menu: the own paired browsers, each revocable after confirming. Everyone
   // else's keys are in the building maintenance. Revoking this browser's key unpairs it.
@@ -13,7 +13,7 @@
   let confirm = $state<ConfirmRequest | null>(null);
   function revoke(key: DeviceKey): void {
     const c = t().keys;
-    const device = key.device || c.unknownDevice;
+    const device = deviceName(key.device);
     confirm = { title: c.revokeTitle(device), detail: key.current ? c.revokeDetailCurrent : c.revokeDetail, confirmLabel: c.revokeConfirm, tone: "danger", run: () => app.revokeKey(key.id) };
   }
 </script>

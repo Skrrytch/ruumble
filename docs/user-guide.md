@@ -53,7 +53,7 @@ The plugin's messages in the Mumble log follow the system language (Linux: `LC_A
 
 - The **two notes at the top right of your room** show and hide the board, as does the **B** key (not while you are typing). Boards exist only in rooms, not in the corridor or the entrance.
 - Everyone **who is currently in the room** can see and edit it. The author and Mumble admins can delete posts.
-- **Text** with Markdown (`**bold**`, lists, links), **code** via the `<>` icon (Ruumble suggests this itself when you paste source code), **images and files** up to 10 MB via the paper clip, with Ctrl+V or by dragging them in.
+- **Text** with Markdown (`**bold**`, lists, links), **code** via the `<>` icon (Ruumble suggests this itself when you paste source code), **images and files** (up to 10 MB unless your admins changed it) via the paper clip, with Ctrl+V or by dragging them in.
 - Send with the paper plane or **Ctrl+Enter**. The others in the room see a short notice in the Mumble log.
 - **Task lists** (checklists): a text whose lines after an optional introduction are all tasks (`- [ ] Task` or `- [] Task`, `- [x] Done`) becomes a list that everyone in the room can tick. The card shows the progress, e.g. "2/5".
 - **Actions** appear at the bottom right of a post when you point at it (or reach it with the keyboard): open, react, copy or download, and "…". The post is lightly highlighted meanwhile, so you see exactly which one they apply to. Several posts by the same person in a row share one name line; the time of each is shown with its actions.

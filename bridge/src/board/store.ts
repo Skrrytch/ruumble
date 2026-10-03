@@ -67,7 +67,7 @@ export type ChannelPlace = Pick<Channel, "id" | "parent" | "name" | "temporary">
 
 /**
  * Board data of a room that is no longer a room (deleted, or moved out of the floor plan), with its last known place.
- * `floorId` null: not known (data from before migration 5, or the room became a floor itself).
+ * `floorId` null: not known (data from before migration 6, or the room became a floor itself).
  */
 export interface OrphanedRoom {
   channelId: number;
@@ -78,6 +78,9 @@ export interface OrphanedRoom {
   /** when the channel was found missing; null if it still exists elsewhere */
   goneSince: number | null;
 }
+
+/** size of the distinct attachments of room `p.channel_id` (SQL, for queries over `posts p`) */
+const ROOM_BYTES = "(SELECT COALESCE(SUM(a.size), 0) FROM attachments a WHERE a.id IN (SELECT q.attachment_id FROM posts q WHERE q.channel_id = p.channel_id))";
 
 /** Schema migrations, in this order, never change them afterwards (exported for the migration test) */
 export const MIGRATIONS = [
@@ -361,10 +364,10 @@ export class BoardStore {
 
   // ---------------------------------------------------------------- Care (ADR-0014)
 
-  /** number of posts and size of their attachments in a room */
+  /** number of posts and size of their attachments in a room (a file posted twice counts once, like on disk) */
   roomStats(channelId: number): { posts: number; bytes: number } {
     return this.db
-      .prepare("SELECT COUNT(*) AS posts, COALESCE(SUM(a.size), 0) AS bytes FROM posts p LEFT JOIN attachments a ON a.id = p.attachment_id WHERE p.channel_id = ?")
+      .prepare(`SELECT COUNT(*) AS posts, ${ROOM_BYTES} AS bytes FROM posts p WHERE p.channel_id = ?`)
       .get(channelId) as { posts: number; bytes: number };
   }
 
@@ -388,7 +391,7 @@ export class BoardStore {
   /** per room with posts: number, attachment size, creation time of the newest and the oldest post */
   channelStats(): Map<number, { posts: number; bytes: number; newest: number; oldest: number }> {
     const rows = this.db
-      .prepare("SELECT p.channel_id AS id, COUNT(*) AS posts, COALESCE(SUM(a.size), 0) AS bytes, MAX(p.created_at) AS newest, MIN(p.created_at) AS oldest FROM posts p LEFT JOIN attachments a ON a.id = p.attachment_id GROUP BY p.channel_id")
+      .prepare(`SELECT p.channel_id AS id, COUNT(*) AS posts, ${ROOM_BYTES} AS bytes, MAX(p.created_at) AS newest, MIN(p.created_at) AS oldest FROM posts p GROUP BY p.channel_id`)
       .all() as { id: number; posts: number; bytes: number; newest: number; oldest: number }[];
     return new Map(rows.map(({ id, ...r }) => [id, r]));
   }
@@ -426,8 +429,8 @@ export class BoardStore {
     const rooms = this.places?.rooms;
     if (!rooms) return [];
     const rows = this.db
-      .prepare(`SELECT p.channel_id AS id, c.parent_id AS parent, c.name, COUNT(*) AS posts, COALESCE(SUM(a.size), 0) AS bytes, r.removed_at AS gone
-                FROM posts p LEFT JOIN channels c ON c.channel_id = p.channel_id LEFT JOIN attachments a ON a.id = p.attachment_id
+      .prepare(`SELECT p.channel_id AS id, c.parent_id AS parent, c.name, COUNT(*) AS posts, ${ROOM_BYTES} AS bytes, r.removed_at AS gone
+                FROM posts p LEFT JOIN channels c ON c.channel_id = p.channel_id
                 LEFT JOIN removed_channels r ON r.channel_id = p.channel_id
                 GROUP BY p.channel_id ORDER BY c.name IS NULL, c.name, p.channel_id`)
       .all() as { id: number; parent: number | null; name: string | null; posts: number; bytes: number; gone: number | null }[];

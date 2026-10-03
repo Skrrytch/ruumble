@@ -20,7 +20,8 @@
 - **Building view:** top-level channels become floors, second-level channels rooms, the floor channel itself the corridor. The order follows the channels' position in Mumble.
 - **Presence:** talking indicator, mute and deafen, quiet and away, listeners, recording, Mumble avatars.
 - **One click to move:** Ruumble moves your own Mumble client, and mute and deafen work from the browser too.
-- **Board in every room:** Markdown, source code with highlighting, images, files up to 10 MB, quick reactions, shared task lists, one post kept on top, search. The others in the room get a short notice in their Mumble log.
+- **Board in every room:** Markdown, source code with highlighting, images, files (10 MB by default), quick reactions, shared task lists, one post kept on top, search. The others in the room get a short notice in their Mumble log.
+- **Care for admins:** whoever has Mumble's Write permission tends the stored data from a plant (delete old posts, export or move a board, tidy up after deleted rooms), changes the building's settings and revokes paired browsers.
 - **German and English**, installable as a web app over HTTPS.
 
 Full list and plans: [docs/features.md](docs/features.md).

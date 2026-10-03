@@ -1,3 +1,14 @@
+<script lang="ts" module>
+  import { t as tr } from "../i18n/index.svelte.ts";
+
+  /** the device of a key in the UI language: the service stores "Firefox on Linux" (product names, English "on") */
+  export function deviceName(device: string): string {
+    if (!device) return tr().keys.unknownDevice;
+    const m = /^(.+) on (.+)$/.exec(device);
+    return m ? tr().keys.device(m[1]!, m[2]!) : device;
+  }
+</script>
+
 <script lang="ts">
   import type { DeviceKey } from "@ruumble/protocol";
   import { relativeTime } from "../board/model.ts";
@@ -15,7 +26,7 @@
 
 <ul class="list">
   {#each keys as k (k.id)}
-    {@const device = k.device || t().keys.unknownDevice}
+    {@const device = deviceName(k.device)}
     <li>
       <span class="text">
         <span class="name">{device}{#if k.current}<span class="badge">{t().keys.thisBrowser}</span>{/if}</span>

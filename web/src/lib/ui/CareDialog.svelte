@@ -55,7 +55,7 @@
   });
   const status = $derived(!view ? null : app.careError ? { text: careErrorText(app.careError), error: true } : app.careMessage ? { text: app.careMessage, error: false } : null);
 
-  // the confirmation bar instead of the footer; `key` names the section it is about (the rest is dimmed)
+  // the confirmation popup; `key` names the section it is about (the rest is dimmed)
   let confirm = $state<{ key: string; request: ConfirmRequest } | null>(null);
   const ask = (key: string, request: ConfirmRequest) => (confirm = { key, request });
   $effect(() => {

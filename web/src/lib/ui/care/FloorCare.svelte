@@ -8,8 +8,11 @@
   import Icon from "./Icon.svelte";
   import OrphanList, { type OrphanItem } from "./OrphanList.svelte";
 
-  // floor care: the rooms of the floor (a line opens room care), moving a board here, rooms that are gone
+  // floor care: the rooms of the floor (a line opens room care where the viewer may tend it), moving a board here, rooms that are gone
   let { app, floor, ask, confirming }: { app: RuumbleState; floor: FloorCare; ask: (key: string, request: ConfirmRequest) => void; confirming: string | null } = $props();
+
+  /** rooms whose care the viewer may open (Mumble Write, from the snapshot); the service checks again */
+  const tendable = $derived(new Set(app.snapshot?.care ?? []));
 
   let from = $state("");
   let to = $state("");
@@ -52,6 +55,16 @@
 </script>
 
 <div class="columns">
+  {#snippet cells(r: FloorCare["rooms"][number])}
+    <span class="door"><Icon name="door" size={14} color="var(--accent)" /><strong>{r.name}</strong></span>
+    {#if r.posts}
+      <span class="num">{r.posts}<span class="sr"> {t().care.colPosts}</span></span>
+      <span class="num">{r.bytes ? formatSize(r.bytes) : "–"}</span>
+      <span class="last">{r.newest === null ? "" : relativeTime(r.newest)}</span>
+    {:else}
+      <span class="num empty">{t().care.empty}</span><span></span><span></span>
+    {/if}
+  {/snippet}
   <section class:faded={!!confirming}>
     <h3>{t().care.floorRooms}</h3>
     {#if floor.rooms.length}
@@ -62,17 +75,14 @@
         <ul>
           {#each floor.rooms as r (r.channelId)}
             <li>
-              <button type="button" class="row" title={t().care.roomPlant(r.name)} onclick={() => app.openCare({ kind: "room", channelId: r.channelId }, true)}>
-                <span class="door"><Icon name="door" size={14} color="var(--accent)" /><strong>{r.name}</strong></span>
-                {#if r.posts}
-                  <span class="num">{r.posts}<span class="sr"> {t().care.colPosts}</span></span>
-                  <span class="num">{r.bytes ? formatSize(r.bytes) : "–"}</span>
-                  <span class="last">{r.newest === null ? "" : relativeTime(r.newest)}</span>
-                {:else}
-                  <span class="num empty">{t().care.empty}</span><span></span><span></span>
-                {/if}
-                <span class="chev" aria-hidden="true"><Icon name="next" size={16} color="var(--link)" /></span>
-              </button>
+              {#if tendable.has(r.channelId)}
+                <button type="button" class="row" title={t().care.roomPlant(r.name)} onclick={() => app.openCare({ kind: "room", channelId: r.channelId }, true)}>
+                  {@render cells(r)}
+                  <span class="chev" aria-hidden="true"><Icon name="next" size={16} color="var(--link)" /></span>
+                </button>
+              {:else}
+                <div class="row">{@render cells(r)}<span></span></div>
+              {/if}
             </li>
           {/each}
         </ul>
@@ -119,11 +129,12 @@
   .table { border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
   .row {
     display: grid; grid-template-columns: minmax(0, 1fr) 44px 64px 96px 16px; gap: 8px; align-items: center; width: 100%;
-    min-height: 42px; padding: 0 10px; border: 0; background: #fff; font: inherit; color: var(--ink); text-align: left; cursor: pointer;
+    min-height: 42px; padding: 0 10px; border: 0; background: #fff; font: inherit; color: var(--ink); text-align: left;
   }
   ul { list-style: none; margin: 0; padding: 0; }
   li { border-top: 1px solid var(--line-soft); }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  button.row { cursor: pointer; }
   button.row:hover { background: #f4f8fc; }
   .head { min-height: 30px; background: var(--surface); font-size: 12px; color: var(--muted); cursor: default; }
   .num { text-align: right; font-variant-numeric: tabular-nums; }

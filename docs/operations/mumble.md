@@ -41,6 +41,10 @@ Put the whole value in double quotes (otherwise a comma splits it), the link in 
 
 Top-level channels become floors, their subchannels rooms. The order comes from the channels' **Position** (in Mumble: edit channel → Position; lower numbers first, equal ones alphabetically). The first top-level channel is the ground floor. Floors with deeper nesting are shown locked in the elevator; floors with many rooms scroll sideways.
 
+## Admins in Ruumble
+
+Ruumble has no roles of its own: whoever has Mumble's **Write** permission on a channel is an admin there. On a room or floor that shows the plant as a button (room or floor care) and lets them delete others' posts on that board; on the root channel it also opens building care and the building maintenance (the plant and the wrench at the entrance). Mumble's default ACL grants Write to the `admin` group, so adding a user to `admin` on the root channel (in Mumble: right-click the root channel → Edit → Groups) is usually enough. Ruumble reads the permission every 10 s; a change shows after that, without pairing again.
+
 ## SuperUser password as a secret
 
 The [example](../../deploy/compose/mumble.docker-compose.yml) sets Mumble's SuperUser password from the Docker secret `MUMBLE_SUPERUSER_PASSWORD` (file `secrets/superuser_password`). This has nothing to do with Ruumble.

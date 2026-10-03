@@ -14,8 +14,8 @@ Plugin 0.5.0 (unchanged).
 - **Care of the stored data.** A potted plant stands in every room, at the end of every corridor and at the entrance in the elevator. Mumble admins (Write permission on that room, floor or the root channel) can click it; for everyone else it is decoration.
   - **Room care**: see how many posts and how much attachment space a board holds, delete posts older than 7 days, 14 days, 1, 3 or 6 months, clear the board (the people in the room get a notice in the Mumble log for both), and export the board as a ZIP (all posts as Markdown plus the attachments).
   - **Floor care**: all rooms of the floor with their numbers; move a board from any room, current or deleted, to a room of the floor (e.g. after a room was recreated in Mumble); rooms of the floor that were deleted in Mumble or moved out of the floor plan and still hold data, removed one by one or all.
-  - **Building care**: storage used and per floor; floors that were deleted, with their data; every learned ticket link of the building with a reset per project, e.g. after a first link to the wrong Jira.
-- The care dialogs, the building maintenance and "My keys" share one look along the building metaphor: a site plan of the level, door plate or floor button, a breadcrumb to move between building, floor and room, the house rules in the footer, and confirmations inside the dialog instead of a browser prompt.
+  - **Building care**: storage used and per floor; floors that were deleted, with their data; every learned ticket link of the building with a reset per project or for all, e.g. after a first link to the wrong Jira.
+- The care dialogs, the building maintenance and "My keys" share one look along the building metaphor: a site plan of the level, door plate or floor button, a breadcrumb to move between building, floor and room, the house rules in the footer, and confirmations in a small popup of their own instead of a browser prompt.
 - **My keys.** In the user menu: every paired browser is a key. Everyone sees their own (browser and system, paired on, last used) and can revoke one, e.g. after losing a laptop.
 - **Building maintenance.** A wrench next to the plant at the entrance, for admins: how long posts are kept, the storage quota, the largest file, how long data of deleted rooms is kept and the Mumble notice for new posts, changeable without a restart; the environment variables are the defaults. Everyone else's keys are listed there too, each revocable.
 
@@ -25,7 +25,9 @@ Plugin 0.5.0 (unchanged).
 ### Upgrading
 - Change the image tag to `0.24.0` and restart. The board database migrates itself; rooms deleted before the upgrade appear under "Unknown floor" in building care.
 - If `RETENTION_DAYS` is not set, posts are now kept for a year. Set `RETENTION_DAYS=30` to keep the old behaviour.
-- Browsers paired before the upgrade show "Unknown browser" in the key cabinet until they connect again.
+- Browsers paired before the upgrade show "Unknown browser" under "My keys" until they connect again.
+- `RETENTION_DAYS` must be a whole number from 1 to 3650 and `BOARD_QUOTA_MB` at least 10; otherwise the service does not start and says which value is wrong.
+- Behind a reverse proxy, allow request bodies a little above the largest file admins may set (at most 100 MB), e.g. `client_max_body_size 110m;` in Nginx; otherwise larger uploads fail with `413` from the proxy.
 
 ## [0.23.0] - 2026-10-02
 

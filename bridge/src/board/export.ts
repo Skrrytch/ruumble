@@ -37,8 +37,10 @@ export function boardMarkdown(roomName: string, posts: StoredPost[], files: Map<
     lines.push("---", "", `## ${meta.join(" · ")}`, "");
     if (p.attachment) {
       const file = files.get(p.attachment.id)!;
-      const link = `files/${encodeURI(file)}`;
-      lines.push(p.kind === "image" ? `![${file}](${link})` : `[${file}](${link})`, "");
+      // every character that ends a link or its text is escaped (`#`, `?`, brackets in names)
+      const link = `files/${encodeURIComponent(file)}`;
+      const label = file.replace(/[[\]\\]/g, "\\$&");
+      lines.push(p.kind === "image" ? `![${label}](${link})` : `[${label}](${link})`, "");
     }
     if (p.kind === "code") {
       const f = fence(p.text);

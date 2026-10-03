@@ -126,5 +126,5 @@ Then send users to `http://192.168.1.10:64080`. The page offers the plugin for d
 | [HTTPS](operations/https.md) | Ruumble behind a reverse proxy with a certificate; needed for installing it as an app |
 | [Backup and updates](operations/maintenance.md) | Back up the board, update, roll back, remove, build the image yourself |
 | [Troubleshooting](operations/troubleshooting.md) | Typical problems with their log messages |
-| [Mumble tips](operations/mumble.md) | Mumble without Docker, welcome message with a link, order of floors and rooms, upgrading Mumble |
+| [Mumble tips](operations/mumble.md) | Mumble without Docker, welcome message with a link, order of floors and rooms, who is an admin in Ruumble (care and maintenance), upgrading Mumble |
 | [Configuration reference](operations/reference.md) | All settings of the container |

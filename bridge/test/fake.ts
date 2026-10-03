@@ -26,8 +26,10 @@ export class FakeSource implements MumbleSource {
     return Object.fromEntries(ids.filter((id) => this.denied[session]?.includes(id)).map((id) => [String(id), false]));
   }
   async certHash(session: number) { return this.hashes[session] ?? null; }
+  /** Write everywhere (admins) or only on these channels */
   admins = new Set<number>();
-  async canWrite(session: number) { return this.admins.has(session); }
+  writeOn: Record<number, number[]> = {};
+  async canWrite(session: number, channelId: number) { return this.admins.has(session) || !!this.writeOn[session]?.includes(channelId); }
   textures: Record<number, Uint8Array> = {};
   async texture(userId: number) { return this.textures[userId] ?? null; }
   async close() {}

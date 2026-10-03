@@ -334,8 +334,13 @@ export class RuumbleState {
   // ---------------------------------------------------------------- Care (ADR-0014)
 
   /** `from`: opened from an overview line, "back" returns there */
-  async openCare(target: CareTarget, from = false): Promise<void> {
-    this.careTrail = from && this.care ? [...this.careTrail, this.care] : [];
+  openCare(target: CareTarget, from = false): Promise<void> {
+    return this.showCare(target, from && this.care ? [...this.careTrail, this.care] : []);
+  }
+
+  /** the trail is set together with the level, so "back" stays while the level loads */
+  private async showCare(target: CareTarget, trail: CareTarget[]): Promise<void> {
+    this.careTrail = trail;
     this.care = target;
     this.careView = null;
     this.careMessage = null;
@@ -353,17 +358,14 @@ export class RuumbleState {
   async careJump(target: CareTarget): Promise<void> {
     const same = (a: CareTarget) => a.kind === target.kind && (a.kind === "building" || (target.kind !== "building" && a.channelId === target.channelId));
     const at = this.careTrail.findIndex(same);
-    const trail = at >= 0 ? this.careTrail.slice(0, at) : [];
-    await this.openCare(target);
-    this.careTrail = trail;
+    await this.showCare(target, at >= 0 ? this.careTrail.slice(0, at) : []);
   }
 
   async careBack(): Promise<void> {
     const trail = this.careTrail;
     const previous = trail.at(-1);
     if (!previous) return;
-    await this.openCare(previous);
-    this.careTrail = trail.slice(0, -1);
+    await this.showCare(previous, trail.slice(0, -1));
   }
 
   private async loadCare(): Promise<void> {
@@ -381,11 +383,13 @@ export class RuumbleState {
 
   /** run a care action, then show its result and what the service reports now */
   private async careAction<T>(run: () => Promise<BoardResult<T>>, message: (value: T) => string): Promise<boolean> {
+    const target = this.care;
     this.careBusy = true;
     this.careMessage = null;
     this.careError = null;
     const r = await run();
     this.careBusy = false;
+    if (this.care !== target) return r.ok; // closed or another level meanwhile: the result belongs to that one
     if (!r.ok) {
       this.careError = r.error;
       return false;
