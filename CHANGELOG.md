@@ -12,6 +12,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 - **Only Ruumble's own pages may use the login cookie.** Requests to the web UI's WebSocket and every changing request from another page are refused, and no web page can pose as the plugin.
 - `TRUST_PROXY` takes the proxy's address or network instead of `true`, so clients that reach the port directly cannot fake their address ([ADR-0017](docs/decisions/0017-threat-model-after-board-and-care.md)).
 
+### Changed
+- **Large boards export without strain.** The ZIP is streamed while it downloads instead of being built in memory, so the service stays responsive and within its memory limit; archives above 4 GB work too (ZIP64). An attachment missing on the server is named in `board.md` instead of failing the export.
+- **Uploads go straight to disk.** A file is written while it arrives and stops at the size limit, instead of being held in memory first.
+
 ### Upgrading
 - Behind a reverse proxy, set `TRUST_PROXY` to the proxy's address or Docker network (e.g. `"172.18.0.0/16"`); `"true"` still works but logs a warning. If the proxy does not pass the original `Host`, set `PUBLIC_URL`, otherwise the web UI cannot post or save.
 

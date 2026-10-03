@@ -5,8 +5,10 @@
  * found from their floor and removed by hand.
  */
 import { createHash, randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { once } from "node:events";
+import { copyFileSync, createWriteStream, existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { finished } from "node:stream/promises";
 import Database from "better-sqlite3";
 import { learnTicketLinks, type BuildingSettings, type Channel, type PostKind, type ReactionKind, type TicketLinks } from "@ruumble/protocol";
 
@@ -147,6 +149,19 @@ export const MIGRATIONS = [
   `CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);`,
 ];
 
+/** an upload in a temporary file, see `BoardStore.receive` */
+export interface ReceivedFile {
+  tmp: string;
+  /** SHA-256, the attachment ID */
+  id: string;
+  size: number;
+  head: Buffer;
+}
+
+/** first bytes of an upload kept in memory: type and image size are read from them */
+const HEAD_BYTES = 1024 * 1024;
+const TOO_LARGE = Symbol("too-large");
+
 export class BoardStore {
   private readonly db: Database.Database;
   private readonly dir: string;
@@ -162,6 +177,7 @@ export class BoardStore {
     this.opts = { retentionDays: 365, quotaBytes: 2048 * MB, maxFileMB: 10, graceDays: 7, notifyNewPosts: true, orphanMinutes: 60, now: Date.now, ...opts };
     this.dir = join(dir, "board");
     mkdirSync(this.dir, { recursive: true });
+    rmSync(this.tmpDir, { recursive: true, force: true }); // uploads cut off by a restart
     this.db = new Database(join(dir, "board.sqlite"));
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("foreign_keys = ON");
@@ -492,9 +508,68 @@ export class BoardStore {
     return this.attachment(id)!;
   }
 
+  /**
+   * Stream an upload into a temporary file next to the attachments, hashing it on the way, so it is never held in
+   * memory. More than `maxBytes` stops reading and keeps nothing. `head`: the first bytes, for detecting the type.
+   * The caller then keeps it with `adopt` or drops it with `discard`.
+   */
+  async receive(input: AsyncIterable<Uint8Array>, maxBytes: number): Promise<ReceivedFile | "too-large"> {
+    const tmp = join(this.tmpDir, `${randomUUID()}.part`);
+    mkdirSync(this.tmpDir, { recursive: true });
+    const out = createWriteStream(tmp, { mode: 0o600 });
+    const hash = createHash("sha256");
+    const head: Buffer[] = [];
+    let headBytes = 0;
+    let size = 0;
+    try {
+      for await (const chunk of input) {
+        size += chunk.length;
+        if (size > maxBytes) throw TOO_LARGE;
+        hash.update(chunk);
+        if (headBytes < HEAD_BYTES) {
+          head.push(Buffer.from(chunk));
+          headBytes += chunk.length;
+        }
+        if (!out.write(chunk)) await once(out, "drain");
+      }
+      out.end();
+      await finished(out);
+    } catch (e) {
+      // the stream opens its file asynchronously: remove it only once it is closed, or it may appear afterwards
+      if (!out.closed) await new Promise((done) => out.destroy().once("close", done));
+      rmSync(tmp, { force: true });
+      if (e === TOO_LARGE) return "too-large";
+      throw e;
+    }
+    return { tmp, id: hash.digest("hex"), size, head: Buffer.concat(head) };
+  }
+
+  /** keep a received file as an attachment (content-addressed: the same file is stored once) */
+  adopt(file: ReceivedFile, mime: string, dims?: { width: number; height: number }): StoredAttachment {
+    const path = this.filePath(file.id);
+    if (existsSync(path)) rmSync(file.tmp, { force: true });
+    else {
+      mkdirSync(dirname(path), { recursive: true });
+      renameSync(file.tmp, path);
+    }
+    this.db
+      .prepare("INSERT INTO attachments (id, mime, size, width, height, created_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING")
+      .run(file.id, mime, file.size, dims?.width ?? null, dims?.height ?? null, this.opts.now());
+    return this.attachment(file.id)!;
+  }
+
+  discard(file: ReceivedFile): void {
+    rmSync(file.tmp, { force: true });
+  }
+
   attachment(id: string): StoredAttachment | null {
     const a = this.db.prepare("SELECT * FROM attachments WHERE id = ?").get(id) as { id: string; mime: string; size: number; width: number | null; height: number | null } | undefined;
     return a ? { id: a.id, mime: a.mime, size: a.size, ...(a.width ? { width: a.width, height: a.height! } : {}) } : null;
+  }
+
+  /** uploads in progress; "tmp" never collides with the two-character directories of the attachments */
+  private get tmpDir(): string {
+    return join(this.dir, "tmp");
   }
 
   filePath(id: string): string {

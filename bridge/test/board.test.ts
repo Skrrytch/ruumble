@@ -1,4 +1,4 @@
-import { mkdtempSync, existsSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -9,9 +9,9 @@ import { imageSize, safeFileName } from "../src/board/media.ts";
 import { careRoutes, orphanedFloors } from "../src/board/care.ts";
 import { boardMarkdown, uniqueName } from "../src/board/export.ts";
 import { careText, notifyCare, notifyRoom, notifyText } from "../src/board/notify.ts";
-import { zip } from "../src/board/zip.ts";
+import { zipStream } from "../src/board/zip.ts";
 import { maintenanceRoutes } from "../src/maintenance.ts";
-import { inflateRawSync } from "node:zlib";
+import { crc32, inflateRawSync } from "node:zlib";
 import { boardRoutes } from "../src/board/routes.ts";
 import { BoardStore, MIGRATIONS } from "../src/board/store.ts";
 import { Hub } from "../src/hub.ts";
@@ -21,6 +21,47 @@ import { FakeSource, recorder } from "./fake.ts";
 
 const DAY = 24 * 60 * 60 * 1000;
 const PNG = Buffer.from("89504e470d0a1a0a0000000d4948445200000040000000200806000000", "hex"); // 64×32
+/** read a ZIP through its central directory, as unzip tools do (ZIP64 too), checking every CRC: name → content */
+function unzip(buf: Buffer): Map<string, Buffer> {
+  let end = buf.length - 22;
+  expect(buf.readUInt32LE(end)).toBe(0x06054b50);
+  let count = buf.readUInt16LE(end + 10);
+  let dirOffset = buf.readUInt32LE(end + 16);
+  if (count === 0xffff || dirOffset === 0xffffffff) {
+    expect(buf.readUInt32LE(end - 20)).toBe(0x07064b50); // ZIP64 locator
+    const record = Number(buf.readBigUInt64LE(end - 20 + 8));
+    expect(buf.readUInt32LE(record)).toBe(0x06064b50);
+    count = Number(buf.readBigUInt64LE(record + 32));
+    dirOffset = Number(buf.readBigUInt64LE(record + 48));
+    end = record;
+  }
+  const files = new Map<string, Buffer>();
+  let at = dirOffset;
+  for (let i = 0; i < count; i++) {
+    expect(buf.readUInt32LE(at)).toBe(0x02014b50);
+    const method = buf.readUInt16LE(at + 10), crc = buf.readUInt32LE(at + 16), size = buf.readUInt32LE(at + 20);
+    const nameLen = buf.readUInt16LE(at + 28), extraLen = buf.readUInt16LE(at + 30), commentLen = buf.readUInt16LE(at + 32);
+    let local = buf.readUInt32LE(at + 42);
+    const name = buf.subarray(at + 46, at + 46 + nameLen).toString("utf8");
+    if (local === 0xffffffff) local = Number(buf.readBigUInt64LE(at + 46 + nameLen + 4)); // ZIP64 extra: the offset
+    expect(buf.readUInt32LE(local)).toBe(0x04034b50);
+    const start = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
+    const body = buf.subarray(start, start + size);
+    const data = method === 8 ? inflateRawSync(body) : Buffer.from(body);
+    expect(crc32(data)).toBe(crc);
+    expect(buf.readUInt32LE(start + size)).toBe(0x08074b50); // data descriptor
+    files.set(name, data);
+    at += 46 + nameLen + extraLen + commentLen;
+  }
+  return files;
+}
+
+const collect = async (chunks: AsyncIterable<Buffer>) => {
+  const parts: Buffer[] = [];
+  for await (const c of chunks) parts.push(c);
+  return Buffer.concat(parts);
+};
+
 const A = "a".repeat(40), B = "b".repeat(40);
 
 /** channels for syncChannels: root, floors and rooms (`[id, parent, name]`) */
@@ -536,6 +577,33 @@ describe("REST /api/board", () => {
     expect((await app.inject({ url: "/api/board", headers: as("anna") })).statusCode).toBe(404);
   });
 
+  it("upload: streamed to disk, the same file stored once, a JPEG's size found past large metadata", async () => {
+    const { app, store, as } = await setup();
+    const post = (payload: Buffer) => app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream" }, payload });
+    const first = (await post(PNG)).json();
+    expect((await post(PNG)).json().id).toBe(first.id);
+    expect(existsSync(store.filePath(first.id))).toBe(true);
+    // 17 metadata segments of 64 KB before the frame header: beyond the first megabyte
+    const app1 = Buffer.concat([Buffer.from([0xff, 0xe1, 0xff, 0xff]), Buffer.alloc(0xfffd)]);
+    const sof = Buffer.from([0xff, 0xc0, 0x00, 0x11, 0x08, 0x01, 0x40, 0x02, 0x80, 0x03, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8]), ...Array.from({ length: 17 }, () => app1), sof, Buffer.from([0xff, 0xd9])]);
+    expect(jpeg.length).toBeGreaterThan(1024 * 1024);
+    expect((await post(jpeg)).json()).toMatchObject({ mime: "image/jpeg", width: 640, height: 320, image: true });
+  });
+
+  it("receive: more than the limit keeps nothing, also without a declared length", async () => {
+    const { store, dir } = tempStore();
+    async function* chunks(n: number) {
+      for (let i = 0; i < n; i++) yield Buffer.alloc(1000, i);
+    }
+    expect(await store.receive(chunks(11), 10_000)).toBe("too-large");
+    const ok = await store.receive(chunks(10), 10_000);
+    if (ok === "too-large") throw new Error("unexpected");
+    expect(ok.size).toBe(10_000);
+    store.discard(ok);
+    expect(readdirSync(join(dir, "board", "tmp"))).toEqual([]);
+  });
+
   it("upload: image type from the bytes, SVG never as image, size limit, file as download", async () => {
     const { app, as } = await setup();
     const img = await app.inject({ method: "POST", url: "/api/board/uploads", headers: { ...as("anna"), "content-type": "application/octet-stream" }, payload: PNG });
@@ -738,9 +806,15 @@ describe("REST /api/care (ADR-0014)", () => {
     expect(res.headers["content-type"]).toBe("application/zip");
     expect(res.headers["content-disposition"]).toMatch(/^attachment; filename\*=UTF-8''board-Office-\d{4}-\d\d-\d\d\.zip$/);
     const body = res.rawPayload;
-    expect(body.readUInt32LE(0)).toBe(0x04034b50);
-    expect(body.includes(Buffer.from("files/sketch.png"))).toBe(true);
     expect(body.includes(PNG)).toBe(true); // images are stored, not deflated
+    const files = unzip(body);
+    expect(files.get("files/sketch.png")).toEqual(PNG);
+    expect(files.get("board.md")!.toString()).toContain("![sketch.png](files/sketch.png)");
+    // a file missing on disk (e.g. after a partial restore) does not break the export
+    rmSync(store.filePath(att.id));
+    const again = unzip((await app.inject({ url: "/api/care/rooms/2/export", headers: as("ben") })).rawPayload);
+    expect([...again.keys()]).toEqual(["board.md"]);
+    expect(again.get("board.md")!.toString()).toContain('*Attachment "sketch.png" is missing on the server.*');
   });
 
   it("floor: all rooms with their numbers, boards from anywhere can be moved here", async () => {
@@ -807,26 +881,31 @@ describe("REST /api/care (ADR-0014)", () => {
 });
 
 describe("board export (ADR-0014)", () => {
-  /** read a ZIP written by zip(): name → content */
-  function unzip(buf: Buffer): Map<string, Buffer> {
-    const files = new Map<string, Buffer>();
-    let at = 0;
-    while (buf.readUInt32LE(at) === 0x04034b50) {
-      const method = buf.readUInt16LE(at + 8), size = buf.readUInt32LE(at + 18), nameLen = buf.readUInt16LE(at + 26);
-      const name = buf.subarray(at + 30, at + 30 + nameLen).toString("utf8");
-      const body = buf.subarray(at + 30 + nameLen, at + 30 + nameLen + size);
-      files.set(name, method === 8 ? inflateRawSync(body) : Buffer.from(body));
-      at += 30 + nameLen + size;
+  it("zip: stored and deflated entries, UTF-8 names, streamed sources, ZIP64 when asked", async () => {
+    async function* streamed() {
+      yield Buffer.from("chunk 1, ");
+      yield Buffer.from("chunk 2");
     }
-    expect(buf.readUInt32LE(buf.length - 22)).toBe(0x06054b50);
-    expect(buf.readUInt16LE(buf.length - 12)).toBe(files.size);
-    return files;
-  }
+    const entries = [
+      { name: "board.md", data: Buffer.from("# Größe"), compress: true },
+      { name: "files/ä.png", data: PNG },
+      { name: "files/log.txt", data: () => streamed(), compress: true },
+    ];
+    for (const forceZip64 of [false, true]) {
+      const files = unzip(await collect(zipStream(entries, { forceZip64 })));
+      expect(files.get("board.md")!.toString()).toBe("# Größe");
+      expect(files.get("files/ä.png")).toEqual(PNG);
+      expect(files.get("files/log.txt")!.toString()).toBe("chunk 1, chunk 2");
+    }
+  });
 
-  it("zip: stored and deflated entries, UTF-8 names", () => {
-    const files = unzip(zip([{ name: "board.md", data: Buffer.from("# Größe"), compress: true }, { name: "files/ä.png", data: PNG }]));
-    expect(files.get("board.md")!.toString()).toBe("# Größe");
-    expect(files.get("files/ä.png")).toEqual(PNG);
+  it("zip: an error while reading a file ends the stream with that error", async () => {
+    async function* broken(): AsyncGenerator<Buffer> {
+      yield Buffer.from("start");
+      throw new Error("disk gone");
+    }
+    await expect(collect(zipStream([{ name: "a.txt", data: () => broken(), compress: true }]))).rejects.toThrow("disk gone");
+    await expect(collect(zipStream([{ name: "a.bin", data: () => broken() }]))).rejects.toThrow("disk gone");
   });
 
   it("markdown: oldest first, code fenced, attachments linked, reactions, pin and origin", () => {

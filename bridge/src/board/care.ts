@@ -135,13 +135,14 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     const name = o.hub.channelName(id);
     const archive = exportBoard(o.store, id, name, now());
-    o.log?.("Board exported", { channel: id, bytes: archive.length, by: r.viewer.name });
+    o.log?.("Board exported", { channel: id, posts: archive.posts, files: archive.files, missing: archive.missing, by: r.viewer.name });
+    archive.stream.on("error", (e) => o.log?.("Board export aborted", { channel: id, error: String(e) }));
     const file = `board-${name.replace(/[^\p{L}\p{N}._-]+/gu, "-").replace(/^-+|-+$/g, "") || id}-${new Date(now()).toISOString().slice(0, 10)}.zip`;
     return reply
       .header("Content-Type", "application/zip")
       .header("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(file)}`)
       .header("Cache-Control", "no-store")
-      .send(archive);
+      .send(archive.stream);
   });
 
   app.delete<{ Params: { id: string } }>("/api/care/rooms/:id/posts", async (req, reply) => {

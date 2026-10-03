@@ -15,8 +15,9 @@
  *   GET    /api/board/files/:id       attachment (images inline, everything else as download)
  */
 import { createReadStream } from "node:fs";
+import { readFile } from "node:fs/promises";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { CopyRequest, MAX_FILE_MB, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, ticketProjects, type BoardView, type Post, type Reaction, type TicketLinks } from "@ruumble/protocol";
+import { CopyRequest, NewPost, PinRequest, PostUpdate, REACTION_KINDS, ReactionKind, TaskToggle, setTask, ticketProjects, type BoardView, type Post, type Reaction, type TicketLinks } from "@ruumble/protocol";
 import type { Hub, Viewer } from "../hub.ts";
 import type { MumbleSource } from "../mumble.ts";
 import { detectImage, imageSize, safeFileName } from "./media.ts";
@@ -130,31 +131,34 @@ export async function boardRoutes(app: FastifyInstance, o: BoardRouteOptions): P
     return reply.code(201).send(toView(post, viewer, await o.source.canWrite(viewer.session, viewer.channelId)));
   });
 
-  // raw data upload (images and files), own limit instead of the global 1 MB: the route takes up to the largest
-  // size maintenance may set, the handler checks the size set now (ADR-0016). Before the body is read, a request
-  // without a board or with a declared size above the current limit is turned away, so nobody buffers 100 MB for nothing.
-  const uploadLimit = MAX_FILE_MB * 1024 * 1024;
-  app.addContentTypeParser("*", { parseAs: "buffer", bodyLimit: uploadLimit }, (_req, body, done) => done(null, body));
+  // raw data upload (images and files): streamed into a temporary file while it is hashed, never held in memory.
+  // The limit is the one set now (ADR-0016); a request without a board or with a declared size above it is turned
+  // away before anything is read, a body that turns out larger stops being read at the limit.
+  app.addContentTypeParser("*", (_req, payload, done) => done(null, payload));
   const uploadGate = async (req: FastifyRequest, reply: FastifyReply) => {
     const r = room(req.headers.cookie);
     if ("error" in r) return fail(reply, r.error);
     if (Number(req.headers["content-length"]) > o.store.maxFileBytes) return fail(reply, "too-large");
-  };
-  app.post("/api/board/uploads", { bodyLimit: uploadLimit, onRequest: uploadGate }, async (req, reply) => {
-    const r = room(req.headers.cookie);
-    if ("error" in r) return fail(reply, r.error);
-    const bytes = req.body;
-    if (!(bytes instanceof Buffer) || bytes.length === 0) return fail(reply, "invalid");
-    if (bytes.length > o.store.maxFileBytes) return fail(reply, "too-large");
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
+  };
+  app.post("/api/board/uploads", { onRequest: uploadGate }, async (req, reply) => {
+    const body = req.body as AsyncIterable<Uint8Array> | undefined;
+    if (!body || typeof body[Symbol.asyncIterator] !== "function") return fail(reply, "invalid");
+    const file = await o.store.receive(body, o.store.maxFileBytes);
+    if (file === "too-large") return fail(reply, "too-large");
+    if (file.size === 0) {
+      o.store.discard(file);
+      return fail(reply, "invalid");
+    }
     // always check the image type from the bytes; SVG and everything else counts as a file (never inline, ADR-0011)
-    const imageMime = detectImage(bytes);
+    const imageMime = detectImage(file.head);
     // The web UI always sends application/octet-stream (otherwise Fastify's JSON and text parsers kick in)
     // and the actual type in X-File-Type
     const declared = String(req.headers["x-file-type"] || req.headers["content-type"] || "application/octet-stream").split(";")[0]!.trim().toLowerCase();
     const mime = imageMime ?? (/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/.test(declared) && !declared.startsWith("image/") ? declared : "application/octet-stream");
-    const dims = imageMime ? imageSize(bytes, imageMime) : null;
-    const att = o.store.putFile(bytes, mime, dims ?? undefined);
+    // the size is in the first bytes, except for a JPEG with very large metadata: then from the whole (image) file
+    const dims = imageMime ? (imageSize(file.head, imageMime) ?? (file.size > file.head.length ? imageSize(await readFile(file.tmp), imageMime) : null)) : null;
+    const att = o.store.adopt(file, mime, dims ?? undefined);
     return reply.code(201).send({ ...att, name: safeFileName(req.headers["x-file-name"] as string | undefined), image: !!imageMime });
   });
 

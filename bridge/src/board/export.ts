@@ -1,11 +1,12 @@
 /**
  * Board export (room care, ADR-0014): a ZIP with `board.md` (all posts, oldest first) and the attachments under
  * `files/`. Markdown stays as written, code goes into a fenced block; the export is for admins, so it is in English
- * only and needs no localisation.
+ * only and needs no localisation. The archive is streamed: files are read while it is sent.
  */
-import { readFileSync } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
+import { Readable } from "node:stream";
 import type { BoardStore, StoredPost } from "./store.ts";
-import { zip, type ZipEntry } from "./zip.ts";
+import { zipStream, type ZipEntry } from "./zip.ts";
 
 /** "2026-10-03 14:05" in UTC, so the export reads the same everywhere */
 const stamp = (t: number) => new Date(t).toISOString().slice(0, 16).replace("T", " ") + " UTC";
@@ -27,6 +28,7 @@ function fence(text: string): string {
   return "`".repeat(longest + 1);
 }
 
+/** `files`: attachment ID → name in the archive; an ID without a name is missing on the server */
 export function boardMarkdown(roomName: string, posts: StoredPost[], files: Map<string, string>, pinnedId: string | null, now: number): string {
   const lines = [`# Board of "${roomName}"`, "", `Exported ${stamp(now)} · ${posts.length} ${posts.length === 1 ? "post" : "posts"}`, ""];
   for (const p of [...posts].sort((a, b) => a.createdAt - b.createdAt)) {
@@ -35,7 +37,9 @@ export function boardMarkdown(roomName: string, posts: StoredPost[], files: Map<
     if (p.copiedFrom) meta.push(`from "${p.copiedFrom.roomName}" by ${p.copiedFrom.authorName}`);
     if (p.updatedByName) meta.push(`last edited by ${p.updatedByName} ${stamp(p.updatedAt)}`);
     lines.push("---", "", `## ${meta.join(" · ")}`, "");
-    if (p.attachment) {
+    if (p.attachment && !files.has(p.attachment.id)) {
+      lines.push(`*Attachment "${p.attachment.name || "file"}" is missing on the server.*`, "");
+    } else if (p.attachment) {
       const file = files.get(p.attachment.id)!;
       // every character that ends a link or its text is escaped (`#`, `?`, brackets in names)
       const link = `files/${encodeURIComponent(file)}`;
@@ -57,18 +61,25 @@ export function boardMarkdown(roomName: string, posts: StoredPost[], files: Map<
   return lines.join("\n");
 }
 
-/** the whole board of a room as a ZIP */
-export function exportBoard(store: BoardStore, channelId: number, roomName: string, now = Date.now()): Buffer {
+/** the whole board of a room as a ZIP stream; attachments missing on disk are named in `board.md` instead */
+export function exportBoard(store: BoardStore, channelId: number, roomName: string, now = Date.now()): { stream: Readable; posts: number; files: number; missing: number } {
   const posts = store.list(channelId);
   const taken = new Set<string>(["board.md"]);
   const files = new Map<string, string>();
   const entries: ZipEntry[] = [];
+  let missing = 0;
   for (const p of posts) {
     if (!p.attachment || files.has(p.attachment.id)) continue;
+    const path = store.filePath(p.attachment.id);
+    if (!existsSync(path)) {
+      missing++;
+      continue;
+    }
     const name = uniqueName(p.attachment.name || "file", taken);
     files.set(p.attachment.id, name);
-    entries.push({ name: `files/${name}`, data: readFileSync(store.filePath(p.attachment.id)), compress: !p.attachment.mime.startsWith("image/"), date: new Date(p.createdAt) });
+    entries.push({ name: `files/${name}`, data: () => createReadStream(path), compress: !p.attachment.mime.startsWith("image/"), date: new Date(p.createdAt) });
   }
   const md = boardMarkdown(roomName, posts, files, store.pinned(channelId)?.postId ?? null, now);
-  return zip([{ name: "board.md", data: Buffer.from(md, "utf8"), compress: true, date: new Date(now) }, ...entries]);
+  const stream = Readable.from(zipStream([{ name: "board.md", data: Buffer.from(md, "utf8"), compress: true, date: new Date(now) }, ...entries]));
+  return { stream, posts: posts.length, files: entries.length, missing };
 }
