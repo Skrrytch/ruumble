@@ -10,7 +10,9 @@
  *   DATA_DIR (./data)                            device tokens and board (board.sqlite, board/)
  *   PLUGIN_BUNDLE, PLUGIN_BUNDLE_DIR             optional: .mumble_plugin for /download (file or directory)
  *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004; behind hairpin NAT only warn works, P7)
- *   TRUST_PROXY (false)                          true behind a reverse proxy (X-Forwarded-For)
+ *   TRUST_PROXY (false)                          behind a reverse proxy: its address(es) or CIDR, comma-separated (then
+ *                                                X-Forwarded-For/-Proto/-Host count only from there, ADR-0017); true trusts
+ *                                                every sender and is only right if nothing else reaches the port
  *   PREVIEW (false)                              true: building visible read-only without pairing
  *   RETENTION_DAYS (365), BOARD_QUOTA_MB (2048)   board: retention and quota (ADR-0011); defaults, admins may change
  *                                                them in the building maintenance (ADR-0016), like the largest
@@ -38,6 +40,7 @@ import { keepAlive } from "./keepalive.ts";
 import { keyRoutes } from "./keys.ts";
 import { maintenanceRoutes } from "./maintenance.ts";
 import { IceMumbleSource } from "./mumble.ts";
+import { originGuard } from "./origin.ts";
 import { Pairing } from "./pairing.ts";
 import { Poller } from "./poller.ts";
 
@@ -48,6 +51,13 @@ const required = (key: string) => {
   return value;
 };
 const bool = (key: string) => env[key] === "true" || env[key] === "1";
+/** TRUST_PROXY: false, true, or the proxy's addresses / CIDR ranges (ADR-0017) */
+function trustProxyOf(value: string | undefined): boolean | string[] {
+  const v = value?.trim() ?? "";
+  if (v === "" || v === "false" || v === "0") return false;
+  if (v === "true" || v === "1") return true;
+  return v.split(",").map((a) => a.trim()).filter(Boolean);
+}
 const readSecret = (file: string) => {
   try {
     return readFileSync(file, "utf8").trim();
@@ -90,12 +100,15 @@ const config = {
       ? (readdirSync(env.PLUGIN_BUNDLE_DIR).filter((f) => f.endsWith(".mumble_plugin")).sort().map((f) => resolve(env.PLUGIN_BUNDLE_DIR!, f)).pop() ?? null)
       : null,
   addressCheck: (env.ADDRESS_CHECK ?? "warn") as AddressCheck,
-  trustProxy: bool("TRUST_PROXY"),
+  trustProxy: trustProxyOf(env.TRUST_PROXY),
   preview: bool("PREVIEW"),
 };
 
 const app = Fastify({ logger: { level: env.LOG_LEVEL ?? "info" }, trustProxy: config.trustProxy });
 const log = (msg: string, extra?: Record<string, unknown>) => app.log.info(extra ?? {}, msg);
+if (config.trustProxy === true) {
+  app.log.warn("TRUST_PROXY=true trusts X-Forwarded-For from every sender; set the proxy's address instead (ADR-0017)");
+}
 
 const pairing = new Pairing(resolve(dataDir, "tokens.json"));
 let lastPoll = 0;
@@ -154,6 +167,9 @@ poller.start();
 
 await app.register(fastifyWebsocket, { options: { maxPayload: 64 * 1024 } });
 
+// only the service's own pages may use the cookie, and no web page may pose as a plugin (ADR-0017)
+app.addHook("onRequest", originGuard(config.publicUrl, (msg, extra) => app.log.warn(extra, msg)));
+
 // Content-Security-Policy for the web UI (ADR-0011): no foreign sources, no inline scripts
 app.addHook("onSend", async (_req, reply, payload) => {
   const type = String(reply.getHeader("content-type") ?? "");
@@ -210,6 +226,7 @@ app.get<{ Querystring: { code?: string } }>("/pair", async (req, reply) => {
       .send(`<!doctype html><html lang="${de ? "de" : "en"}"><meta charset="utf-8"><p>${text}</p><p><a href="/">Ruumble</a></p></html>`);
   }
   setTokenCookie(req, reply, token);
+  hub.keyIssued(pairing.certHashOf(token)!); // the owner learns about it in the Mumble log (ADR-0017)
   return reply.redirect("/");
 });
 
@@ -230,6 +247,7 @@ app.post("/api/pair/confirm", async (req, reply) => {
   const result = pairing.confirmCode(body.data.request, body.data.code, Date.now(), req.headers["user-agent"]);
   if (result === "wrong-code" || result === "expired") return reply.code(PAIR_STATUS[result]).send({ error: result });
   setTokenCookie(req, reply, result);
+  hub.keyIssued(pairing.certHashOf(result)!);
   return { ok: true };
 });
 

@@ -13,6 +13,8 @@ First look: `curl http://<address>:64080/healthz` should show `"ice":"ok"`, and 
 | Users see "not paired", no pairing link opens | Is the plugin installed **and enabled** in Mumble (Settings → Plugins)? Is the `ruumble:` line in the root channel description right, and can the user's computer reach that address? The Mumble log shows what the plugin is doing. |
 | The plugin says "Hover once over the top channel …" | The root channel description is too long, see below. |
 | Log: `Plugin address does not match Mumble's` | The plugin and Mumble see different network addresses for the user, typically behind a reverse proxy or NAT. Set `ADDRESS_CHECK: warn` ([HTTPS](https.md)). |
+| Mumble log: `rejected by the service (already-connected)` | Another plugin connection of the same user is still open from a different address, e.g. after switching from Wi-Fi to VPN. It goes away by itself within about a minute. If it stays, someone else may be posing as this user: check "My keys" ([ADR-0017](../decisions/0017-threat-model-after-board-and-care.md)). |
+| Log: `Request from a foreign origin turned away`; the web UI cannot post or save (403) | The page's address does not match the host the service sees. Behind a proxy that does not pass the original `Host`, set `PUBLIC_URL` to the address users open ([HTTPS](https.md)). |
 | Board uploads fail with `413` | The reverse proxy limits the request size, see [HTTPS](https.md#steps), step 2. |
 | Avatars of registered users show initials | A bug in Mumble server 1.6: Ice does not deliver their images. Nothing to fix on Ruumble's side. |
 

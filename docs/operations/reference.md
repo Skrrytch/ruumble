@@ -18,7 +18,7 @@ The templates already set these.
 | Variable | Default | Meaning |
 |---|---|---|
 | `ADDRESS_CHECK` | `warn` | `off` / `warn` / `enforce`: compare the network address of the plugin with the one Mumble sees for that user. The templates set `enforce`; behind a reverse proxy use `warn` ([HTTPS](https.md)). |
-| `TRUST_PROXY` | `false` | `true` behind a reverse proxy: client address and protocol come from `X-Forwarded-For` and `X-Forwarded-Proto` |
+| `TRUST_PROXY` | `false` | Behind a reverse proxy: the proxy's address or CIDR range, comma-separated for several (e.g. `172.18.0.0/16`, the proxy's Docker network). Client address, protocol and host then come from `X-Forwarded-For`, `-Proto` and `-Host`, but only from there. `true` trusts every sender and logs a warning; it is only safe if nothing but the proxy reaches the port ([ADR-0017](../decisions/0017-threat-model-after-board-and-care.md)) |
 | `PUBLIC_URL` | the address the plugin connected to | Base address for the pairing links the plugin opens. Only needed if the plugins reach Ruumble at a different address than the browsers should use, or behind a proxy that sends no `X-Forwarded-Proto`. |
 | `ICE_PORT` | `6502` | Ice port |
 | `SERVER_ID` | first running | Which virtual server, if the Mumble process runs several |

@@ -20,5 +20,6 @@ Format: short MADR. Status: **accepted** = decided by the project owner. **propo
 | [0014](0014-care-of-the-stored-data.md) | Care of the stored data (the plants) | proposed |
 | [0015](0015-key-cabinet.md) | Key cabinet: managing paired browsers | proposed |
 | [0016](0016-building-maintenance.md) | Building maintenance: settings in the web UI | proposed |
+| [0017](0017-threat-model-after-board-and-care.md) | Threat model after the board, care and keys: no takeover, new keys announced, Origin, trusted proxy | proposed |
 
 ADRs record a decision as it was made. Where the code has moved on since, the ADR has a short "Current state" note instead of a silent rewrite.

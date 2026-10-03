@@ -1,5 +1,5 @@
 /**
- * Mediation between plugins and web UIs (ADR-0001, -0003, -0004, -0005, -0007).
+ * Mediation between plugins and web UIs (ADR-0001, -0003, -0004, -0005, -0007, -0017).
  * Transport-independent: connections are just objects with `send` and `close`.
  */
 import { randomUUID } from "node:crypto";
@@ -16,7 +16,7 @@ import {
   type Snapshot,
 } from "@ruumble/protocol";
 import type { MumbleSource } from "./mumble.ts";
-import { pairingCodeText, type Pairing } from "./pairing.ts";
+import { newKeyText, pairingCodeText, type Pairing } from "./pairing.ts";
 import type { ServerState } from "./poller.ts";
 
 export interface Conn<T> {
@@ -188,6 +188,19 @@ export class Hub {
     for (const ui of [...this.uis]) if (ui.keyId === keyId) ui.conn.close(4401, "not-paired");
   }
 
+  /** a browser was paired for `certHash`: tell its owner in the Mumble log, if their plugin is connected (ADR-0017) */
+  keyIssued(certHash: string): void {
+    const p = this.plugins.get(certHash);
+    if (p) this.announceKeys(p);
+  }
+
+  /** keys this plugin's address has not been told about yet (new ones, or ones told only to another address) */
+  private announceKeys(p: PluginEntry, now = Date.now()): void {
+    for (const k of this.opts.pairing.takeUnnoticedKeys(p.certHash, normalize(p.remoteAddress), now)) {
+      p.conn.send({ v, type: "notify", text: newKeyText(k.device, k.created, now, p.locale) });
+    }
+  }
+
   /** Virtual server restarted: sessions are reassigned, plugins register again (S2). */
   serverRestarted(): void {
     for (const p of [...this.plugins.values()]) p.conn.close(4000, "server-restart");
@@ -210,8 +223,19 @@ export class Hub {
             conn.close(4403, verdict);
             return;
           }
-          const name = this.state?.users.find((u) => u.session === msg.session)?.name ?? "";
+          const user = this.state?.users.find((u) => u.session === msg.session);
+          const name = user?.name ?? "";
           const previous = this.plugins.get(msg.certHash);
+          // a connected plugin is replaced only from its own address (e.g. Mumble restarted) or from the address Mumble
+          // sees for the user; a second one from elsewhere waits until the first is gone, so a forger can neither
+          // take over the identity nor lock out the real plugin (ADR-0017)
+          const from = normalize(remoteAddress);
+          if (previous && previous.conn !== conn && normalize(previous.remoteAddress) !== from && (!user || normalize(user.address) !== from)) {
+            this.log("Plugin rejected", { reason: "already-connected", session: msg.session, connected: previous.remoteAddress, new: remoteAddress });
+            conn.send({ v, type: "reject", reason: "already-connected" });
+            conn.close(4409, "already-connected");
+            return;
+          }
           if (previous && previous.conn !== conn) previous.conn.close(4001, "replaced");
           if (entry && entry.certHash !== msg.certHash) this.removePlugin(entry);
           entry = { conn, certHash: msg.certHash, session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unknown", pluginVersion: msg.pluginVersion, locale: msg.locale ?? "de", remoteAddress };
@@ -219,6 +243,7 @@ export class Hub {
           const pairUrl = msg.paired ? undefined : `${this.opts.publicUrl ?? baseUrl}/pair?code=${this.opts.pairing.createCode(msg.certHash, name)}`;
           conn.send(pairUrl ? { v, type: "welcome", pairUrl } : { v, type: "welcome" });
           this.log("Plugin connected", { session: msg.session, name, plugin: msg.pluginVersion, mumble: entry.mumbleVersion });
+          this.announceKeys(entry);
           this.sessionsChanged();
           this.forUis(msg.certHash, (ui) => {
             ui.conn.send({ v, type: "status", plugin: "connected" });

@@ -212,7 +212,8 @@
                 "unknown-session",
                 "hash-mismatch",
                 "address-mismatch",
-                "no-certificate"
+                "no-certificate",
+                "already-connected"
               ]
             }
           },

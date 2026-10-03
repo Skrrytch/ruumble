@@ -15,7 +15,7 @@ services:
             ADDRESS_CHECK: enforce
             # HTTPS behind a reverse proxy (docs/operations/https.md): instead of the line above
             # ADDRESS_CHECK: warn
-            # TRUST_PROXY: "true"
+            # TRUST_PROXY: "172.18.0.0/16"   # address or network of the proxy (docker network inspect)
         secrets:
             - ice_read
         volumes:

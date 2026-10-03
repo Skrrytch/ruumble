@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { BridgeToPlugin, BridgeToUi } from "@ruumble/protocol";
 import { Hub } from "../src/hub.ts";
 import { formatAddress } from "../src/mumble.ts";
-import { CODE_REQUEST_INTERVAL_MS, CODE_REQUEST_TTL_MS, Pairing, pairingCodeText } from "../src/pairing.ts";
+import { CODE_REQUEST_INTERVAL_MS, CODE_REQUEST_TTL_MS, Pairing, newKeyText, pairingCodeText } from "../src/pairing.ts";
 import { Poller } from "../src/poller.ts";
 import { FakeSource, recorder } from "./fake.ts";
 
@@ -92,6 +92,19 @@ describe("Pairing with a code (ADR-0012)", () => {
     if (typeof late === "string") throw new Error(late);
     expect(p.confirmCode(late.request, late.codes[0]!.code, CODE_REQUEST_TTL_MS + 1)).toBe("expired");
     expect(p.confirmCode("unknown", "123456", 0)).toBe("expired");
+  });
+
+  it("new key notice: just now or with the date, keys older than 30 days are not told any more", () => {
+    const day = 86_400_000;
+    const now = Date.UTC(2026, 9, 3, 12);
+    expect(newKeyText("Safari on iOS", now - 2 * day, now, "en")).toBe('On 1 October 2026, a browser was paired with your Mumble certificate (Safari on iOS). If that was not you, revoke the key in Ruumble under "My keys".');
+    expect(newKeyText("", now - 2 * day, now, "de")).toMatch(/^Am 1\. Oktober 2026 wurde ein Browser .* \(unbekannter Browser\)/);
+    const pairing = new Pairing(null);
+    pairing.redeem(pairing.createCode(A, "Anna", now - 40 * day), now - 40 * day);
+    pairing.redeem(pairing.createCode(A, "Anna", now - day), now - day);
+    expect(pairing.takeUnnoticedKeys(A, "10.0.0.7", now)).toHaveLength(1);
+    expect(pairing.takeUnnoticedKeys(A, "10.0.0.7", now)).toEqual([]);
+    expect(pairing.takeUnnoticedKeys("b".repeat(40), "10.0.0.8", now)).toEqual([]);
   });
 
   it("notice text in the plugin's language, code in two groups", () => {
@@ -226,6 +239,39 @@ describe("Hub: Plugin", () => {
     await hub.pluginConnected(second.conn, "10.0.0.7").onMessage(hello());
     expect(first.closed?.code).toBe(4001);
     expect(hub.pluginCount).toBe(1);
+  });
+
+  it("a second plugin from another address does not take over; from Mumble's address of the user it does (ADR-0017)", async () => {
+    const { hub } = await setup();
+    const first = recorder<BridgeToPlugin>();
+    await hub.pluginConnected(first.conn, "192.168.1.50").onMessage(hello()); // warn: not Mumble's address, still accepted
+    const forger = recorder<BridgeToPlugin>();
+    await hub.pluginConnected(forger.conn, "192.168.1.60").onMessage(hello());
+    expect(forger.last("reject")?.reason).toBe("already-connected");
+    expect(forger.closed?.code).toBe(4409);
+    expect(first.closed).toBeNull();
+    const real = recorder<BridgeToPlugin>();
+    await hub.pluginConnected(real.conn, "10.0.0.7").onMessage(hello()); // Mumble sees Anna at 10.0.0.7 (fake)
+    expect(real.last("welcome")).toBeDefined();
+    expect(first.closed?.code).toBe(4001);
+  });
+
+  it("a new key is told to the owner's plugin, and once more to a plugin from another address (ADR-0017)", async () => {
+    const { hub, pairing } = await setup();
+    const forger = recorder<BridgeToPlugin>();
+    const h = hub.pluginConnected(forger.conn, "192.168.1.60");
+    await h.onMessage(hello());
+    const code = new URL(forger.last("welcome")!.pairUrl!).searchParams.get("code")!;
+    pairing.redeem(code, Date.now(), "Mozilla/5.0 (X11; Linux x86_64) Firefox/131.0");
+    hub.keyIssued(A);
+    expect(forger.last("notify")?.text).toBe("Gerade wurde ein Browser mit deinem Mumble-Zertifikat gekoppelt (Firefox unter Linux). Warst du das nicht, ziehe den Schlüssel in Ruumble unter „Meine Schlüssel“ zurück.");
+    h.onClose();
+    const real = recorder<BridgeToPlugin>();
+    await hub.pluginConnected(real.conn, "10.0.0.7").onMessage(JSON.stringify({ ...JSON.parse(hello(7, A, true)), locale: "en" }));
+    expect(real.last("notify")?.text).toMatch(/^A browser was paired with your Mumble certificate \(Firefox on Linux\)/);
+    const again = recorder<BridgeToPlugin>();
+    await hub.pluginConnected(again.conn, "10.0.0.7").onMessage(hello(7, A, true));
+    expect(again.last("notify")).toBeUndefined(); // told this address already
   });
 
   it("server restart closes all plugins (new sessions)", async () => {

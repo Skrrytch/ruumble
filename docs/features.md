@@ -101,7 +101,7 @@ Next to the plant at the entrance lies a wrench for admins (Write permission on 
 - On first connect the plugin opens a **one-time pairing link** in the browser. The browser then keeps a device token (stored as SHA-256 on the server).
 - **Further browsers, profiles and web apps** pair themselves: "Pair this browser" sends a 6-digit code to the Mumble log of the user on the same computer ([ADR-0012](decisions/0012-pairing-with-a-code.md)).
 - Only users with a paired plugin see the building. Optional read-only **preview** without pairing (`PREVIEW=true`).
-- Identity by plausibility check: certificate hash of the plugin and, optionally, the IP address (`ADDRESS_CHECK=off|warn|enforce`, [ADR-0004](decisions/0004-identity-and-pairing.md)).
+- Identity by plausibility check: certificate hash of the plugin and, optionally, the IP address (`ADDRESS_CHECK=off|warn|enforce`, [ADR-0004](decisions/0004-identity-and-pairing.md)). A connected plugin cannot be replaced from another address, new keys are announced in the Mumble log, and only the service's own pages may use the cookie ([ADR-0017](decisions/0017-threat-model-after-board-and-care.md)).
 - The service reads Mumble via Ice with the **read secret only** and never writes to Mumble.
 - IP addresses never leave the service. Rate limit of 5 commands per second per user.
 - Board content: Markdown rendered without raw HTML and sanitised, Content-Security-Policy for the whole UI, `nosniff` for images, files always as downloads.

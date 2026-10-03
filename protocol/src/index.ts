@@ -104,7 +104,8 @@ export type PluginToBridge = z.infer<typeof PluginToBridge>;
 
 // ---------------------------------------------------------------- Service → plugin
 
-export const RejectReason = z.enum(["unknown-session", "hash-mismatch", "address-mismatch", "no-certificate"]);
+/** `already-connected`: a plugin of the same user is connected from another address (ADR-0017) */
+export const RejectReason = z.enum(["unknown-session", "hash-mismatch", "address-mismatch", "no-certificate", "already-connected"]);
 
 export const BridgeWelcome = z.object({ v, type: z.literal("welcome"), pairUrl: z.url().optional() });
 export const BridgeReject = z.object({ v, type: z.literal("reject"), reason: RejectReason });

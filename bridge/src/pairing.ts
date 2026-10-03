@@ -3,6 +3,7 @@
  * certificate hash. Only the SHA-256 of the token is stored.
  * Further browsers: 6-digit code in the Mumble log, entered on the page (ADR-0012).
  * Key cabinet (ADR-0015): every token ("key") also has a coarse device label and when it was last used.
+ * New keys are announced in the Mumble log of their owner, once per plugin address (ADR-0017).
  */
 import { createHash, randomBytes, randomInt } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
@@ -16,7 +17,14 @@ interface TokenEntry {
   /** "Firefox on Linux", from the User-Agent at pairing or first use (ADR-0015) */
   device?: string;
   lastUsed?: string;
+  /** addresses of plugin connections that were told about this key (ADR-0017); missing: from before, never told */
+  noticed?: string[];
 }
+
+/** a new key is announced to plugin connections from further addresses for this long */
+export const KEY_NOTICE_DAYS = 30;
+/** at most this many addresses are remembered per key */
+const NOTICED_MAX = 5;
 
 /** "last used" is written at most this often per key, so connecting does not rewrite the file every time */
 const TOUCH_INTERVAL_MS = 60 * 60_000;
@@ -50,6 +58,22 @@ const CODE_TEXT: Record<Locale, (code: string) => string> = {
   de: (code) => `Kopplungscode für einen Browser: ${code} (5 Minuten gültig). Ignoriere ihn, wenn du ihn nicht angefordert hast.`,
   en: (code) => `Pairing code for a browser: ${code} (valid for 5 minutes). Ignore it if you did not request it.`,
 };
+
+/** notice in the Mumble log about a new key; `device` as stored ("Firefox on Linux") */
+const KEY_TEXT: Record<Locale, (device: string, date: string | null) => string> = {
+  de: (device, date) =>
+    `${date ? `Am ${date} wurde` : "Gerade wurde"} ein Browser mit deinem Mumble-Zertifikat gekoppelt (${device.replace(" on ", " unter ") || "unbekannter Browser"}). Warst du das nicht, ziehe den Schlüssel in Ruumble unter „Meine Schlüssel“ zurück.`,
+  en: (device, date) =>
+    `${date ? `On ${date}, a` : "A"} browser was paired with your Mumble certificate (${device || "unknown browser"}). If that was not you, revoke the key in Ruumble under "My keys".`,
+};
+
+/** a key paired less than this long ago is "just now" in the notice */
+const JUST_NOW_MS = 10 * 60_000;
+
+export function newKeyText(device: string, created: number, now: number, locale: Locale = "de"): string {
+  const date = now - created < JUST_NOW_MS ? null : new Date(created).toLocaleDateString(locale === "de" ? "de-DE" : "en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return KEY_TEXT[locale](device, date);
+}
 
 /** "482913" → "482 913" (easier to read in the log; the page accepts both) */
 export function pairingCodeText(code: string, locale: Locale = "de"): string {
@@ -140,7 +164,7 @@ export class Pairing {
   private issue(certHash: string, name: string, now: number, userAgent?: string): string {
     const token = randomBytes(32).toString("base64url");
     const at = new Date(now).toISOString();
-    this.tokens[sha256(token)] = { certHash, name, created: at, device: deviceLabel(userAgent), lastUsed: at };
+    this.tokens[sha256(token)] = { certHash, name, created: at, device: deviceLabel(userAgent), lastUsed: at, noticed: [] };
     this.save();
     return token;
   }
@@ -155,6 +179,23 @@ export class Pairing {
     entry.device = device;
     if (stale) entry.lastUsed = new Date(now).toISOString();
     this.save();
+  }
+
+  /**
+   * Keys of `certHash` from the last 30 days that a plugin connection from `address` has not been told about yet;
+   * they count as told from now on (ADR-0017). A forger who received the first notice cannot hide the key from the
+   * real user's plugin at another address.
+   */
+  takeUnnoticedKeys(certHash: string, address: string, now = Date.now()): { device: string; created: number }[] {
+    const found: { device: string; created: number }[] = [];
+    for (const e of Object.values(this.tokens)) {
+      const created = Date.parse(e.created);
+      if (e.certHash !== certHash || !e.noticed || e.noticed.includes(address) || now - created > KEY_NOTICE_DAYS * 86_400_000) continue;
+      e.noticed = [...e.noticed, address].slice(-NOTICED_MAX);
+      found.push({ device: e.device ?? "", created });
+    }
+    if (found.length) this.save();
+    return found.sort((a, b) => a.created - b.created);
   }
 
   /** public name of the key behind a token, null if unknown */

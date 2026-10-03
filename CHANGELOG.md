@@ -6,6 +6,15 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Security
+- **Nobody can take over a connected identity.** A second plugin connection for a user who is already connected is refused unless it comes from the same address or from the address Mumble sees for that user. Before, it replaced the real plugin and could receive a pairing link for that user.
+- **New browsers are announced.** When a browser is paired, the owner gets a notice in the Mumble log ("… If that was not you, revoke the key under My keys"), and once more when their plugin connects from another address within 30 days.
+- **Only Ruumble's own pages may use the login cookie.** Requests to the web UI's WebSocket and every changing request from another page are refused, and no web page can pose as the plugin.
+- `TRUST_PROXY` takes the proxy's address or network instead of `true`, so clients that reach the port directly cannot fake their address ([ADR-0017](docs/decisions/0017-threat-model-after-board-and-care.md)).
+
+### Upgrading
+- Behind a reverse proxy, set `TRUST_PROXY` to the proxy's address or Docker network (e.g. `"172.18.0.0/16"`); `"true"` still works but logs a warning. If the proxy does not pass the original `Host`, set `PUBLIC_URL`, otherwise the web UI cannot post or save.
+
 ## [0.24.0] - 2026-10-03
 
 Plugin 0.5.0 (unchanged).
