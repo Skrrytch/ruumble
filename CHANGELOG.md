@@ -6,6 +6,8 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-10-03
+
 Includes everything since 0.19.0, the last published release: see 0.20.0 to 0.24.0 below, which were not published, and their Upgrading notes (board settings in the web UI, posts kept for a year by default, care and keys).
 
 Plugin 0.5.0 (unchanged).
@@ -292,6 +294,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.25.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.25.0
 [0.19.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.19.0
 [0.15.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.15.0
 [0.14.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.14.0
