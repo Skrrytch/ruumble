@@ -139,13 +139,17 @@ describe("REST /api/status and the snapshot (B, ADR-0018)", () => {
     book.close();
   });
 
-  it("shown only while the plugin is connected; everyone learns when it comes back", async () => {
+  it("shown only while the plugin is connected, like \"uses Ruumble\"; everyone learns when it comes back", async () => {
     const { app, anna, ben, plugins, statusIn, book, hub } = await setup();
     await app.inject({ method: "PUT", url: "/api/status", headers: { cookie: anna }, payload: { text: "Lunch", minutes: null } });
+    const user = (session: number) => (ben.last("snapshot") as Snapshot).users.find((u) => u.session === session);
+    expect(user(7)?.ruumble).toBe(true); // uses Ruumble: plugin connected
     plugins[A]!.onClose();
     expect(statusIn(ben, 7)).toBeUndefined();
+    expect(user(7)?.ruumble).toBeUndefined();
     await hub.pluginConnected(recorder<BridgeToPlugin>().conn, "x").onMessage(JSON.stringify({ v: 1, type: "hello", session: 7, certHash: A, pluginVersion: "0", paired: true }));
     expect(statusIn(ben, 7)).toEqual({ text: "Lunch", until: null });
+    expect(user(7)?.ruumble).toBe(true);
     book.close();
   });
 });

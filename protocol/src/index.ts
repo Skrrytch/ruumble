@@ -62,6 +62,8 @@ export const User = z.object({
   recording: z.boolean(),
   /** status set in Ruumble (B), only while the person's plugin is connected; missing: none */
   status: UserStatus.optional(),
+  /** uses Ruumble: the person's plugin is connected to this service; missing: no */
+  ruumble: z.boolean().optional(),
 });
 export type User = z.infer<typeof User>;
 

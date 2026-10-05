@@ -39,6 +39,7 @@ export const de = {
     recording: "zeichnet auf",
     /** status at the avatar (B) */
     status: (text: string) => `Status: ${text}`,
+    usesRuumble: "nutzt Ruumble",
   },
   floors: {
     ground: "Erdgeschoss",

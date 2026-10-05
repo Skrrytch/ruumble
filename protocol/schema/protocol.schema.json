@@ -613,6 +613,9 @@
                       "until"
                     ],
                     "additionalProperties": false
+                  },
+                  "ruumble": {
+                    "type": "boolean"
                   }
                 },
                 "required": [

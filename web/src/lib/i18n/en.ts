@@ -43,6 +43,7 @@ export const en: Messages = {
     quiet: (minutes) => `quiet for ${minutes} min`,
     recording: "recording",
     status: (text) => `Status: ${text}`,
+    usesRuumble: "uses Ruumble",
   },
   floors: {
     ground: "Ground floor",

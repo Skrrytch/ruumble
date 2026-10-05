@@ -573,6 +573,7 @@ export class MockAdapter implements MumbleAdapter {
   setPlugin(status: PluginStatus): void {
     this.plugin = status;
     this.events?.status(status, false);
+    this.emit();
   }
 
   /** The next switch is not confirmed despite access permission (as with the rate limit, S2). */
@@ -768,6 +769,11 @@ export class MockAdapter implements MumbleAdapter {
   }
 
   private emit(): void {
-    this.events?.snapshot(clone(this.state));
+    // like the service: the own user uses Ruumble while the plugin is connected
+    const state = clone(this.state);
+    const me = state.users.find((u) => u.session === state.self?.session);
+    if (me && this.plugin === "connected") me.ruumble = true;
+    else if (me) delete me.ruumble;
+    this.events?.snapshot(state);
   }
 }

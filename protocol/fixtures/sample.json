@@ -127,7 +127,8 @@
       "userId": null,
       "avatar": null,
       "idleMinutes": 0,
-      "recording": false
+      "recording": false,
+      "ruumble": true
     },
     {
       "session": 2,
@@ -155,7 +156,8 @@
       "userId": null,
       "avatar": null,
       "idleMinutes": 0,
-      "recording": false
+      "recording": false,
+      "ruumble": true
     },
     {
       "session": 4,
@@ -169,7 +171,8 @@
       "userId": 1,
       "avatar": null,
       "idleMinutes": 0,
-      "recording": false
+      "recording": false,
+      "ruumble": true
     },
     {
       "session": 5,
@@ -184,6 +187,7 @@
       "avatar": null,
       "idleMinutes": 0,
       "recording": false,
+      "ruumble": true,
       "status": {
         "text": "Back at 2 pm",
         "until": null
@@ -216,6 +220,7 @@
       "avatar": null,
       "idleMinutes": 0,
       "recording": false,
+      "ruumble": true,
       "status": {
         "text": "Focus time, please write",
         "until": null

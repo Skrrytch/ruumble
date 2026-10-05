@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Building from "@lucide/svelte/icons/building";
   import HeadphoneOff from "@lucide/svelte/icons/headphone-off";
   import MessageSquareText from "@lucide/svelte/icons/message-square-text";
   import MicOff from "@lucide/svelte/icons/mic-off";
@@ -25,6 +26,7 @@
       talking ? p.talking : null,
       presence === "away" ? p.away : presence === "quiet" ? p.quiet(user.idleMinutes) : null,
       user.recording ? p.recording : null,
+      user.usesRuumble ? p.usesRuumble : null,
       status,
     ]
       .filter(Boolean)
@@ -40,6 +42,9 @@
       <img src={imageUrl} alt="" onerror={() => (failedUrl = imageUrl)} />
     {:else}
       {user.initials}
+    {/if}
+    {#if user.usesRuumble}
+      <span class="house" title={cap(p.usesRuumble)}><Building size={10} strokeWidth={2.5} /></span>
     {/if}
     {#if status}
       <span class="bubble" title={status}><MessageSquareText size={12} strokeWidth={2.5} /></span>
@@ -84,6 +89,12 @@
   .rec {
     position: absolute; left: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%;
     background: var(--color-alert); border: 2px solid var(--color-white);
+  }
+  /* uses Ruumble (plugin connected): a small building at the bottom left, quieter than the state badges */
+  .house {
+    position: absolute; left: -5px; bottom: -5px; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--color-white); border: 1px solid var(--color-blue-300); color: var(--color-blue-500);
+    display: flex; align-items: center; justify-content: center;
   }
   .bubble {
     position: absolute; right: -7px; top: -7px; width: 22px; height: 22px; border-radius: 50%;

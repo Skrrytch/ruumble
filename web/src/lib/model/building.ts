@@ -34,6 +34,8 @@ export interface UserView {
   presence: Presence;
   idleMinutes: number;
   recording: boolean;
+  /** uses Ruumble: the person's plugin is connected to the service */
+  usesRuumble: boolean;
   /** status set in Ruumble (B, ADR-0018); `until` null: no expiry */
   status: { text: string; until: number | null } | null;
 }
@@ -240,6 +242,7 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
     presence: presenceOf(u),
     idleMinutes: u.idleMinutes,
     recording: u.recording,
+    usesRuumble: u.ruumble ?? false,
     status: u.status ?? null,
   });
   const viewsIn = (id: number) =>

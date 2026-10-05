@@ -215,6 +215,12 @@ test.describe("Status (B)", () => {
     await expect(page.locator(".bubble[title='Status: Focus time, please write']")).toBeVisible();
   });
 
+  test("a small building marks who uses Ruumble (plugin connected)", async ({ page }) => {
+    await expect(page.getByRole("img", { name: /^Clara, .*uses Ruumble/ })).toBeVisible();
+    await expect(page.getByRole("img", { name: /^David/ })).not.toHaveAccessibleName(/uses Ruumble/);
+    await expect(page.getByRole("img", { name: /^Clara/ }).locator(".house")).toHaveAttribute("title", "Uses Ruumble");
+  });
+
   test("set with the default expiry, quick choice from the recent ones, clear", async ({ page }) => {
     const button = page.getByRole("button", { name: "My status" });
     await expect(button).toHaveAttribute("aria-pressed", "false");

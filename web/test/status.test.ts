@@ -10,10 +10,13 @@ const sample = Snapshot.parse(JSON.parse(readFileSync(new URL("../../protocol/fi
 afterEach(() => setLocale("en", false));
 
 describe("Status at the avatar (B, ADR-0018)", () => {
-  it("the snapshot's status reaches the person, missing means none", () => {
+  it("the snapshot's status and \"uses Ruumble\" reach the person, missing means none", () => {
     const users = buildBuilding(sample).floors.flatMap((f) => [...f.rooms, f.corridor].flatMap((s) => s.users));
     expect(users.find((u) => u.name === "Clara")!.status).toEqual({ text: "Focus time, please write", until: null });
     expect(users.find((u) => u.name === "Anna")!.status).toBeNull();
+    // uses Ruumble: plugin connected
+    expect(users.find((u) => u.name === "Clara")!.usesRuumble).toBe(true);
+    expect(users.find((u) => u.name === "David")!.usesRuumble).toBe(false);
   });
 
   it("expiry: the time today, the weekday on another day, or no expiry", () => {

@@ -250,7 +250,7 @@ export class Hub {
           this.announceKeys(entry);
           this.sessionsChanged();
           this.forUis(msg.certHash, (ui) => ui.conn.send({ v, type: "status", plugin: "connected" }));
-          this.snapshotsFor(msg.certHash);
+          this.rebroadcast(); // everyone sees that they use Ruumble (and their status, ADR-0018)
           return;
         }
         if (!entry) return; // everything else only after a successful hello
@@ -321,13 +321,7 @@ export class Hub {
     this.log("Plugin disconnected", { session: entry.session });
     this.sessionsChanged();
     this.forUis(entry.certHash, (ui) => ui.conn.send({ v, type: "status", plugin: "disconnected" }));
-    this.snapshotsFor(entry.certHash);
-  }
-
-  /** the person's plugin came or went: new snapshots for their web UIs, for everyone if they have a status (ADR-0018) */
-  private snapshotsFor(certHash: string): void {
-    if (this.opts.statusOf?.(certHash)) this.rebroadcast();
-    else this.forUis(certHash, (ui) => this.sendSnapshot(ui));
+    this.rebroadcast();
   }
 
   // ---------------------------------------------------------------- Web UI
@@ -377,9 +371,12 @@ export class Hub {
     if (!s) return;
     const plugin = ui.certHash ? this.plugins.get(ui.certHash) : undefined;
     const session = plugin && s.users.some((u) => u.session === plugin.session) ? plugin.session : null;
-    // a status belongs to a person, known by session only while their plugin is connected (ADR-0018)
+    // sessions with a connected plugin use Ruumble; a status belongs to a person, known by session only through
+    // their plugin (ADR-0018)
+    const withPlugin = new Set<number>();
     const statusOf = new Map<number, UserStatus>();
     for (const p of this.plugins.values()) {
+      withPlugin.add(p.session);
       const status = this.opts.statusOf?.(p.certHash);
       if (status) statusOf.set(p.session, status);
     }
@@ -392,7 +389,7 @@ export class Hub {
       // addresses never leave the service
       users: s.users.map(({ address: _address, ...u }) => {
         const status = statusOf.get(u.session);
-        return { ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null, ...(status ? { status } : {}) };
+        return { ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null, ...(status ? { status } : {}), ...(withPlugin.has(u.session) ? { ruumble: true } : {}) };
       }),
       listeners: s.listeners,
       canEnter: session ? (s.canEnter.get(session) ?? {}) : {},
