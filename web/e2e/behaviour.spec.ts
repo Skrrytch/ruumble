@@ -270,6 +270,10 @@ test.describe("Building overview", () => {
     await expect(section.getByRole("img", { name: /^Clara, .*Status: Focus time, please write$/ })).toBeVisible();
     // the building fits its pane: no sideways scrolling
     expect(await dialog.locator(".section-pane").evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
+    // the roof ends flush with the outer walls
+    const roof = (await section.locator(".roof").boundingBox())!;
+    const floor = (await section.locator(".storey").first().boundingBox())!;
+    expect(Math.abs(roof.x - floor.x) + Math.abs(roof.x + roof.width - (floor.x + floor.width))).toBeLessThan(1);
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
   });

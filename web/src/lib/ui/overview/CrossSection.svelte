@@ -82,10 +82,10 @@
 
 <style>
   .section { display: flex; flex-direction: column; min-width: 0; padding: 0 4px 12px; }
-  /* the roof: a flat gable in navy with the building's name */
+  /* the roof: a flat gable in navy with the building's name, flush with the outer walls (shaft to right wall) */
   .roof {
-    height: 50px; margin: 0 0 0 30px; background: var(--color-navy); color: var(--color-white);
-    clip-path: polygon(4% 100%, 50% 0, 96% 100%); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;
+    height: 50px; background: var(--color-navy); color: var(--color-white);
+    clip-path: polygon(0 100%, 50% 0, 100% 100%); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;
     font-size: 13px; font-weight: 700; letter-spacing: 0.04em;
   }
   .roof span { max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
