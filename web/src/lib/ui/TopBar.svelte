@@ -1,5 +1,6 @@
 <script lang="ts">
   import ArrowDownUp from "@lucide/svelte/icons/arrow-down-up";
+  import Building2 from "@lucide/svelte/icons/building-2";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import HeadphoneOff from "@lucide/svelte/icons/headphone-off";
   import Headphones from "@lucide/svelte/icons/headphones";
@@ -149,9 +150,13 @@
             </section>
           {/if}
           <!-- status bar of the elevator: the whole building -->
-          <footer class="status" title={t().header.onlineTitle}>
-            <span class="online"><span class="dot" aria-hidden="true"></span>{t().header.online(building.online)}</span>
-            <span class="building">{building.name}</span>
+          <footer class="status">
+            <!-- opens the building overview: cross-section and directory board (ADR-0019) -->
+            <button type="button" class="overview-link" title={`${t().overview.open} (H)`} onclick={() => { open = null; app.openOverview(); }}>
+              <span class="online"><span class="dot" aria-hidden="true"></span>{t().header.online(building.online)}</span>
+              <span class="building">{building.name}</span>
+              <Building2 size={15} aria-hidden="true" />
+            </button>
           </footer>
         </nav>
       {/if}
@@ -313,6 +318,13 @@
     margin: 6px -12px 0; padding: 10px 18px; background: rgb(0 20 45 / 0.45); border-top: 1px solid rgb(255 255 255 / 0.15);
     font-size: 13px; font-weight: 700; white-space: nowrap;
   }
+  .overview-link {
+    display: flex; align-items: center; gap: 12px; width: 100%; margin: -4px -6px; padding: 4px 6px; border: 0; border-radius: var(--radius-md);
+    background: transparent; color: inherit; font: inherit; cursor: pointer; text-align: left;
+  }
+  .overview-link:hover { background: rgb(255 255 255 / 0.1); }
+  .overview-link:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
+  .overview-link .building { margin-left: auto; }
   .online { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
   .building { color: var(--color-blue-100); overflow: hidden; text-overflow: ellipsis; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-sky); box-shadow: 0 0 0 3px rgb(90 166 231 / 0.25); }

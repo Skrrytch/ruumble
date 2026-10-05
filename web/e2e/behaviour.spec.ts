@@ -252,3 +252,46 @@ test.describe("Status (B)", () => {
     await expect(page.getByRole("img", { name: /^Anna \(you\)/ }).first()).not.toHaveAccessibleName(/Status/);
   });
 });
+
+// building overview (ADR-0019): the cross-section and the directory board, from the elevator's status bar or with H
+test.describe("Building overview", () => {
+  test.beforeEach(async ({ page }) => page.goto("/?fixture=sample&talking=0"));
+
+  test("opens from the elevator's status bar: every floor, everyone with their place and status", async ({ page }) => {
+    await (await elevator(page)).getByRole("button", { name: /8 online/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Building overview" });
+    await expect(dialog.getByText("8 people in the building")).toBeVisible();
+    const board = dialog.getByRole("region", { name: "Directory" });
+    await expect(board.getByRole("button", { name: "Go to Gregor (Office 1)" })).toBeVisible();
+    await expect(board.getByText("Back at 2 pm")).toBeVisible();
+    await expect(board.getByRole("button", { name: /^Anna \(you\).* – Let's talk$/ })).toHaveAttribute("aria-disabled", "true");
+    const section = dialog.getByRole("region", { name: "Cross-section" });
+    await expect(section.getByRole("img", { name: /^Clara, .*Status: Focus time, please write$/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+  });
+
+  test("H opens it; the search filters, Enter goes to the first match", async ({ page }) => {
+    await page.keyboard.press("h");
+    const dialog = page.getByRole("dialog", { name: "Building overview" });
+    const search = dialog.getByRole("searchbox", { name: "Search the directory" });
+    await expect(search).toBeFocused();
+    await search.fill("office 3");
+    await expect(dialog.getByRole("region", { name: "Directory" }).getByRole("button", { name: /^Go to/ })).toHaveCount(1);
+    await search.press("Enter");
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole("status", { name: /^You are here: Office 3/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
+  });
+
+  test("a room in the cross-section moves there, a floor badge shows that floor", async ({ page }) => {
+    await page.keyboard.press("h");
+    const dialog = page.getByRole("dialog", { name: "Building overview" });
+    await dialog.getByRole("button", { name: "View the floor Support" }).first().click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
+    await page.keyboard.press("h");
+    await dialog.getByRole("region", { name: "Cross-section" }).getByRole("button", { name: "Enter Retrospective" }).click();
+    await expect(page.getByRole("status", { name: /^You are here: Retrospective/ })).toBeVisible();
+  });
+});

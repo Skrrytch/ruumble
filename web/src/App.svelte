@@ -14,6 +14,7 @@
   import CareDialog from "./lib/ui/CareDialog.svelte";
   import KeysDialog from "./lib/ui/KeysDialog.svelte";
   import MaintenanceDialog from "./lib/ui/MaintenanceDialog.svelte";
+  import BuildingOverview from "./lib/ui/overview/BuildingOverview.svelte";
   import StatusDialog from "./lib/ui/StatusDialog.svelte";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
@@ -25,13 +26,16 @@
     app.boardOpen && !app.readonly && !!floor && !floor.lock && floor.rooms.length > 0 && floor.rooms.length <= FEW_ROOMS,
   );
 
-  // keyboard shortcuts (lib/shortcuts.ts): only in the building view with an own user
+  // keyboard shortcuts (lib/shortcuts.ts): only in the building view; the board needs an own user
   function onkeydown(e: KeyboardEvent): void {
-    if (!building || app.readonly || app.connection !== "connected") return;
+    if (!building || app.connection !== "connected") return;
     const shortcut = shortcutOf(e, !!document.querySelector("dialog[open]"));
-    if (shortcut === "toggleBoard") {
+    if (shortcut === "toggleBoard" && !app.readonly) {
       e.preventDefault();
       app.toggleBoard();
+    } else if (shortcut === "overview") {
+      e.preventDefault();
+      app.openOverview();
     }
   }
 </script>
@@ -86,6 +90,7 @@
     {#if app.keysOpen}<KeysDialog {app} />{/if}
     {#if app.maintenanceOpen}<MaintenanceDialog {app} />{/if}
     {#if app.statusOpen}<StatusDialog {app} />{/if}
+    {#if app.overviewOpen && building}<BuildingOverview {app} {building} />{/if}
   {/if}
 
   {#if app.connection === "reconnecting" && building}

@@ -7,7 +7,7 @@ import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairE
 import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter, type CopyTarget } from "./board/model.ts";
 import type { CareTarget } from "./care/model.ts";
 import { t } from "./i18n/index.svelte.ts";
-import { avatarUrlOf, buildBuilding, homeFloor, type Building, type Floor } from "./model/building.ts";
+import { avatarUrlOf, buildBuilding, homeFloor, type BuildOptions, type Building, type Floor } from "./model/building.ts";
 
 export type Notice = { text: string };
 
@@ -80,6 +80,8 @@ export class RuumbleState {
   keys = $state<KeyCabinet | null>(null);
   keysBusy = $state(false);
   keysError = $state<BoardErrorCode | null>(null);
+  /** building overview (ADR-0019): cross-section and directory, opened from the elevator's status bar or with H */
+  overviewOpen = $state(false);
   /** the own status (B, ADR-0018): dialog open, what the service reported (current and recent texts), saving, error */
   statusOpen = $state(false);
   status = $state<StatusView | null>(null);
@@ -93,9 +95,14 @@ export class RuumbleState {
 
   building: Building | null = $derived.by(() => {
     if (!this.snapshot) return null;
-    const custom = this.adapter.avatarUrl?.bind(this.adapter); // mock: own images, otherwise /avatar/<id>
-    return buildBuilding(this.snapshot, custom ? { avatarUrl: custom } : {});
+    return buildBuilding(this.snapshot, this.avatarOptions);
   });
+
+  /** how avatar images are addressed: the mock has its own, otherwise /avatar/<id> */
+  get avatarOptions(): BuildOptions {
+    const custom = this.adapter.avatarUrl?.bind(this.adapter);
+    return custom ? { avatarUrl: custom } : {};
+  }
 
   /** Avatar image of a currently connected user (user area, board); otherwise `null` → initials */
   avatarOf(name: string): string | null {
@@ -491,6 +498,29 @@ export class RuumbleState {
     }
     await this.loadKeys();
     return true;
+  }
+
+  // ---------------------------------------------------------------- Building overview (ADR-0019)
+
+  openOverview(): void {
+    this.overviewOpen = true;
+  }
+
+  closeOverview(): void {
+    this.overviewOpen = false;
+  }
+
+  /** from the overview: go to a channel (a person's place or a room) and show that floor once Mumble confirms */
+  visit(channelId: number): void {
+    this.overviewOpen = false;
+    this.goHome();
+    void this.join(channelId);
+  }
+
+  /** from the overview: look at a floor without moving */
+  viewFloor(floor: Floor): void {
+    this.overviewOpen = false;
+    this.showFloor(floor);
   }
 
   // ---------------------------------------------------------------- Status (B, ADR-0018)

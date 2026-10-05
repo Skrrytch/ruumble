@@ -2,10 +2,10 @@
  * Keyboard shortcuts: single keys without Ctrl, Alt or Meta (those clash with the browser, e.g. Ctrl+B,
  * Alt+B), like GitHub or Gmail. They never apply while typing or while a modal dialog is open.
  */
-export type Shortcut = "toggleBoard";
+export type Shortcut = "toggleBoard" | "overview";
 
 /** key (lower case) → action; the key is also shown in the tooltips */
-export const SHORTCUT_KEYS: Record<Shortcut, string> = { toggleBoard: "b" };
+export const SHORTCUT_KEYS: Record<Shortcut, string> = { toggleBoard: "b", overview: "h" };
 
 interface KeyLike {
   key: string;

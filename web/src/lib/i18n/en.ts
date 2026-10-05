@@ -63,7 +63,6 @@ export const en: Messages = {
   },
   header: {
     preview: "Preview, read-only",
-    onlineTitle: "Online on the server",
     online: (n) => `${n} online`,
   },
   core: {

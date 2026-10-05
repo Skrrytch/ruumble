@@ -59,7 +59,6 @@ export const de = {
   },
   header: {
     preview: "Vorschau, nur lesend",
-    onlineTitle: "Online auf dem Server",
     online: (n: number) => `${n} online`,
   },
   core: {

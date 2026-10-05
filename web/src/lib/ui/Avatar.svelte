@@ -5,7 +5,7 @@
   import Unplug from "@lucide/svelte/icons/unplug";
   import type { UserView } from "../model/building.ts";
   import { t } from "../i18n/index.svelte.ts";
-  import { statusLabel } from "../status.ts";
+  import { personLabel, statusLabel } from "../status.ts";
 
   let { user, talking = false, showName = true }: { user: UserView; talking?: boolean; showName?: boolean } = $props();
 
@@ -18,20 +18,7 @@
   const p = $derived(t().people);
   // status (B, ADR-0018): a speech bubble at the top right, its text in the tooltip
   const status = $derived(user.status ? statusLabel(user.status) : null);
-  const label = $derived(
-    [
-      user.name + (user.isSelf ? ` (${p.you})` : ""),
-      user.selfDeafened ? p.deaf : user.selfMuted ? p.muted : null,
-      user.serverMuted ? p.serverMuted : null,
-      talking ? p.talking : null,
-      presence === "away" ? p.away : presence === "quiet" ? p.quiet(user.idleMinutes) : null,
-      user.recording ? p.recording : null,
-      user.usesRuumble ? null : p.withoutRuumble,
-      status,
-    ]
-      .filter(Boolean)
-      .join(", "),
-  );
+  const label = $derived(personLabel(user, talking));
   /** same words as in the label, capitalised as the badge tooltip */
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 </script>
