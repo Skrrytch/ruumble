@@ -77,11 +77,13 @@
       {#if building.entrance.length}{@render people(entrance, t().common.entrance)}{/if}
     </div>
   </div>
-  <div class="earth" aria-hidden="true"></div>
+  <div class="ground-line" aria-hidden="true"></div>
 </section>
 
 <style>
-  .section { display: flex; flex-direction: column; min-width: 0; padding: 0 4px 12px; }
+  /* the building stands a little in from the sides, so the ground line reaches beyond its walls */
+  .section { display: flex; flex-direction: column; min-width: 0; padding: 0 0 12px; }
+  .roof, .storey { margin: 0 28px; }
   /* the roof: a flat gable in navy with the building's name, flush with the outer walls (shaft to right wall) */
   .roof {
     height: 50px; background: var(--color-navy); color: var(--color-white);
@@ -107,7 +109,6 @@
     display: flex; flex-wrap: wrap; align-items: flex-end; min-width: 0; min-height: 52px; padding: 8px 10px 6px;
     border-top: 3px solid var(--color-navy); border-right: 2px solid var(--color-navy); background: var(--color-white);
   }
-  .ground .floor, .ground .shaft { border-bottom: 3px solid var(--color-navy); }
   /* a group: the people of one room, set apart from the next by a thin line */
   .group {
     position: relative; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 10px; border: 0; border-radius: 6px; background: transparent;
@@ -123,5 +124,6 @@
   .who { position: relative; display: inline-flex; }
   .closed { display: flex; align-items: center; gap: 6px; align-self: center; font-size: 12px; color: var(--color-blue-700); }
   .storey.locked .floor { background: repeating-linear-gradient(135deg, var(--color-surface) 0 6px, var(--color-white) 6px 12px); }
-  .earth { height: 6px; background: repeating-linear-gradient(90deg, var(--color-navy) 0 10px, transparent 10px 14px); opacity: 0.25; }
+  /* the ground line of a section drawing: the building stands on it, it reaches beyond the walls */
+  .ground-line { height: 3px; background: var(--color-navy); }
 </style>
