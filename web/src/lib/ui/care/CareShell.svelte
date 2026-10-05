@@ -13,7 +13,7 @@
   import ConfirmDialog, { type ConfirmRequest } from "./ConfirmDialog.svelte";
   import Icon from "./Icon.svelte";
 
-  // The frame of the care dialogs, the building maintenance and "my keys" (design handoff "Hausmeister"): header
+  // The frame of the care dialogs, the building maintenance, "my keys" and the status (design handoff "Hausmeister"): header
   // with site plan, title, plate, breadcrumb and summary, the yellow mark and the dot raster; the body; a grey footer
   // with the house rules or a status line after an action. A confirmation opens in its own popup above (ConfirmDialog).
   let {
@@ -30,6 +30,7 @@
     status = null,
     confirm = null,
     oncancelconfirm,
+    narrow = false,
     children,
   }: {
     title: string;
@@ -46,6 +47,8 @@
     status?: { text: string; error: boolean } | null;
     confirm?: ConfirmRequest | null;
     oncancelconfirm?: () => void;
+    /** a small dialog (the status) */
+    narrow?: boolean;
     children: Snippet;
   } = $props();
 
@@ -70,7 +73,7 @@
   }
 </script>
 
-<dialog bind:this={dialog} class="care" aria-labelledby={titleId} onclose={onclose} {oncancel}>
+<dialog bind:this={dialog} class="care" class:narrow aria-labelledby={titleId} onclose={onclose} {oncancel}>
   <header>
     <div class="raster" aria-hidden="true"></div>
     {#if onback}
@@ -135,6 +138,7 @@
     width: min(800px, calc(100vw - 32px)); max-height: 90vh; padding: 0; border: 1px solid var(--line); border-radius: 8px;
     color: var(--ink); background: #fff; font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden;
   }
+  .care.narrow { width: min(560px, calc(100vw - 32px)); }
   .care::backdrop { background: rgb(0 56 105 / 0.45); }
   header { position: relative; display: flex; gap: 12px; align-items: center; padding: 14px 12px; border-bottom: 1px solid var(--line); flex: none; }
   .raster {

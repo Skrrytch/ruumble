@@ -7,12 +7,12 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, STATUS_LIMITS, StatusRequest, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type StatusView, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
 import vacant from "@ruumble/protocol/fixtures/vacant.json";
-import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus } from "./types.ts";
+import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus, StatusApi } from "./types.ts";
 
 const MINUTE = 60_000;
 
@@ -196,6 +196,30 @@ export class MockAdapter implements MumbleAdapter {
         this.settings = { ...next };
         return { settings: this.settings, defaults: MOCK_DEFAULTS, usedBytes: this.usedBytes() };
       }, true),
+  };
+  /** the own status (B): texts used last, and the timer that lets the current one expire */
+  private recentStatus = ["In a meeting", "Lunch break", "Focus time, please write"];
+  private statusTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly status: StatusApi = {
+    load: async () => (this.me() ? { ok: true, value: this.statusView() } : { ok: false, error: "not-paired" }),
+    set: async (text, minutes) => {
+      const me = this.me();
+      if (!me) return { ok: false, error: "not-paired" };
+      const parsed = StatusRequest.safeParse({ text, minutes });
+      if (!parsed.success) return { ok: false, error: "invalid" };
+      const clean = parsed.data.text.replace(/\s+/g, " ");
+      me.status = { text: clean, until: minutes === null ? null : Date.now() + minutes * MINUTE };
+      this.recentStatus = [clean, ...this.recentStatus.filter((r) => r !== clean)].slice(0, STATUS_LIMITS.recent);
+      if (this.statusTimer) clearTimeout(this.statusTimer);
+      if (minutes !== null) this.statusTimer = setTimeout(() => this.clearStatus(), minutes * MINUTE);
+      this.emit();
+      return { ok: true, value: this.statusView() };
+    },
+    clear: async () => {
+      if (!this.me()) return { ok: false, error: "not-paired" };
+      this.clearStatus();
+      return { ok: true, value: this.statusView() };
+    },
   };
   readonly keys: KeysApi = {
     list: async () => {
@@ -486,6 +510,7 @@ export class MockAdapter implements MumbleAdapter {
   stop(): void {
     if (this.talkTimer) clearInterval(this.talkTimer);
     if (this.pendingJoin) clearTimeout(this.pendingJoin.timer);
+    if (this.statusTimer) clearTimeout(this.statusTimer);
     this.events = null;
   }
 
@@ -679,6 +704,20 @@ export class MockAdapter implements MumbleAdapter {
   private boardChanged(channelId: number): void {
     this.events?.board(channelId);
     this.emit();
+  }
+
+  private statusView(): StatusView {
+    return { current: this.me()?.status ?? null, recent: this.recentStatus };
+  }
+
+  private clearStatus(): void {
+    if (this.statusTimer) clearTimeout(this.statusTimer);
+    this.statusTimer = null;
+    const me = this.me();
+    if (me?.status) {
+      delete me.status;
+      this.emit();
+    }
   }
 
   private me() {

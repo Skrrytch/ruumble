@@ -2,8 +2,8 @@
  * LiveAdapter: WebSocket to the Ruumble service (`/ws/ui`, ADR-0007).
  * Reconnects with increasing delay after a drop. Results are matched to commands by ID.
  */
-import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
-import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, KeysApi, MaintenanceApi, BoardResult, MumbleAdapter, PairApi, PairResult } from "./types.ts";
+import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, StatusView, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, KeysApi, MaintenanceApi, BoardResult, MumbleAdapter, PairApi, PairResult, StatusApi } from "./types.ts";
 
 /** REST of the board; the pairing cookie is sent automatically (same-origin) */
 async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit = {}): Promise<BoardResult<T>> {
@@ -61,6 +61,12 @@ const liveMaintenance: MaintenanceApi = {
 };
 
 /** a file from the service (export): the content as a stream and the name from Content-Disposition */
+const liveStatus: StatusApi = {
+  load: () => call(StatusView, "/api/status"),
+  set: (text, minutes) => call(StatusView, "/api/status", { method: "PUT", body: JSON.stringify({ text, minutes }) }),
+  clear: () => call(StatusView, "/api/status", { method: "DELETE" }),
+};
+
 async function download(url: string): Promise<BoardResult<{ stream: ReadableStream<Uint8Array>; name: string }>> {
   let res: Response;
   try {
@@ -135,6 +141,7 @@ export class LiveAdapter implements MumbleAdapter {
   readonly care: CareApi = liveCare;
   readonly keys: KeysApi = liveKeys;
   readonly maintenance: MaintenanceApi = liveMaintenance;
+  readonly status: StatusApi = liveStatus;
   readonly pairing: PairApi = {
     request: async () => {
       const r = await pairCall("/api/pair/request");

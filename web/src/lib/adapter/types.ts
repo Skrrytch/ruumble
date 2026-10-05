@@ -2,7 +2,7 @@
  * Interface between web UI and Mumble (ADR-0007).
  * Implementations: MockAdapter (fixtures, simulated Mumble) and LiveAdapter (WebSocket and REST to the service).
  */
-import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, BuildingSettings, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
+import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, BuildingSettings, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, StatusView, TalkingState, Uploaded, Versions } from "@ruumble/protocol";
 
 export type BoardErrorCode = ServerBoardError | "offline";
 export type BoardResult<T> = { ok: true; value: T } | { ok: false; error: BoardErrorCode };
@@ -74,6 +74,13 @@ export interface MaintenanceApi {
   save(settings: BuildingSettings): Promise<BoardResult<Maintenance>>;
 }
 
+/** The own status (B, ADR-0018): shown to everyone at the avatar, expires after `minutes` (null: never) */
+export interface StatusApi {
+  load(): Promise<BoardResult<StatusView>>;
+  set(text: string, minutes: number | null): Promise<BoardResult<StatusView>>;
+  clear(): Promise<BoardResult<StatusView>>;
+}
+
 export type PluginStatus = "connected" | "disconnected";
 
 /** Connection of the web UI to the service (LiveAdapter only) */
@@ -100,6 +107,7 @@ export interface MumbleAdapter {
   care: CareApi;
   keys: KeysApi;
   maintenance: MaintenanceApi;
+  status: StatusApi;
   pairing: PairApi;
   /** versions of service and offered plugin (notice pages); null if unknown */
   versions(): Promise<Versions | null>;

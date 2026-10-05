@@ -37,6 +37,8 @@ export const de = {
     away: "abwesend",
     quiet: (minutes: number) => `seit ${minutes} Min. still`,
     recording: "zeichnet auf",
+    /** status at the avatar (B) */
+    status: (text: string) => `Status: ${text}`,
   },
   floors: {
     ground: "Erdgeschoss",
@@ -360,6 +362,27 @@ export const de = {
     revokeDetailCurrent: "Das ist der Schlüssel dieses Browsers: Er ist danach nicht mehr gekoppelt und muss neu gekoppelt werden.",
     revokeConfirm: "Zurückziehen",
     rule: "Ein zurückgezogener Schlüssel ist sofort ungültig.",
+  },
+  /** the own status (B, ADR-0018): a short text at the avatar that everyone sees */
+  status: {
+    title: "Mein Status",
+    set: "Status setzen",
+    current: (text: string) => `Mein Status: ${text}`,
+    intro: "Ein kurzer Text an deinem Avatar, den alle in Ruumble sehen, zum Beispiel „Im Meeting bis 14 Uhr“. Er erscheint, solange dein Mumble mit dem Plugin verbunden ist.",
+    label: "Status",
+    placeholder: "Was machst du gerade?",
+    expires: "Läuft ab",
+    after: (minutes: number) => (minutes < 60 ? `nach ${minutes} Minuten` : minutes === 60 ? "nach 1 Stunde" : `nach ${minutes / 60} Stunden`),
+    never: "nie",
+    now: "Aktuell",
+    until: (when: string) => `bis ${when}`,
+    noExpiry: "ohne Ablauf",
+    clear: "Status löschen",
+    recent: "Zuletzt verwendet",
+    use: (text: string) => `„${text}“ übernehmen`,
+    loading: "Lade …",
+    rule: "Alle in Ruumble sehen deinen Status. Er läuft standardmäßig nach 2 Stunden ab.",
+    invalid: "Der Status ist leer oder zu lang.",
   },
   /** building maintenance (ADR-0016): the wrench at the entrance, for admins */
   maintenance: {

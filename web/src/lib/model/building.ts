@@ -34,6 +34,8 @@ export interface UserView {
   presence: Presence;
   idleMinutes: number;
   recording: boolean;
+  /** status set in Ruumble (B, ADR-0018); `until` null: no expiry */
+  status: { text: string; until: number | null } | null;
 }
 
 /** An enterable area: room, corridor or open floor. */
@@ -238,6 +240,7 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
     presence: presenceOf(u),
     idleMinutes: u.idleMinutes,
     recording: u.recording,
+    status: u.status ?? null,
   });
   const viewsIn = (id: number) =>
     (usersIn.get(id) ?? []).slice().sort((a, b) => collator.compare(a.name, b.name)).map(userView);

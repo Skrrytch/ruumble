@@ -2,7 +2,7 @@
  * State of the web UI: holds the latest snapshot, derives the building and runs commands.
  * No optimistic switching: the own channel only changes with the next snapshot (ADR-0003).
  */
-import { BOARD_LIMITS, type Attachment, type BoardView, type BuildingCare, type BuildingSettings, type FloorCare, type KeyCabinet, type Maintenance, type RoomCare, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_LIMITS, type Attachment, type BoardView, type BuildingCare, type BuildingSettings, type FloorCare, type KeyCabinet, type Maintenance, type RoomCare, type CommandResult, type PostKind, type Post, type ReactionKind, type Snapshot, type StatusView, type TalkingState, type Uploaded, type Versions } from "@ruumble/protocol";
 import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairErrorCode, PluginStatus } from "./adapter/types.ts";
 import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter, type CopyTarget } from "./board/model.ts";
 import type { CareTarget } from "./care/model.ts";
@@ -15,6 +15,11 @@ export type Notice = { text: string };
 export function boardErrorText(error: BoardErrorCode, maxFileBytes: number = BOARD_LIMITS.fileBytes): string {
   const m = t().boardErrors[error];
   return typeof m === "function" ? m(formatSize(maxFileBytes)) : m;
+}
+
+/** Plain text for an error when setting the status (B) */
+export function statusErrorText(error: BoardErrorCode): string {
+  return error === "invalid" ? t().status.invalid : boardErrorText(error);
 }
 
 /** Plain text for an error of a care action */
@@ -75,6 +80,11 @@ export class RuumbleState {
   keys = $state<KeyCabinet | null>(null);
   keysBusy = $state(false);
   keysError = $state<BoardErrorCode | null>(null);
+  /** the own status (B, ADR-0018): dialog open, what the service reported (current and recent texts), saving, error */
+  statusOpen = $state(false);
+  status = $state<StatusView | null>(null);
+  statusBusy = $state(false);
+  statusError = $state<BoardErrorCode | null>(null);
   private boardChannel: number | null = null;
   private boardSeen = readSeen();
 
@@ -130,6 +140,7 @@ export class RuumbleState {
           // e.g. this browser's key was just revoked
           this.closeKeys();
           this.closeMaintenance();
+          this.closeStatus();
         }
       },
       // also while closed: the toggle shows posts the user has not seen yet
@@ -479,6 +490,37 @@ export class RuumbleState {
       return false;
     }
     await this.loadKeys();
+    return true;
+  }
+
+  // ---------------------------------------------------------------- Status (B, ADR-0018)
+
+  async openStatus(): Promise<void> {
+    this.statusOpen = true;
+    this.status = null;
+    this.statusError = null;
+    const r = await this.adapter.status.load();
+    if (!this.statusOpen) return;
+    if (r.ok) this.status = r.value;
+    else this.statusError = r.error;
+  }
+
+  closeStatus(): void {
+    this.statusOpen = false;
+    this.status = null;
+  }
+
+  /** set (`text`, expiry after `minutes`, null: never) or clear (`text` null); the dialog closes on success */
+  async saveStatus(text: string | null, minutes: number | null = null): Promise<boolean> {
+    this.statusBusy = true;
+    this.statusError = null;
+    const r = text === null ? await this.adapter.status.clear() : await this.adapter.status.set(text, minutes);
+    this.statusBusy = false;
+    if (!r.ok) {
+      this.statusError = r.error;
+      return false;
+    }
+    this.closeStatus();
     return true;
   }
 

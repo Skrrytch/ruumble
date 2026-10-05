@@ -6,6 +6,8 @@
   import Languages from "@lucide/svelte/icons/languages";
   import LocateFixed from "@lucide/svelte/icons/locate-fixed";
   import Lock from "@lucide/svelte/icons/lock";
+  import MessageSquare from "@lucide/svelte/icons/message-square";
+  import MessageSquareText from "@lucide/svelte/icons/message-square-text";
   import Mic from "@lucide/svelte/icons/mic";
   import MicOff from "@lucide/svelte/icons/mic-off";
   import UserIcon from "@lucide/svelte/icons/user";
@@ -19,8 +21,8 @@
   import Wrench from "./Wrench.svelte";
 
   // Top bar instead of the elevator column, made of signs: left the floor sign (opens the elevator, which shows
-  // the server and everyone online in its status bar), in the middle the sign of the own room, right mute,
-  // deafen and the name badge (opens the user menu).
+  // the server and everyone online in its status bar), in the middle the sign of the own room, right the status,
+  // mute, deafen and the name badge (opens the user menu).
   let { app, building, floor }: { app: RuumbleState; building: Building; floor: Floor | null } = $props();
 
   const reversed = $derived([...building.floors].reverse());
@@ -39,6 +41,7 @@
   const other = $derived(locale() === "de" ? "en" : "de");
   const muted = $derived(me ? me.selfMute || me.selfDeaf : false);
   const deaf = $derived(me?.selfDeaf ?? false);
+  const myStatus = $derived(me?.status ?? null);
   const myAvatar = $derived(me ? app.avatarOf(me.name) : null);
   let avatarBroken = $state<string | null>(null); // URL that could not be loaded → initials
   const hidden = $derived(building.self?.kind === "hidden");
@@ -176,6 +179,10 @@
   </div>
 
   <div class="right">
+    <!-- the own status (B, ADR-0018): filled while one is set, its text in the tooltip -->
+    <button type="button" class="tool" aria-pressed={!!myStatus} aria-label={t().status.title} title={myStatus ? t().status.current(myStatus.text) : t().status.set} disabled={!me} onclick={() => void app.openStatus()}>
+      {#if myStatus}<MessageSquareText size={20} />{:else}<MessageSquare size={20} />{/if}
+    </button>
     <button type="button" class="tool" aria-pressed={muted} aria-label={t().core.mute} title={t().core.mute} disabled={!me} onclick={() => app.toggleMute()}>
       {#if muted}<MicOff size={20} />{:else}<Mic size={20} />{/if}
     </button>

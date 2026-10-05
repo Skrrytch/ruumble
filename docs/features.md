@@ -12,7 +12,7 @@ How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.m
 
 - Top-level channels become **floors**, the floor channel itself is the **corridor**, second-level channels are **rooms**. A floor without subchannels is an **open floor**.
 - Order follows the channels' **position** in Mumble, then the name, as in the Mumble client. The first floor is the ground floor. There are no special names or keywords.
-- **Top bar** instead of a side column, so the floor plan gets the full width: the **floor sign** with the current floor and its head count opens the **elevator** as a dropdown (head count behind every floor, everyone online and the server name in a status bar at the bottom); in the middle the **room sign** of the own place (leads back from another floor); on the right mute, deafen and the **name badge**, which opens the user menu ("go to my floor", language, versions).
+- **Top bar** instead of a side column, so the floor plan gets the full width: the **floor sign** with the current floor and its head count opens the **elevator** as a dropdown (head count behind every floor, everyone online and the server name in a status bar at the bottom); in the middle the **room sign** of the own place (leads back from another floor); on the right the **status**, mute, deafen and the **name badge**, which opens the user menu ("go to my floor", language, versions).
 - Users in the root channel stand in the **entrance**, at the bottom of the elevator.
 - **Locked floors:** a floor with more than two levels is greyed out in the elevator, with the reason. The rule is re-evaluated live on every change.
 - **Linked channels** are hidden, including their subchannels. The other rooms use the space.
@@ -34,8 +34,16 @@ How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.m
 | **Recording** (red dot at the avatar, hint at the room) | Ice |
 | **Listening** (ear icon at the room, "N people are listening", no names) | Ice |
 | **Mumble avatars** of registered users, otherwise initials | Ice `getTexture` |
+| **Status** (speech bubble at the avatar, text and expiry in the tooltip) | set in Ruumble, kept by the service (ADR-0018) |
 
 Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` rejects registered users (bug in Mumble); Ruumble then shows initials.
+
+### Status
+
+- The speech-bubble button in the top bar, before mute, opens **My status**: a free text (one line, up to 80 characters) and when it expires: after 2 hours by default, or after 30 minutes, 1, 4 or 8 hours, or never. Set it, change it, or clear it.
+- Below, the **last five texts** you used, for a quick choice: a click puts the text into the field.
+- Everyone in Ruumble sees a **speech bubble** at your avatar, with the text and the expiry in its tooltip; the button in the top bar is filled while your status is set. It shows while your Mumble is connected with the plugin.
+- Kept by the service per person, so it follows you to other browsers; plain Mumble clients do not see it (ADR-0018).
 
 ### Moving, mute and deafen
 
@@ -142,7 +150,7 @@ Tested versions: see [operations](operations.md#requirements).
 | Item | Status |
 |---|---|
 | macOS plugin | later option (E3) |
-| B – Status line | on hold: the Mumble comment cannot be set from the plugin (see below) |
+| B – Status line | done (Unreleased), kept by the service instead of the Mumble comment (ADR-0018) |
 | C – Knocking | idea, decision open |
 | F – More controls | idea, decision open |
 | G – "Door closed" | dropped (2026-10-03): Mumble has no knocking |
@@ -162,6 +170,8 @@ Tested versions: see [operations](operations.md#requirements).
 **B – Status line.** A short status such as "In a meeting until 2 pm", with templates and an expiry time, shown under the avatar. The idea was to store it as a marked first line of the Mumble comment, so regular Mumble clients see it too, without storage of its own.
 
 On hold (2026-10-02): this does not work. The plugin API's `requestSetLocalUserComment` only changes the comment in the local client's model (`pmModel->setComment`) and never sends a `UserState` to the server, unlike Mumble's own comment dialog (`MainWindow::openSelfCommentDialog`); same in 1.5.735, 1.6.870 and `master` (`src/mumble/API_v_1_x_x.cpp`). Neither other clients nor Ice would see the status. The remaining options are storing the status in the service (visible only in Ruumble) or writing the comment via Ice, which needs the write secret and contradicts ADR-0002. Worth reporting at mumble-voip/mumble like O16.
+
+Done (2026-10-05) with the first option, see [Status](#status) and ADR-0018: visible only in Ruumble.
 
 **C – Knocking.** "Knock" on someone else's room: the people inside get a notice with a sound in Ruumble ("Let in", "One moment", "Later") and a line in the Mumble log. Runs through the service, in memory only, expires after 60 s, with abuse protection.
 

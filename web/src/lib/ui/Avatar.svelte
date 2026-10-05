@@ -1,8 +1,10 @@
 <script lang="ts">
   import HeadphoneOff from "@lucide/svelte/icons/headphone-off";
+  import MessageSquareText from "@lucide/svelte/icons/message-square-text";
   import MicOff from "@lucide/svelte/icons/mic-off";
   import type { UserView } from "../model/building.ts";
   import { t } from "../i18n/index.svelte.ts";
+  import { statusLabel } from "../status.ts";
 
   let { user, talking = false, showName = true }: { user: UserView; talking?: boolean; showName?: boolean } = $props();
 
@@ -13,6 +15,8 @@
   const presence = $derived(talking ? "active" : user.presence);
 
   const p = $derived(t().people);
+  // status (B, ADR-0018): a speech bubble at the top right, its text in the tooltip
+  const status = $derived(user.status ? statusLabel(user.status) : null);
   const label = $derived(
     [
       user.name + (user.isSelf ? ` (${p.you})` : ""),
@@ -21,6 +25,7 @@
       talking ? p.talking : null,
       presence === "away" ? p.away : presence === "quiet" ? p.quiet(user.idleMinutes) : null,
       user.recording ? p.recording : null,
+      status,
     ]
       .filter(Boolean)
       .join(", "),
@@ -35,6 +40,9 @@
       <img src={imageUrl} alt="" onerror={() => (failedUrl = imageUrl)} />
     {:else}
       {user.initials}
+    {/if}
+    {#if status}
+      <span class="bubble" title={status}><MessageSquareText size={12} strokeWidth={2.5} /></span>
     {/if}
     {#if user.recording}
       <span class="rec" title={cap(p.recording)}></span>
@@ -76,6 +84,11 @@
   .rec {
     position: absolute; left: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%;
     background: var(--color-alert); border: 2px solid var(--color-white);
+  }
+  .bubble {
+    position: absolute; right: -7px; top: -7px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--color-white); border: 1px solid var(--color-navy); color: var(--color-navy);
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgb(0 56 105 / 0.25);
   }
   .flag {
     position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 50%;

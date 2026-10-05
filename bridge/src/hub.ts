@@ -14,6 +14,7 @@ import {
   type CommandResult,
   type Locale,
   type Snapshot,
+  type UserStatus,
 } from "@ruumble/protocol";
 import { RateLimiter } from "./access.ts";
 import type { MumbleSource } from "./mumble.ts";
@@ -41,6 +42,8 @@ export interface HubOptions {
   refresh?: () => Promise<void>;
   /** version of a registered user's avatar image (AP9) */
   avatarVersion?: (userId: number | null) => string | null;
+  /** current status of a person (B, ADR-0018), by certificate hash */
+  statusOf?: (certHash: string) => UserStatus | null;
 }
 
 /** Who is behind a device token and where are they right now? (board, ADR-0011) */
@@ -246,10 +249,8 @@ export class Hub {
           this.log("Plugin connected", { session: msg.session, name, plugin: msg.pluginVersion, mumble: entry.mumbleVersion });
           this.announceKeys(entry);
           this.sessionsChanged();
-          this.forUis(msg.certHash, (ui) => {
-            ui.conn.send({ v, type: "status", plugin: "connected" });
-            this.sendSnapshot(ui);
-          });
+          this.forUis(msg.certHash, (ui) => ui.conn.send({ v, type: "status", plugin: "connected" }));
+          this.snapshotsFor(msg.certHash);
           return;
         }
         if (!entry) return; // everything else only after a successful hello
@@ -319,10 +320,14 @@ export class Hub {
     }
     this.log("Plugin disconnected", { session: entry.session });
     this.sessionsChanged();
-    this.forUis(entry.certHash, (ui) => {
-      ui.conn.send({ v, type: "status", plugin: "disconnected" });
-      this.sendSnapshot(ui);
-    });
+    this.forUis(entry.certHash, (ui) => ui.conn.send({ v, type: "status", plugin: "disconnected" }));
+    this.snapshotsFor(entry.certHash);
+  }
+
+  /** the person's plugin came or went: new snapshots for their web UIs, for everyone if they have a status (ADR-0018) */
+  private snapshotsFor(certHash: string): void {
+    if (this.opts.statusOf?.(certHash)) this.rebroadcast();
+    else this.forUis(certHash, (ui) => this.sendSnapshot(ui));
   }
 
   // ---------------------------------------------------------------- Web UI
@@ -372,6 +377,12 @@ export class Hub {
     if (!s) return;
     const plugin = ui.certHash ? this.plugins.get(ui.certHash) : undefined;
     const session = plugin && s.users.some((u) => u.session === plugin.session) ? plugin.session : null;
+    // a status belongs to a person, known by session only while their plugin is connected (ADR-0018)
+    const statusOf = new Map<number, UserStatus>();
+    for (const p of this.plugins.values()) {
+      const status = this.opts.statusOf?.(p.certHash);
+      if (status) statusOf.set(p.session, status);
+    }
     const snapshot: Snapshot = {
       v,
       type: "snapshot",
@@ -379,7 +390,10 @@ export class Hub {
       self: session ? { session } : null,
       channels: s.channels,
       // addresses never leave the service
-      users: s.users.map(({ address: _address, ...u }) => ({ ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null })),
+      users: s.users.map(({ address: _address, ...u }) => {
+        const status = statusOf.get(u.session);
+        return { ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null, ...(status ? { status } : {}) };
+      }),
       listeners: s.listeners,
       canEnter: session ? (s.canEnter.get(session) ?? {}) : {},
       care: session ? (s.care.get(session) ?? []) : [],

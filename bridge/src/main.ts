@@ -7,7 +7,7 @@
  *   PUBLIC_URL                                   optional base URL for pairing links; unset: the address the plugin connected to
  *   PORT (64080), HOST (0.0.0.0)                 HTTP/WebSocket
  *   WEB_DIST                                     built web UI (web/dist)
- *   DATA_DIR (./data)                            device tokens and board (board.sqlite, board/)
+ *   DATA_DIR (./data)                            device tokens, statuses and board (tokens.json, statuses.json, board.sqlite, board/)
  *   PLUGIN_BUNDLE, PLUGIN_BUNDLE_DIR             optional: .mumble_plugin for /download (file or directory)
  *   ADDRESS_CHECK (warn)                         off | warn | enforce (ADR-0004; behind hairpin NAT only warn works, P7)
  *   TRUST_PROXY (false)                          behind a reverse proxy: its address(es) or CIDR, comma-separated (then
@@ -46,6 +46,7 @@ import { IceMumbleSource } from "./mumble.ts";
 import { originGuard } from "./origin.ts";
 import { Pairing } from "./pairing.ts";
 import { Poller } from "./poller.ts";
+import { StatusBook, statusRoutes } from "./status.ts";
 
 const env = process.env;
 const required = (key: string) => {
@@ -114,6 +115,8 @@ if (config.trustProxy === true) {
 }
 
 const pairing = new Pairing(resolve(dataDir, "tokens.json"));
+// statuses (B, ADR-0018): set, cleared or expired → everyone gets a new snapshot
+const statuses: StatusBook = new StatusBook(resolve(dataDir, "statuses.json"), { onChange: () => hub.rebroadcast() });
 let lastPoll = 0;
 let lastError: string | null = null;
 
@@ -144,6 +147,7 @@ const hub: Hub = new Hub({
   onSessionsChanged: (sessions) => poller.watchSessions(sessions),
   refresh: () => poller.poll(),
   avatarVersion: (id) => avatars.version(id),
+  statusOf: (certHash) => statuses.current(certHash),
 });
 const poller: Poller = new Poller(source, {
   onChange: (state) => {
@@ -266,6 +270,9 @@ await app.register(keyRoutes, {
   log,
 });
 
+// the own status, shown to everyone at the avatar (B, ADR-0018)
+await app.register(statusRoutes, { book: statuses, gate });
+
 // building maintenance: settings that used to be fixed (ADR-0016)
 await app.register(maintenanceRoutes, { store, gate, log });
 
@@ -351,6 +358,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, async () => {
     poller.stop();
     clearInterval(cleanupTimer);
+    statuses.close();
     store.close();
     await app.close();
     await source.close();

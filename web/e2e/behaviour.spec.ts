@@ -205,3 +205,43 @@ test("talking indicator in the user's own room", async ({ page }) => {
   await page.goto("/?fixture=sample");
   await expect(page.locator(".av.talking")).not.toHaveCount(0, { timeout: 15000 });
 });
+
+// status (B, ADR-0018): a free text at the own avatar, 2 hours by default, the last five texts for a quick choice
+test.describe("Status (B)", () => {
+  test.beforeEach(async ({ page }) => page.goto("/?fixture=sample&talking=0"));
+
+  test("others' status shows as a bubble with its text", async ({ page }) => {
+    await expect(page.getByRole("img", { name: /^Clara, .*Status: Focus time, please write$/ })).toBeVisible();
+    await expect(page.locator(".bubble[title='Status: Focus time, please write']")).toBeVisible();
+  });
+
+  test("set with the default expiry, quick choice from the recent ones, clear", async ({ page }) => {
+    const button = page.getByRole("button", { name: "My status" });
+    await expect(button).toHaveAttribute("aria-pressed", "false");
+    await button.click();
+    const dialog = page.getByRole("dialog", { name: "My status" });
+    await expect(dialog.getByLabel("Expires")).toHaveValue("120");
+    await expect(dialog.getByRole("listitem")).toHaveCount(3);
+    await dialog.getByLabel("Status", { exact: true }).fill("Reviewing the release");
+    await dialog.getByRole("button", { name: "Set status" }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+    await expect(button).toHaveAttribute("title", "My status: Reviewing the release");
+    await expect(page.getByRole("img", { name: /^Anna \(you\), .*Status: Reviewing the release \(until \d\d:\d\d\)$/ })).toBeVisible();
+
+    await button.click();
+    await expect(dialog.getByText("Current")).toBeVisible();
+    await expect(dialog.getByLabel("Status", { exact: true })).toHaveValue("Reviewing the release");
+    await expect(dialog.getByRole("listitem").first()).toHaveText("Reviewing the release");
+    await dialog.getByRole("button", { name: 'Use "Lunch break"' }).click();
+    await expect(dialog.getByLabel("Status", { exact: true })).toHaveValue("Lunch break");
+    await dialog.getByLabel("Expires").selectOption({ label: "never" });
+    await dialog.getByLabel("Status", { exact: true }).press("Enter");
+    await expect(page.getByRole("img", { name: /^Anna \(you\), .*Status: Lunch break$/ })).toBeVisible();
+
+    await button.click();
+    await dialog.getByRole("button", { name: "Clear status" }).click();
+    await expect(button).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByRole("img", { name: /^Anna \(you\)/ }).first()).not.toHaveAccessibleName(/Status/);
+  });
+});

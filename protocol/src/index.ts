@@ -31,6 +31,17 @@ export const Channel = z.object({
 });
 export type Channel = z.infer<typeof Channel>;
 
+/** limits of the status (B): length of the text, longest expiry in minutes, how many recent texts are kept */
+export const STATUS_LIMITS = { textChars: 80, maxMinutes: 7 * 24 * 60, recent: 5 } as const;
+/** expiry choices in the status dialog, in minutes; null: the status stays until it is cleared */
+export const STATUS_DURATIONS = [30, 60, 120, 240, 480, null] as const;
+/** a new status expires after this by default */
+export const STATUS_DEFAULT_MINUTES = 120;
+
+/** a person's status (B): free text set in Ruumble, kept by the service, shown to everyone; `until` null: no expiry */
+export const UserStatus = z.object({ text: z.string().min(1).max(STATUS_LIMITS.textChars), until: z.number().int().nullable() });
+export type UserStatus = z.infer<typeof UserStatus>;
+
 export const User = z.object({
   session,
   name: z.string(),
@@ -49,6 +60,8 @@ export const User = z.object({
   idleMinutes: z.number().int().min(0),
   /** currently recording (AP10) */
   recording: z.boolean(),
+  /** status set in Ruumble (B), only while the person's plugin is connected; missing: none */
+  status: UserStatus.optional(),
 });
 export type User = z.infer<typeof User>;
 
@@ -386,6 +399,18 @@ export const KeyCabinet = z.object({
   others: z.array(z.object({ name: z.string(), keys: z.array(DeviceKey) })).nullable(),
 });
 export type KeyCabinet = z.infer<typeof KeyCabinet>;
+
+// ---------------------------------------------------------------- Status (B, REST under /api/status)
+
+/** GET /api/status (and the answer to PUT and DELETE): the own status and the texts used last, newest first */
+export const StatusView = z.object({ current: UserStatus.nullable(), recent: z.array(z.string()).max(STATUS_LIMITS.recent) });
+export type StatusView = z.infer<typeof StatusView>;
+/** PUT /api/status: set the own status; `minutes` null: no expiry */
+export const StatusRequest = z.object({
+  text: z.string().trim().min(1).max(STATUS_LIMITS.textChars),
+  minutes: z.number().int().min(1).max(STATUS_LIMITS.maxMinutes).nullable(),
+});
+export type StatusRequest = z.infer<typeof StatusRequest>;
 
 /** POST /api/board/posts/:id/copy: copy a post of the own room to another room the user may enter */
 export const CopyRequest = z.object({ channelId });

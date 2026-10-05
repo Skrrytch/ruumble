@@ -183,7 +183,11 @@
       "userId": null,
       "avatar": null,
       "idleMinutes": 0,
-      "recording": false
+      "recording": false,
+      "status": {
+        "text": "Back at 2 pm",
+        "until": null
+      }
     },
     {
       "session": 6,
@@ -211,7 +215,11 @@
       "userId": null,
       "avatar": null,
       "idleMinutes": 0,
-      "recording": false
+      "recording": false,
+      "status": {
+        "text": "Focus time, please write",
+        "until": null
+      }
     },
     {
       "session": 8,
