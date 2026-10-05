@@ -6,16 +6,26 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+Plugin 0.5.0 (unchanged). A status everyone can see, a building overview with the lobby's directory board, and keyboard shortcuts at a glance.
+
 ### Added
-- **Status.** The speech bubble in the top bar (or the key S) sets a short status of your own, such as "In a meeting until 2 pm" (up to 80 characters). Everyone in Ruumble sees it as a speech bubble at your avatar, with the text and the expiry in its tooltip. It expires after 2 hours by default; choose 30 minutes to 8 hours or "never" instead, or clear it any time. The five texts you used last are offered for a quick choice. A counter shows from 60 characters on. The service keeps it per person in `statuses.json` in the data directory, so it follows you to other browsers (someone without a status for 90 days is forgotten, recent texts included); plain Mumble clients do not see it, because Mumble's plugin API cannot set the comment (ADR-0018).
-- **Building overview.** Click "N online" at the bottom of the elevator, or press H: the whole building from the side (floors stacked, your floor marked in the elevator shaft, everyone as a small avatar, grouped by room; for building admins the lantern beside it opens the building maintenance and the plant the building care) next to the lobby's directory board (every floor with its people, their room and status). Search by name, room, status or floor; click a person to go to them, Enter goes to the first match, a group of people in the cross-section moves you to their room (ADR-0019).
-- **Keyboard shortcuts at a glance:** press ? (or "Keyboard shortcuts" in the user menu) for B (board), H (building overview), S (status) and Esc.
+- **Status.** The speech bubble in the top bar, or the key S, sets a short status of your own, such as "In a meeting until 2 pm" (up to 80 characters; a counter shows from 60 on). Everyone in Ruumble sees it as a speech bubble at your avatar, with the text and the expiry in its tooltip. It expires after 2 hours by default; choose 30 minutes to 8 hours or "never" instead, or clear it any time with the icon next to the current status. The five texts you used last are offered for a quick choice. The service keeps the status per person, so it follows you to other browsers; someone without a status for 90 days is forgotten, recent texts included. Plain Mumble clients do not see it: Mumble's plugin API cannot set the user comment (ADR-0018).
+- **Building overview.** Click "N online" at the bottom of the elevator, or press H. On the left the building from the side: floors stacked under the roof, your floor marked in the elevator shaft, everyone as a small avatar grouped by room, a front door with steps up from the street. On the right the lobby's directory board: every floor with its people, their room and status. Search by name, room, status or floor; click a person or a group to go to their room, Enter goes to the first match, and where you cannot go the tooltip says why. For building admins the lantern beside the building opens the building maintenance and the plant the building care (ADR-0019).
+- **Who uses Mumble without Ruumble.** A small plug at the bottom left of an avatar marks people without a connected Ruumble plugin; the tooltip says "without Ruumble (Mumble only)".
+- **Keyboard shortcuts at a glance.** Press ? (or choose "Keyboard shortcuts" in the user menu) for B (board), H (building overview), S (status) and Esc.
 - The browser tab is named after your room, e.g. "Let's talk · Ruumble".
-- **Who uses Mumble without Ruumble.** A small plug at the bottom left of the avatar marks people without a connected Ruumble plugin; the tooltip says "without Ruumble (Mumble only)".
 
 ### Changed
-- The wrench and the plant are no longer at the entrance in the elevator: building maintenance and building care open from the lantern and the plant beside the building in the building overview.
 - **Care is for building admins.** Every plant (room, floor and building) needs Mumble's Write permission on the root channel. Write on a single room or floor no longer opens its plant; it still lets you delete others' posts on that board.
+- Building care and building maintenance moved from the entrance in the elevator to the plant and the lantern beside the building in the building overview.
+
+### Fixed
+- A dialog opened right after another one closed, for example the status with S right after setting it, could close again at once.
+
+### Upgrading
+- No configuration changes: change the image tag to `0.27.0` and restart.
+- The service keeps the statuses in `statuses.json` in the data directory, next to `tokens.json`; include it when you back up the volume.
+- Whoever tended a single room or floor through Write on just that channel now needs Write on the root channel (usually the `admin` group there).
 
 ## [0.26.0] - 2026-10-03
 
