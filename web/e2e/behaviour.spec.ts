@@ -246,6 +246,7 @@ test.describe("Status (B)", () => {
     await dialog.getByLabel("Status", { exact: true }).press("Enter");
     await expect(page.getByRole("img", { name: /^Anna \(you\), .*Status: Lunch break$/ })).toBeVisible();
 
+    await expect(dialog).toHaveCount(0); // shortcuts never apply while a dialog is open
     await page.keyboard.press("s"); // the shortcut opens it as well
     await dialog.getByRole("button", { name: "Clear status" }).click();
     await expect(button).toHaveAttribute("aria-pressed", "false");
