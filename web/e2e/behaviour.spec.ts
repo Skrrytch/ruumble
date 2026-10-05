@@ -351,3 +351,28 @@ test.describe("Building overview", () => {
     await expect(page.getByRole("status", { name: /^You are here: Ben's office/ })).toBeVisible();
   });
 });
+
+// the tab names the own place; ? lists the keyboard shortcuts
+test.describe("Tab title and shortcuts", () => {
+  test.beforeEach(async ({ page }) => page.goto("/?fixture=sample&talking=0"));
+
+  test("the tab title is the own room and Ruumble, without numbers", async ({ page }) => {
+    await expect(page).toHaveTitle("Let's talk · Ruumble");
+    await page.getByRole("button", { name: "Let's play – enter" }).click();
+    await expect(page).toHaveTitle("Let's play · Ruumble");
+  });
+
+  test("? lists the shortcuts, also from the user menu", async ({ page }) => {
+    await page.keyboard.press("?");
+    const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+    const rows: [string, string][] = [["B", "Show and hide the board"], ["H", "Building overview"], ["S", "My status"], ["?", "This list"], ["Esc", "Close a dialog"]];
+    for (const [key, what] of rows) {
+      await expect(dialog.getByText(key, { exact: true })).toBeVisible();
+      await expect(dialog.getByText(what, { exact: true })).toBeVisible();
+    }
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await (await userMenu(page)).getByRole("button", { name: /Keyboard shortcuts/ }).click();
+    await expect(dialog).toBeVisible();
+  });
+});

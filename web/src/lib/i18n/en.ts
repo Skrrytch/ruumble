@@ -342,6 +342,16 @@ export const en: Messages = {
     revokeConfirm: "Revoke",
     rule: "A revoked key stops working at once.",
   },
+  shortcuts: {
+    title: "Keyboard shortcuts",
+    menu: "Keyboard shortcuts",
+    toggleBoard: "Show and hide the board",
+    overview: "Building overview",
+    status: "My status",
+    help: "This list",
+    escape: "Close a dialog",
+    note: "Shortcuts do not apply while typing or in an open dialog.",
+  },
   overview: {
     title: "Building overview",
     open: "Building overview",

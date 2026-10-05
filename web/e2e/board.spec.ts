@@ -351,7 +351,7 @@ test.describe("Board (AP11.2)", () => {
     await board.getByRole("button", { name: "Send" }).click();
     await expect(board.getByRole("article").first()).toContainText("<img src=x");
     await expect(board.getByRole("article").first().locator("img")).toHaveCount(0);
-    expect(await page.title()).toBe("Ruumble");
+    expect(await page.title()).toBe("Let's talk · Ruumble"); // the tab title, untouched by the post
   });
 
   test("in the corridor: notice instead of the board", async ({ page }) => {

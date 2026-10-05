@@ -1,7 +1,7 @@
 <script lang="ts">
   import Unplug from "@lucide/svelte/icons/unplug";
   import type { MockAdapter } from "./lib/adapter/mock.ts";
-  import { FEW_ROOMS } from "./lib/model/building.ts";
+  import { FEW_ROOMS, ownPlace } from "./lib/model/building.ts";
   import type { RuumbleState } from "./lib/state.svelte.ts";
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
   import FloorPlan from "./lib/ui/FloorPlan.svelte";
@@ -15,6 +15,7 @@
   import KeysDialog from "./lib/ui/KeysDialog.svelte";
   import MaintenanceDialog from "./lib/ui/MaintenanceDialog.svelte";
   import BuildingOverview from "./lib/ui/overview/BuildingOverview.svelte";
+  import ShortcutsDialog from "./lib/ui/ShortcutsDialog.svelte";
   import StatusDialog from "./lib/ui/StatusDialog.svelte";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
@@ -26,6 +27,12 @@
     app.boardOpen && !app.readonly && !!floor && !floor.lock && floor.rooms.length > 0 && floor.rooms.length <= FEW_ROOMS,
   );
 
+  // the tab says where one is: "Let's talk · Ruumble"; without an own place just "Ruumble"
+  $effect(() => {
+    const place = building && app.snapshot ? ownPlace(building, app.snapshot) : null;
+    document.title = place ? `${place.name} · Ruumble` : "Ruumble";
+  });
+
   // keyboard shortcuts (lib/shortcuts.ts): only in the building view; the board needs an own user
   function onkeydown(e: KeyboardEvent): void {
     if (!building || app.connection !== "connected") return;
@@ -36,6 +43,9 @@
     } else if (shortcut === "status" && app.me) {
       e.preventDefault();
       void app.openStatus();
+    } else if (shortcut === "help") {
+      e.preventDefault();
+      app.helpOpen = true;
     } else if (shortcut === "overview") {
       e.preventDefault();
       app.openOverview();
@@ -93,6 +103,7 @@
     {#if app.keysOpen}<KeysDialog {app} />{/if}
     {#if app.maintenanceOpen}<MaintenanceDialog {app} />{/if}
     {#if app.statusOpen}<StatusDialog {app} />{/if}
+    {#if app.helpOpen}<ShortcutsDialog onclose={() => (app.helpOpen = false)} />{/if}
     {#if app.overviewOpen && building}<BuildingOverview {app} {building} />{/if}
   {/if}
 

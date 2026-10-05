@@ -4,6 +4,7 @@
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import HeadphoneOff from "@lucide/svelte/icons/headphone-off";
   import Headphones from "@lucide/svelte/icons/headphones";
+  import Keyboard from "@lucide/svelte/icons/keyboard";
   import Languages from "@lucide/svelte/icons/languages";
   import LocateFixed from "@lucide/svelte/icons/locate-fixed";
   import Lock from "@lucide/svelte/icons/lock";
@@ -200,6 +201,10 @@
           <button type="button" class="item" onclick={() => setLocale(other)}>
             <Languages size={18} aria-hidden="true" />{t().core.switchLanguage(t().core.languageName[other])}
           </button>
+          <!-- the keyboard shortcuts, also with ? -->
+          <button type="button" class="item" onclick={() => { open = null; app.helpOpen = true; }}>
+            <Keyboard size={18} aria-hidden="true" />{t().shortcuts.menu}<kbd class="key">?</kbd>
+          </button>
           <div class="versions"><span>{t().core.server(building.serverVersion)}</span><span>{t().core.ui(__UI_VERSION__)}</span></div>
         </div>
       {/if}
@@ -364,6 +369,7 @@
     background: none; color: var(--color-navy); font-size: 14px; text-align: left; cursor: pointer;
   }
   .item:hover { background: var(--color-blue-100); }
+  .item .key { margin-left: auto; min-width: 20px; padding: 0 5px; border: 1px solid var(--color-blue-300); border-radius: 4px; font: inherit; font-size: 12px; font-weight: 700; text-align: center; color: var(--color-blue-700); }
   .item:disabled { opacity: 0.5; cursor: not-allowed; }
   .item:disabled:hover { background: none; }
   .versions { display: flex; justify-content: space-between; gap: 12px; padding: 10px 10px 4px; margin-top: 4px; border-top: 1px solid var(--color-blue-100); font-size: 12px; color: var(--color-blue-700); }

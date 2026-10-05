@@ -388,6 +388,17 @@ export const de = {
     inHouse: (n: number) => (n === 1 ? "1 Person im Haus" : `${n} Personen im Haus`),
     hint: "Klick auf eine Person: hingehen.",
   },
+  /** the list of keyboard shortcuts (?), also from the user menu */
+  shortcuts: {
+    title: "Tastenkürzel",
+    menu: "Tastenkürzel",
+    toggleBoard: "Pinnwand ein- und ausblenden",
+    overview: "Gebäudeübersicht",
+    status: "Mein Status",
+    help: "Diese Übersicht",
+    escape: "Dialog schließen",
+    note: "Kürzel wirken nicht beim Tippen und nicht in einem offenen Dialog.",
+  },
   /** the own status (B, ADR-0018): a short text at the avatar that everyone sees */
   status: {
     title: "Mein Status",

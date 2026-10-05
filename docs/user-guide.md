@@ -45,6 +45,10 @@ Links from Mumble (welcome message, pairing link) open in your default browser. 
 - **Status:** the speech bubble right in the top bar (or the key **S**) sets a short status, such as "In a meeting until 2 pm". Everyone in Ruumble sees it as a small speech bubble at your avatar; hover it to read the text. It expires after 2 hours unless you choose another time or "never", and you can clear it any time. The texts you used last are listed below for a quick choice.
 - **Right in the top bar:** status, mute microphone and deafen; your name badge opens the user menu with "Go to my floor", the language switch and the versions.
 
+### Keyboard and tab
+
+**B** shows and hides the board, **H** opens the building overview, **S** your status; **?** lists them (also in the user menu, "Keyboard shortcuts"). The browser tab is named after the room you are in, e.g. "Let's talk · Ruumble".
+
 ### Language
 
 The web UI is in German if your browser prefers German, otherwise in English. You can switch it in the user menu (your name, top right); the browser remembers your choice.

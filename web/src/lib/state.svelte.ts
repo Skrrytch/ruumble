@@ -80,6 +80,8 @@ export class RuumbleState {
   keys = $state<KeyCabinet | null>(null);
   keysBusy = $state(false);
   keysError = $state<BoardErrorCode | null>(null);
+  /** the list of keyboard shortcuts, opened with ? or from the user menu */
+  helpOpen = $state(false);
   /** building overview (ADR-0019): cross-section and directory, opened from the elevator's status bar or with H */
   overviewOpen = $state(false);
   /** the own status (B, ADR-0018): dialog open, what the service reported (current and recent texts), saving, error */
