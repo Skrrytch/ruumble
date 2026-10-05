@@ -713,8 +713,9 @@ describe("REST /api/care (ADR-0014)", () => {
     return { app, store, hub, source, poller, plugins, as, clock };
   }
 
-  it("the snapshot names the channels the user may tend: root, floors, rooms", async () => {
-    const { hub, poller } = await setup();
+  it("the snapshot names the channels the user may tend: everything for building admins, nothing otherwise", async () => {
+    const { hub, poller, source } = await setup();
+    source.writeOn[7] = [1, 2]; // Write on a floor and a room alone: no plant (ADR-0014)
     poller.watchSessions([7, 8]); // main.ts: onSessionsChanged
     await poller.poll();
     const ben = recorder<BridgeToUi>(), anna = recorder<BridgeToUi>();
@@ -725,7 +726,7 @@ describe("REST /api/care (ADR-0014)", () => {
     expect(poller.state?.care.get(8)).toEqual([0, 1, 2, 3]);
   });
 
-  it("room: only with Write permission, from anywhere; clear the board with a notice to those present", async () => {
+  it("room: only for building admins, from anywhere; clear the board with a notice to those present", async () => {
     const { app, store, hub, plugins, as } = await setup();
     store.create({ channelId: 2, kind: "text", text: "see TAG-2", authorHash: A, authorName: "Anna" });
     expect((await app.inject({ url: "/api/care/rooms/2" })).statusCode).toBe(401);
@@ -840,10 +841,10 @@ describe("REST /api/care (ADR-0014)", () => {
     expect((await move(2, 2)).statusCode).toBe(400);
     expect((await move(7, 3)).statusCode).toBe(404); // no data
     expect((await move(5, 3, "anna")).statusCode).toBe(403);
-    // Write on this floor only: no boards from other floors, no building care
-    source.writeOn[7] = [1];
-    const annaFloor = (await app.inject({ url: "/api/care/floors/1", headers: as("anna") })).json();
-    expect(annaFloor.sources).toEqual([{ channelId: 2, name: "Office", floorName: "1F", posts: 1, gone: false }]);
+    // Write on this floor and its room only is not enough: care is for building admins (Write on the root channel)
+    source.writeOn[7] = [1, 2];
+    expect((await app.inject({ url: "/api/care/floors/1", headers: as("anna") })).statusCode).toBe(403);
+    expect((await app.inject({ url: "/api/care/rooms/2", headers: as("anna") })).statusCode).toBe(403);
     expect((await move(5, 3, "anna")).statusCode).toBe(403);
     expect((await app.inject({ url: "/api/care/building", headers: as("anna") })).statusCode).toBe(403);
     source.writeOn = {};

@@ -80,14 +80,14 @@ Every room has a board next to the floor plan. It shows the board of the room yo
 | Retention | 1 year (`RETENTION_DAYS`); admins can delete older posts per room earlier |
 | Limits | Images and files up to 10 MB by default, text up to 100 KB, 2 GB in total (`BOARD_QUOTA_MB`); when full, the oldest posts go first; admins can change the limits in the building maintenance |
 | Deleted channel | Posts stay 7 days for admins (by default, set in the building maintenance), then they are removed (earlier by floor or building care) |
-| Care | Mumble admins (Write permission) via the plants, see below |
+| Care | Building admins (Write permission on the root channel) via the plants, see below |
 | Storage | SQLite plus attachments by SHA-256 in the data volume; `backup` command |
 
 Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 
 ### Care of the stored data
 
-A potted plant stands in every room (behind the door, on the corridor side), at the end of every corridor and at the entrance in the elevator. For everyone it is decoration; whoever has Mumble's Write permission there can click it ([ADR-0014](decisions/0014-care-of-the-stored-data.md)):
+A potted plant stands in every room (behind the door, on the corridor side), at the end of every corridor and at the entrance in the elevator. For everyone it is decoration; building admins (Mumble's Write permission on the root channel) can click every one of them ([ADR-0014](decisions/0014-care-of-the-stored-data.md)):
 
 - **Room care**: posts, attachment space, newest and oldest post, the retention period; **delete posts older than** 7 days, 14 days, 1, 3 or 6 months (with the count per choice); **clear the board** (all posts with reactions, "kept on top" and attachments); both send a Mumble notice to the people present. **Export** the board as a ZIP (`board.md` and the attachments).
 - **Floor care**: all rooms of the floor with posts, size and last post (a line opens the room's care, "back" returns); **move a board** from any room in the database, current or gone, to a room on this floor (e.g. a room recreated in Mumble with a new ID); rooms of this floor that were deleted in Mumble or moved out of the floor plan and still hold data, one line each (name, posts, size, gone since), removed one by one or all.

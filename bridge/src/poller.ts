@@ -11,7 +11,8 @@ export interface ServerState extends Basics {
   listeners: Record<string, number[]>;
   /** session → channel → false if access is denied */
   canEnter: Map<number, Record<string, boolean>>;
-  /** session → channels whose stored data it may tend (Write on root, floors and rooms, ADR-0014) */
+  /** session → channels whose stored data it may tend: every room, floor and the root channel for building admins
+   * (Write on the root channel), none otherwise (ADR-0014) */
   care: Map<number, number[]>;
 }
 
@@ -92,8 +93,8 @@ export class Poller {
       for (const s of this.sessions) {
         if (!livingSessions.has(s)) continue;
         canEnter.set(s, await this.source.canEnter(s, channelIds));
-        const writable = await Promise.all(careIds.map((id) => this.source.canWrite(s, id)));
-        care.set(s, careIds.filter((_, i) => writable[i]));
+        // care is for building admins only: Write on the root channel tends every plant (ADR-0014)
+        care.set(s, (await this.source.canWrite(s, 0)) ? careIds : []);
       }
       this.permissionsDirty = false;
     }

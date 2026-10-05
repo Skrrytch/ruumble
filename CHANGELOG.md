@@ -9,6 +9,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 ### Added
 - **Status.** The speech bubble in the top bar sets a short status of your own, such as "In a meeting until 2 pm" (up to 80 characters). Everyone in Ruumble sees it as a speech bubble at your avatar, with the text and the expiry in its tooltip. It expires after 2 hours by default; choose 30 minutes to 8 hours or "never" instead, or clear it any time. The five texts you used last are offered for a quick choice. The service keeps it per person in `statuses.json` in the data directory, so it follows you to other browsers; plain Mumble clients do not see it, because Mumble's plugin API cannot set the comment (ADR-0018).
 
+### Changed
+- **Care is for building admins.** Every plant (room, floor and building) needs Mumble's Write permission on the root channel. Write on a single room or floor no longer opens its plant; it still lets you delete others' posts on that board.
+
 ## [0.26.0] - 2026-10-03
 
 Plugin 0.5.0 (unchanged). A new floor plan with flatter rooms, and exports through a "Save as" dialog.

@@ -1,8 +1,8 @@
 /**
  * Care of the stored data (ADR-0014): the plant in every room, at the end of the corridor and at the entrance.
- * Only for paired users with Mumble's Write permission on that room, floor or the root channel (building). Unlike
- * the board itself, care works from anywhere in the building. It shows counts and sizes, not the content of posts;
- * the export is the exception, for admins only.
+ * Only for building admins: paired users with Mumble's Write permission on the root channel, for every plant alike
+ * (Write on a room or floor alone is not enough). Unlike the board itself, care works from anywhere in the building.
+ * It shows counts and sizes, not the content of posts; the export is the exception.
  *
  *   GET    /api/care/rooms/:id           what the room's board holds, how many posts are older than each choice
  *   DELETE /api/care/rooms/:id/posts     clear the board (all posts with reactions, pin and attachments)
@@ -62,12 +62,12 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
   const actions = new RateLimiter(o.actionsPerMinute ?? 20);
   const rateLimited = (certHash: string) => actions.over(certHash);
 
-  /** paired, Mumble connected, Write permission on the channel; `exists` checks that it is a room/floor */
-  async function caretaker(req: FastifyRequest, channelId: number, exists: boolean): Promise<{ viewer: Viewer } | { error: "not-paired" | "not-found" | "forbidden" }> {
+  /** paired, Mumble connected, building admin (Write on the root channel); `exists` checks that it is a room/floor */
+  async function caretaker(req: FastifyRequest, exists: boolean): Promise<{ viewer: Viewer } | { error: "not-paired" | "not-found" | "forbidden" }> {
     const viewer = o.gate.viewer(req);
     if (!viewer) return { error: "not-paired" };
     if (!exists) return { error: "not-found" };
-    if (!(await o.gate.mayWrite(viewer, channelId))) return { error: "forbidden" };
+    if (!(await o.gate.mayWrite(viewer, 0))) return { error: "forbidden" };
     return { viewer };
   }
 
@@ -77,14 +77,14 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
   /** name of a room or floor: current, else last known */
   const nameOf = (id: number) => o.hub.channelName(id) || o.store.placeName(id);
 
-  /** the floor whose Write permission covers a room's data: current floor, else last known, else the root channel */
+  /** the floor a room belongs to: current, else last known, else the root channel */
   const floorFor = (id: number) => o.hub.floorOf(id) ?? o.store.placeFloor(id) ?? 0;
 
   // ---------------------------------------------------------------- Room
 
   app.get<{ Params: { id: string } }>("/api/care/rooms/:id", async (req, reply) => {
     const id = channelParam(req.params.id);
-    const r = await caretaker(req, id, o.hub.isBoardRoom(id));
+    const r = await caretaker(req, o.hub.isBoardRoom(id));
     if ("error" in r) return fail(reply, r.error);
     const times = o.store.postTimes(id);
     const t = now();
@@ -99,7 +99,7 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
 
   app.post<{ Params: { id: string } }>("/api/care/rooms/:id/prune", async (req, reply) => {
     const id = channelParam(req.params.id);
-    const r = await caretaker(req, id, o.hub.isBoardRoom(id));
+    const r = await caretaker(req, o.hub.isBoardRoom(id));
     if ("error" in r) return fail(reply, r.error);
     const body = RoomPrune.safeParse(req.body);
     if (!body.success) return fail(reply, "invalid");
@@ -117,7 +117,7 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
 
   app.get<{ Params: { id: string } }>("/api/care/rooms/:id/export", async (req, reply) => {
     const id = channelParam(req.params.id);
-    const r = await caretaker(req, id, o.hub.isBoardRoom(id));
+    const r = await caretaker(req, o.hub.isBoardRoom(id));
     if ("error" in r) return fail(reply, r.error);
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     const name = o.hub.channelName(id);
@@ -134,7 +134,7 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
 
   app.delete<{ Params: { id: string } }>("/api/care/rooms/:id/posts", async (req, reply) => {
     const id = channelParam(req.params.id);
-    const r = await caretaker(req, id, o.hub.isBoardRoom(id));
+    const r = await caretaker(req, o.hub.isBoardRoom(id));
     if ("error" in r) return fail(reply, r.error);
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     const posts = o.store.clearRoom(id);
@@ -153,7 +153,7 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
 
   app.get<{ Params: { id: string } }>("/api/care/floors/:id", async (req, reply) => {
     const id = channelParam(req.params.id);
-    const r = await caretaker(req, id, o.hub.isFloor(id));
+    const r = await caretaker(req, o.hub.isFloor(id));
     if ("error" in r) return fail(reply, r.error);
     const stats = o.store.channelStats();
     const rooms = o.hub.floorPlan().find((f) => f.id === id)?.rooms ?? [];
@@ -166,38 +166,31 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
         return { channelId: room.id, name: room.name, posts: st?.posts ?? 0, bytes: st?.bytes ?? 0, newest: st?.newest ?? null };
       }),
       orphans: floorOrphans(id).map(({ channelId, name, posts, bytes, goneSince }) => ({ channelId, name, posts, bytes, goneSince })),
-      sources: await transferSources(r.viewer, stats),
+      sources: transferSources(stats),
     };
     return view;
   });
 
-  /** every room in the database with posts whose floor (or, unknown, the building) the viewer may tend */
-  async function transferSources(viewer: Viewer, stats: Map<number, { posts: number }>): Promise<TransferSource[]> {
-    const allowed = new Map<number, Promise<boolean>>();
-    const may = (floor: number) => {
-      if (!allowed.has(floor)) allowed.set(floor, o.gate.mayWrite(viewer, floor));
-      return allowed.get(floor)!;
-    };
+  /** every room in the database with posts (the building admin may tend them all) */
+  function transferSources(stats: Map<number, { posts: number }>): TransferSource[] {
     const list: TransferSource[] = [];
     for (const [id, st] of stats) {
       const floor = floorFor(id);
-      if (!(await may(floor))) continue;
       list.push({ channelId: id, name: nameOf(id) || `#${id}`, floorName: floor === 0 ? "" : nameOf(floor), posts: st.posts, gone: !o.hub.isBoardRoom(id) });
     }
     return list.sort((a, b) => a.floorName.localeCompare(b.floorName, "de") || a.name.localeCompare(b.name, "de"));
   }
 
-  // move a board (e.g. a room recreated in Mumble with a new ID): Write on this floor and on the source's floor
+  // move a board (e.g. a room recreated in Mumble with a new ID) from any room to a room on this floor
   app.post<{ Params: { id: string } }>("/api/care/floors/:id/transfer", async (req, reply) => {
     const id = channelParam(req.params.id);
-    const r = await caretaker(req, id, o.hub.isFloor(id));
+    const r = await caretaker(req, o.hub.isFloor(id));
     if ("error" in r) return fail(reply, r.error);
     const body = FloorTransfer.safeParse(req.body);
     if (!body.success) return fail(reply, "invalid");
     const { from, to } = body.data;
     if (o.hub.floorOf(to) !== id || from === to) return fail(reply, "invalid");
     if (!o.store.channelStats().has(from)) return fail(reply, "not-found");
-    if (!(await o.gate.mayWrite(r.viewer, floorFor(from)))) return fail(reply, "forbidden");
     if (rateLimited(r.viewer.certHash)) return fail(reply, "rate-limited");
     const fromName = nameOf(from);
     const posts = o.store.moveRoom(from, to);
@@ -211,7 +204,7 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
 
   app.post<{ Params: { id: string } }>("/api/care/floors/:id/cleanup", async (req, reply) => {
     const id = channelParam(req.params.id);
-    const r = await caretaker(req, id, o.hub.isFloor(id));
+    const r = await caretaker(req, o.hub.isFloor(id));
     if ("error" in r) return fail(reply, r.error);
     const body = FloorCleanup.safeParse(req.body);
     if (!body.success) return fail(reply, "invalid");
@@ -230,7 +223,7 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
   const buildingOrphans = () => orphanedFloors(o.store.orphanedRooms(), (id) => o.hub.isFloor(id), (id) => o.store.placeName(id));
 
   app.get("/api/care/building", async (req, reply) => {
-    const r = await caretaker(req, 0, true);
+    const r = await caretaker(req, true);
     if ("error" in r) return fail(reply, r.error);
     const learned = o.store.ticketLinks();
     const tickets: TicketLinks = {};
@@ -250,7 +243,7 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
   });
 
   app.post("/api/care/building/cleanup", async (req, reply) => {
-    const r = await caretaker(req, 0, true);
+    const r = await caretaker(req, true);
     if ("error" in r) return fail(reply, r.error);
     const body = BuildingCleanup.safeParse(req.body);
     if (!body.success) return fail(reply, "invalid");
@@ -264,7 +257,7 @@ export async function careRoutes(app: FastifyInstance, o: CareRouteOptions): Pro
   });
 
   app.post("/api/care/building/tickets/forget", async (req, reply) => {
-    const r = await caretaker(req, 0, true);
+    const r = await caretaker(req, true);
     if ("error" in r) return fail(reply, r.error);
     const body = TicketsForget.safeParse(req.body);
     if (!body.success) return fail(reply, "invalid");

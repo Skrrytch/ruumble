@@ -189,9 +189,9 @@ export class MockAdapter implements MumbleAdapter {
   private keyring = sampleKeys(Date.now());
   private settings: BuildingSettings = { ...MOCK_DEFAULTS };
   readonly maintenance: MaintenanceApi = {
-    load: async () => this.caretaker(0, () => ({ settings: this.settings, defaults: MOCK_DEFAULTS, usedBytes: this.usedBytes() }), true),
+    load: async () => this.caretaker(() => ({ settings: this.settings, defaults: MOCK_DEFAULTS, usedBytes: this.usedBytes() }), true),
     save: async (next) =>
-      this.caretaker(0, () => {
+      this.caretaker(() => {
         if (!BuildingSettings.safeParse(next).success) return new Refused("invalid");
         this.settings = { ...next };
         return { settings: this.settings, defaults: MOCK_DEFAULTS, usedBytes: this.usedBytes() };
@@ -245,7 +245,7 @@ export class MockAdapter implements MumbleAdapter {
   };
   readonly care: CareApi = {
     room: async (id) =>
-      this.caretaker(id, () => {
+      this.caretaker(() => {
         const posts = this.posts.get(id) ?? [];
         const times = posts.map((p) => p.createdAt).sort((a, b) => a - b);
         const now = Date.now();
@@ -256,7 +256,7 @@ export class MockAdapter implements MumbleAdapter {
         };
       }, this.isRoom(id)),
     clearRoom: async (id) =>
-      this.caretaker(id, () => {
+      this.caretaker(() => {
         const posts = (this.posts.get(id) ?? []).length;
         this.posts.delete(id);
         this.pins.delete(id);
@@ -264,7 +264,7 @@ export class MockAdapter implements MumbleAdapter {
         return { posts };
       }, this.isRoom(id)),
     pruneRoom: async (id, days) =>
-      this.caretaker(id, () => {
+      this.caretaker(() => {
         const list = this.posts.get(id) ?? [];
         const keep = list.filter((p) => p.createdAt >= Date.now() - days * DAY);
         this.posts.set(id, keep);
@@ -273,13 +273,13 @@ export class MockAdapter implements MumbleAdapter {
       }, this.isRoom(id)),
     exportRoom: async (id) =>
       // the mock has no ZIP: the board as Markdown is enough to see the download
-      this.caretaker(id, () => {
+      this.caretaker(() => {
         const posts = [...(this.posts.get(id) ?? [])].sort((a, b) => a.createdAt - b.createdAt);
         const md = [`# Board of "${this.channelName(id)}"`, "", ...posts.flatMap((p) => ["---", "", `## ${p.authorName} · ${new Date(p.createdAt).toISOString()}`, "", p.text, ""])].join("\n");
         return { stream: new Blob([md], { type: "text/markdown" }).stream(), name: `board-${this.channelName(id).replace(/[^\p{L}\p{N}._-]+/gu, "-")}.md` };
       }, this.isRoom(id)),
     floor: async (id) =>
-      this.caretaker(id, () => ({
+      this.caretaker(() => ({
         channelId: id,
         name: this.channelName(id),
         graceDays: this.settings.graceDays,
@@ -288,16 +288,15 @@ export class MockAdapter implements MumbleAdapter {
           return { channelId: c.id, name: c.name, posts: posts.length, bytes: posts.reduce((n, p) => n + (p.attachment?.size ?? 0), 0), newest: posts.length ? Math.max(...posts.map((p) => p.createdAt)) : null };
         }),
         orphans: this.orphans.filter((o) => o.floorId === id).map((o) => o.room),
-        sources: this.transferSources().filter((s) => this.state.care?.includes(s.floorId)).map(({ floorId: _, ...s }) => s),
+        sources: this.transferSources().map(({ floorId: _, ...s }) => s),
       }), this.isFloor(id)),
     transfer: async (id, from, to) =>
-      this.caretaker(id, () => {
+      this.caretaker(() => {
         const target = this.state.channels.find((c) => c.id === to);
         if (target?.parent !== id || from === to) return new Refused("invalid");
-        // like the service: a board with posts, and Write on the floor it comes from as well
+        // like the service: a board with posts, from any room
         const source = this.transferSources().find((s) => s.channelId === from);
         if (!source) return new Refused("not-found");
-        if (!this.state.care?.includes(source.floorId)) return new Refused("forbidden");
         const orphan = this.orphans.find((o) => o.room.channelId === from);
         const now = Date.now();
         // a gone room in the mock has only numbers: it brings that many notes
@@ -311,9 +310,9 @@ export class MockAdapter implements MumbleAdapter {
         return { posts: moved.length };
       }, this.isFloor(id)),
     cleanFloor: async (id, rooms) =>
-      this.caretaker(id, () => this.removeOrphans((o) => o.floorId === id && rooms.includes(o.room.channelId)), this.isFloor(id)),
+      this.caretaker(() => this.removeOrphans((o) => o.floorId === id && rooms.includes(o.room.channelId)), this.isFloor(id)),
     building: async () =>
-      this.caretaker(0, () => {
+      this.caretaker(() => {
         const floors = new Map<number | null, OrphanedFloor>();
         for (const o of this.orphans) {
           if (o.floorId !== null && this.isFloor(o.floorId)) continue;
@@ -335,9 +334,9 @@ export class MockAdapter implements MumbleAdapter {
         };
       }, true),
     cleanBuilding: async (floors) =>
-      this.caretaker(0, () => this.removeOrphans((o) => floors.includes(o.floorId) && (o.floorId === null || !this.isFloor(o.floorId))), true),
+      this.caretaker(() => this.removeOrphans((o) => floors.includes(o.floorId) && (o.floorId === null || !this.isFloor(o.floorId))), true),
     forgetTickets: async (projects) =>
-      this.caretaker(0, () => {
+      this.caretaker(() => {
         const now = Date.now();
         for (const p of projects) this.forgotten.set(p, now);
         for (const id of this.posts.keys()) this.boardChanged(id);
@@ -670,11 +669,11 @@ export class MockAdapter implements MumbleAdapter {
     return !!c && !c.temporary && c.parent !== null && this.isFloor(c.parent);
   }
 
-  /** like the service: Write permission on the channel (the snapshot's `care`), from anywhere in the building */
-  private caretaker<T>(channelId: number, fn: () => T | Refused, exists: boolean): BoardResult<T> {
+  /** like the service: building admins only (Write on the root channel, in the snapshot's `care`), from anywhere */
+  private caretaker<T>(fn: () => T | Refused, exists: boolean): BoardResult<T> {
     if (this.plugin === "disconnected" || !this.me()) return { ok: false, error: "not-paired" };
     if (!exists) return { ok: false, error: "not-found" };
-    if (!this.state.care?.includes(channelId)) return { ok: false, error: "forbidden" };
+    if (!this.state.care?.includes(0)) return { ok: false, error: "forbidden" };
     const value = fn();
     return value instanceof Refused ? { ok: false, error: value.error } : { ok: true, value };
   }

@@ -43,7 +43,7 @@ Top-level channels become floors, their subchannels rooms. The order comes from 
 
 ## Admins in Ruumble
 
-Ruumble has no roles of its own: whoever has Mumble's **Write** permission on a channel is an admin there. On a room or floor that shows the plant as a button (room or floor care) and lets them delete others' posts on that board; on the root channel it also opens building care and the building maintenance (the plant and the wrench at the entrance). Mumble's default ACL grants Write to the `admin` group, so adding a user to `admin` on the root channel (in Mumble: right-click the root channel → Edit → Groups) is usually enough. Ruumble reads the permission every 10 s; a change shows after that, without pairing again.
+Ruumble has no roles of its own: whoever has Mumble's **Write** permission on a channel is an admin there. On a room it lets them delete others' posts on that board. On the root channel it makes them a building admin: every plant becomes a button (room, floor and building care) and the wrench at the entrance opens the building maintenance; Write on a single room or floor does not open its plant. Mumble's default ACL grants Write to the `admin` group, so adding a user to `admin` on the root channel (in Mumble: right-click the root channel → Edit → Groups) is usually enough. Ruumble reads the permission every 10 s; a change shows after that, without pairing again.
 
 ## SuperUser password as a secret
 
