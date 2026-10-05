@@ -347,7 +347,7 @@ export const en: Messages = {
     title: "My status",
     set: "Set status",
     current: (text) => `My status: ${text}`,
-    intro: "A short text at your avatar that everyone in Ruumble sees, for example \"In a meeting until 2 pm\". It shows while your Mumble is connected with the plugin.",
+    intro: "A short text at your avatar that everyone in Ruumble sees. It shows while your Mumble is connected with the plugin.",
     label: "Status",
     placeholder: "What are you up to?",
     expires: "Expires",

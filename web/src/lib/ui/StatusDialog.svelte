@@ -1,13 +1,15 @@
 <script lang="ts">
   import MessageSquareText from "@lucide/svelte/icons/message-square-text";
+  import MessageSquareX from "@lucide/svelte/icons/message-square-x";
   import { STATUS_DEFAULT_MINUTES, STATUS_DURATIONS, STATUS_LIMITS } from "@ruumble/protocol";
   import { t } from "../i18n/index.svelte.ts";
   import { statusErrorText, type RuumbleState } from "../state.svelte.ts";
   import { expiryText } from "../status.ts";
   import CareShell from "./care/CareShell.svelte";
 
-  // My status (B, ADR-0018), from the speech bubble in the top bar: a free text, an expiry (2 hours by default, or
-  // never), set or cleared; below, the texts used last for a quick choice (they fill the field).
+  // My status (B, ADR-0018), from the speech bubble in the top bar: a free text and an expiry (2 hours by default, or
+  // never); the current status on top with an icon that clears it; below, the texts used last for a quick choice
+  // (they fill the field).
   let { app }: { app: RuumbleState } = $props();
 
   let input = $state<HTMLInputElement | null>(null);
@@ -51,7 +53,10 @@
     {#if app.statusError}<p class="error" role="alert">{statusErrorText(app.statusError)}</p>{:else}<p class="intro">{t().status.loading}</p>{/if}
   {:else}
     {#if current}
-      <p class="now"><span class="caption">{t().status.now}</span><span class="text">{current.text}</span><span class="until">{expiryText(current.until)}</span></p>
+      <div class="now">
+        <p><span class="caption">{t().status.now}</span><span class="text">{current.text}</span><span class="until">{expiryText(current.until)}</span></p>
+        <button type="button" class="clear" aria-label={t().status.clear} title={t().status.clear} disabled={app.statusBusy} onclick={() => void app.saveStatus(null)}><MessageSquareX size={20} /></button>
+      </div>
     {/if}
     <form onsubmit={submit}>
       <div class="field grow">
@@ -68,9 +73,6 @@
       </div>
       <div class="row">
         <button type="submit" class="btn primary" disabled={!valid || app.statusBusy}>{t().status.set}</button>
-        {#if current}
-          <button type="button" class="btn danger" disabled={app.statusBusy} onclick={() => void app.saveStatus(null)}>{t().status.clear}</button>
-        {/if}
       </div>
     </form>
     {#if app.status.recent.length}
@@ -91,7 +93,14 @@
   p { margin: 0; }
   .intro { font-size: 13px; color: var(--muted); }
   .error { color: var(--danger); }
-  .now { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-radius: 4px; background: var(--tint); }
+  .now { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border-radius: 4px; background: var(--tint); }
+  .now p { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .clear {
+    flex: none; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 4px;
+    background: transparent; color: var(--danger); cursor: pointer;
+  }
+  .clear:hover { background: var(--danger-tint); }
+  .clear:disabled { opacity: 0.45; cursor: default; }
   .now .caption { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .now .text { font-weight: 700; overflow-wrap: anywhere; }
   .now .until { font-size: 13px; color: var(--muted); }

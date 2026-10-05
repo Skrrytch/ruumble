@@ -368,7 +368,7 @@ export const de = {
     title: "Mein Status",
     set: "Status setzen",
     current: (text: string) => `Mein Status: ${text}`,
-    intro: "Ein kurzer Text an deinem Avatar, den alle in Ruumble sehen, zum Beispiel „Im Meeting bis 14 Uhr“. Er erscheint, solange dein Mumble mit dem Plugin verbunden ist.",
+    intro: "Ein kurzer Text an deinem Avatar, den alle in Ruumble sehen. Er erscheint, solange dein Mumble mit dem Plugin verbunden ist.",
     label: "Status",
     placeholder: "Was machst du gerade?",
     expires: "Läuft ab",
