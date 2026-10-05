@@ -357,7 +357,6 @@ export const en: Messages = {
     enterRoom: (name) => `Enter ${name}`,
     locked: "locked",
     inHouse: (n) => (n === 1 ? "1 person in the building" : `${n} people in the building`),
-    more: (n) => `+${n}`,
     hint: "Click a person to go to them. Enter in the search goes to the first match.",
   },
   status: {

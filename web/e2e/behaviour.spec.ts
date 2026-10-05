@@ -233,7 +233,7 @@ test.describe("Status (B)", () => {
     await dialog.getByRole("button", { name: "Set status" }).click();
     await expect(dialog).toHaveCount(0);
     await expect(button).toHaveAttribute("aria-pressed", "true");
-    await expect(button).toHaveAttribute("title", "My status: Reviewing the release");
+    await expect(button).toHaveAttribute("title", "My status: Reviewing the release (S)");
     await expect(page.getByRole("img", { name: /^Anna \(you\), .*Status: Reviewing the release \(until \d\d:\d\d\)$/ })).toBeVisible();
 
     await button.click();
@@ -246,7 +246,7 @@ test.describe("Status (B)", () => {
     await dialog.getByLabel("Status", { exact: true }).press("Enter");
     await expect(page.getByRole("img", { name: /^Anna \(you\), .*Status: Lunch break$/ })).toBeVisible();
 
-    await button.click();
+    await page.keyboard.press("s"); // the shortcut opens it as well
     await dialog.getByRole("button", { name: "Clear status" }).click();
     await expect(button).toHaveAttribute("aria-pressed", "false");
     await expect(page.getByRole("img", { name: /^Anna \(you\)/ }).first()).not.toHaveAccessibleName(/Status/);
@@ -291,7 +291,7 @@ test.describe("Building overview", () => {
     await expect(dialog).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
     await page.keyboard.press("h");
-    await dialog.getByRole("region", { name: "Cross-section" }).getByRole("button", { name: "Enter Retrospective" }).click();
-    await expect(page.getByRole("status", { name: /^You are here: Retrospective/ })).toBeVisible();
+    await dialog.getByRole("region", { name: "Cross-section" }).getByRole("button", { name: "Enter Ben's office" }).click();
+    await expect(page.getByRole("status", { name: /^You are here: Ben's office/ })).toBeVisible();
   });
 });

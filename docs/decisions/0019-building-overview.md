@@ -22,3 +22,7 @@ The floor plan shows one floor at a time; the elevator lists every floor with it
 ## Consequences
 - The elevator's status bar is a button now; its tooltip names the overview and H.
 - Later: filters (with a status, active, free rooms), knocking (idea C) from a person, the floor plants for building admins, a highlight for people who just arrived.
+
+## Current state (code)
+- (2026-10-05) Simpler cross-section: the building is shown from the side only. Rooms are no longer drawn as a floor plan inside the floors and not named; on every floor the people stand in groups, one per occupied room or the corridor, set apart by a thin line (the own group tinted light blue). The room's name is in the group's tooltip, and a group is still a button to move there. No head count next to the floors; mini avatars are 26 px.
+

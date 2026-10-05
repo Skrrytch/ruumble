@@ -378,7 +378,6 @@ export const de = {
     enterRoom: (name: string) => `${name} betreten`,
     locked: "gesperrt",
     inHouse: (n: number) => (n === 1 ? "1 Person im Haus" : `${n} Personen im Haus`),
-    more: (n: number) => `+${n}`,
     hint: "Klick auf eine Person: hingehen. Enter in der Suche geht zum ersten Treffer.",
   },
   /** the own status (B, ADR-0018): a short text at the avatar that everyone sees */

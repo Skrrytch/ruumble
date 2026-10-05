@@ -33,6 +33,9 @@
     if (shortcut === "toggleBoard" && !app.readonly) {
       e.preventDefault();
       app.toggleBoard();
+    } else if (shortcut === "status" && app.me) {
+      e.preventDefault();
+      void app.openStatus();
     } else if (shortcut === "overview") {
       e.preventDefault();
       app.openOverview();

@@ -185,7 +185,7 @@
 
   <div class="right">
     <!-- the own status (B, ADR-0018): filled while one is set, its text in the tooltip -->
-    <button type="button" class="tool" aria-pressed={!!myStatus} aria-label={t().status.title} title={myStatus ? t().status.current(myStatus.text) : t().status.set} disabled={!me} onclick={() => void app.openStatus()}>
+    <button type="button" class="tool" aria-pressed={!!myStatus} aria-label={t().status.title} title={`${myStatus ? t().status.current(myStatus.text) : t().status.set} (S)`} disabled={!me} onclick={() => void app.openStatus()}>
       {#if myStatus}<MessageSquareText size={20} />{:else}<MessageSquare size={20} />{/if}
     </button>
     <button type="button" class="tool" aria-pressed={muted} aria-label={t().core.mute} title={t().core.mute} disabled={!me} onclick={() => app.toggleMute()}>

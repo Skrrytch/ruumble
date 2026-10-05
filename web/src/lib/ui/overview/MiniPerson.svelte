@@ -18,9 +18,9 @@
 
 <style>
   .mini {
-    position: relative; width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%;
+    position: relative; width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
     background: var(--color-blue-500); color: var(--color-white);
-    display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; line-height: 1;
     transition: box-shadow var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
   }
   .mini img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
