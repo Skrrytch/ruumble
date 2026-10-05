@@ -110,7 +110,9 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     await expect(bar).toHaveCount(0);
     await expect(board.getByRole("article")).toHaveCount(1);
     page.once("dialog", (d) => d.accept());
-    await board.getByRole("article").first().getByRole("button", { name: "Open", exact: true }).click();
+    const last = board.getByRole("article").first();
+    await last.hover(); // a card's buttons show on hover
+    await last.getByRole("button", { name: "Open", exact: true }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
     await expect(board.getByText("Nothing pinned here yet.", { exact: false })).toBeVisible();
     await page.getByRole("button", { name: "Hide board" }).first().click();
