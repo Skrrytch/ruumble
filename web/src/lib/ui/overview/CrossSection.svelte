@@ -2,13 +2,16 @@
   import Lock from "@lucide/svelte/icons/lock";
   import { t } from "../../i18n/index.svelte.ts";
   import type { Building, Floor, Space } from "../../model/building.ts";
+  import Lantern from "../Lantern.svelte";
+  import Plant from "../Plant.svelte";
   import MiniPerson from "./MiniPerson.svelte";
 
   // The building from the side (ADR-0019): the roof with the server's name, the floors stacked like in the elevator
   // (highest on top), the elevator shaft on the left with the cabin at the own floor, the entrance at the bottom.
   // On every floor the people stand in groups, one per occupied room or corridor, set apart by a thin line; rooms
   // are not drawn and not named (the name is in the tooltip). A group is a button to move there, the floor badge
-  // shows that floor.
+  // shows that floor. Beside the building, on the ground line: a lantern (building maintenance) on the left and a
+  // plant (building care) on the right, buttons for building admins and decoration for everyone else.
   let {
     building,
     readonly,
@@ -17,6 +20,8 @@
     onhover,
     onvisit,
     onfloor,
+    ontend,
+    onmaintain,
   }: {
     building: Building;
     readonly: boolean;
@@ -26,6 +31,9 @@
     onhover: (session: number | null) => void;
     onvisit: (channelId: number) => void;
     onfloor: (floor: Floor) => void;
+    /** set for building admins: building care and building maintenance */
+    ontend?: () => void;
+    onmaintain?: () => void;
   } = $props();
 
   const storeys = $derived([...building.floors].reverse());
@@ -78,12 +86,30 @@
     </div>
   </div>
   <div class="ground-line" aria-hidden="true"></div>
+  <!-- outside, on the ground line: the lantern (maintenance) and the plant (care), as in the building -->
+  {#if onmaintain}
+    <button type="button" class="yard left tend" aria-label={t().maintenance.title} title={t().maintenance.title} onclick={onmaintain}><Lantern /></button>
+  {:else}
+    <span class="yard left" aria-hidden="true"><Lantern /></span>
+  {/if}
+  {#if ontend}
+    <button type="button" class="yard right tend" aria-label={t().care.buildingPlant} title={t().care.buildingPlant} onclick={ontend}><Plant size={30} /></button>
+  {:else}
+    <span class="yard right" aria-hidden="true"><Plant size={30} /></span>
+  {/if}
 </section>
 
 <style>
   /* the building stands a little in from the sides, so the ground line reaches beyond its walls */
-  .section { display: flex; flex-direction: column; min-width: 0; padding: 0 0 12px; }
-  .roof, .storey { margin: 0 28px; }
+  .section { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 0 0 12px; }
+  .roof, .storey { margin: 0 44px; }
+  /* lantern and plant stand on the ground line, left and right of the building */
+  .yard { position: absolute; bottom: 15px; display: flex; align-items: flex-end; padding: 0; border: 0; background: none; border-radius: var(--radius-md); }
+  .yard.left { left: 8px; }
+  .yard.right { right: 6px; }
+  button.yard { cursor: pointer; transition: transform var(--dur) var(--ease-out); }
+  button.yard:hover { transform: translateY(-2px) rotate(2deg) scale(1.06); }
+  button.yard:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   /* the roof: a flat gable in navy with the building's name, flush with the outer walls (shaft to right wall) */
   .roof {
     height: 50px; background: var(--color-navy); color: var(--color-white);

@@ -42,7 +42,7 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 ### Building overview
 
 - Opens from the elevator's status bar ("N online") or with **H**: a large dialog with the whole building ([ADR-0019](decisions/0019-building-overview.md)).
-- **Cross-section** on the left, the building from the side: roof with the server's name, every floor stacked like in the elevator, the elevator shaft with the cabin at your floor, the entrance at the bottom. On every floor the people stand in groups, one per room, set apart by a thin line; rooms are not drawn (their name is in the tooltip). People are small avatars with their states and status in the tooltip; locked floors are hatched. Click a group to move to that room, a floor badge to look at that floor.
+- **Cross-section** on the left, the building from the side: roof with the server's name, every floor stacked like in the elevator, the elevator shaft with the cabin at your floor, the entrance at the bottom. On every floor the people stand in groups, one per room, set apart by a thin line; rooms are not drawn (their name is in the tooltip). People are small avatars with their states and status in the tooltip; locked floors are hatched. Click a group to move to that room, a floor badge to look at that floor. The building stands on a ground line, with a street lantern on the left (building maintenance) and a plant on the right (building care), buttons for building admins.
 - **Directory board** on the right, the lobby's "Haustafel": every floor with the people on it, their room and status, then the entrance and channels Ruumble does not show. Search by name, room, status or floor; click a person to go to them, Enter goes to the first match.
 
 ### Status
