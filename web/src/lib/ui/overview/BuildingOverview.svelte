@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { showModal } from "../modal.ts";
   import X from "@lucide/svelte/icons/x";
   import { t } from "../../i18n/index.svelte.ts";
   import type { Building } from "../../model/building.ts";
@@ -13,15 +14,17 @@
 
   let dialog: HTMLDialogElement;
   $effect(() => {
-    dialog.showModal();
+    const close = showModal(dialog, () => app.closeOverview());
     dialog.querySelector<HTMLInputElement>("input[type=search]")?.focus(); // the search, ready for a name
-    return () => dialog.close();
+    return close;
   });
   let highlight = $state<number | null>(null);
+  // building admins (Write on the root channel): the lantern and the plant beside the building are buttons
+  const tend = $derived(building.canTendBuilding && !app.readonly);
   const groups = $derived(app.snapshot ? buildDirectory(app.snapshot, building, app.avatarOptions) : []);
 </script>
 
-<dialog bind:this={dialog} class="overview" aria-labelledby="overview-title" onclose={() => app.closeOverview()}>
+<dialog bind:this={dialog} class="overview" aria-labelledby="overview-title">
   <header>
     <h2 id="overview-title">{t().overview.title}</h2>
     <span class="count">{t().overview.inHouse(building.online)}</span>
@@ -29,7 +32,10 @@
   </header>
   <div class="body">
     <div class="section-pane">
-      <CrossSection {building} readonly={app.readonly} pendingChannel={app.pendingChannel} {highlight} onhover={(s) => (highlight = s)} onvisit={(id) => app.visit(id)} onfloor={(f) => app.viewFloor(f)} />
+      <CrossSection {building} readonly={app.readonly} pendingChannel={app.pendingChannel} {highlight} onhover={(s) => (highlight = s)} onvisit={(id) => app.visit(id)} onfloor={(f) => app.viewFloor(f)}
+        ontend={tend ? () => { app.closeOverview(); void app.openCare({ kind: "building" }); } : undefined}
+        onmaintain={tend ? () => { app.closeOverview(); void app.openMaintenance(); } : undefined}
+      />
     </div>
     <Directory {groups} floors={building.floors} {highlight} onhover={(s) => (highlight = s)} onvisit={(p) => app.visit(p.channelId)} onfloor={(f) => app.viewFloor(f)} />
   </div>

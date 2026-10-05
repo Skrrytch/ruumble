@@ -8,6 +8,7 @@
 </script>
 
 <script lang="ts">
+  import { showModal } from "../modal.ts";
   import type { Snippet } from "svelte";
   import { t } from "../../i18n/index.svelte.ts";
   import ConfirmDialog, { type ConfirmRequest } from "./ConfirmDialog.svelte";
@@ -57,8 +58,7 @@
   const titleId = `care-title-${Math.random().toString(36).slice(2)}`;
 
   $effect(() => {
-    dialog.showModal();
-    return () => dialog.close();
+    return showModal(dialog, () => onclose());
   });
   // moving to another level: focus on the title, so screen readers announce it
   let shownLevel = "";
@@ -73,7 +73,7 @@
   }
 </script>
 
-<dialog bind:this={dialog} class="care" class:narrow aria-labelledby={titleId} onclose={onclose} {oncancel}>
+<dialog bind:this={dialog} class="care" class:narrow aria-labelledby={titleId} {oncancel}>
   <header>
     <div class="raster" aria-hidden="true"></div>
     {#if onback}

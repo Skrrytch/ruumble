@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { showModal } from "../modal.ts";
   import { copyText } from "../../board/clipboard.ts";
   import X from "@lucide/svelte/icons/x";
   import type { Post } from "@ruumble/protocol";
@@ -33,8 +34,7 @@
   const hasAttachment = $derived(post.kind === "image" || post.kind === "file");
 
   $effect(() => {
-    dialog.showModal();
-    return () => dialog.close();
+    return showModal(dialog, () => onclose());
   });
 
   function startEdit() {
@@ -62,7 +62,7 @@
   }
 </script>
 
-<dialog bind:this={dialog} aria-label={t().board.postBy(post.authorName)} onclose={onclose} onkeydown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && editing) void save(); }}>
+<dialog bind:this={dialog} aria-label={t().board.postBy(post.authorName)} onkeydown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && editing) void save(); }}>
   <header>
     <span><strong>{post.authorName}</strong> · {t().board.kinds[post.kind]} · {relativeTime(post.createdAt)}</span>
     <button type="button" class="icon" aria-label={t().common.close} onclick={onclose}><X size={18} /></button>

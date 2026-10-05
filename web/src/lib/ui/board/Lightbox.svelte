@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { showModal } from "../modal.ts";
   // full-screen view of an image (AP11.3): zoom via mouse wheel, keys or two fingers, pan by dragging,
   // double-click toggles between fitted and 2.5x. Esc closes (native <dialog>).
   import Download from "@lucide/svelte/icons/download";
@@ -21,8 +22,7 @@
   let pinchStart: { dist: number; scale: number } | null = null;
 
   $effect(() => {
-    dialog.showModal();
-    return () => dialog.close();
+    return showModal(dialog, () => onclose());
   });
 
   /** zoom to `next`, keeping the point (px, py) relative to the stage centre under the pointer */
@@ -83,7 +83,7 @@
   }
 </script>
 
-<dialog bind:this={dialog} class="lightbox" aria-label={t().board.image(name)} onclose={onclose} {onkeydown}>
+<dialog bind:this={dialog} class="lightbox" aria-label={t().board.image(name)} {onkeydown}>
   <div class="bar">
     <span class="name">{name}</span>
     <span class="zoom" aria-live="polite">{Math.round(scale * 100)} %</span>

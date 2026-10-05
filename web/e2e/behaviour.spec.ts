@@ -215,6 +215,21 @@ test.describe("Status (B)", () => {
     await expect(page.locator(".bubble[title='Status: Focus time, please write']")).toBeVisible();
   });
 
+  test("opened again right after setting, the dialog stays open", async ({ page }) => {
+    const dialog = page.getByRole("dialog", { name: "My status" });
+    for (let i = 0; i < 5; i++) {
+      await page.keyboard.press("s");
+      await dialog.getByLabel("Status", { exact: true }).fill(`Round ${i}`);
+      await dialog.getByLabel("Status", { exact: true }).press("Enter"); // the app closes the dialog
+      await expect(dialog).toHaveCount(0);
+      await page.keyboard.press("s");
+      await page.waitForTimeout(200); // the late close event of the previous dialog must not close this one
+      await expect(dialog).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(dialog).toHaveCount(0);
+    }
+  });
+
   test("a small plug marks who does not use Ruumble (no plugin connected)", async ({ page }) => {
     await expect(page.getByRole("img", { name: /^David, .*without Ruumble \(Mumble only\)/ })).toBeVisible();
     await expect(page.getByRole("img", { name: /^Clara/ })).not.toHaveAccessibleName(/without Ruumble/);
@@ -289,6 +304,23 @@ test.describe("Building overview", () => {
     await expect(dialog).toHaveCount(0);
     await expect(page.getByRole("status", { name: /^You are here: Office 3/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
+  });
+
+  test("beside the building: the lantern opens the maintenance, the plant the building care (admins only)", async ({ page }) => {
+    await page.keyboard.press("h");
+    const section = page.getByRole("dialog", { name: "Building overview" }).getByRole("region", { name: "Cross-section" });
+    await section.getByRole("button", { name: "Building maintenance" }).click();
+    await expect(page.getByRole("dialog", { name: "Building maintenance" })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Building overview" })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("h");
+    await section.getByRole("button", { name: "Building care" }).click();
+    await expect(page.getByRole("dialog", { name: "Building care" })).toBeVisible();
+    // without Write on the root channel they are only decoration
+    await page.goto("/?fixture=edge-cases&talking=0");
+    await page.keyboard.press("h");
+    await expect(section.locator(".yard")).toHaveCount(2);
+    await expect(section.getByRole("button", { name: /^Building (maintenance|care)$/ })).toHaveCount(0);
   });
 
   test("a room in the cross-section moves there, a floor badge shows that floor", async ({ page }) => {
