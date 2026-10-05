@@ -48,5 +48,6 @@
   .close:hover { background: var(--color-blue-100); }
   .close:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   .body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: 20px; padding: 16px 20px 20px; }
-  .section-pane { min-height: 0; overflow-y: auto; }
+  /* only vertical: a highlighted avatar grows a little and must not make the pane scroll sideways */
+  .section-pane { min-height: 0; overflow-y: auto; overflow-x: hidden; }
 </style>

@@ -84,7 +84,7 @@
   .section { display: flex; flex-direction: column; min-width: 0; padding: 0 4px 12px; }
   /* the roof: a flat gable in navy with the building's name */
   .roof {
-    height: 50px; margin: 0 -10px 0 30px; background: var(--color-navy); color: var(--color-white);
+    height: 50px; margin: 0 0 0 30px; background: var(--color-navy); color: var(--color-white);
     clip-path: polygon(4% 100%, 50% 0, 96% 100%); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;
     font-size: 13px; font-weight: 700; letter-spacing: 0.04em;
   }

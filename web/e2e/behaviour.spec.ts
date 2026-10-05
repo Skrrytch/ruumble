@@ -267,6 +267,8 @@ test.describe("Building overview", () => {
     await expect(board.getByRole("button", { name: /^Anna \(you\).* – Let's talk$/ })).toHaveAttribute("aria-disabled", "true");
     const section = dialog.getByRole("region", { name: "Cross-section" });
     await expect(section.getByRole("img", { name: /^Clara, .*Status: Focus time, please write$/ })).toBeVisible();
+    // the building fits its pane: no sideways scrolling
+    expect(await dialog.locator(".section-pane").evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
   });
