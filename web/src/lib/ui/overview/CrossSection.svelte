@@ -80,10 +80,26 @@
     </div>
   {/each}
   <div class="storey ground" class:mine={building.self?.kind === "entrance"}>
-    <div class="shaft"><span class="door" aria-hidden="true"></span></div>
+    <div class="shaft"></div>
     <div class="floor">
+      <!-- the front door: canopy, frame, a door with two panels, fanlight and handle -->
+      <svg class="front-door" width="34" height="48" viewBox="0 0 34 48" aria-hidden="true">
+        <rect x="0" y="0" width="34" height="4" rx="1" class="canopy" />
+        <rect x="3" y="4" width="28" height="44" class="frame" />
+        <rect x="6" y="7" width="22" height="8" rx="4" class="fanlight" />
+        <rect x="6" y="17" width="22" height="31" class="leaf" />
+        <rect x="9" y="20" width="16" height="10" rx="1" class="panel" />
+        <rect x="9" y="33" width="16" height="12" rx="1" class="panel" />
+        <circle cx="24.5" cy="32" r="1.6" class="handle" />
+      </svg>
       {#if building.entrance.length}{@render people(entrance, t().common.entrance)}{/if}
     </div>
+  </div>
+  <!-- the building stands on a plinth; steps lead from the street up to the front door -->
+  <div class="plinth" aria-hidden="true">
+    <span class="step" style:--step="0"></span>
+    <span class="step" style:--step="1"></span>
+    <span class="step" style:--step="2"></span>
   </div>
   <div class="ground-line" aria-hidden="true"></div>
   <!-- outside, on the ground line: the lantern (maintenance) and the plant (care), as in the building -->
@@ -129,7 +145,6 @@
   .fbadge:disabled { opacity: 0.5; cursor: not-allowed; }
   .fbadge:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   .storey.mine .fbadge { box-shadow: 0 0 0 2px var(--color-accent); }
-  .door { position: relative; width: 14px; height: 24px; border: 2px solid var(--color-navy); border-bottom: 0; border-radius: 3px 3px 0 0; background: var(--color-white); }
   /* a floor: the slab on top, the outer wall on the right; the people stand on the slab below */
   .floor {
     display: flex; flex-wrap: wrap; align-items: flex-end; min-width: 0; min-height: 52px; padding: 8px 10px 6px;
@@ -152,4 +167,23 @@
   .storey.locked .floor { background: repeating-linear-gradient(135deg, var(--color-surface) 0 6px, var(--color-white) 6px 12px); }
   /* the ground line of a section drawing: the building stands on it, it reaches beyond the walls */
   .ground-line { height: 3px; background: var(--color-navy); }
+  /* the entrance storey: the door stands on the slab, at the left next to the shaft */
+  .ground .floor { padding-bottom: 0; align-items: flex-end; gap: 6px; }
+  .front-door { display: block; flex: none; margin-right: 6px; }
+  .front-door .canopy { fill: var(--color-navy); }
+  .front-door .frame { fill: var(--color-navy); }
+  .front-door .fanlight { fill: var(--color-blue-100); }
+  .front-door .leaf { fill: var(--color-blue-500); }
+  .front-door .panel { fill: none; stroke: var(--color-blue-100); stroke-width: 1; opacity: 0.7; }
+  .front-door .handle { fill: var(--color-white); }
+  /* plinth below the entrance storey: 15 px high, three steps centred under the door: its centre is at shaft 40 +
+     padding 10 + half the door 17 − the plinth's wall 2 = 65 px; each step is 10 px wider than the one above */
+  .plinth {
+    position: relative; height: 15px; margin: 0 44px; border-top: 3px solid var(--color-navy);
+    border-left: 2px solid var(--color-navy); border-right: 2px solid var(--color-navy); background: var(--color-surface);
+  }
+  .step {
+    position: absolute; top: calc(var(--step) * 5px - 3px); left: calc(65px - 14px - var(--step) * 5px); width: calc(28px + var(--step) * 10px);
+    height: 5px; background: var(--color-white); border: 1.5px solid var(--color-navy); border-bottom: 0; box-sizing: border-box;
+  }
 </style>

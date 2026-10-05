@@ -289,6 +289,10 @@ test.describe("Building overview", () => {
     const roof = (await section.locator(".roof").boundingBox())!;
     const floor = (await section.locator(".storey").first().boundingBox())!;
     expect(Math.abs(roof.x - floor.x) + Math.abs(roof.x + roof.width - (floor.x + floor.width))).toBeLessThan(1);
+    // the front door, with the steps from the street centred under it
+    const door = (await section.locator(".front-door").boundingBox())!;
+    const step = (await section.locator(".step").last().boundingBox())!;
+    expect(Math.abs(door.x + door.width / 2 - (step.x + step.width / 2))).toBeLessThan(1);
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
   });

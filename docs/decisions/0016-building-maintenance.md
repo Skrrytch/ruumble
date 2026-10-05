@@ -24,3 +24,6 @@ The board's limits were either environment variables (`RETENTION_DAYS`, `BOARD_Q
 ## Consequences
 - `BOARD_LIMITS.fileBytes` is only the default now; the web UI takes the value from the board view.
 - The settings are part of the board database and of its backup.
+
+## Current state (code)
+- (2026-10-05) The wrench is no longer at the entrance in the elevator: the building maintenance opens from the lantern beside the building in the building overview (ADR-0019); the dialog keeps the wrench as its symbol.

@@ -18,8 +18,6 @@
   import type { RuumbleState } from "../state.svelte.ts";
   import Avatar from "./Avatar.svelte";
   import Key from "./Key.svelte";
-  import Plant from "./Plant.svelte";
-  import Wrench from "./Wrench.svelte";
 
   // Top bar instead of the elevator column, made of signs: left the floor sign (opens the elevator, which shows
   // the server and everyone online in its status bar), in the middle the sign of the own room, right the status,
@@ -49,8 +47,6 @@
   const place = $derived(app.snapshot ? ownPlace(building, app.snapshot) : null);
   // viewing another floor: the room sign leads back
   const away = $derived(!!myFloor && floor?.channelId !== myFloor.channelId);
-  // the plant at the entrance is a button for whoever may tend the whole building (ADR-0014)
-  const tendBuilding = $derived(building.canTendBuilding && !app.readonly);
 
   // one dropdown at a time; closes on a choice, Escape (focus back to its button) and a click elsewhere
   let open = $state<"floors" | "user" | null>(null);
@@ -123,30 +119,15 @@
               </span>
             </button>
           {/each}
-          {#if building.entrance.length > 0 || tendBuilding}
+          <!-- building care and maintenance are beside the building in the building overview (ADR-0019) -->
+          {#if building.entrance.length > 0}
             <section class="entrance" aria-label={t().common.entrance}>
-              <div class="entrance-head">
-                <span>{t().common.entrance} · {countText(building.entrance.length)}</span>
-                <span class="fixtures">
-                  <!-- the wrench: building maintenance, settings and everyone's keys, for admins (ADR-0016) -->
-                  {#if tendBuilding}
-                    <button type="button" class="plant tend" aria-label={t().maintenance.title} title={t().maintenance.title} onclick={() => { open = null; void app.openMaintenance(); }}><Wrench size={28} /></button>
-                  {/if}
-                  <!-- the plant at the entrance: building care (ADR-0014) -->
-                  {#if tendBuilding}
-                    <button type="button" class="plant tend" aria-label={t().care.buildingPlant} title={t().care.buildingPlant} onclick={() => { open = null; void app.openCare({ kind: "building" }); }}><Plant size={26} /></button>
-                  {:else}
-                    <span class="plant"><Plant size={26} /></span>
-                  {/if}
-                </span>
+              <div class="entrance-head">{t().common.entrance} · {countText(building.entrance.length)}</div>
+              <div class="entrance-people">
+                {#each building.entrance as user (user.session)}
+                  <Avatar {user} talking={app.talking[user.session] ?? false} showName={false} />
+                {/each}
               </div>
-              {#if building.entrance.length > 0}
-                <div class="entrance-people">
-                  {#each building.entrance as user (user.session)}
-                    <Avatar {user} talking={app.talking[user.session] ?? false} showName={false} />
-                  {/each}
-                </div>
-              {/if}
             </section>
           {/if}
           <!-- status bar of the elevator: the whole building -->
@@ -303,13 +284,8 @@
   .sub { font-size: 12px; color: var(--color-blue-100); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
   .floor.active .sub { color: var(--color-blue-700); }
   .entrance { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding: 10px 6px 2px; border-top: 1px solid rgb(255 255 255 / 0.2); }
-  .entrance-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; font-size: 13px; font-weight: 700; color: var(--color-blue-100); }
+  .entrance-head { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 13px; font-weight: 700; color: var(--color-blue-100); }
   .key-icon { display: inline-flex; }
-  .fixtures { display: flex; align-items: flex-end; gap: 2px; }
-  .plant { display: inline-flex; align-items: flex-end; justify-content: center; min-width: 40px; min-height: 40px; padding: 2px; border: 0; background: transparent; border-radius: var(--radius-md); }
-  .plant.tend { cursor: pointer; transition: transform var(--dur) var(--ease-out); }
-  .plant.tend:hover { transform: translateY(-2px) rotate(3deg) scale(1.08); }
-  .plant.tend:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
   .entrance-people { display: flex; flex-wrap: wrap; gap: 4px; }
   .entrance-people :global(.person) { width: 48px; }
   /* status bar at the bottom of the elevator, like the display in a lift */

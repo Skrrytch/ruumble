@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { elevator, userMenu } from "./topbar.ts";
+import { overviewSection, userMenu } from "./topbar.ts";
 
 // care of the stored data (ADR-0014): the sample fixture's own user (Anna) may tend everything, edge-cases nothing
 test.describe("Care (ADR-0014)", () => {
@@ -128,7 +128,7 @@ test.describe("Care (ADR-0014)", () => {
   });
 
   test("building care: meter reading, floors from the top, floors that are gone, ticket links", async ({ page }) => {
-    await (await elevator(page)).getByRole("button", { name: "Building care" }).click();
+    await (await overviewSection(page)).getByRole("button", { name: "Building care" }).click();
     const dialog = page.getByRole("dialog", { name: "Building care" });
     await expect(dialog.getByRole("meter", { name: "Storage used" })).toBeVisible();
     await expect(dialog.getByRole("region", { name: "Meter reading" })).toContainText(/MB of 2 GB/);
@@ -155,7 +155,7 @@ test.describe("Care (ADR-0014)", () => {
     await page.goto("/?fixture=edge-cases&talking=0");
     await expect(page.locator(".plant-spot").first()).toBeVisible();
     await expect(page.getByRole("button", { name: /^(Room|Floor) care/ })).toHaveCount(0);
-    await expect((await elevator(page)).getByRole("button", { name: "Building care" })).toHaveCount(0);
+    await expect((await overviewSection(page)).getByRole("button", { name: "Building care" })).toHaveCount(0);
   });
 });
 
@@ -187,11 +187,11 @@ test.describe("Keys (ADR-0015)", () => {
   });
 });
 
-// building maintenance (ADR-0016): the wrench at the entrance, for admins only
+// building maintenance (ADR-0016): the lantern beside the building in the building overview, for admins only
 test.describe("Building maintenance (ADR-0016)", () => {
   test("settings with defaults, saved after confirming, the largest file reaches the board; everyone else's keys", async ({ page }) => {
     await page.goto("/?fixture=sample&talking=0");
-    await (await elevator(page)).getByRole("button", { name: "Building maintenance" }).click();
+    await (await overviewSection(page)).getByRole("button", { name: "Building maintenance" }).click();
     const dialog = page.getByRole("dialog", { name: "Building maintenance" });
     const retention = dialog.getByLabel("Keep posts for");
     await expect(retention).toHaveValue("365");
@@ -233,8 +233,8 @@ test.describe("Building maintenance (ADR-0016)", () => {
     await expect(board.getByRole("button", { name: "Attach image or file" })).toHaveAttribute("title", /25 MB/);
   });
 
-  test("no wrench and no maintenance without the permission", async ({ page }) => {
+  test("no maintenance without the permission: the lantern is only decoration", async ({ page }) => {
     await page.goto("/?fixture=edge-cases&talking=0");
-    await expect((await elevator(page)).getByRole("button", { name: "Building maintenance" })).toHaveCount(0);
+    await expect((await overviewSection(page)).getByRole("button", { name: "Building maintenance" })).toHaveCount(0);
   });
 });

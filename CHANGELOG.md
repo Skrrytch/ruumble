@@ -12,6 +12,7 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 - **Who uses Mumble without Ruumble.** A small plug at the bottom left of the avatar marks people without a connected Ruumble plugin; the tooltip says "without Ruumble (Mumble only)".
 
 ### Changed
+- The wrench and the plant are no longer at the entrance in the elevator: building maintenance and building care open from the lantern and the plant beside the building in the building overview.
 - **Care is for building admins.** Every plant (room, floor and building) needs Mumble's Write permission on the root channel. Write on a single room or floor no longer opens its plant; it still lets you delete others' posts on that board.
 
 ## [0.26.0] - 2026-10-03

@@ -42,7 +42,7 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 ### Building overview
 
 - Opens from the elevator's status bar ("N online") or with **H**: a large dialog with the whole building ([ADR-0019](decisions/0019-building-overview.md)).
-- **Cross-section** on the left, the building from the side: roof with the server's name, every floor stacked like in the elevator, the elevator shaft with the cabin at your floor, the entrance at the bottom. On every floor the people stand in groups, one per room, set apart by a thin line; rooms are not drawn (their name is in the tooltip). People are small avatars with their states and status in the tooltip; locked floors are hatched. Click a group to move to that room, a floor badge to look at that floor. The building stands on a ground line, with a street lantern on the left (building maintenance) and a plant on the right (building care), buttons for building admins.
+- **Cross-section** on the left, the building from the side: roof with the server's name, every floor stacked like in the elevator, the elevator shaft with the cabin at your floor, the entrance at the bottom. On every floor the people stand in groups, one per room, set apart by a thin line; rooms are not drawn (their name is in the tooltip). People are small avatars with their states and status in the tooltip; locked floors are hatched. Click a group to move to that room, a floor badge to look at that floor. The building stands on a plinth on the ground line, with a front door and steps up from the street, a street lantern on the left (building maintenance) and a plant on the right (building care), buttons for building admins.
 - **Directory board** on the right, the lobby's "Haustafel": every floor with the people on it, their room and status, then the entrance and channels Ruumble does not show. Search by name, room, status or floor; click a person to go to them, Enter goes to the first match.
 
 ### Status
@@ -94,7 +94,7 @@ Details: [ADR-0011](decisions/0011-own-storage-for-the-board.md).
 
 ### Care of the stored data
 
-A potted plant stands in every room (behind the door, on the corridor side), at the end of every corridor and at the entrance in the elevator. For everyone it is decoration; building admins (Mumble's Write permission on the root channel) can click every one of them ([ADR-0014](decisions/0014-care-of-the-stored-data.md)):
+A potted plant stands in every room (behind the door, on the corridor side), at the end of every corridor and beside the building in the building overview. For everyone it is decoration; building admins (Mumble's Write permission on the root channel) can click every one of them ([ADR-0014](decisions/0014-care-of-the-stored-data.md)):
 
 - **Room care**: posts, attachment space, newest and oldest post, the retention period; **delete posts older than** 7 days, 14 days, 1, 3 or 6 months (with the count per choice); **clear the board** (all posts with reactions, "kept on top" and attachments); both send a Mumble notice to the people present. **Export** the board as a ZIP (`board.md` and the attachments).
 - **Floor care**: all rooms of the floor with posts, size and last post (a line opens the room's care, "back" returns); **move a board** from any room in the database, current or gone, to a room on this floor (e.g. a room recreated in Mumble with a new ID); rooms of this floor that were deleted in Mumble or moved out of the floor plan and still hold data, one line each (name, posts, size, gone since), removed one by one or all.
@@ -108,7 +108,7 @@ Every paired browser is a key. "My keys" in the user menu lists one's own (brows
 
 ### Building maintenance
 
-Next to the plant at the entrance lies a wrench for admins (Write permission on the root channel). It opens the building's settings: how long posts are kept, the storage quota, the largest attachment, how long data of deleted rooms is kept, and whether a new post sends a Mumble notice. The environment variables are the defaults; "All to default" goes back to them. Changes that make the next cleanup delete data (shorter retention, a quota below the storage in use, a shorter grace for deleted rooms) are pointed out and confirmed. The section "Access" lists everyone else's keys, each revocable ([ADR-0016](decisions/0016-building-maintenance.md)).
+On the other side of the building in the building overview stands a lantern for admins (Write permission on the root channel). It opens the building's settings: how long posts are kept, the storage quota, the largest attachment, how long data of deleted rooms is kept, and whether a new post sends a Mumble notice. The environment variables are the defaults; "All to default" goes back to them. Changes that make the next cleanup delete data (shorter retention, a quota below the storage in use, a shorter grace for deleted rooms) are pointed out and confirmed. The section "Access" lists everyone else's keys, each revocable ([ADR-0016](decisions/0016-building-maintenance.md)).
 
 ### Pairing and security
 

@@ -66,9 +66,9 @@ The plugin's messages in the Mumble log follow the system language (Linux: `LC_A
 - **Ticket keys** such as `TAG-1366` become links to Jira by themselves, once anyone on the server has posted a full link to an issue of that project (e.g. `https://jira.example.com/browse/TAG-1`). Nothing needs to be set up.
 - **Search and filter** in the header of the board.
 - Posts are kept for one year (unless your admin set something else).
-- The **plant** in a room, at the end of the corridor and at the entrance (in the elevator) is for building admins (Mumble's Write permission on the root channel): it opens room, floor or building care, e.g. to delete old posts, clear or export a board (room), see all rooms or move a board to a recreated room (floor), or check the storage and reset a wrong ticket link (building, at the entrance). For everyone else it is just a plant.
+- The **plant** in a room, at the end of the corridor and beside the building in the building overview is for building admins (Mumble's Write permission on the root channel): it opens room, floor or building care, e.g. to delete old posts, clear or export a board (room), see all rooms or move a board to a recreated room (floor), or check the storage and reset a wrong ticket link (building). For everyone else it is just a plant.
 - **My keys** in the menu behind your name badge lists your paired browsers ("keys"). Revoke one you no longer use or have lost; that browser then has to be paired again.
-- Admins also find a **wrench** next to the plant at the entrance: the building maintenance with settings such as how long posts are kept and the largest file, and everyone's keys.
+- Admins also find a **lantern** on the other side of the building in the building overview: the building maintenance with settings such as how long posts are kept and the largest file, and everyone's keys.
 
 ## Questions and problems
 

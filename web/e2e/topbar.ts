@@ -15,6 +15,12 @@ export async function gotoFloor(page: Page, name: string | RegExp): Promise<void
   await (await elevator(page)).getByRole("button", { name }).click();
 }
 
+/** opens the building overview (H) and returns its cross-section, with the lantern and the plant beside it */
+export async function overviewSection(page: Page): Promise<Locator> {
+  await page.keyboard.press("h");
+  return page.getByRole("dialog", { name: "Building overview" }).getByRole("region", { name: "Cross-section" });
+}
+
 /** opens the user menu (if it is not open yet) and returns it */
 export async function userMenu(page: Page): Promise<Locator> {
   const button = page.getByRole("button", { name: /^(User menu|Benutzermenü)$/ });
