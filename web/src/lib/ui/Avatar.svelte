@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Building from "@lucide/svelte/icons/building";
   import HeadphoneOff from "@lucide/svelte/icons/headphone-off";
   import MessageSquareText from "@lucide/svelte/icons/message-square-text";
   import MicOff from "@lucide/svelte/icons/mic-off";
+  import Unplug from "@lucide/svelte/icons/unplug";
   import type { UserView } from "../model/building.ts";
   import { t } from "../i18n/index.svelte.ts";
   import { statusLabel } from "../status.ts";
@@ -26,7 +26,7 @@
       talking ? p.talking : null,
       presence === "away" ? p.away : presence === "quiet" ? p.quiet(user.idleMinutes) : null,
       user.recording ? p.recording : null,
-      user.usesRuumble ? p.usesRuumble : null,
+      user.usesRuumble ? null : p.withoutRuumble,
       status,
     ]
       .filter(Boolean)
@@ -43,8 +43,8 @@
     {:else}
       {user.initials}
     {/if}
-    {#if user.usesRuumble}
-      <span class="house" title={cap(p.usesRuumble)}><Building size={10} strokeWidth={2.5} /></span>
+    {#if !user.usesRuumble}
+      <span class="plain" title={cap(p.withoutRuumble)}><Unplug size={10} strokeWidth={2.5} /></span>
     {/if}
     {#if status}
       <span class="bubble" title={status}><MessageSquareText size={12} strokeWidth={2.5} /></span>
@@ -90,8 +90,8 @@
     position: absolute; left: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%;
     background: var(--color-alert); border: 2px solid var(--color-white);
   }
-  /* uses Ruumble (plugin connected): a small building at the bottom left, quieter than the state badges */
-  .house {
+  /* without Ruumble (no plugin connected, the rarer case): a small plug at the bottom left, quieter than the state badges */
+  .plain {
     position: absolute; left: -5px; bottom: -5px; width: 18px; height: 18px; border-radius: 50%;
     background: var(--color-white); border: 1px solid var(--color-blue-300); color: var(--color-blue-500);
     display: flex; align-items: center; justify-content: center;

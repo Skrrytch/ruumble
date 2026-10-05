@@ -35,7 +35,7 @@ How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.m
 | **Listening** (ear icon at the room, "N people are listening", no names) | Ice |
 | **Mumble avatars** of registered users, otherwise initials | Ice `getTexture` |
 | **Status** (speech bubble at the avatar, text and expiry in the tooltip) | set in Ruumble, kept by the service (ADR-0018) |
-| **Uses Ruumble** (small building at the bottom left of the avatar) | the person's plugin is connected to the service |
+| **Without Ruumble** (small plug at the bottom left of the avatar, for people using Mumble only) | no plugin of the person is connected to the service |
 
 Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` rejects registered users (bug in Mumble); Ruumble then shows initials.
 

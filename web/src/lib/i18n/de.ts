@@ -39,7 +39,7 @@ export const de = {
     recording: "zeichnet auf",
     /** status at the avatar (B) */
     status: (text: string) => `Status: ${text}`,
-    usesRuumble: "nutzt Ruumble",
+    withoutRuumble: "ohne Ruumble (nur Mumble)",
   },
   floors: {
     ground: "Erdgeschoss",
@@ -363,6 +363,24 @@ export const de = {
     revokeDetailCurrent: "Das ist der Schlüssel dieses Browsers: Er ist danach nicht mehr gekoppelt und muss neu gekoppelt werden.",
     revokeConfirm: "Zurückziehen",
     rule: "Ein zurückgezogener Schlüssel ist sofort ungültig.",
+  },
+  /** building overview (ADR-0019): cross-section and the directory board in the lobby */
+  overview: {
+    title: "Gebäudeübersicht",
+    open: "Gebäudeübersicht",
+    section: "Gebäudeschnitt",
+    directory: "Haustafel",
+    search: "Person, Raum oder Status",
+    searchLabel: "Haustafel durchsuchen",
+    elsewhere: "Woanders",
+    none: "Niemand gefunden.",
+    goTo: (name: string, place: string) => `Zu ${name} gehen (${place})`,
+    viewFloor: (name: string) => `Etage ${name} ansehen`,
+    enterRoom: (name: string) => `${name} betreten`,
+    locked: "gesperrt",
+    inHouse: (n: number) => (n === 1 ? "1 Person im Haus" : `${n} Personen im Haus`),
+    more: (n: number) => `+${n}`,
+    hint: "Klick auf eine Person: hingehen. Enter in der Suche geht zum ersten Treffer.",
   },
   /** the own status (B, ADR-0018): a short text at the avatar that everyone sees */
   status: {

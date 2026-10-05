@@ -215,10 +215,11 @@ test.describe("Status (B)", () => {
     await expect(page.locator(".bubble[title='Status: Focus time, please write']")).toBeVisible();
   });
 
-  test("a small building marks who uses Ruumble (plugin connected)", async ({ page }) => {
-    await expect(page.getByRole("img", { name: /^Clara, .*uses Ruumble/ })).toBeVisible();
-    await expect(page.getByRole("img", { name: /^David/ })).not.toHaveAccessibleName(/uses Ruumble/);
-    await expect(page.getByRole("img", { name: /^Clara/ }).locator(".house")).toHaveAttribute("title", "Uses Ruumble");
+  test("a small plug marks who does not use Ruumble (no plugin connected)", async ({ page }) => {
+    await expect(page.getByRole("img", { name: /^David, .*without Ruumble \(Mumble only\)/ })).toBeVisible();
+    await expect(page.getByRole("img", { name: /^Clara/ })).not.toHaveAccessibleName(/without Ruumble/);
+    await expect(page.getByRole("img", { name: /^Clara/ }).locator(".plain")).toHaveCount(0);
+    await expect(page.getByRole("img", { name: /^David/ }).locator(".plain")).toHaveAttribute("title", "Without Ruumble (Mumble only)");
   });
 
   test("set with the default expiry, quick choice from the recent ones, clear", async ({ page }) => {

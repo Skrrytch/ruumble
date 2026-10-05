@@ -216,6 +216,25 @@ export function floorLabels(index: number): { level: string; badge: string } {
 
 // ---------------------------------------------------------------- Building
 
+/** a user as the web UI shows them; `selfSession`: the own session, null without one */
+export function userViewOf(u: User, selfSession: number | null, avatarUrl: BuildOptions["avatarUrl"] = defaultAvatarUrl): UserView {
+  return {
+    session: u.session,
+    name: u.name,
+    initials: initials(u.name),
+    isSelf: u.session === selfSession,
+    selfMuted: u.selfMute || u.selfDeaf,
+    selfDeafened: u.selfDeaf,
+    serverMuted: u.mute || u.deaf || u.suppress,
+    avatarUrl: avatarUrlOf(u, avatarUrl),
+    presence: presenceOf(u),
+    idleMinutes: u.idleMinutes,
+    recording: u.recording,
+    usesRuumble: u.ruumble ?? false,
+    status: u.status ?? null,
+  };
+}
+
 export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): Building {
   const avatarUrl = options.avatarUrl ?? defaultAvatarUrl;
   const selfSession = snapshot.self?.session ?? null;
@@ -230,21 +249,7 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
 
   const usersIn = new Map<number, User[]>();
   for (const u of snapshot.users) usersIn.set(u.channel, [...(usersIn.get(u.channel) ?? []), u]);
-  const userView = (u: User): UserView => ({
-    session: u.session,
-    name: u.name,
-    initials: initials(u.name),
-    isSelf: u.session === selfSession,
-    selfMuted: u.selfMute || u.selfDeaf,
-    selfDeafened: u.selfDeaf,
-    serverMuted: u.mute || u.deaf || u.suppress,
-    avatarUrl: avatarUrlOf(u, avatarUrl),
-    presence: presenceOf(u),
-    idleMinutes: u.idleMinutes,
-    recording: u.recording,
-    usesRuumble: u.ruumble ?? false,
-    status: u.status ?? null,
-  });
+  const userView = (u: User): UserView => userViewOf(u, selfSession, avatarUrl);
   const viewsIn = (id: number) =>
     (usersIn.get(id) ?? []).slice().sort((a, b) => collator.compare(a.name, b.name)).map(userView);
 
