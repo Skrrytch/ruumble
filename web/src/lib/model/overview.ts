@@ -15,7 +15,13 @@ export interface DirectoryEntry {
   place: string;
   /** the own user may move there: not the own channel, allowed by Mumble, a place Ruumble shows (no locked floor) */
   canGo: boolean;
+  /** why not, for the tooltip; null when one can go there */
+  blocked: Blocked | null;
 }
+
+/** why one cannot go to a person: it is oneself, one is there already, no own Mumble (preview, offline), a floor
+ * too deep or a channel Ruumble does not show, or Mumble does not let one in */
+export type Blocked = "self" | "here" | "no-mumble" | "locked-floor" | "hidden" | "no-access";
 
 /** one line of the board: a floor (highest first), the entrance, or channels Ruumble does not show */
 export interface DirectoryGroup {
@@ -63,8 +69,15 @@ export function buildDirectory(snapshot: Snapshot, building: Building, options: 
       : group.kind === "elsewhere" ? t().core.hiddenPlace
       : ch === floor!.channelId ? (floor!.open ? floor!.name : t().common.corridor)
       : (byId.get(ch)?.name ?? "");
-    const canGo = selfSession !== null && u.session !== selfSession && ch !== selfChannel && group.kind !== "elsewhere" && !group.locked && snapshot.canEnter[String(ch)] !== false;
-    group.people.push({ user: userViewOf(u, selfSession, options.avatarUrl), channelId: ch, place, canGo });
+    const blocked: Blocked | null =
+      u.session === selfSession ? "self"
+      : selfSession === null ? "no-mumble"
+      : ch === selfChannel ? "here"
+      : group.kind === "elsewhere" ? "hidden"
+      : group.locked ? "locked-floor"
+      : snapshot.canEnter[String(ch)] === false ? "no-access"
+      : null;
+    group.people.push({ user: userViewOf(u, selfSession, options.avatarUrl), channelId: ch, place, canGo: blocked === null, blocked });
   }
   const all = [...groups.values(), ...(elsewhere.people.length ? [elsewhere] : [])];
   for (const g of all) g.people.sort((a, b) => collator.compare(a.user.name, b.user.name));

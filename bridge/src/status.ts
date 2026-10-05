@@ -3,6 +3,7 @@
  * by certificate hash in `statuses.json`, expires after the chosen time (default 2 hours) or never, and is shown to
  * everyone at the person's avatar while their plugin is connected. The last texts used are kept for quick choice.
  * The Mumble comment cannot be used: the plugin API changes it only locally (docs/features.md, B).
+ * The recent texts are personal data: a person's entry goes when it has had no status for STATUS_KEEP_DAYS (prune()).
  *
  *   GET    /api/status   { current, recent } of the asking person
  *   PUT    /api/status   { text, minutes } (minutes null: no expiry) → the same as GET
@@ -18,7 +19,12 @@ interface Entry {
   current: UserStatus | null;
   /** newest first, without duplicates */
   recent: string[];
+  /** last set or cleared (ms); missing in files from before: counts from the next start */
+  updatedAt?: number;
 }
+
+/** an entry without a status is removed after this many days without a change (with its recent texts) */
+export const STATUS_KEEP_DAYS = 90;
 
 export interface StatusBookOptions {
   now?: () => number;
@@ -50,6 +56,10 @@ export class StatusBook {
         this.entries = {};
       }
     }
+    // entries from before updatedAt: the clock starts now, and is kept so a restart does not start it again
+    const undated = Object.values(this.entries).filter((e) => e.updatedAt === undefined);
+    for (const e of undated) e.updatedAt = this.now();
+    if (undated.length) this.save();
     this.expire();
   }
 
@@ -67,7 +77,7 @@ export class StatusBook {
   set(certHash: string, text: string, minutes: number | null): StatusView {
     const clean = normalizeStatus(text).slice(0, STATUS_LIMITS.textChars);
     const recent = [clean, ...(this.entries[certHash]?.recent ?? []).filter((r) => r !== clean)].slice(0, STATUS_LIMITS.recent);
-    this.entries[certHash] = { current: { text: clean, until: minutes === null ? null : this.now() + minutes * 60_000 }, recent };
+    this.entries[certHash] = { current: { text: clean, until: minutes === null ? null : this.now() + minutes * 60_000 }, recent, updatedAt: this.now() };
     this.changed();
     return this.view(certHash);
   }
@@ -77,6 +87,7 @@ export class StatusBook {
     const e = this.entries[certHash];
     if (e?.current) {
       e.current = null;
+      e.updatedAt = this.now();
       this.changed();
     }
     return this.view(certHash);
@@ -95,6 +106,15 @@ export class StatusBook {
     if (removed) this.save();
     this.schedule();
     return removed;
+  }
+
+  /** forget people without a status whose entry has not changed for STATUS_KEEP_DAYS; returns how many (hourly) */
+  prune(): number {
+    const limit = this.now() - STATUS_KEEP_DAYS * 24 * 60 * 60_000;
+    const gone = Object.entries(this.entries).filter(([, e]) => !e.current && (e.updatedAt ?? 0) < limit).map(([hash]) => hash);
+    for (const hash of gone) delete this.entries[hash];
+    if (gone.length) this.save();
+    return gone.length;
   }
 
   close(): void {

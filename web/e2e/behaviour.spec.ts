@@ -215,6 +215,18 @@ test.describe("Status (B)", () => {
     await expect(page.locator(".bubble[title='Status: Focus time, please write']")).toBeVisible();
   });
 
+  test("close to the limit a counter shows how much is left", async ({ page }) => {
+    await page.keyboard.press("s");
+    const dialog = page.getByRole("dialog", { name: "My status" });
+    const field = dialog.getByLabel("Status", { exact: true });
+    await field.fill("x".repeat(59));
+    await expect(dialog.getByText(/characters$/)).toHaveCount(0);
+    await field.fill("x".repeat(72));
+    await expect(dialog.getByText("72/80 characters")).toBeVisible();
+    await field.fill("y".repeat(100)); // cut at the limit, and now it says so
+    await expect(dialog.getByText("80/80 characters")).toBeVisible();
+  });
+
   test("opened again right after setting, the dialog stays open", async ({ page }) => {
     const dialog = page.getByRole("dialog", { name: "My status" });
     for (let i = 0; i < 5; i++) {
@@ -281,6 +293,7 @@ test.describe("Building overview", () => {
     await expect(board.getByRole("button", { name: "Go to Gregor (Office 1)" })).toBeVisible();
     await expect(board.getByText("Back at 2 pm")).toBeVisible();
     await expect(board.getByRole("button", { name: /^Anna \(you\).* – Let's talk$/ })).toHaveAttribute("aria-disabled", "true");
+    await expect(board.getByRole("button", { name: /^Clara.* – Let's talk$/ })).toHaveAttribute("title", "You are in the same room.");
     const section = dialog.getByRole("region", { name: "Cross-section" });
     await expect(section.getByRole("img", { name: /^Clara, .*Status: Focus time, please write$/ })).toBeVisible();
     // the building fits its pane: no sideways scrolling

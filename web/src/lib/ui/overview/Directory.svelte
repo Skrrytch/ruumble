@@ -64,7 +64,7 @@
                 <button
                   type="button" class="person" class:me={p.user.isSelf} class:highlight={highlight === p.user.session} aria-disabled={!p.canGo || undefined}
                   aria-label={p.canGo ? t().overview.goTo(p.user.name, p.place) : `${personLabel(p.user)} – ${p.place}`}
-                  title={p.canGo ? t().overview.goTo(p.user.name, p.place) : undefined}
+                  title={p.blocked ? t().overview.blocked[p.blocked] : t().overview.goTo(p.user.name, p.place)}
                   onmouseenter={() => onhover(p.user.session)} onmouseleave={() => onhover(null)} onfocus={() => onhover(p.user.session)} onblur={() => onhover(null)}
                   onclick={() => p.canGo && onvisit(p)}
                 >

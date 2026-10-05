@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Fastify from "fastify";
@@ -80,6 +80,33 @@ describe("StatusBook (B, ADR-0018)", () => {
     expect(new StatusBook(broken).view(A)).toEqual({ current: null, recent: [] }); // missing file
   });
 
+  it("prune: people without a status are forgotten after 90 days without a change, a running status stays", () => {
+    let now = 0;
+    const book = new StatusBook(null, { now: () => now });
+    book.set(A, "Lunch", 30);
+    book.clear(A);
+    book.set(B, "Away", null); // no expiry: kept however old
+    now = 89 * 24 * 60 * MIN;
+    expect(book.prune()).toBe(0);
+    now = 91 * 24 * 60 * MIN;
+    expect(book.prune()).toBe(1);
+    expect(book.view(A)).toEqual({ current: null, recent: [] });
+    expect(book.current(B)?.text).toBe("Away");
+    book.close();
+  });
+
+  it("entries from before the change time count from the start", () => {
+    const file = join(mkdtempSync(join(tmpdir(), "ruumble-status-")), "statuses.json");
+    writeFileSync(file, JSON.stringify({ [A]: { current: null, recent: ["Old"] } }));
+    let now = 10 ** 12;
+    const book = new StatusBook(file, { now: () => now });
+    expect(book.prune()).toBe(0);
+    expect(JSON.parse(readFileSync(file, "utf8"))[A].updatedAt).toBe(10 ** 12); // kept across a restart
+    now += 91 * 24 * 60 * MIN;
+    expect(new StatusBook(file, { now: () => now }).prune()).toBe(1);
+    book.close();
+  });
+
   it("one line with single spaces", () => {
     expect(normalizeStatus("  In a\n meeting\t\u0007until 2  ")).toBe("In a meeting until 2");
   });
@@ -125,6 +152,20 @@ describe("REST /api/status and the snapshot (B, ADR-0018)", () => {
     expect(del.json()).toEqual({ current: null, recent: ["Lunch"] });
     expect(statusIn(ben, 7)).toBeUndefined();
     book.close();
+  });
+
+  it("a rebroadcast builds the users once, not once per web UI", async () => {
+    const source = new FakeSource();
+    let lookups = 0;
+    const hub = new Hub({ source, pairing: new Pairing(null), addressCheck: "off", preview: true, statusOf: () => (lookups++, null) });
+    await new Poller(source, { onChange: (s) => hub.setState(s) }).poll();
+    await hub.pluginConnected(recorder<BridgeToPlugin>().conn, "x").onMessage(JSON.stringify({ v: 1, type: "hello", session: 7, certHash: A, pluginVersion: "0", paired: true }));
+    const uis = [0, 1, 2, 3].map(() => recorder<BridgeToUi>());
+    for (const ui of uis) hub.uiConnected(ui.conn, null);
+    lookups = 0;
+    hub.rebroadcast();
+    expect(lookups).toBe(1); // one plugin, one lookup – for four web UIs
+    expect(uis.every((ui) => (ui.last("snapshot") as Snapshot).users.find((u) => u.session === 7)?.ruumble)).toBe(true);
   });
 
   it("invalid texts and durations, rate limit", async () => {

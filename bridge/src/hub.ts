@@ -100,7 +100,8 @@ export class Hub {
 
   /** resend snapshots, e.g. after a new avatar image */
   rebroadcast(): void {
-    for (const ui of this.uis) this.sendSnapshot(ui);
+    const users = this.publicUsers(); // the same for everyone: built once
+    for (const ui of this.uis) this.sendSnapshot(ui, users);
   }
 
   /** paired user with a connected plugin and their current channel; otherwise `null` */
@@ -366,13 +367,13 @@ export class Hub {
 
   // ---------------------------------------------------------------- internal
 
-  private sendSnapshot(ui: UiEntry): void {
+  /**
+   * The users as every web UI sees them: no addresses, the avatar version, and from the plugins whether they use
+   * Ruumble and their status (a status belongs to a person, known by session only through their plugin, ADR-0018)
+   */
+  private publicUsers(): Snapshot["users"] {
     const s = this.state;
-    if (!s) return;
-    const plugin = ui.certHash ? this.plugins.get(ui.certHash) : undefined;
-    const session = plugin && s.users.some((u) => u.session === plugin.session) ? plugin.session : null;
-    // sessions with a connected plugin use Ruumble; a status belongs to a person, known by session only through
-    // their plugin (ADR-0018)
+    if (!s) return [];
     const withPlugin = new Set<number>();
     const statusOf = new Map<number, UserStatus>();
     for (const p of this.plugins.values()) {
@@ -380,17 +381,26 @@ export class Hub {
       const status = this.opts.statusOf?.(p.certHash);
       if (status) statusOf.set(p.session, status);
     }
+    // addresses never leave the service
+    return s.users.map(({ address: _address, ...u }) => {
+      const status = statusOf.get(u.session);
+      return { ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null, ...(status ? { status } : {}), ...(withPlugin.has(u.session) ? { ruumble: true } : {}) };
+    });
+  }
+
+  /** `users`: from publicUsers(), shared when several web UIs get a snapshot at once */
+  private sendSnapshot(ui: UiEntry, users = this.publicUsers()): void {
+    const s = this.state;
+    if (!s) return;
+    const plugin = ui.certHash ? this.plugins.get(ui.certHash) : undefined;
+    const session = plugin && s.users.some((u) => u.session === plugin.session) ? plugin.session : null;
     const snapshot: Snapshot = {
       v,
       type: "snapshot",
       server: s.info,
       self: session ? { session } : null,
       channels: s.channels,
-      // addresses never leave the service
-      users: s.users.map(({ address: _address, ...u }) => {
-        const status = statusOf.get(u.session);
-        return { ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null, ...(status ? { status } : {}), ...(withPlugin.has(u.session) ? { ruumble: true } : {}) };
-      }),
+      users,
       listeners: s.listeners,
       canEnter: session ? (s.canEnter.get(session) ?? {}) : {},
       care: session ? (s.care.get(session) ?? []) : [],

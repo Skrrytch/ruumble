@@ -25,3 +25,7 @@ Item B of the feature list: a short status such as "In a meeting until 2 pm", sh
 ## Consequences
 - Plain Mumble clients do not see the status; it is a Ruumble feature.
 - `statuses.json` is personal data of the paired people; it is not part of the board backup (`main.mjs backup`), like `tokens.json`.
+
+## Current state (code)
+- (2026-10-05) Entries are not kept forever: a person's entry without a running status, unchanged for 90 days, is removed with its recent texts by the hourly cleanup (`StatusBook.prune()`, `updatedAt` per entry; entries from before start counting at the first start). The dialog shows a counter from 60 characters, so a longer text is not cut off unnoticed.
+

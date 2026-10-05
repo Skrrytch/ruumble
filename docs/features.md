@@ -43,14 +43,14 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 
 - Opens from the elevator's status bar ("N online") or with **H**: a large dialog with the whole building ([ADR-0019](decisions/0019-building-overview.md)).
 - **Cross-section** on the left, the building from the side: roof with the server's name, every floor stacked like in the elevator, the elevator shaft with your floor's cell tinted light blue, the entrance at the bottom. On every floor the people stand in groups, one per room, set apart by a thin line; rooms are not drawn (their name is in the tooltip). People are small avatars with their states and status in the tooltip; locked floors are hatched. Click a group to move to that room, a floor badge to look at that floor. The building stands on a plinth on the ground line, with a front door and steps up from the street, a street lantern on the left (building maintenance) and a plant on the right (building care), buttons for building admins.
-- **Directory board** on the right, the lobby's "Haustafel": every floor with the people on it, their room and status, then the entrance and channels Ruumble does not show. Search by name, room, status or floor; click a person to go to them, Enter goes to the first match.
+- **Directory board** on the right, the lobby's "Haustafel": every floor with the people on it, their room and status, then the entrance and channels Ruumble does not show. Search by name, room, status or floor; click a person to go to them, Enter goes to the first match. Where you cannot go, the tooltip says why.
 
 ### Status
 
 - The speech-bubble button in the top bar, before mute, or the key **S** opens **My status**: a free text (one line, up to 80 characters) and when it expires: after 2 hours by default, or after 30 minutes, 1, 4 or 8 hours, or never. Set it, change it, or clear it.
 - Below, the **last five texts** you used, for a quick choice: a click puts the text into the field.
 - Everyone in Ruumble sees a **speech bubble** at your avatar, with the text and the expiry in its tooltip; the button in the top bar is filled while your status is set. It shows while your Mumble is connected with the plugin.
-- Kept by the service per person, so it follows you to other browsers; plain Mumble clients do not see it (ADR-0018).
+- Kept by the service per person, so it follows you to other browsers; plain Mumble clients do not see it (ADR-0018). Someone without a status for 90 days is forgotten, recent texts included.
 
 ### Moving, mute and deafen
 

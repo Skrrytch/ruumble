@@ -42,6 +42,15 @@ describe("Building overview: the directory (ADR-0019)", () => {
     expect(directory(s).find((g) => g.kind === "floor" && g.name === "ARCHIVE")!.locked).toBe(true);
   });
 
+  it("why one cannot go to someone", () => {
+    const why = (s: Snapshot) => Object.fromEntries(directory(s).flatMap((g) => g.people.map((p) => [p.user.name, p.blocked])));
+    const edge = fixture("edge-cases");
+    expect(why(edge)).toMatchObject({ Anna: "self", Karl: "locked-floor", Gregor: "hidden", Ida: null });
+    expect(why(fixture("sample"))).toMatchObject({ Clara: "here", Ben: null });
+    expect(why({ ...edge, canEnter: { ...edge.canEnter, "1": false } })).toMatchObject({ Ben: "no-access" });
+    expect(why({ ...edge, self: null })).toMatchObject({ Ida: "no-mumble", Anna: "no-mumble" });
+  });
+
   it("without an own user nobody can be visited; no 'elsewhere' when everyone is in view", () => {
     const s = { ...fixture("sample"), self: null };
     expect(directory(s).flatMap((g) => g.people).some((p) => p.canGo)).toBe(false);

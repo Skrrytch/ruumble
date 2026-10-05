@@ -26,6 +26,8 @@
   });
   const current = $derived(app.status?.current ?? null);
   const valid = $derived(text.trim().length > 0 && text.length <= STATUS_LIMITS.textChars);
+  /** from this many characters the counter shows, so a long text is not cut off unnoticed */
+  const COUNT_FROM = 60;
 
   function submit(e: SubmitEvent): void {
     e.preventDefault();
@@ -61,7 +63,10 @@
     <form onsubmit={submit}>
       <div class="field grow">
         <label for="status-text">{t().status.label}</label>
-        <input id="status-text" type="text" bind:this={input} bind:value={text} maxlength={STATUS_LIMITS.textChars} placeholder={t().status.placeholder} autocomplete="off" disabled={app.statusBusy} />
+        <input id="status-text" type="text" bind:this={input} bind:value={text} maxlength={STATUS_LIMITS.textChars} placeholder={t().status.placeholder} autocomplete="off" disabled={app.statusBusy} aria-describedby={text.length >= COUNT_FROM ? "status-count" : undefined} />
+        {#if text.length >= COUNT_FROM}
+          <span id="status-count" class="count" class:full={text.length >= STATUS_LIMITS.textChars} aria-live="polite">{t().status.chars(text.length, STATUS_LIMITS.textChars)}</span>
+        {/if}
       </div>
       <div class="field">
         <label for="status-duration">{t().status.expires}</label>
@@ -110,6 +115,8 @@
   label { font-size: 13px; font-weight: 700; }
   input, select { height: 40px; padding: 0 10px; border: 1px solid var(--control); border-radius: 4px; font: inherit; color: var(--ink); background: #fff; }
   input { width: 100%; box-sizing: border-box; }
+  .count { align-self: flex-end; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .count.full { color: var(--danger); font-weight: 700; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; }
   section h3 { margin-bottom: 8px; }
   .recent { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }

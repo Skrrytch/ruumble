@@ -16,7 +16,8 @@
   --color-pot: #c97d4e;
   /* Key (key cabinet, ADR-0015): ONLY the key in the user menu and its dialog */
   --color-brass: #d9a93b;
-  /* Wrench (building maintenance, ADR-0016): ONLY the wrench at the entrance */
+  /* Wrench (building maintenance, ADR-0016): ONLY the wrench, the symbol of the maintenance dialog.
+     The lantern that opens it in the building overview (ADR-0019) uses navy, sky and blue-100. */
   --color-steel: #c9d6e3;
 
   /* Blues */

@@ -75,7 +75,6 @@ export const de = {
     lockedShort: "gesperrt",
     lockReason: { "too-deep": "Kanalstruktur zu tief" },
     floorButton: (level: string, name: string, lock: string | null) => `${level}: ${name}${lock ? ` – gesperrt: ${lock}` : ""}`,
-    mumbleServer: "Mumble-Server",
     hiddenPlace: "nicht darstellbarer Bereich",
     userMenu: "Benutzermenü",
     mute: "Mikrofon stummschalten",
@@ -374,6 +373,15 @@ export const de = {
     elsewhere: "Woanders",
     none: "Niemand gefunden.",
     goTo: (name: string, place: string) => `Zu ${name} gehen (${place})`,
+    /** why one cannot go to a person (directory tooltip) */
+    blocked: {
+      self: "Das bist du.",
+      here: "Ihr seid im selben Raum.",
+      "no-mumble": "Dafür muss dein Mumble mit Ruumble verbunden sein.",
+      "locked-floor": "Diese Etage kann Ruumble nicht darstellen.",
+      hidden: "Dieser Bereich wird in Ruumble nicht dargestellt.",
+      "no-access": "Mumble lässt dich dort nicht hinein.",
+    },
     viewFloor: (name: string) => `Etage ${name} ansehen`,
     enterRoom: (name: string) => `${name} betreten`,
     locked: "gesperrt",
@@ -400,6 +408,8 @@ export const de = {
     loading: "Lade …",
     rule: "Alle in Ruumble sehen deinen Status. Er läuft standardmäßig nach 2 Stunden ab.",
     invalid: "Der Status ist leer oder zu lang.",
+    /** shown below the field once the text gets close to the limit */
+    chars: (used: number, max: number) => `${used}/${max} Zeichen`,
   },
   /** building maintenance (ADR-0016): the wrench at the entrance, for admins */
   maintenance: {

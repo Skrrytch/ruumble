@@ -311,6 +311,8 @@ await app.register(careRoutes, {
   log,
 });
 const cleanupTimer = setInterval(() => {
+  const forgotten = statuses.prune(); // statuses: entries unused for 90 days (ADR-0018)
+  if (forgotten) log("Statuses forgotten", { people: forgotten });
   const { removed, channels } = store.cleanup();
   if (removed) {
     log("Board cleaned up", { removed });
