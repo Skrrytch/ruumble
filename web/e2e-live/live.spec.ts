@@ -5,6 +5,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { elevator, gotoFloor, userMenu } from "../e2e/topbar.ts";
 import { loadBot, registerUser, serverVersion, solidPng, unregisterUser } from "./mumble-admin.ts";
 
 const root = new URL("../../", import.meta.url).pathname;
@@ -63,16 +64,15 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     expect(url).toMatch(/\/pair\?code=/);
     await page.goto(url);
     await expect(page).toHaveURL("http://127.0.0.1:64080/");
-    await expect(page.getByRole("navigation", { name: "Elevator – floors" })).toBeVisible();
-    // freshly connected, Anna is in the root channel: entrance
-    await expect(page.getByRole("region", { name: "Entrance" }).getByRole("img", { name: /Anna \(you\)/ })).toBeVisible();
+    // freshly connected, Anna is in the root channel: the entrance, in the elevator (a dropdown of the top bar)
+    await expect((await elevator(page)).getByRole("region", { name: "Entrance" }).getByRole("img", { name: /Anna \(you\)/ })).toBeVisible();
     // the same link a second time: invalid
     const again = await page.request.get(url, { maxRedirects: 0 });
     expect(again.status()).toBe(400);
   });
 
   test("clicking a room moves the real Mumble client", async () => {
-    await page.getByRole("button", { name: "1st floor: DEVELOPMENT" }).click();
+    await gotoFloor(page, "1st floor: DEVELOPMENT");
     await page.getByRole("button", { name: "Anna's office – enter" }).click();
     await expect(page.getByRole("button", { name: "Anna's office – you are here" })).toBeVisible({ timeout: 5000 });
     await page.getByRole("button", { name: "Corridor DEVELOPMENT – enter" }).click();
@@ -135,9 +135,9 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
   });
 
   test("access rights from Mumble: Gregor's office is locked", async () => {
-    await page.getByRole("button", { name: "2nd floor: SALES" }).click();
+    await gotoFloor(page, "2nd floor: SALES");
     await expect(page.getByRole("button", { name: "Gregor's office – no access" })).toHaveAttribute("aria-disabled", "true");
-    await page.getByRole("button", { name: "Go to my floor" }).click();
+    await (await userMenu(page)).getByRole("button", { name: "Go to my floor" }).click();
   });
 
   test("second client in the same room: visible and audible", async () => {
@@ -146,8 +146,8 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     ben = await page.context().browser()!.newContext();
     benPage = await ben.newPage();
     await benPage.goto(benUrl);
-    await expect(benPage.getByRole("region", { name: "Entrance" }).getByRole("img", { name: /Ben \(you\)/ })).toBeVisible({ timeout: 10_000 });
-    await benPage.getByRole("button", { name: "1st floor: DEVELOPMENT" }).click();
+    await expect((await elevator(benPage)).getByRole("region", { name: "Entrance" }).getByRole("img", { name: /Ben \(you\)/ })).toBeVisible({ timeout: 10_000 });
+    await gotoFloor(benPage, "1st floor: DEVELOPMENT");
     await benPage.getByRole("button", { name: "Anna's office – enter" }).click();
     await expect(benPage.getByRole("button", { name: "Anna's office – you are here" })).toBeVisible({ timeout: 5000 });
     // Anna's web UI: Ben is in her room and talking (Anna's client hears him)
@@ -212,7 +212,7 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     await robo.connect();
     robo.send("UserState", { session: robo.session, texture: solidPng(64, [230, 120, 20]) });
     try {
-      const img = page.getByRole("region", { name: "Entrance" }).locator("img");
+      const img = (await elevator(page)).getByRole("region", { name: "Entrance" }).locator("img");
       await expect(img).toBeVisible({ timeout: 20_000 }); // poll 1 s + avatar fetch
       await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth), { timeout: 5000 }).toBe(64);
       const res = await page.request.get((await img.getAttribute("src")) as string);
