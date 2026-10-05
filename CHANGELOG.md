@@ -6,6 +6,8 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-10-05
+
 Plugin 0.5.0 (unchanged). A status everyone can see, a building overview with the lobby's directory board, and keyboard shortcuts at a glance.
 
 ### Added
@@ -286,6 +288,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.27.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.27.0
 [0.26.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.26.0
 [0.25.1]: https://github.com/Skrrytch/ruumble/releases/tag/v0.25.1
 [0.25.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.25.0
