@@ -7,7 +7,7 @@
   import MiniPerson from "./MiniPerson.svelte";
 
   // The building from the side (ADR-0019): the roof with the server's name, the floors stacked like in the elevator
-  // (highest on top), the elevator shaft on the left with the cabin at the own floor, the entrance at the bottom.
+  // (highest on top), the elevator shaft on the left with the own floor's cell tinted, the entrance at the bottom.
   // On every floor the people stand in groups, one per occupied room or corridor, set apart by a thin line; rooms
   // are not drawn and not named (the name is in the tooltip). A group is a button to move there, the floor badge
   // shows that floor. Beside the building, on the ground line: a lantern (building maintenance) on the left and a
@@ -134,9 +134,10 @@
   }
   .roof span { max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .storey { display: grid; grid-template-columns: 40px minmax(0, 1fr); }
-  /* the elevator shaft: a grey strip through every floor; the cabin stands at the own floor */
+  /* the elevator shaft: a grey strip through every floor */
   .shaft { position: relative; display: flex; align-items: center; justify-content: center; background: var(--color-surface); border-left: 2px solid var(--color-navy); border-top: 3px solid var(--color-navy); }
-  .storey.mine .shaft::before { content: ""; position: absolute; inset: 7px 6px; border-radius: 3px; background: var(--color-navy); }
+  /* the own floor: its cell in the shaft is tinted, like the own room in the floor plan */
+  .storey.mine .shaft { background: var(--color-blue-100); }
   .fbadge {
     position: relative; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--color-navy); background: var(--color-white); padding: 0;
     color: var(--color-navy); font: inherit; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer;
@@ -170,6 +171,8 @@
   /* the entrance storey: the door stands on the slab, at the left next to the shaft */
   .ground .floor { padding-bottom: 0; align-items: flex-end; gap: 6px; }
   .front-door { display: block; flex: none; margin-right: 6px; }
+  /* the door stands on the slab, the people in the middle of the storey like on every other floor */
+  .ground .group { align-self: center; }
   .front-door .canopy { fill: var(--color-navy); }
   .front-door .frame { fill: var(--color-navy); }
   .front-door .fanlight { fill: var(--color-blue-100); }
