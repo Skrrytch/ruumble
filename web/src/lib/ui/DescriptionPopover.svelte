@@ -35,8 +35,13 @@
     if (e.newState === "open" && popover) popover.style.visibility = "hidden";
   }
 
+  // closing gives the focus back to the binders; after Escape the browser would show the focus ring there. Only
+  // where the popup was opened with the keyboard: opened with the mouse, the binders let go of the focus again
+  let openedByPointer = false;
+
   function ontoggle(e: ToggleEvent): void {
     open = e.newState === "open";
+    if (!open && openedByPointer && document.activeElement === button) button?.blur();
     if (!open || !popover) return;
     place();
     popover.style.visibility = "";
@@ -75,6 +80,7 @@
   aria-expanded={open}
   aria-controls={id}
   popovertarget={id}
+  onclick={(e) => (openedByPointer = e.detail > 0)}
 >
   <Binders {size} />
 </button>

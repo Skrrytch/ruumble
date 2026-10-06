@@ -4,7 +4,7 @@ import { gotoFloor } from "./topbar.ts";
 test.describe("Descriptions from Mumble", () => {
   test.beforeEach(async ({ page }) => page.goto("/?fixture=sample&talking=0"));
 
-  test("the binders open a room's description; Escape closes it and the focus goes back", async ({ page }) => {
+  test("the binders open a room's description; Escape closes it", async ({ page }) => {
     // only rooms with a description have binders
     await expect(page.getByRole("button", { name: /^Description of / })).toHaveCount(2);
     const binders = page.getByRole("button", { name: "Description of Let's talk" });
@@ -30,6 +30,18 @@ test.describe("Descriptions from Mumble", () => {
     await page.keyboard.press("Escape");
     await expect(popup).toBeHidden();
     await expect(binders).toHaveAttribute("aria-expanded", "false");
+    // opened with the mouse: no focus ring on the binders afterwards
+    await expect(binders).not.toBeFocused();
+  });
+
+  test("opened with the keyboard, Escape gives the focus back to the binders", async ({ page }) => {
+    const binders = page.getByRole("button", { name: "Description of Let's talk" });
+    await binders.focus();
+    await page.keyboard.press("Enter");
+    const popup = page.getByRole("dialog", { name: "Description of Let's talk" });
+    await expect(popup).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(popup).toBeHidden();
     await expect(binders).toBeFocused();
   });
 
