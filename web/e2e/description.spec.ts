@@ -11,7 +11,8 @@ test.describe("Descriptions from Mumble", () => {
     await binders.click();
     const popup = page.getByRole("dialog", { name: "Description of Let's talk" });
     await expect(popup).toBeVisible();
-    await expect(popup.getByRole("heading", { name: "Let's talk" })).toBeVisible();
+    // only the description: no title, no room name
+    await expect(popup.getByRole("heading")).toHaveCount(0);
     await expect(popup).toContainText("Daily stand-up at 9:30.");
     await expect(popup.locator("[style]")).toHaveCount(0);
     await expect(binders).toHaveAttribute("aria-expanded", "true");
@@ -32,12 +33,19 @@ test.describe("Descriptions from Mumble", () => {
     await expect(binders).toBeFocused();
   });
 
-  test("a click beside it closes it", async ({ page }) => {
+  test("a click beside it only closes it: the room clicked on is not entered", async ({ page }) => {
     await page.getByRole("button", { name: "Description of Let's talk" }).click();
     const popup = page.getByRole("dialog", { name: "Description of Let's talk" });
     await expect(popup).toBeVisible();
-    await page.mouse.click(5, page.viewportSize()!.height - 5);
+    const room = page.locator('.room[data-channel="4"]');
+    await room.click();
     await expect(popup).toBeHidden();
+    await page.waitForTimeout(300);
+    await expect(room).not.toHaveAttribute("aria-busy", "true");
+    await expect(page.getByRole("button", { name: "Let's talk – you are here" })).toBeVisible();
+    // the next click enters it as usual
+    await room.click();
+    await expect(page.getByRole("button", { name: "Let's play – you are here" })).toBeVisible();
   });
 
   test("links open in a new tab and close it", async ({ page, context }) => {

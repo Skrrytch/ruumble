@@ -191,7 +191,7 @@
 {#if boardToggle}{@render notesToggle()}{/if}
 {#if space.description}
   <span class="description-spot description-{variant}" style:right={descriptionRight}>
-    <DescriptionPopover channelId={space.channelId} name={descriptionName} description={space.description} size={variant === "room" ? 24 : 28} />
+    <DescriptionPopover channelId={space.channelId} name={descriptionName} description={space.description} size={variant === "room" ? 20 : 23} />
   </span>
 {/if}
 {@render plant()}
@@ -279,7 +279,11 @@
   .description-spot { position: absolute; display: flex; }
   .description-spot.description-room { bottom: 2px; }
   .lower .description-spot.description-room { bottom: auto; top: 2px; }
-  .description-spot.description-corridor { top: 50%; right: 64px; transform: translateY(-50%); }
+  /* in the corridor the binders stand on the same floor as the plant: the same box, both at its bottom */
+  .description-spot.description-corridor {
+    top: 50%; right: 60px; transform: translateY(-50%); box-sizing: border-box; height: 44px; padding-bottom: 2px; align-items: flex-end;
+  }
+  .description-corridor :global(.binders-toggle) { align-items: flex-end; }
   .description-spot.description-open { top: 12px; right: 12px; }
 
   /* plant (care, ADR-0014): in a room behind the door in the door strip, bottom right in an open floor, at the

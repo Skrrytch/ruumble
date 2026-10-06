@@ -107,7 +107,6 @@ export const en: Messages = {
     recording: "Recording in progress here",
     morePeople: (names) => `Also here: ${names}`,
     recordingBadge: "● Recording",
-    description: "Description",
     showDescription: (name) => `Description of ${name}`,
   },
   pairing: {

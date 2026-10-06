@@ -7,7 +7,7 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 ## [Unreleased]
 
 ### Added
-- **Descriptions from Mumble.** A room, corridor or open floor with a description in Mumble shows two binders, in a room left of the board. They open the description as a popup, a third of the window wide and up to 80 % of its height: formatting, links and embedded images stay; links open in a new tab. Escape, a click beside it or on a link closes it. Images from other servers and inline styles are left out.
+- **Descriptions from Mumble.** A room, corridor or open floor with a description in Mumble shows two binders, in a room left of the board. They open the description as a popup, a third of the window wide and up to 80 % of its height, with nothing but the description: formatting, links and embedded images stay; links open in a new tab. Escape, a click beside it or on a link closes it; a click beside it does nothing else, so it enters no room. Images from other servers and inline styles are left out.
 
 ## [0.27.0] - 2026-10-05
 

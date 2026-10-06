@@ -1,7 +1,7 @@
 <script lang="ts">
   // description of a room or corridor as maintained in Mumble: the binders open it as a popover (top layer, so
   // neither the scrolling floor plan nor the room's container clip it). Escape, a click beside it or on a link closes
-  // it; links open in a new tab (renderDescription).
+  // it; links open in a new tab (renderDescription). A click beside it only closes it: it enters no room.
   import { renderDescription } from "../board/render.ts";
   import { t } from "../i18n/index.svelte.ts";
   import Binders from "./Binders.svelte";
@@ -43,6 +43,24 @@
     popover.focus();
   }
 
+  // light dismiss lets the click through to what lies below: swallow the click a press beside the popover ends in.
+  // Dropped after that press in any case, so a press that ends without a click (dragged away) swallows nothing later
+  const swallow = (e: MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
+  $effect(() => {
+    if (!open) return;
+    const onpointerdown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (popover?.contains(target) || button?.contains(target)) return;
+      window.addEventListener("click", swallow, { capture: true, once: true });
+      window.addEventListener("pointerup", () => setTimeout(() => window.removeEventListener("click", swallow, { capture: true })), { capture: true, once: true });
+    };
+    window.addEventListener("pointerdown", onpointerdown, { capture: true });
+    return () => window.removeEventListener("pointerdown", onpointerdown, { capture: true });
+  });
+
   function onclick(e: MouseEvent): void {
     if ((e.target as HTMLElement).closest("a")) popover?.hidePopover();
   }
@@ -63,8 +81,6 @@
 <!-- the click only closes it after a link was followed (Enter on a link is a click too) -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <div bind:this={popover} {id} class="description" popover="auto" role="dialog" aria-label={label} tabindex="-1" {onbeforetoggle} {ontoggle} {onclick}>
-  <p class="kicker">{t().space.description}</p>
-  <h2>{name}</h2>
   <div class="body">{@html html}</div>
 </div>
 
@@ -81,13 +97,11 @@
   .description {
     position: fixed; inset: auto; margin: 0; box-sizing: border-box;
     width: max(320px, 33vw); max-width: calc(100vw - 32px); max-height: 80vh; overflow: auto;
-    padding: 16px 20px 18px; border: 0; border-radius: var(--radius-md); border-top: 4px solid var(--color-blue-500);
+    padding: 16px 20px; border: 0; border-radius: var(--radius-md); border-top: 4px solid var(--color-blue-500);
     background: var(--color-white); color: var(--color-navy); box-shadow: 0 10px 28px rgb(0 56 105 / 0.35);
     font-size: 14px; line-height: 1.5;
   }
   .description:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
-  .kicker { margin: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-blue-500); }
-  h2 { margin: 2px 0 10px; font-size: 18px; overflow-wrap: anywhere; }
   .body { overflow-wrap: anywhere; }
   .body :global(:first-child) { margin-top: 0; }
   .body :global(:last-child) { margin-bottom: 0; }
