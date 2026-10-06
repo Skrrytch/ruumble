@@ -6,8 +6,13 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.28.1] - 2026-10-06
+
+Plugin 0.5.0 (unchanged). A friendlier front of the building in the building overview.
+
 ### Changed
-- Building overview: the building care is now behind two small plants on either side of the steps to the front door; on the right of the building stands a slim cypress instead, its crown in front of the wall.
+- Building overview: the building care is now behind two potted plants on either side of the steps to the front door, standing a little in front of the building; on the right, beside the building, stands a slim cypress instead, its crown reaching in front of the wall.
+- The user menu names the versions "Mumble …" and "Ruumble …" instead of "Server …" and "Interface …".
 
 ## [0.28.0] - 2026-10-06
 
@@ -299,6 +304,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.28.1]: https://github.com/Skrrytch/ruumble/releases/tag/v0.28.1
 [0.28.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.28.0
 [0.27.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.27.0
 [0.26.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.26.0
