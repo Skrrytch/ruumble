@@ -3,10 +3,11 @@
   import Lock from "@lucide/svelte/icons/lock";
   import Users from "@lucide/svelte/icons/users";
   import VolumeX from "@lucide/svelte/icons/volume-x";
-  import { countText, fitPeople, type Room, type Space } from "../model/building.ts";
+  import { canNudge, countText, fitPeople, type Room, type Space, type UserView } from "../model/building.ts";
   import Avatar from "./Avatar.svelte";
   import BoardNotes from "./board/BoardNotes.svelte";
   import DescriptionPopover from "./DescriptionPopover.svelte";
+  import NudgeCard from "./NudgeCard.svelte";
   import Plant from "./Plant.svelte";
   import { t } from "../i18n/index.svelte.ts";
   import { SHORTCUT_KEYS } from "../shortcuts.ts";
@@ -25,6 +26,7 @@
     boardUnseen = 0,
     ontoggleboard,
     ontend,
+    onnudge,
   }: {
     space: Space | Room;
     variant: "room" | "corridor" | "open";
@@ -45,6 +47,8 @@
     ontoggleboard?: () => void;
     /** open the care dialog of this room or floor (plant, ADR-0014) */
     ontend?: () => void;
+    /** nudge a deafened person in the own room (ADR-0020) */
+    onnudge?: (user: UserView) => void;
   } = $props();
 
 
@@ -92,6 +96,28 @@
   });
   const countLine = $derived(pending && slow ? t().space.enteringText : (subtitle ?? countText(space.users.length)));
 
+  // nudge (ADR-0020): in the own room a deafened person's avatar shows a card with the nudge button instead of the
+  // tooltip; it stays while the pointer moves from the avatar onto the card
+  const nudgeable = (user: UserView) => !!onnudge && !readonly && canNudge(user, space.isSelf);
+  let card = $state<{ session: number; anchor: HTMLElement } | null>(null);
+  const cardUser = $derived(card ? space.users.find((u) => u.session === card!.session && nudgeable(u)) : undefined);
+  let hideTimer: ReturnType<typeof setTimeout> | undefined;
+  function keepCard(): void {
+    clearTimeout(hideTimer);
+  }
+  function dropCard(): void {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => (card = null), 250);
+  }
+  function overPerson(e: PointerEvent): void {
+    const anchor = (e.target as HTMLElement).closest<HTMLElement>("[data-session]");
+    const user = anchor && space.users.find((u) => u.session === Number(anchor.dataset.session));
+    if (!anchor || !user || !nudgeable(user)) return;
+    keepCard();
+    if (card?.anchor !== anchor) card = { session: user.session, anchor };
+  }
+  $effect(() => () => clearTimeout(hideTimer));
+
   function click() {
     if (space.isSelf || disabled || pending) return;
     onjoin(space.channelId);
@@ -131,9 +157,11 @@
       <path d="M46 50A44 44 0 0 0 2 6" class="swing" />
       <path d="M2 50H46" class="leaf" />
     </svg>
-    <span class="people" bind:clientWidth={peopleWidth} bind:clientHeight={peopleHeight}>
+    <!-- hovering a deafened person shows the nudge card; the keyboard way is the directory board -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <span class="people" bind:clientWidth={peopleWidth} bind:clientHeight={peopleHeight} onpointerover={overPerson} onpointerout={dropCard}>
       {#each fit.shown as user (user.session)}
-        <Avatar {user} talking={talking[user.session] ?? false} />
+        <Avatar {user} talking={talking[user.session] ?? false} tooltip={!nudgeable(user)} />
       {/each}
       {#if fit.hidden.length}
         {@const names = t().space.morePeople(fit.hidden.map((u) => u.name).join(", "))}
@@ -156,9 +184,10 @@
       <span class="count">{countLine}</span>
     </span>
     {#if space.users.length > 0}
-      <span class="people">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <span class="people" onpointerover={overPerson} onpointerout={dropCard}>
         {#each space.users as user (user.session)}
-          <Avatar {user} talking={talking[user.session] ?? false} />
+          <Avatar {user} talking={talking[user.session] ?? false} tooltip={!nudgeable(user)} />
         {/each}
       </span>
     {/if}
@@ -195,6 +224,10 @@
   </span>
 {/if}
 {@render plant()}
+{#if card && cardUser && onnudge}
+  <NudgeCard user={cardUser} anchor={card.anchor} talking={talking[cardUser.session] ?? false} onenter={keepCard} onleave={dropCard}
+    onnudge={(user) => { card = null; onnudge(user); }} />
+{/if}
 </div>
 
 <style>

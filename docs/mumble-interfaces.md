@@ -79,7 +79,7 @@ The results of the feasibility studies S1 and S2 mentioned below are summarised 
 | `getAllUsers`, `getAllChannels` | Ice provides the tree and the users completely, so there is no need to reconcile two sources. Also, `getAllUsers` and `getAllChannels` crash with `nullptr` (`API_v_1_x_x.cpp:406, 454`). |
 | `sendData` | Works only between clients and is throttled to 4 calls per second. Of no use for us. |
 | `requestSetLocalUserComment` | Not needed, because identity is settled by the plausibility check ([ADR-0004](decisions/0004-identity-and-pairing.md)). |
-| `playSample` | Only available in 1.2.x and of no use for us. |
+| `playSample` | Available since 1.0.x (1.2.x adds a volume); `AudioOutput::playSample` does not check for deafen. Not used: the sound of a nudge comes from the browser (ADR-0020). |
 
 ### 2.3 Callbacks (Mumble → plugin)
 

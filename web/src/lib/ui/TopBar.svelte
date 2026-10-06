@@ -1,5 +1,7 @@
 <script lang="ts">
   import ArrowDownUp from "@lucide/svelte/icons/arrow-down-up";
+  import Bell from "@lucide/svelte/icons/bell";
+  import BellOff from "@lucide/svelte/icons/bell-off";
   import Building2 from "@lucide/svelte/icons/building-2";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import HeadphoneOff from "@lucide/svelte/icons/headphone-off";
@@ -201,6 +203,10 @@
           <button type="button" class="item" onclick={() => setLocale(other)}>
             <Languages size={18} aria-hidden="true" />{t().core.switchLanguage(t().core.languageName[other])}
           </button>
+          <!-- a sound when someone nudges you, for this browser (ADR-0020); the notice shows either way -->
+          <button type="button" class="item" aria-pressed={app.nudgeSound} onclick={() => app.toggleNudgeSound()}>
+            {#if app.nudgeSound}<Bell size={18} aria-hidden="true" />{:else}<BellOff size={18} aria-hidden="true" />{/if}{t().nudge.sound}<span class="switch">{app.nudgeSound ? t().nudge.on : t().nudge.off}</span>
+          </button>
           <!-- the keyboard shortcuts, also with ? -->
           <button type="button" class="item" onclick={() => { open = null; app.helpOpen = true; }}>
             <Keyboard size={18} aria-hidden="true" />{t().shortcuts.menu}<kbd class="key">?</kbd>
@@ -370,6 +376,7 @@
   }
   .item:hover { background: var(--color-blue-100); }
   .item .key { margin-left: auto; min-width: 20px; padding: 0 5px; border: 1px solid var(--color-blue-300); border-radius: 4px; font: inherit; font-size: 12px; font-weight: 700; text-align: center; color: var(--color-blue-700); }
+  .item .switch { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--color-blue-700); }
   .item:disabled { opacity: 0.5; cursor: not-allowed; }
   .item:disabled:hover { background: none; }
   .versions { display: flex; justify-content: space-between; gap: 12px; padding: 10px 10px 4px; margin-top: 4px; border-top: 1px solid var(--color-blue-100); font-size: 12px; color: var(--color-blue-700); }

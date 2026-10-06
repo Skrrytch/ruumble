@@ -28,6 +28,8 @@ export interface UserView {
   selfDeafened: boolean;
   /** muted, deafened or suppressed by the server (symbols: O6) */
   serverMuted: boolean;
+  /** deafened by themselves or by the server: Mumble plays them nothing, a nudge reaches them (ADR-0020) */
+  deafened: boolean;
   /** Avatar image (AP9), `null`: initials */
   avatarUrl: string | null;
   /** Presence without regard to talking; whoever is talking is always shown as active by the web UI (AP10) */
@@ -228,6 +230,7 @@ export function userViewOf(u: User, selfSession: number | null, avatarUrl: Build
     selfMuted: u.selfMute || u.selfDeaf,
     selfDeafened: u.selfDeaf,
     serverMuted: u.mute || u.deaf || u.suppress,
+    deafened: u.selfDeaf || u.deaf,
     avatarUrl: avatarUrlOf(u, avatarUrl),
     presence: presenceOf(u),
     idleMinutes: u.idleMinutes,
@@ -235,6 +238,11 @@ export function userViewOf(u: User, selfSession: number | null, avatarUrl: Build
     usesRuumble: u.ruumble ?? false,
     status: u.status ?? null,
   };
+}
+
+/** may the own user nudge this person (ADR-0020): someone else in the own room who is deafened and uses Ruumble */
+export function canNudge(user: UserView, inOwnRoom: boolean): boolean {
+  return inOwnRoom && !user.isSelf && user.deafened && user.usesRuumble;
 }
 
 export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): Building {

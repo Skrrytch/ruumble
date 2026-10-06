@@ -8,6 +8,7 @@ import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter, type 
 import type { CareTarget } from "./care/model.ts";
 import { t } from "./i18n/index.svelte.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type BuildOptions, type Building, type Floor } from "./model/building.ts";
+import { playNudgeSound, readNudgeSound, storeNudgeSound } from "./nudge.ts";
 
 export type Notice = { text: string };
 
@@ -22,6 +23,16 @@ export function statusErrorText(error: BoardErrorCode): string {
   return error === "invalid" ? t().status.invalid : boardErrorText(error);
 }
 
+/** Plain text for a nudge that did not go out (ADR-0020) */
+export function nudgeErrorText(error: BoardErrorCode, name: string): string {
+  const m = t().nudge;
+  return error === "rate-limited" ? m.wait(name)
+    : error === "not-deaf" ? m.notDeaf(name)
+    : error === "not-in-room" ? m.notInRoom(name)
+    : error === "not-found" || error === "invalid" ? m.unreachable(name)
+    : boardErrorText(error);
+}
+
 /** Plain text for an error of a care action */
 export function careErrorText(error: BoardErrorCode): string {
   return error === "not-found" || error === "forbidden" ? t().care.errors[error] : boardErrorText(error);
@@ -29,6 +40,9 @@ export function careErrorText(error: BoardErrorCode): string {
 
 export type { CareTarget };
 export type CareView = { kind: "room"; value: RoomCare } | { kind: "floor"; value: FloorCare } | { kind: "building"; value: BuildingCare };
+
+/** a nudge for the own user stays longer than other notices: whoever was away from the screen should still see it */
+const NUDGE_NOTICE_MS = 30_000;
 
 /** per room: creation time of the newest post the user has seen on its board (only in this browser) */
 const SEEN_KEY = "ruumble.boardSeen";
@@ -89,6 +103,8 @@ export class RuumbleState {
   status = $state<StatusView | null>(null);
   statusBusy = $state(false);
   statusError = $state<BoardErrorCode | null>(null);
+  /** play a sound in this browser when someone nudges the own user (ADR-0020), remembered per browser */
+  nudgeSound = $state(readNudgeSound());
   private boardChannel: number | null = null;
   private boardSeen = readSeen();
 
@@ -156,6 +172,10 @@ export class RuumbleState {
       board: (channelId) => {
         if (this.me?.channel === channelId) void this.loadBoard();
       },
+      nudge: (_session, name) => {
+        this.setNotice({ text: t().nudge.received(name) }, NUDGE_NOTICE_MS);
+        if (this.nudgeSound) playNudgeSound();
+      },
     });
   }
 
@@ -210,6 +230,19 @@ export class RuumbleState {
     const me = this.me;
     if (!me) return;
     this.report(await this.adapter.command({ cmd: "deaf", on: !me.selfDeaf }));
+  }
+
+  // ---------------------------------------------------------------- Nudge (ADR-0020)
+
+  /** get the attention of a deafened person in the own room; a notice says whether it went out */
+  async nudge(user: { session: number; name: string }): Promise<void> {
+    const r = await this.adapter.nudge(user.session);
+    this.setNotice({ text: r.ok ? t().nudge.sent(user.name) : nudgeErrorText(r.error, user.name) });
+  }
+
+  toggleNudgeSound(): void {
+    this.nudgeSound = !this.nudgeSound;
+    storeNudgeSound(this.nudgeSound);
   }
 
   // ---------------------------------------------------------------- Board
@@ -608,10 +641,10 @@ export class RuumbleState {
     );
   }
 
-  private setNotice(notice: Notice): void {
+  private setNotice(notice: Notice, ms = 5000): void {
     this.notice = notice;
     if (this.noticeTimer) clearTimeout(this.noticeTimer);
-    this.noticeTimer = setTimeout(() => (this.notice = null), 5000);
+    this.noticeTimer = setTimeout(() => (this.notice = null), ms);
   }
 
   private onSnapshot(s: Snapshot): void {

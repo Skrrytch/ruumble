@@ -37,7 +37,8 @@
         onmaintain={tend ? () => { app.closeOverview(); void app.openMaintenance(); } : undefined}
       />
     </div>
-    <Directory {groups} floors={building.floors} {highlight} onhover={(s) => (highlight = s)} onvisit={(p) => app.visit(p.channelId)} onfloor={(f) => app.viewFloor(f)} />
+    <Directory {groups} floors={building.floors} {highlight} onhover={(s) => (highlight = s)} onvisit={(p) => app.visit(p.channelId)} onfloor={(f) => app.viewFloor(f)}
+      onnudge={(p) => { app.closeOverview(); void app.nudge(p.user); }} />
   </div>
 </dialog>
 

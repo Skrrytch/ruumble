@@ -7,7 +7,7 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, STATUS_LIMITS, StatusRequest, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type StatusView, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, NUDGE_INTERVAL_MS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, STATUS_LIMITS, StatusRequest, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type StatusView, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
@@ -513,6 +513,21 @@ export class MockAdapter implements MumbleAdapter {
     this.events = null;
   }
 
+  /** like the service (ADR-0020): someone else in the own room, deafened, with Ruumble; once a minute per person */
+  private nudged = new Map<number, number>();
+  async nudge(session: number): Promise<BoardResult<true>> {
+    const me = this.me();
+    if (this.plugin === "disconnected" || !me) return { ok: false, error: "not-paired" };
+    const other = this.state.users.find((u) => u.session === session && u.session !== me.session);
+    if (!other?.ruumble) return { ok: false, error: other ? "not-found" : "invalid" };
+    if (other.channel !== me.channel) return { ok: false, error: "not-in-room" };
+    if (!other.selfDeaf && !other.deaf) return { ok: false, error: "not-deaf" };
+    const last = this.nudged.get(session);
+    if (last !== undefined && Date.now() - last < NUDGE_INTERVAL_MS) return { ok: false, error: "rate-limited" };
+    this.nudged.set(session, Date.now());
+    return { ok: true, value: true };
+  }
+
   async versions(): Promise<Versions> {
     return { service: __UI_VERSION__, plugin: __PLUGIN_VERSION__ };
   }
@@ -574,6 +589,23 @@ export class MockAdapter implements MumbleAdapter {
     this.plugin = status;
     this.events?.status(status, false);
     this.emit();
+  }
+
+  /** someone else with Ruumble in the own room deafens or hears again (nudge, ADR-0020) */
+  toggleDeafNearby(): void {
+    const me = this.me();
+    const other = me && this.state.users.find((u) => u.session !== me.session && u.channel === me.channel && u.ruumble);
+    if (!other) return;
+    other.selfDeaf = !other.selfDeaf;
+    other.selfMute = other.selfDeaf;
+    this.emit();
+  }
+
+  /** someone in the own room nudges the own user */
+  nudgeMe(): void {
+    const me = this.me();
+    const other = me && this.state.users.find((u) => u.session !== me.session && u.channel === me.channel);
+    if (other) this.events?.nudge(other.session, other.name);
   }
 
   /** The next switch is not confirmed despite access permission (as with the rate limit, S2). */

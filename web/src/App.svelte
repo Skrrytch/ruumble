@@ -6,6 +6,7 @@
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
   import FloorPlan from "./lib/ui/FloorPlan.svelte";
   import { t } from "./lib/i18n/index.svelte.ts";
+  import { unlockAudioOnFirstUse } from "./lib/nudge.ts";
   import { shortcutOf } from "./lib/shortcuts.ts";
   import PairForm from "./lib/ui/PairForm.svelte";
   import PluginHelp from "./lib/ui/PluginHelp.svelte";
@@ -32,6 +33,9 @@
     const place = building && app.snapshot ? ownPlace(building, app.snapshot) : null;
     document.title = place ? `${place.name} · Ruumble` : "Ruumble";
   });
+
+  // a nudge plays a sound (ADR-0020); browsers allow that only after the page was used once
+  $effect(() => unlockAudioOnFirstUse());
 
   // keyboard shortcuts (lib/shortcuts.ts): only in the building view; the board needs an own user
   function onkeydown(e: KeyboardEvent): void {
@@ -90,6 +94,7 @@
           boardUnseen={app.boardUnseen}
           ontoggleboard={() => app.toggleBoard()}
           ontend={(target) => app.openCare(target)}
+          onnudge={(user) => void app.nudge(user)}
         />
       {:else}
         <div class="vacancy" role="status">

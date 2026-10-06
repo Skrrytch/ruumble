@@ -95,6 +95,8 @@ export interface AdapterEvents {
   status(plugin: PluginStatus, preview: boolean): void;
   /** Something changed on this room's board (only for those present) */
   board(channelId: number): void;
+  /** someone in the room nudged the own (deafened) user (ADR-0020) */
+  nudge(session: number, name: string): void;
   connection(state: ConnectionState): void;
 }
 
@@ -108,6 +110,8 @@ export interface MumbleAdapter {
   keys: KeysApi;
   maintenance: MaintenanceApi;
   status: StatusApi;
+  /** get the attention of a deafened person in the own room (ADR-0020); once a minute per person */
+  nudge(session: number): Promise<BoardResult<true>>;
   pairing: PairApi;
   /** versions of service and offered plugin (notice pages); null if unknown */
   versions(): Promise<Versions | null>;

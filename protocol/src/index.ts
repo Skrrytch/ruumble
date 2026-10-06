@@ -416,6 +416,14 @@ export const StatusRequest = z.object({
 });
 export type StatusRequest = z.infer<typeof StatusRequest>;
 
+// ---------------------------------------------------------------- Nudge (REST under /api/nudge, ADR-0020)
+
+/** one nudge per person and minute for the same person */
+export const NUDGE_INTERVAL_MS = 60_000;
+/** POST /api/nudge: get the attention of a deafened person in the own room */
+export const NudgeRequest = z.object({ session });
+export type NudgeRequest = z.infer<typeof NudgeRequest>;
+
 /** POST /api/board/posts/:id/copy: copy a post of the own room to another room the user may enter */
 export const CopyRequest = z.object({ channelId });
 export type CopyRequest = z.infer<typeof CopyRequest>;
@@ -458,14 +466,15 @@ export type PostUpdate = z.infer<typeof PostUpdate>;
 
 /** error response of the REST API */
 export const BoardError = z.object({
-  error: z.enum(["not-paired", "not-in-room", "no-board-here", "not-found", "forbidden", "too-large", "bad-type", "invalid", "rate-limited"]),
+  /** `not-deaf`: a nudge for someone who hears again (ADR-0020) */
+  error: z.enum(["not-paired", "not-in-room", "no-board-here", "not-found", "forbidden", "too-large", "bad-type", "invalid", "rate-limited", "not-deaf"]),
 });
 
 export type BoardErrorCode = z.infer<typeof BoardError>["error"];
 
-/** HTTP status of each REST error (board, care, keys, maintenance); one table for the whole service */
+/** HTTP status of each REST error (board, care, keys, maintenance, status, nudge); one table for the whole service */
 export const API_ERROR_STATUS: Record<BoardErrorCode, number> = {
-  "not-paired": 401, "not-in-room": 403, "no-board-here": 404, "not-found": 404, forbidden: 403, "too-large": 413, "bad-type": 415, invalid: 400, "rate-limited": 429,
+  "not-paired": 401, "not-in-room": 403, "no-board-here": 404, "not-found": 404, forbidden: 403, "too-large": 413, "bad-type": 415, invalid: 400, "rate-limited": 429, "not-deaf": 409,
 };
 
 /** Minimal schema type so consumers need not import zod themselves */
@@ -475,6 +484,9 @@ export interface Parser<T> {
 
 /** WebSocket: something changed on this room's board (only to those present) */
 export const UiBoard = z.object({ v, type: z.literal("board"), channelId });
+
+/** WebSocket: someone in the room wants the attention of this (deafened) user; only to that user's web UIs (ADR-0020) */
+export const UiNudge = z.object({ v, type: z.literal("nudge"), session, name: z.string() });
 
 export const UiTalking = z.object({ v, type: z.literal("talking"), session, state: TalkingState });
 export const UiResult = z.object({ v, type: z.literal("result"), id: commandId, result: CommandResult });
@@ -486,7 +498,7 @@ export const UiStatus = z.object({
   preview: z.boolean().optional(),
 });
 
-export const BridgeToUi = z.discriminatedUnion("type", [Snapshot, UiTalking, UiResult, UiStatus, UiBoard]);
+export const BridgeToUi = z.discriminatedUnion("type", [Snapshot, UiTalking, UiResult, UiStatus, UiBoard, UiNudge]);
 export type BridgeToUi = z.infer<typeof BridgeToUi>;
 
 // ---------------------------------------------------------------- Helpers

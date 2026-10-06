@@ -1,4 +1,5 @@
 <script lang="ts">
+  import BellRing from "@lucide/svelte/icons/bell-ring";
   import MessageSquareText from "@lucide/svelte/icons/message-square-text";
   import Search from "@lucide/svelte/icons/search";
   import { t } from "../../i18n/index.svelte.ts";
@@ -8,7 +9,8 @@
 
   // The directory board in the lobby ("Haustafel", ADR-0019): a dark plate like the floor sign, per floor its badge,
   // name and the people with their room and status; a search over all of it. A person is a button to go to them,
-  // a floor heading shows that floor; Enter in the search goes to the first match.
+  // a floor heading shows that floor; Enter in the search goes to the first match. A deafened person in the own room
+  // has a bell beside them that nudges them (ADR-0020).
   let {
     groups,
     floors,
@@ -16,6 +18,7 @@
     onhover,
     onvisit,
     onfloor,
+    onnudge,
   }: {
     groups: DirectoryGroup[];
     floors: Floor[];
@@ -23,6 +26,7 @@
     onhover: (session: number | null) => void;
     onvisit: (entry: DirectoryEntry) => void;
     onfloor: (floor: Floor) => void;
+    onnudge: (entry: DirectoryEntry) => void;
   } = $props();
 
   let query = $state("");
@@ -60,7 +64,7 @@
         {#if g.people.length}
           <ul>
             {#each g.people as p (p.user.session)}
-              <li>
+              <li class:nudgeable={p.canNudge}>
                 <button
                   type="button" class="person" class:me={p.user.isSelf} class:highlight={highlight === p.user.session} aria-disabled={!p.canGo || undefined}
                   aria-label={p.canGo ? t().overview.goTo(p.user.name, p.place) : `${personLabel(p.user)} – ${p.place}`}
@@ -76,6 +80,11 @@
                     <span class="pstatus"><MessageSquareText size={11} aria-hidden="true" />{p.user.status.text}</span>
                   {/if}
                 </button>
+                {#if p.canNudge}
+                  <button type="button" class="bell" aria-label={t().nudge.label(p.user.name)} title={`${t().nudge.label(p.user.name)} – ${t().nudge.deafHint}`} onclick={() => onnudge(p)}>
+                    <BellRing size={16} aria-hidden="true" />
+                  </button>
+                {/if}
               </li>
             {/each}
           </ul>
@@ -119,6 +128,14 @@
   }
   .person:hover:not([aria-disabled]), .person.highlight { background: rgb(255 255 255 / 0.12); }
   .person[aria-disabled] { cursor: default; }
+  li.nudgeable { display: flex; align-items: center; gap: 4px; }
+  li.nudgeable .person { flex: 1; min-width: 0; }
+  .bell {
+    flex: none; width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid rgb(255 255 255 / 0.5); border-radius: 50%;
+    background: transparent; color: var(--color-white); cursor: pointer;
+  }
+  .bell:hover { background: rgb(255 255 255 / 0.15); }
+  .bell:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 1px; }
   .line { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
   .pname { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .place { margin-left: auto; flex: none; max-width: 50%; font-size: 12px; color: var(--color-blue-100); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -7,7 +7,18 @@
   import { t } from "../i18n/index.svelte.ts";
   import { personLabel, statusLabel } from "../status.ts";
 
-  let { user, talking = false, showName = true }: { user: UserView; talking?: boolean; showName?: boolean } = $props();
+  let {
+    user,
+    talking = false,
+    showName = true,
+    tooltip = true,
+  }: {
+    user: UserView;
+    talking?: boolean;
+    showName?: boolean;
+    /** false: a card shows who it is instead (nudge, ADR-0020) */
+    tooltip?: boolean;
+  } = $props();
 
   // image not loadable → initials (AP9)
   let failedUrl = $state<string | null>(null);
@@ -23,7 +34,7 @@
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 </script>
 
-<span class="person" title={label} aria-label={label} role="img">
+<span class="person" title={tooltip ? label : undefined} aria-label={label} role="img" data-session={user.session}>
   <span class="av {presence}" class:me={user.isSelf} class:talking aria-hidden="true">
     {#if imageUrl}
       <img src={imageUrl} alt="" onerror={() => (failedUrl = imageUrl)} />

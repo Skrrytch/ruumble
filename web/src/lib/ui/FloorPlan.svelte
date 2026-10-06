@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { countText, rowsWidth, splitRows, type Floor } from "../model/building.ts";
+  import { countText, rowsWidth, splitRows, type Floor, type UserView } from "../model/building.ts";
   import SpaceButton from "./SpaceButton.svelte";
   import { t } from "../i18n/index.svelte.ts";
 
@@ -13,6 +13,7 @@
     boardUnseen = 0,
     ontoggleboard,
     ontend,
+    onnudge,
   }: {
     floor: Floor;
     readonly?: boolean;
@@ -24,6 +25,8 @@
     ontoggleboard?: () => void;
     /** open the care dialog of a room or floor (ADR-0014) */
     ontend?: (target: { kind: "room" | "floor"; channelId: number }) => void;
+    /** nudge a deafened person in the own room (ADR-0020) */
+    onnudge?: (user: UserView) => void;
   } = $props();
   const tendRoom = (channelId: number) => (ontend ? () => ontend({ kind: "room", channelId }) : undefined);
   const tendFloor = $derived(ontend ? () => ontend({ kind: "floor", channelId: floor.channelId }) : undefined);
@@ -67,14 +70,14 @@
       pending={pendingChannel === floor.channelId}
       {talking}
       {readonly}
-      {onjoin}
+      {onjoin} {onnudge}
       ontend={tendFloor}
     />
   {:else}
     <div class="track" style:width={width > 1 ? `${width * 100}%` : undefined}>
       <div class="row top">
         {#each rows.top as room (room.channelId)}
-          <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
+          <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {onnudge} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
         {/each}
       </div>
       <SpaceButton
@@ -85,12 +88,12 @@
         pending={pendingChannel === floor.channelId}
         {talking}
         {readonly}
-        {onjoin}
+        {onjoin} {onnudge}
         ontend={tendFloor}
       />
       <div class="row bottom">
         {#each rows.bottom as room (room.channelId)}
-          <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
+          <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {onnudge} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
         {/each}
       </div>
     </div>

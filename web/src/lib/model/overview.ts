@@ -5,7 +5,7 @@
  */
 import type { Channel, Snapshot } from "@ruumble/protocol";
 import { t } from "../i18n/index.svelte.ts";
-import { userViewOf, visibleChannels, type BuildOptions, type Building, type UserView } from "./building.ts";
+import { canNudge, userViewOf, visibleChannels, type BuildOptions, type Building, type UserView } from "./building.ts";
 
 /** a person on the directory board, with the place they are at */
 export interface DirectoryEntry {
@@ -17,6 +17,8 @@ export interface DirectoryEntry {
   canGo: boolean;
   /** why not, for the tooltip; null when one can go there */
   blocked: Blocked | null;
+  /** deafened in the own room: the own user may nudge them (ADR-0020) */
+  canNudge: boolean;
 }
 
 /** why one cannot go to a person: it is oneself, one is there already, no own Mumble (preview, offline), a floor
@@ -77,7 +79,8 @@ export function buildDirectory(snapshot: Snapshot, building: Building, options: 
       : group.locked ? "locked-floor"
       : snapshot.canEnter[String(ch)] === false ? "no-access"
       : null;
-    group.people.push({ user: userViewOf(u, selfSession, options.avatarUrl), channelId: ch, place, canGo: blocked === null, blocked });
+    const user = userViewOf(u, selfSession, options.avatarUrl);
+    group.people.push({ user, channelId: ch, place, canGo: blocked === null, blocked, canNudge: canNudge(user, selfSession !== null && ch === selfChannel) });
   }
   const all = [...groups.values(), ...(elsewhere.people.length ? [elsewhere] : [])];
   for (const g of all) g.people.sort((a, b) => collator.compare(a.user.name, b.user.name));

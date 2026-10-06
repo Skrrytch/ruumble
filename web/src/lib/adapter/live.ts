@@ -173,6 +173,10 @@ export class LiveAdapter implements MumbleAdapter {
     this.socket?.close();
   }
 
+  nudge(session: number): Promise<BoardResult<true>> {
+    return call<true>(null, "/api/nudge", { method: "POST", body: JSON.stringify({ session }) });
+  }
+
   async versions(): Promise<Versions | null> {
     const r = await call(Versions, "/api/version");
     return r.ok ? r.value : null;
@@ -208,6 +212,8 @@ export class LiveAdapter implements MumbleAdapter {
           return this.events.status(msg.plugin, msg.preview ?? false);
         case "board":
           return this.events.board(msg.channelId);
+        case "nudge":
+          return this.events.nudge(msg.session, msg.name);
         case "result": {
           const p = this.pending.get(msg.id);
           if (p) {

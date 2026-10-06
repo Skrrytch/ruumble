@@ -54,6 +54,20 @@ export interface Viewer {
   channelId: number;
 }
 
+/** a person reachable through their plugin (personOf) */
+export interface Person {
+  certHash: string;
+  name: string;
+  channelId: number;
+  /** deafened by themselves or by the server */
+  deaf: boolean;
+  locale: Locale;
+  /** a line in their Mumble log */
+  notify(text: string): void;
+  /** to their own web UIs only */
+  toUis(msg: BridgeToUi): void;
+}
+
 interface PluginEntry {
   conn: Conn<BridgeToPlugin>;
   certHash: string;
@@ -160,6 +174,25 @@ export class Hub {
     return [...this.plugins.values()]
       .filter((p) => p.certHash !== except && this.state?.users.find((u) => u.session === p.session)?.channel === channelId)
       .map((p) => ({ send: (msg: BridgeToPlugin) => p.conn.send(msg), locale: p.locale }));
+  }
+
+  /**
+   * A person with a connected plugin, by session: where they are, whether they are deafened, and how to reach their
+   * plugin (Mumble log) and their own web UIs (nudge, ADR-0020); null without a plugin
+   */
+  personOf(session: number): Person | null {
+    const user = this.state?.users.find((u) => u.session === session);
+    const plugin = user && [...this.plugins.values()].find((p) => p.session === session);
+    if (!user || !plugin) return null;
+    return {
+      certHash: plugin.certHash,
+      name: user.name,
+      channelId: user.channel,
+      deaf: user.selfDeaf || user.deaf,
+      locale: plugin.locale,
+      notify: (text) => plugin.conn.send({ v, type: "notify", text }),
+      toUis: (msg) => this.forUis(plugin.certHash, (ui) => ui.conn.send(msg)),
+    };
   }
 
   /**

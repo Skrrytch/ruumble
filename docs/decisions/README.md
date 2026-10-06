@@ -23,5 +23,6 @@ Format: short MADR. Status: **accepted** = decided by the project owner. **propo
 | [0017](0017-threat-model-after-board-and-care.md) | Threat model after the board, care and keys: no takeover, new keys announced, Origin, trusted proxy | proposed |
 | [0018](0018-status.md) | Status kept by the service, shown at the avatar | proposed |
 | [0019](0019-building-overview.md) | Building overview: cross-section and directory board | proposed |
+| [0020](0020-nudge.md) | Nudge a deafened person in the own room | proposed |
 
 ADRs record a decision as it was made. Where the code has moved on since, the ADR has a short "Current state" note instead of a silent rewrite.

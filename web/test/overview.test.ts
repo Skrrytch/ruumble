@@ -42,6 +42,16 @@ describe("Building overview: the directory (ADR-0019)", () => {
     expect(directory(s).find((g) => g.kind === "floor" && g.name === "ARCHIVE")!.locked).toBe(true);
   });
 
+  it("a deafened person with Ruumble in the own room can be nudged (ADR-0020)", () => {
+    const s = fixture("sample");
+    const nudgeable = (snap: Snapshot) => directory(snap).flatMap((g) => g.people.filter((p) => p.canNudge).map((p) => p.user.name));
+    expect(nudgeable(s)).toEqual([]);
+    const deaf = (names: string[]) => ({ ...s, users: s.users.map((u) => (names.includes(u.name) ? { ...u, selfDeaf: true } : u)) });
+    // Clara: in the own room; David: no Ruumble; Ben: another room; Anna: oneself
+    expect(nudgeable(deaf(["Clara", "David", "Ben", "Anna"]))).toEqual(["Clara"]);
+    expect(nudgeable({ ...deaf(["Clara"]), self: null })).toEqual([]);
+  });
+
   it("why one cannot go to someone", () => {
     const why = (s: Snapshot) => Object.fromEntries(directory(s).flatMap((g) => g.people.map((p) => [p.user.name, p.blocked])));
     const edge = fixture("edge-cases");

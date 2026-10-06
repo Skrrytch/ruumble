@@ -451,6 +451,22 @@ export const de = {
     access: "Zugang",
     accessHint: "Die gekoppelten Browser aller anderen Benutzer. Ein zurückgezogener Schlüssel muss neu gekoppelt werden.",
   },
+  nudge: {
+    /** the button in the card at a deafened person's avatar */
+    button: "Anstupsen",
+    label: (name: string) => `${name} anstupsen`,
+    deafHint: "hat Mumble taub gestellt und hört dich nicht",
+    sent: (name: string) => `${name} wurde angestupst.`,
+    received: (name: string) => `${name} hat dich angestupst und möchte etwas von dir.`,
+    wait: (name: string) => `Du hast ${name} gerade erst angestupst – wieder in einer Minute.`,
+    notDeaf: (name: string) => `${name} hört dich wieder – sprich einfach.`,
+    notInRoom: (name: string) => `${name} ist nicht mehr in deinem Raum.`,
+    unreachable: (name: string) => `${name} ist gerade nicht erreichbar.`,
+    /** user menu: play a sound in this browser when someone nudges you */
+    sound: "Ton beim Anstupsen",
+    on: "an",
+    off: "aus",
+  },
   boardErrors: {
     "not-paired": MUMBLE_OFFLINE,
     "not-in-room": "Du bist nicht mehr in diesem Raum.",
@@ -461,6 +477,7 @@ export const de = {
     "bad-type": "Das ist kein Bild, das Ruumble anzeigen kann (PNG, JPEG, GIF, WebP).",
     invalid: "Der Beitrag ist leer oder ungültig.",
     "rate-limited": "Zu viele Beiträge in kurzer Zeit – bitte kurz warten.",
+    "not-deaf": "Die Person hört wieder zu.",
     offline: "Keine Verbindung zum Ruumble-Dienst.",
   },
 };

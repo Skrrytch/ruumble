@@ -52,6 +52,13 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 - Everyone in Ruumble sees a **speech bubble** at your avatar, with the text and the expiry in its tooltip; the button in the top bar is filled while your status is set. It shows while your Mumble is connected with the plugin.
 - Kept by the service per person, so it follows you to other browsers; plain Mumble clients do not see it (ADR-0018). Someone without a status for 90 days is forgotten, recent texts included.
 
+### Nudge
+
+- Someone **deafened** in Mumble hears nothing, not even Mumble's sounds. To get their attention, hover them in your own room: a card shows their states and a **Nudge** button. In the building overview (**H**) a bell beside them does the same, also with the keyboard ([ADR-0020](decisions/0020-nudge.md)).
+- Only for someone else in **your own channel** who is deafened and uses Ruumble; once a minute per person.
+- They get a line in their Mumble log ("Anna nudged you and would like your attention.", in their language) and, in Ruumble, a notice with two short tones from the browser, which deafening does not silence. Browsers play sound only after the page was clicked once.
+- "Sound when nudged" in the user menu switches the tones off for this browser; the notice shows either way. Nothing is stored.
+
 ### Moving, mute and deafen
 
 - Click a room to move there. Clicking a floor in the elevator only changes the view; "go to my floor" jumps back.
@@ -148,7 +155,7 @@ Tested versions: see [operations](operations.md#requirements).
 
 - **Reading or writing the chat:** the plugin API cannot, and Ice would need the write secret and would also deliver all private messages. Ruumble complements the Mumble chat instead.
 - **Buttons, menus or clickable links in the Mumble client:** the plugin API has no UI; plugin log lines are plain text.
-- **Playing sounds from the plugin:** needs plugin API 1.2, which would drop Mumble 1.4. Sounds come from the browser.
+- **Playing sounds from the plugin:** possible with plugin API 1.0 (`playSample`; 1.2 only adds a volume), but not used: it would need a plugin release and a sound file in the bundle. Sounds come from the browser (nudge, ADR-0020).
 
 ---
 
@@ -159,6 +166,7 @@ Tested versions: see [operations](operations.md#requirements).
 | macOS plugin | later option (E3) |
 | B – Status line | done (Unreleased), kept by the service instead of the Mumble comment (ADR-0018) |
 | C – Knocking | idea, decision open |
+| Nudge a deafened person in the own room | done (Unreleased, ADR-0020); a sound from the plugin is the next step if needed |
 | F – More controls | idea, decision open |
 | G – "Door closed" | dropped (2026-10-03): Mumble has no knocking |
 | A1 – Quick reactions | done (0.10.0) |

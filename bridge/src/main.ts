@@ -42,6 +42,7 @@ import { Hub, type AddressCheck } from "./hub.ts";
 import { keepAlive } from "./keepalive.ts";
 import { keyRoutes } from "./keys.ts";
 import { maintenanceRoutes } from "./maintenance.ts";
+import { nudgeRoutes } from "./nudge.ts";
 import { IceMumbleSource } from "./mumble.ts";
 import { originGuard } from "./origin.ts";
 import { Pairing } from "./pairing.ts";
@@ -272,6 +273,8 @@ await app.register(keyRoutes, {
 
 // the own status, shown to everyone at the avatar (B, ADR-0018)
 await app.register(statusRoutes, { book: statuses, gate });
+// nudge a deafened person in the own room (ADR-0020)
+await app.register(nudgeRoutes, { hub, gate });
 
 // building maintenance: settings that used to be fixed (ADR-0016)
 await app.register(maintenanceRoutes, { store, gate, log });

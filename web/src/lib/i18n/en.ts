@@ -425,6 +425,20 @@ export const en: Messages = {
     access: "Access",
     accessHint: "The paired browsers of all other users. A revoked key has to be paired again.",
   },
+  nudge: {
+    button: "Nudge",
+    label: (name: string) => `Nudge ${name}`,
+    deafHint: "has deafened Mumble and cannot hear you",
+    sent: (name: string) => `${name} was nudged.`,
+    received: (name: string) => `${name} nudged you and would like your attention.`,
+    wait: (name: string) => `You just nudged ${name} – again in a minute.`,
+    notDeaf: (name: string) => `${name} hears you again – just talk.`,
+    notInRoom: (name: string) => `${name} is no longer in your room.`,
+    unreachable: (name: string) => `${name} cannot be reached right now.`,
+    sound: "Sound when nudged",
+    on: "on",
+    off: "off",
+  },
   boardErrors: {
     "not-paired": MUMBLE_OFFLINE,
     "not-in-room": "You are no longer in this room.",
@@ -435,6 +449,7 @@ export const en: Messages = {
     "bad-type": "This is not an image Ruumble can show (PNG, JPEG, GIF, WebP).",
     invalid: "The post is empty or invalid.",
     "rate-limited": "Too many posts in a short time – please wait a moment.",
+    "not-deaf": "That person hears again.",
     offline: "No connection to the Ruumble service.",
   },
 };

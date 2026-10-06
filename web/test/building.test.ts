@@ -8,6 +8,7 @@ import {
   QUIET_MINUTES,
   presenceOf,
   buildBuilding,
+  canNudge,
   countText,
   floorLabels,
   homeFloor,
@@ -287,6 +288,28 @@ describe("Avatars (AP9) and presence (AP10)", () => {
     const lobby = b.floors.find((f) => f.name === "Lobby")!;
     expect(lobby.corridor.recording).toBe(true);
     expect(b.floors.find((f) => f.name === "DEVELOPMENT")!.rooms.some((r) => r.recording)).toBe(false);
+  });
+});
+
+describe("Nudge (ADR-0020)", () => {
+  const channels = [ch(0, null, "Root"), ch(1, 0, "1F"), ch(2, 1, "Office")];
+  const users = [
+    user(1, "Anna", 2, { ruumble: true }),
+    user(2, "Ben", 2, { selfDeaf: true, selfMute: true, ruumble: true }),
+    user(3, "Clara", 2, { deaf: true, ruumble: true }),
+    user(4, "David", 2, { selfDeaf: true }),
+    user(5, "Eva", 2, { ruumble: true }),
+  ];
+  const office = buildBuilding(snapshot(channels, users, 1)).floors[0]!.rooms[0]!;
+  const view = (name: string) => office.users.find((u) => u.name === name)!;
+
+  it("deafened by oneself or by the server", () => {
+    expect(["Anna", "Ben", "Clara", "David", "Eva"].map((n) => view(n).deafened)).toEqual([false, true, true, true, false]);
+  });
+
+  it("only someone else in the own room who is deafened and uses Ruumble", () => {
+    expect(["Anna", "Ben", "Clara", "David", "Eva"].map((n) => canNudge(view(n), true))).toEqual([false, true, true, false, false]);
+    expect(canNudge(view("Ben"), false)).toBe(false);
   });
 });
 
