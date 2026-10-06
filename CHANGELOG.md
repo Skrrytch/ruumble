@@ -6,6 +6,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-10-06
+
+Plugin 0.5.0 (unchanged). Channel descriptions from Mumble behind binders, and a nudge for people who deafened themselves.
+
 ### Added
 - **Descriptions from Mumble.** A room, corridor or open floor with a description in Mumble shows two binders, in a room left of the board. They open the description as a popup, a third of the window wide and up to 80 % of its height, with nothing but the description: formatting, links and embedded images stay; links open in a new tab. Escape, a click beside it or on a link closes it; a click beside it does nothing else, so it enters no room. Images from other servers and inline styles are left out.
 - **Nudge.** Someone deafened in Mumble hears nothing, not even Mumble's sounds. Hover them in your own room and press "Nudge" in the card, or use the bell beside them in the building overview: they get a line in their Mumble log and, in Ruumble, a notice with two short tones from the browser. Only for deafened people in your own channel who use Ruumble, once a minute per person. "Sound when nudged" in the user menu switches the tones off for this browser (ADR-0020).
@@ -292,6 +296,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.28.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.28.0
 [0.27.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.27.0
 [0.26.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.26.0
 [0.25.1]: https://github.com/Skrrytch/ruumble/releases/tag/v0.25.1
