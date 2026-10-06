@@ -103,12 +103,12 @@
     <span class="step" style:--step="1" aria-hidden="true"></span>
     <span class="step" style:--step="2" aria-hidden="true"></span>
     {#if ontend}
-      <button type="button" class="porch left tend" aria-label={t().care.buildingPlant} title={t().care.buildingPlant} onclick={ontend}><Plant size={18} /></button>
+      <button type="button" class="porch left tend" aria-label={t().care.buildingPlant} title={t().care.buildingPlant} onclick={ontend}><Plant size={36} /></button>
       <!-- the same action twice: only the left one is a stop for the keyboard and screen readers -->
-      <button type="button" class="porch right tend" tabindex="-1" aria-hidden="true" title={t().care.buildingPlant} onclick={ontend}><Plant size={18} /></button>
+      <button type="button" class="porch right tend" tabindex="-1" aria-hidden="true" title={t().care.buildingPlant} onclick={ontend}><Plant size={36} /></button>
     {:else}
-      <span class="porch left" aria-hidden="true"><Plant size={18} /></span>
-      <span class="porch right" aria-hidden="true"><Plant size={18} /></span>
+      <span class="porch left" aria-hidden="true"><Plant size={36} /></span>
+      <span class="porch right" aria-hidden="true"><Plant size={36} /></span>
     {/if}
   </div>
   <div class="ground-line" aria-hidden="true"></div>
@@ -118,7 +118,7 @@
   {:else}
     <span class="yard left" aria-hidden="true"><Lantern /></span>
   {/if}
-  <span class="tree" aria-hidden="true"><Cypress height={50} /></span>
+  <span class="tree" aria-hidden="true"><Cypress height={150} /></span>
 </section>
 
 <style>
@@ -131,9 +131,9 @@
   button.yard, button.porch { cursor: pointer; transition: transform var(--dur) var(--ease-out); }
   button.yard:hover, button.porch:hover { transform: translateY(-2px) rotate(2deg) scale(1.08); }
   button.yard:focus-visible, button.porch:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
-  /* the cypress: on the ground line, its crown in front of the right wall (the wall is 44 px in from the edge), up to
-     about half the entrance storey */
-  .tree { position: absolute; bottom: 15px; right: 36px; z-index: 1; display: flex; pointer-events: none; }
+  /* the cypress: on the ground line beside the building, its trunk (31 px in from the tree's right edge) clear of the
+     right wall (44 px in from the edge), only the crown reaches in front of the wall */
+  .tree { position: absolute; bottom: 15px; right: 3px; z-index: 1; display: flex; pointer-events: none; }
   /* the roof: a flat gable in navy with the building's name, flush with the outer walls (shaft to right wall) */
   .roof {
     height: 50px; background: var(--color-navy); color: var(--color-white);
@@ -193,10 +193,11 @@
     position: relative; height: 15px; margin: 0 44px; border-top: 3px solid var(--color-navy);
     border-left: 2px solid var(--color-navy); border-right: 2px solid var(--color-navy); background: var(--color-surface);
   }
-  /* the plants beside the steps stand on the street in front of the plinth, a little higher than it: 3 px clear of the
-     lowest step (from 41 to 89 px, see .step) */
-  .porch { position: absolute; bottom: 0; z-index: 1; display: flex; padding: 0; border: 0; background: none; border-radius: var(--radius-md); }
-  .porch.left { left: 20px; }
+  /* the plants beside the steps stand on the street in front of the plinth, reaching up the entrance storey: 3 px clear
+     of the lowest step (from 41 to 89 px, see .step) */
+  /* in front of the building: the pot's base (2.4 px above the bottom of the drawing) 5–6 px below the street level */
+  .porch { position: absolute; bottom: -8px; z-index: 1; display: flex; padding: 0; border: 0; background: none; border-radius: var(--radius-md); }
+  .porch.left { left: 2px; }
   .porch.right { left: 92px; }
   .step {
     position: absolute; top: calc(var(--step) * 5px - 3px); left: calc(65px - 14px - var(--step) * 5px); width: calc(28px + var(--step) * 10px);
