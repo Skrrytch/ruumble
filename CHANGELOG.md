@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Changed
+- Building overview: the building care is now behind two small plants on either side of the steps to the front door; on the right of the building stands a slim cypress instead, its crown in front of the wall.
+
 ## [0.28.0] - 2026-10-06
 
 Plugin 0.5.0 (unchanged). Channel descriptions from Mumble behind binders, and a nudge for people who deafened themselves.

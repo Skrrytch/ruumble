@@ -4,14 +4,16 @@
   import type { Building, Floor, Space } from "../../model/building.ts";
   import Lantern from "../Lantern.svelte";
   import Plant from "../Plant.svelte";
+  import Cypress from "./Cypress.svelte";
   import MiniPerson from "./MiniPerson.svelte";
 
   // The building from the side (ADR-0019): the roof with the server's name, the floors stacked like in the elevator
   // (highest on top), the elevator shaft on the left with the own floor's cell tinted, the entrance at the bottom.
   // On every floor the people stand in groups, one per occupied room or corridor, set apart by a thin line; rooms
   // are not drawn and not named (the name is in the tooltip). A group is a button to move there, the floor badge
-  // shows that floor. Beside the building, on the ground line: a lantern (building maintenance) on the left and a
-  // plant (building care) on the right, buttons for building admins and decoration for everyone else.
+  // shows that floor. Outside, on the street: a lantern (building maintenance) on the left, two plants (building care)
+  // beside the steps to the front door, buttons for building admins and decoration for everyone else; on the right a
+  // cypress whose crown stands in front of the wall.
   let {
     building,
     readonly,
@@ -95,37 +97,43 @@
       {#if building.entrance.length}{@render people(entrance, t().common.entrance)}{/if}
     </div>
   </div>
-  <!-- the building stands on a plinth; steps lead from the street up to the front door -->
-  <div class="plinth" aria-hidden="true">
-    <span class="step" style:--step="0"></span>
-    <span class="step" style:--step="1"></span>
-    <span class="step" style:--step="2"></span>
+  <!-- the building stands on a plinth; steps lead from the street up to the front door, a plant on either side -->
+  <div class="plinth">
+    <span class="step" style:--step="0" aria-hidden="true"></span>
+    <span class="step" style:--step="1" aria-hidden="true"></span>
+    <span class="step" style:--step="2" aria-hidden="true"></span>
+    {#if ontend}
+      <button type="button" class="porch left tend" aria-label={t().care.buildingPlant} title={t().care.buildingPlant} onclick={ontend}><Plant size={18} /></button>
+      <!-- the same action twice: only the left one is a stop for the keyboard and screen readers -->
+      <button type="button" class="porch right tend" tabindex="-1" aria-hidden="true" title={t().care.buildingPlant} onclick={ontend}><Plant size={18} /></button>
+    {:else}
+      <span class="porch left" aria-hidden="true"><Plant size={18} /></span>
+      <span class="porch right" aria-hidden="true"><Plant size={18} /></span>
+    {/if}
   </div>
   <div class="ground-line" aria-hidden="true"></div>
-  <!-- outside, on the ground line: the lantern (maintenance) and the plant (care), as in the building -->
+  <!-- outside, on the ground line: the lantern (maintenance) on the left, the cypress in front of the right wall -->
   {#if onmaintain}
     <button type="button" class="yard left tend" aria-label={t().maintenance.title} title={t().maintenance.title} onclick={onmaintain}><Lantern /></button>
   {:else}
     <span class="yard left" aria-hidden="true"><Lantern /></span>
   {/if}
-  {#if ontend}
-    <button type="button" class="yard right tend" aria-label={t().care.buildingPlant} title={t().care.buildingPlant} onclick={ontend}><Plant size={30} /></button>
-  {:else}
-    <span class="yard right" aria-hidden="true"><Plant size={30} /></span>
-  {/if}
+  <span class="tree" aria-hidden="true"><Cypress height={50} /></span>
 </section>
 
 <style>
   /* the building stands a little in from the sides, so the ground line reaches beyond its walls */
   .section { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 0 0 12px; }
   .roof, .storey { margin: 0 44px; }
-  /* lantern and plant stand on the ground line, left and right of the building */
+  /* the lantern stands on the ground line, left of the building */
   .yard { position: absolute; bottom: 15px; display: flex; align-items: flex-end; padding: 0; border: 0; background: none; border-radius: var(--radius-md); }
   .yard.left { left: 8px; }
-  .yard.right { right: 6px; }
-  button.yard { cursor: pointer; transition: transform var(--dur) var(--ease-out); }
-  button.yard:hover { transform: translateY(-2px) rotate(2deg) scale(1.06); }
-  button.yard:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
+  button.yard, button.porch { cursor: pointer; transition: transform var(--dur) var(--ease-out); }
+  button.yard:hover, button.porch:hover { transform: translateY(-2px) rotate(2deg) scale(1.08); }
+  button.yard:focus-visible, button.porch:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
+  /* the cypress: on the ground line, its crown in front of the right wall (the wall is 44 px in from the edge), up to
+     about half the entrance storey */
+  .tree { position: absolute; bottom: 15px; right: 36px; z-index: 1; display: flex; pointer-events: none; }
   /* the roof: a flat gable in navy with the building's name, flush with the outer walls (shaft to right wall) */
   .roof {
     height: 50px; background: var(--color-navy); color: var(--color-white);
@@ -185,6 +193,11 @@
     position: relative; height: 15px; margin: 0 44px; border-top: 3px solid var(--color-navy);
     border-left: 2px solid var(--color-navy); border-right: 2px solid var(--color-navy); background: var(--color-surface);
   }
+  /* the plants beside the steps stand on the street in front of the plinth, a little higher than it: 3 px clear of the
+     lowest step (from 41 to 89 px, see .step) */
+  .porch { position: absolute; bottom: 0; z-index: 1; display: flex; padding: 0; border: 0; background: none; border-radius: var(--radius-md); }
+  .porch.left { left: 20px; }
+  .porch.right { left: 92px; }
   .step {
     position: absolute; top: calc(var(--step) * 5px - 3px); left: calc(65px - 14px - var(--step) * 5px); width: calc(28px + var(--step) * 10px);
     height: 5px; background: var(--color-white); border: 1.5px solid var(--color-navy); border-bottom: 0; box-sizing: border-box;

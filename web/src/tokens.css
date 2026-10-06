@@ -10,10 +10,12 @@
   --color-navy-light: #0f4b8c;
   --color-alert: #c62828;      /* ONLY: recording indicator (AP10), deleting a post, destructive steps of care, keys and maintenance */
 
-  /* Plant (care, ADR-0014): ONLY the potted plant in rooms, corridors and at the entrance */
+  /* Plant (care, ADR-0014): ONLY the potted plant in rooms, corridors and at the entrance, and the cypress beside the
+     building in the building overview (ADR-0019), whose trunk is the only bark */
   --color-leaf: #4f9a6b;
   --color-leaf-dark: #2f6e47;
   --color-pot: #c97d4e;
+  --color-bark: #7a5236;
   /* Key (key cabinet, ADR-0015): ONLY the key in the user menu and its dialog */
   --color-brass: #d9a93b;
   /* Wrench (building maintenance, ADR-0016): ONLY the wrench, the symbol of the maintenance dialog.
