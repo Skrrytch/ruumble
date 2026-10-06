@@ -24,8 +24,8 @@ test.describe("Sample building", () => {
     await expect(currentFloor(page)).toBeFocused();
     const menu = await userMenu(page);
     await expect(menu.getByText("Let's talk · Floor 1")).toBeVisible();
-    await expect(menu.getByText(/^Server \d/)).toBeVisible();
-    await expect(menu.getByText(/^Interface \d/)).toBeVisible();
+    await expect(menu.getByText(/^Mumble \d/)).toBeVisible();
+    await expect(menu.getByText(/^Ruumble \d/)).toBeVisible();
     await page.getByRole("heading", { name: "Development" }).click(); // opens the elevator, closes the menu
     await expect(menu).toHaveCount(0);
     await expect(page.getByRole("navigation", { name: "Elevator – floors" })).toBeVisible();
@@ -323,7 +323,7 @@ test.describe("Building overview", () => {
     await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
   });
 
-  test("beside the building: the lantern opens the maintenance, the plant the building care (admins only)", async ({ page }) => {
+  test("beside the building: the lantern opens the maintenance, the plants by the steps the building care (admins only)", async ({ page }) => {
     await page.keyboard.press("h");
     const section = page.getByRole("dialog", { name: "Building overview" }).getByRole("region", { name: "Cross-section" });
     await section.getByRole("button", { name: "Building maintenance" }).click();
@@ -336,7 +336,7 @@ test.describe("Building overview", () => {
     // without Write on the root channel they are only decoration
     await page.goto("/?fixture=edge-cases&talking=0");
     await page.keyboard.press("h");
-    await expect(section.locator(".yard")).toHaveCount(2);
+    await expect(section.locator(".yard, .porch")).toHaveCount(3); // the lantern and the plants beside the steps
     await expect(section.getByRole("button", { name: /^Building (maintenance|care)$/ })).toHaveCount(0);
   });
 
