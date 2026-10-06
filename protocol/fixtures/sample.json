@@ -23,7 +23,8 @@
       "name": "Lobby",
       "position": 0,
       "links": [],
-      "temporary": false
+      "temporary": false,
+      "description": "<b>Welcome to Acme HQ!</b><br/>Grab a coffee and say hello."
     },
     {
       "id": 2,
@@ -31,7 +32,8 @@
       "name": "Development",
       "position": 1,
       "links": [],
-      "temporary": false
+      "temporary": false,
+      "description": "<p>Floor of the <b>development</b> teams.</p><p>Sprint board: <a href=\"https://example.com/sprint\">example.com/sprint</a></p>"
     },
     {
       "id": 3,
@@ -39,7 +41,8 @@
       "name": "Let's talk",
       "position": 0,
       "links": [],
-      "temporary": false
+      "temporary": false,
+      "description": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\"><html><head><style>p{}</style></head><body style=\" font-family:sans-serif;\"><p style=\" margin-top:0px;\"><span style=\" font-weight:600;\">Daily stand-up</span> at 9:30.</p><ul><li>Agenda: <a href=\"https://example.com/agenda\">example.com/agenda</a></li><li>Notes in the team wiki</li></ul><p><br/></p></body></html>"
     },
     {
       "id": 4,

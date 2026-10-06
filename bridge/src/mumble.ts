@@ -109,6 +109,7 @@ export class IceMumbleSource implements MumbleSource {
         position: c.position,
         links: [...c.links],
         temporary: c.temporary,
+        description: c.description,
       })),
       users: [...users.values()].map((u: any) => ({
         session: u.session,

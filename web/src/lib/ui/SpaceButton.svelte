@@ -6,6 +6,7 @@
   import { countText, fitPeople, type Room, type Space } from "../model/building.ts";
   import Avatar from "./Avatar.svelte";
   import BoardNotes from "./board/BoardNotes.svelte";
+  import DescriptionPopover from "./DescriptionPopover.svelte";
   import Plant from "./Plant.svelte";
   import { t } from "../i18n/index.svelte.ts";
   import { SHORTCUT_KEYS } from "../shortcuts.ts";
@@ -67,6 +68,15 @@
   let peopleHeight = $state(0);
   /** the board toggle sits left of the door plate */
   let plateWidth = $state(0);
+  // the description from Mumble behind the binders: in a room left of the board (or of the door plate), in the
+  // corridor left of the plant, in an open floor top right
+  const descriptionName = $derived(variant === "corridor" ? t().space.corridorName(space.name) : space.name);
+  const BOARD_TOGGLE_WIDTH = 40;
+  const BINDERS_WIDTH = 34;
+  const descriptionRight = $derived(variant === "room" ? `${14 + plateWidth + 6 + (boardToggle ? BOARD_TOGGLE_WIDTH + 2 : 0)}px` : undefined);
+  /** room width the door plate leaves for the door, the board and the binders */
+  const plateReserve = $derived(90 + (boardToggle ? BOARD_TOGGLE_WIDTH : 0) + (space.description ? BINDERS_WIDTH : 0));
+
   const fit = $derived(variant === "room" ? fitPeople(space.users, peopleWidth, peopleHeight) : { shown: space.users, hidden: [] });
   const doorState = $derived(disabled && !readonly ? "closed" : "ajar");
   // "entering …" only when Mumble takes a while: a quick move would only make it flicker (the aria-label says it at once)
@@ -97,7 +107,7 @@
   {#if space.recording}<span class="rec" title={t().space.recording}>{t().space.recordingBadge}</span>{/if}
 {/snippet}
 
-<div class="wrap wrap-{variant}" class:lower={row === "bottom"} style:flex-grow={room ? room.grow : undefined}>
+<div class="wrap wrap-{variant}" class:lower={row === "bottom"} style:flex-grow={room ? room.grow : undefined} style:--plate-reserve="{plateReserve}px">
 <button
   type="button"
   class="room {variant}"
@@ -179,6 +189,11 @@
   {/if}
 {/snippet}
 {#if boardToggle}{@render notesToggle()}{/if}
+{#if space.description}
+  <span class="description-spot description-{variant}" style:right={descriptionRight}>
+    <DescriptionPopover channelId={space.channelId} name={descriptionName} description={space.description} size={variant === "room" ? 24 : 28} />
+  </span>
+{/if}
 {@render plant()}
 </div>
 
@@ -230,7 +245,7 @@
     background: var(--color-blue-50); color: var(--color-navy); font-size: 14px; font-weight: 700;
   }
   .plate {
-    position: absolute; right: 14px; bottom: 8px; max-width: calc(100% - 14px - 90px);
+    position: absolute; right: 14px; bottom: 8px; max-width: calc(100% - 14px - var(--plate-reserve, 90px));
     display: flex; flex-direction: column; align-items: flex-end; text-align: right; line-height: 1.25;
   }
   .lower .plate { bottom: auto; top: 8px; }
@@ -259,6 +274,13 @@
   .wrap-room .notes.toggle :global(svg) { width: 34px; height: 24px; }
   .notes.toggle:hover { transform: translateY(-2px) rotate(-2deg) scale(1.06); }
   .notes.toggle:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
+
+  /* binders with the description: in the door strip, in the corridor left of the plant, top right in an open floor */
+  .description-spot { position: absolute; display: flex; }
+  .description-spot.description-room { bottom: 2px; }
+  .lower .description-spot.description-room { bottom: auto; top: 2px; }
+  .description-spot.description-corridor { top: 50%; right: 64px; transform: translateY(-50%); }
+  .description-spot.description-open { top: 12px; right: 12px; }
 
   /* plant (care, ADR-0014): in a room behind the door in the door strip, bottom right in an open floor, at the
      right end of the corridor */

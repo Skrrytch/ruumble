@@ -307,6 +307,15 @@ describe("Care (ADR-0014)", () => {
   });
 });
 
+describe("Descriptions from Mumble", () => {
+  it("rooms and corridors carry their description, trimmed; without one it is empty", () => {
+    const channels = [ch(0, null, "Root"), { ...ch(1, 0, "1F"), description: " <b>Floor</b>\n" }, { ...ch(2, 1, "Office"), description: "Hello" }, ch(3, 1, "Lab")];
+    const b = buildBuilding(snapshot(channels));
+    expect(b.floors[0]!.corridor.description).toBe("<b>Floor</b>");
+    expect(b.floors[0]!.rooms.map((r) => [r.name, r.description])).toEqual([["Lab", ""], ["Office", "Hello"]]);
+  });
+});
+
 describe("fitPeople", () => {
   const people = (n: number, self = -1) => Array.from({ length: n }, (_, i) => ({ id: i, isSelf: i === self }));
   it("everyone fits, or the last tile becomes +n; the own user stays visible", () => {

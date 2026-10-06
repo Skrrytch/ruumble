@@ -28,6 +28,8 @@ export const Channel = z.object({
   /** Directly linked channels, symmetric (S1). */
   links: z.array(channelId),
   temporary: z.boolean(),
+  /** description as maintained in Mumble: Qt rich text (HTML), sanitised by the web UI; missing or empty: none */
+  description: z.string().optional(),
 });
 export type Channel = z.infer<typeof Channel>;
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { findLinks, highlight, renderCode, renderInline, renderMarkdown, uniqueLinks } from "../src/lib/board/render.ts";
+import { findLinks, highlight, renderCode, renderDescription, renderInline, renderMarkdown, uniqueLinks } from "../src/lib/board/render.ts";
 
 describe("Rendering: Markdown and code without XSS (ADR-0011)", () => {
   it("renders common Markdown", () => {
@@ -27,6 +27,11 @@ describe("Rendering: Markdown and code without XSS (ADR-0011)", () => {
       for (const attr of el.attributes) expect(attr.name).not.toMatch(/^on/i);
     }
     for (const a of doc.querySelectorAll("a")) expect(a.getAttribute("href") ?? "").toMatch(/^(https?:|mailto:|$)/);
+  });
+
+  it("an empty description stays empty, an image alone is kept", () => {
+    expect(renderDescription("<p><br></p>\n<p> </p>")).toBe("");
+    expect(renderDescription('<p><img src="data:image/png;base64,AA=="></p>')).toBe('<p><img src="data:image/png;base64,AA=="></p>');
   });
 
   it("links open in a new tab without access to the window", () => {
@@ -164,5 +169,36 @@ describe("Links everywhere (A4) and their short form in text (A5)", () => {
     const doc = new DOMParser().parseFromString(`<pre>${html}</pre>`, "text/html");
     expect(doc.querySelectorAll("img, script").length).toBe(0);
     expect([...doc.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual(["https://ok.example/"]);
+  });
+});
+
+describe("Channel descriptions from Mumble", () => {
+  const parse = (html: string) => new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+
+  it("keeps the formatting of Qt rich text, drops its document frame, styles and empty paragraphs", () => {
+    const html = renderDescription(
+      '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN"><html><head><style>p{color:red}</style></head><body style="font-family:x">' +
+        '<p style="margin:0"><b>Stand-up</b> at <i>9:30</i></p><ul><li>one</li></ul><p><br></p></body></html>',
+    );
+    expect(html).toBe("<p><b>Stand-up</b> at <i>9:30</i></p><ul><li>one</li></ul>");
+  });
+
+  it("an empty description stays empty, an image alone is kept", () => {
+    expect(renderDescription("<p><br></p>\n<p> </p>")).toBe("");
+    expect(renderDescription('<p><img src="data:image/png;base64,AA=="></p>')).toBe('<p><img src="data:image/png;base64,AA=="></p>');
+  });
+
+  it("links open in a new tab without access to this window", () => {
+    const a = parse(renderDescription('<a href="https://example.com/x">x</a>')).querySelector("a")!;
+    expect(a.getAttribute("href")).toBe("https://example.com/x");
+    expect(a.getAttribute("target")).toBe("_blank");
+    expect(a.getAttribute("rel")).toBe("noopener noreferrer nofollow");
+  });
+
+  it("embedded images stay, remote images and scripts go", () => {
+    const doc = parse(renderDescription('<img src="data:image/png;base64,iVBORw0KGgo="><img src="https://tracker.example/p.gif"><script>alert(1)</script><a href="javascript:alert(1)">x</a><img src=x onerror=alert(1)>'));
+    expect([...doc.querySelectorAll("img")].map((i) => i.getAttribute("src"))).toEqual(["data:image/png;base64,iVBORw0KGgo="]);
+    expect(doc.querySelectorAll("script, [onerror]").length).toBe(0);
+    expect(doc.querySelector("a")!.getAttribute("href")).toBeNull();
   });
 });

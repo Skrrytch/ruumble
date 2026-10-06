@@ -54,6 +54,8 @@ export interface Space {
   recording: boolean;
   /** The own user may tend its stored data: the plant is a button (Mumble Write, ADR-0014) */
   canTend: boolean;
+  /** description from Mumble (raw HTML, sanitised only when shown); empty: none */
+  description: string;
 }
 
 export interface Room extends Space {
@@ -264,6 +266,7 @@ export function buildBuilding(snapshot: Snapshot, options: BuildOptions = {}): B
     listeners: snapshot.listeners[String(c.id)] ?? [],
     recording: (usersIn.get(c.id) ?? []).some((u) => u.recording),
     canTend: care.has(c.id),
+    description: c.description?.trim() ?? "",
   });
   const subtreePopulation = (id: number): number =>
     (usersIn.get(id)?.length ?? 0) + childrenOf(id).reduce((n, c) => n + subtreePopulation(c.id), 0);

@@ -107,6 +107,8 @@ export const en: Messages = {
     recording: "Recording in progress here",
     morePeople: (names) => `Also here: ${names}`,
     recordingBadge: "● Recording",
+    description: "Description",
+    showDescription: (name) => `Description of ${name}`,
   },
   pairing: {
     intro: "Is Mumble with the Ruumble plugin already running on this computer? Then pair this browser with a code from the Mumble log.",

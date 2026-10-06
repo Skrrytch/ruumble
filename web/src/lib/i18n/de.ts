@@ -103,6 +103,8 @@ export const de = {
     recording: "Hier wird aufgezeichnet",
     morePeople: (names: string) => `Außerdem hier: ${names}`,
     recordingBadge: "● Aufnahme",
+    description: "Beschreibung",
+    showDescription: (name: string) => `Beschreibung von ${name}`,
   },
   /** Pairing with a code from the Mumble log (ADR-0012) */
   pairing: {

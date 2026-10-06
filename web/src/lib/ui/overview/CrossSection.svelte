@@ -41,7 +41,7 @@
   /** the occupied places of a floor: its rooms in Mumble's order, then the corridor (or the open floor) */
   const groupsOf = (f: Floor): { space: Space; name: string }[] =>
     [...f.rooms.map((r) => ({ space: r as Space, name: r.name })), { space: f.corridor, name: f.open ? f.name : t().common.corridor }].filter((g) => g.space.users.length > 0);
-  const entrance = $derived<Space>({ channelId: 0, name: t().common.entrance, users: building.entrance, isSelf: building.self?.kind === "entrance", locked: false, listeners: [], recording: false, canTend: false });
+  const entrance = $derived<Space>({ channelId: 0, name: t().common.entrance, users: building.entrance, isSelf: building.self?.kind === "entrance", locked: false, listeners: [], recording: false, canTend: false, description: "" });
 </script>
 
 {#snippet people(space: Space, name: string)}

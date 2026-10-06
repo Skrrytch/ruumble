@@ -77,7 +77,8 @@ export class Poller {
       this.permissionsDirty = true;
     }
     const channelIds = basics.channels.map((c) => c.id);
-    const structure = JSON.stringify(basics.channels);
+    // a changed description is no reason to ask for the permissions again
+    const structure = JSON.stringify(basics.channels.map(({ description: _, ...c }) => c));
     if (structure !== this.lastStructure) this.permissionsDirty = true;
     this.lastStructure = structure;
 

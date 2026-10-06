@@ -157,6 +157,28 @@ export function renderInline(text: string, tickets?: TicketLinks): string {
   return DOMPurify.sanitize(md.renderInline(text, { tickets }), PURIFY) as string;
 }
 
+/**
+ * Description of a channel as maintained in Mumble (Qt rich text) → sanitised HTML. Formatting and links stay;
+ * inline styles go (they would fight the theme), images only as data: URIs (no requests to foreign servers).
+ */
+const PURIFY_DESCRIPTION = {
+  ALLOWED_TAGS: [...PURIFY.ALLOWED_TAGS, "b", "i", "u", "div", "img", "caption", "tfoot"],
+  ALLOWED_ATTR: [...PURIFY.ALLOWED_ATTR, "src", "alt", "width", "height"],
+  ALLOWED_URI_REGEXP: PURIFY.ALLOWED_URI_REGEXP,
+};
+
+export function renderDescription(html: string): string {
+  const fragment = DOMPurify.sanitize(html, { ...PURIFY_DESCRIPTION, RETURN_DOM_FRAGMENT: true });
+  for (const img of fragment.querySelectorAll("img")) if (!/^data:image\//i.test(img.getAttribute("src") ?? "")) img.remove();
+  // Qt pads the text with empty paragraphs
+  const empty = (n: ChildNode | null) => !!n && !n.textContent?.trim() && !(n instanceof Element && (n.matches("img") || n.querySelector("img")));
+  while (empty(fragment.firstChild)) fragment.firstChild!.remove();
+  while (empty(fragment.lastChild)) fragment.lastChild!.remove();
+  const box = document.createElement("div");
+  box.append(fragment);
+  return box.innerHTML;
+}
+
 /** http(s) URLs written out in a text, in order, with their position (A4); no fuzzy links like "example.com" */
 export function findLinks(text: string): { url: string; index: number; lastIndex: number }[] {
   return (md.linkify.match(text) ?? []).filter((m) => /^https?:$/i.test(m.schema)).map(({ url, index, lastIndex }) => ({ url, index, lastIndex }));
