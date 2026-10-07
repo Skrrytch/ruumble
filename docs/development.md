@@ -143,18 +143,7 @@ Then check the changes against [mumble-interfaces.md](mumble-interfaces.md) and 
 
 ## Releasing
 
-A release is a tag `v<service version>` on `main`; `.github/workflows/release.yml` does the rest:
-
-Changes collect under `## [Unreleased]` in `CHANGELOG.md`; the version only changes when releasing.
-
-1. `tools/release.sh <version>` on a clean `main`: it turns `[Unreleased]` into `## [<version>] - <date>` with a link reference, sets the version in `bridge/package.json` and `web/package.json`, sets the image tag in both Compose templates, `docs/operations.md` and `docs/operations/maintenance.md` (the workflow checks all four), runs lint, tests and build and commits `Release <version>`. A new plugin version is set by hand in `plugin/CMakeLists.txt` first.
-2. Push to `main`, wait for CI.
-3. Optional dry run: start the workflow **Release** manually (`gh workflow run release.yml`). It builds the image for both platforms and uploads the release assets as a workflow artifact, without publishing anything.
-4. `git tag v<version> && git push origin v<version>`.
-
-The workflow runs CI again, checks that the tag, both package versions and the changelog agree, pushes `ghcr.io/skrrytch/ruumble:<version>`, `:<major>.<minor>` and `:latest` (linux/amd64 and linux/arm64, with SBOM and provenance) and creates the GitHub release with the plugin bundle, the Compose template, `THIRD_PARTY_NOTICES.md` and `SHA256SUMS`. The release notes are the changelog section plus install notes.
-
-The plugin is x86_64 only (Linux and Windows), so the arm64 image serves the same bundle under `/download`.
+See [releasing.md](releasing.md): `tools/release.sh <version>`, push, wait for CI, push the tag `v<version>`; the workflow **Release** publishes the image and the GitHub release.
 
 A build between releases (e.g. for one's own server) names its commit, so `/api/version` and the start log show exactly what runs:
 

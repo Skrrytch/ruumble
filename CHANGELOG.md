@@ -311,6 +311,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.28.2]: https://github.com/Skrrytch/ruumble/releases/tag/v0.28.2
 [0.28.1]: https://github.com/Skrrytch/ruumble/releases/tag/v0.28.1
 [0.28.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.28.0
 [0.27.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.27.0

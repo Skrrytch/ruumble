@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prepare a release (docs/development.md#releasing): tools/release.sh <version>
+# Prepare a release (docs/releasing.md): tools/release.sh <version>
 #
 # On a clean main: moves "## [Unreleased]" of CHANGELOG.md into a dated section "## [<version>]" with its link
 # reference, sets the version in bridge/package.json and web/package.json, sets the image tag everywhere the docs

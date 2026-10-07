@@ -1,6 +1,6 @@
 name: Release
 
-# Pushing a tag v<service version> (e.g. v0.14.0) publishes a release (docs/development.md#releasing):
+# Pushing a tag v<service version> (e.g. v0.14.0) publishes a release (docs/releasing.md):
 #   - Docker image ghcr.io/<owner>/ruumble:<version> and :<major.minor>, :latest, for linux/amd64 and linux/arm64
 #   - GitHub release with the plugin bundle (Linux + Windows), the Compose template, the icons,
 #     the third-party notices and SHA256SUMS; the notes are the version's section in CHANGELOG.md

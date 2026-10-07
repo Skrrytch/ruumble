@@ -73,7 +73,7 @@ Browser ──http(s)──▶ Ruumble service ──Ice (read-only)──▶ Mu
 |---|---|
 | Users | [docs/user-guide.md](docs/user-guide.md): install the plugin, pair, use Ruumble |
 | Operators | [docs/operations.md](docs/operations.md): set up Ruumble next to a Mumble server; from there HTTPS, backups and updates, troubleshooting |
-| Developers | [docs/development.md](docs/development.md): build, test, release |
+| Developers | [docs/development.md](docs/development.md): build, test · [docs/releasing.md](docs/releasing.md): publishing a release |
 | Everyone | [CHANGELOG.md](CHANGELOG.md), [features and plans](docs/features.md), [Mumble interfaces used](docs/mumble-interfaces.md) |
 
 ## Icons
