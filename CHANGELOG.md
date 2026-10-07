@@ -6,6 +6,13 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.28.2] - 2026-10-07
+
+Plugin 0.5.0 (unchanged). Room entry requires a double-click instead of a single click.
+
+### Changed
+- **Double-click to enter a room.** Clicking a room, the cross-section or the directory no longer enters it immediately; a double-click is required. This prevents accidental moves when scrolling or clicking through the UI.
+
 ## [0.28.1] - 2026-10-06
 
 Plugin 0.5.0 (unchanged). A friendlier front of the building in the building overview.
