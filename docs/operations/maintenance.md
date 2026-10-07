@@ -23,7 +23,7 @@ docker run --rm -v ruumble-data:/d -v <backup-dir>:/b alpine tar czf /b/ruumble-
 ## Update
 
 1. Back up the volume (above).
-2. Change the image tag in the Compose file, e.g. `ghcr.io/skrrytch/ruumble:0.28.1`. The versions and what changed: [releases](https://github.com/Skrrytch/ruumble/releases) and [CHANGELOG.md](../../CHANGELOG.md), which also lists anything to do when updating.
+2. Change the image tag in the Compose file, e.g. `ghcr.io/skrrytch/ruumble:0.28.2`. The versions and what changed: [releases](https://github.com/Skrrytch/ruumble/releases) and [CHANGELOG.md](../../CHANGELOG.md), which also lists anything to do when updating.
 3. `docker compose up -d`
 
 If the release notes mention a new plugin version, users download the plugin again from Ruumble's start page and install it over the old one.
