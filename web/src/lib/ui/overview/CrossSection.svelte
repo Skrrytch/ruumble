@@ -51,7 +51,7 @@
   <svelte:element
     this={go ? "button" : "div"} type={go ? "button" : undefined} class="group" class:own={space.isSelf} class:go class:pending={pendingChannel === space.channelId}
     data-channel={space.channelId} aria-label={go ? t().overview.enterRoom(name) : undefined} title={go ? t().overview.enterRoom(name) : name}
-    onclick={go ? () => onvisit(space.channelId) : undefined} role={go ? undefined : "group"}
+    ondblclick={go ? () => onvisit(space.channelId) : undefined} role={go ? undefined : "group"}
   >
     {#each space.users as user (user.session)}
       <span class="who" role="presentation" onmouseenter={() => onhover(user.session)} onmouseleave={() => onhover(null)}>

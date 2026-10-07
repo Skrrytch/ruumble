@@ -147,7 +147,7 @@
   aria-disabled={disabled || space.isSelf || undefined}
   aria-busy={pending || undefined}
   data-channel={space.channelId}
-  onclick={click}
+  ondblclick={click}
 >
   {#if variant === "room"}
     <!-- door at the corridor wall: the white strip cuts the opening into the wall; mirrored in the lower row.

@@ -55,8 +55,8 @@ test.describe("Descriptions from Mumble", () => {
     await page.waitForTimeout(300);
     await expect(room).not.toHaveAttribute("aria-busy", "true");
     await expect(page.getByRole("button", { name: "Let's talk – you are here" })).toBeVisible();
-    // the next click enters it as usual
-    await room.click();
+    // the next double-click enters it as usual
+    await room.dblclick();
     await expect(page.getByRole("button", { name: "Let's play – you are here" })).toBeVisible();
   });
 

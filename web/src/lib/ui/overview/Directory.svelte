@@ -70,7 +70,7 @@
                   aria-label={p.canGo ? t().overview.goTo(p.user.name, p.place) : `${personLabel(p.user)} – ${p.place}`}
                   title={p.blocked ? t().overview.blocked[p.blocked] : t().overview.goTo(p.user.name, p.place)}
                   onmouseenter={() => onhover(p.user.session)} onmouseleave={() => onhover(null)} onfocus={() => onhover(p.user.session)} onblur={() => onhover(null)}
-                  onclick={() => p.canGo && onvisit(p)}
+                  ondblclick={() => p.canGo && onvisit(p)}
                 >
                   <span class="line">
                     <span class="pname">{p.user.isSelf ? `${p.user.name} (${t().people.you})` : p.user.name}</span>

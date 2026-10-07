@@ -323,7 +323,7 @@ test.describe("Board (AP11.2)", () => {
     await expect(page.getByRole("alert")).toContainText("Copied to “Retrospective”.");
     await expect(board.getByRole("article")).toHaveCount(4); // the own board stays as it is
     // over there: Anna's copy, from Ben in "Let's talk", without the reactions
-    await page.getByRole("button", { name: "Retrospective – enter" }).click();
+    await page.getByRole("button", { name: "Retrospective – enter" }).dblclick();
     await expect(page.getByRole("button", { name: "Retrospective – you are here" })).toBeVisible();
     const copy = board.getByRole("article", { name: "Post by Anna" });
     await expect(copy).toContainText("from “Let's talk”, by Ben");
@@ -356,7 +356,7 @@ test.describe("Board (AP11.2)", () => {
 
   test("in the corridor: notice instead of the board", async ({ page }) => {
     await page.getByRole("button", { name: "Show board" }).click();
-    await page.getByRole("button", { name: "Corridor Development – enter" }).click();
+    await page.getByRole("button", { name: "Corridor Development – enter" }).dblclick();
     await expect(page.getByText("Boards exist only in rooms.")).toBeVisible();
   });
 });
@@ -364,7 +364,7 @@ test.describe("Board (AP11.2)", () => {
 test("floor with 2 rooms: one room at the top and one at the bottom, the open board gets wider", async ({ page }) => {
   await page.goto("/?fixture=edge-cases&talking=0");
   await gotoFloor(page, /STUDIO/);
-  await page.getByRole("button", { name: "Studio A – enter" }).click();
+  await page.getByRole("button", { name: "Studio A – enter" }).dblclick();
   const a = page.locator('.room[data-channel="41"]');
   const b = page.locator('.room[data-channel="42"]');
   expect((await b.boundingBox())!.y).toBeGreaterThan((await a.boundingBox())!.y + 200);

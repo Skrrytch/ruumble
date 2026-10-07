@@ -35,12 +35,12 @@ test.describe("Sample building", () => {
     expect(Math.abs((await page.locator(".plan").boundingBox())!.x - (await page.locator(".topbar").boundingBox())!.x)).toBeLessThan(1);
   });
 
-  test("clicking a room moves only after confirmation", async ({ page }) => {
-    await page.getByRole("button", { name: "Clara's office – enter" }).click();
+  test("double-clicking a room moves only after confirmation", async ({ page }) => {
+    await page.getByRole("button", { name: "Clara's office – enter" }).dblclick();
     await expect(page.getByRole("button", { name: "Clara's office – entering" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Clara's office – you are here" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Let's talk – enter" })).toBeVisible();
-    await page.getByRole("button", { name: "Corridor Development – enter" }).click();
+    await page.getByRole("button", { name: "Corridor Development – enter" }).dblclick();
     await expect(page.getByRole("button", { name: "Corridor Development – you are here" })).toBeVisible();
   });
 
@@ -129,7 +129,7 @@ test("locked room: clicking does nothing", async ({ page }) => {
 test("unconfirmed move shows a notice after 3 s, the user stays in the room", async ({ page }) => {
   await page.goto("/?fixture=sample&talking=0&debug");
   await page.getByRole("button", { name: "Reject next move" }).click();
-  await page.getByRole("button", { name: "Ben's office – enter" }).click();
+  await page.getByRole("button", { name: "Ben's office – enter" }).dblclick();
   await expect(page.getByRole("button", { name: "Ben's office – entering" })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveText(/Cannot move to “Ben's office”/, { timeout: 6000 });
   await expect(page.getByRole("button", { name: "Let's talk – you are here" })).toBeVisible();
@@ -137,7 +137,7 @@ test("unconfirmed move shows a notice after 3 s, the user stays in the room", as
 
 test("rapid clicks: the last room wins", async ({ page }) => {
   await page.goto("/?fixture=sample&talking=0");
-  for (const name of ["Let's play", "Retrospective", "Clara's office"]) await page.getByRole("button", { name: `${name} – enter` }).click();
+  for (const name of ["Let's play", "Retrospective", "Clara's office"]) await page.getByRole("button", { name: `${name} – enter` }).dblclick();
   await expect(page.getByRole("button", { name: "Clara's office – you are here" })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
@@ -347,7 +347,7 @@ test.describe("Building overview", () => {
     await expect(dialog).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
     await page.keyboard.press("h");
-    await dialog.getByRole("region", { name: "Cross-section" }).getByRole("button", { name: "Enter Ben's office" }).click();
+    await dialog.getByRole("region", { name: "Cross-section" }).getByRole("button", { name: "Enter Ben's office" }).dblclick();
     await expect(page.getByRole("status", { name: /^You are here: Ben's office/ })).toBeVisible();
   });
 });
@@ -358,7 +358,7 @@ test.describe("Tab title and shortcuts", () => {
 
   test("the tab title is the own room and Ruumble, without numbers", async ({ page }) => {
     await expect(page).toHaveTitle("Let's talk · Ruumble");
-    await page.getByRole("button", { name: "Let's play – enter" }).click();
+    await page.getByRole("button", { name: "Let's play – enter" }).dblclick();
     await expect(page).toHaveTitle("Let's play · Ruumble");
   });
 
