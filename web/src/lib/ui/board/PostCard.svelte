@@ -8,6 +8,7 @@
   import FaceSlightlySmilingPlus from "@lucide/svelte/icons/face-slightly-smiling-plus";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
   import ListChecks from "@lucide/svelte/icons/list-checks";
+  import Pencil from "@lucide/svelte/icons/pencil";
   import Pin from "@lucide/svelte/icons/pin";
   import PinOff from "@lucide/svelte/icons/pin-off";
   import Trash2 from "@lucide/svelte/icons/trash-2";
@@ -24,12 +25,13 @@
   /** `avatar`: the author's image if they are currently connected and registered; otherwise initials */
   /** `pinned`: this post is the one kept on top (A3); `onpin`: the dot keeps it on top or takes it down */
   /** `arrival`: new for the user – "land" (by someone else while the board was open: pinned on from above, lights up) or "glow" (only lights up) */
+  /** `onedit`: the pencil opens the post straight in editing */
   /** `ondelete`: from the "…" menu, only offered if the user may delete the post (author or Mumble admin) */
   /** `targets`, `oncopy`: "Copy to room …" in the "…" menu, the rooms per floor (copyTargets) */
   /** `head`: show the author header (first post of a group, postGroups); `next`: the following card continues the group */
-  let { post, now, avatar = null, pinned = false, arrival = null, targets = [], head = true, next = false, onopen, onreact, ontoggle, onpin, ondelete, oncopy }: {
+  let { post, now, avatar = null, pinned = false, arrival = null, targets = [], head = true, next = false, onopen, onedit, onreact, ontoggle, onpin, ondelete, oncopy }: {
     post: Post; now: number; avatar?: string | null; pinned?: boolean; arrival?: "land" | "glow" | null; targets?: CopyTargets; head?: boolean; next?: boolean;
-    onopen: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
+    onopen: (post: Post) => void; onedit: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
     ontoggle: (post: Post, index: number, done: boolean) => void; onpin: (post: Post) => void; ondelete: (post: Post) => void; oncopy: (post: Post, target: CopyTarget) => void;
   } = $props();
   let avatarBroken = $state<string | null>(null);
@@ -37,6 +39,8 @@
   const fileUrl = getFileUrl();
   let copied = $state(false);
   let picking = $state(false);
+  // images and files: the caption is what gets edited
+  const editLabel = $derived(post.kind === "image" || post.kind === "file" ? t().board.editDescription : t().common.edit);
   const long = $derived(!post.attachment && isLong(post.text));
   const tasks = $derived(post.kind === "text" ? parseTaskList(post.text) : null);
   const tasksDone = $derived(tasks?.tasks.filter((x) => x.done).length ?? 0);
@@ -135,6 +139,7 @@
   <div class="tools">
     {#if !head}<span class="stamp" title={created}>{relativeTime(post.createdAt, now)}</span>{/if}
     <button type="button" class="icon-btn" aria-label={t().board.open} title={t().board.open} onclick={() => onopen(post)}><Maximize2 size={15} aria-hidden="true" /></button>
+    <button type="button" class="icon-btn" aria-label={editLabel} title={editLabel} onclick={() => onedit(post)}><Pencil size={15} aria-hidden="true" /></button>
     <button type="button" class="icon-btn react" aria-expanded={picking} aria-label={t().board.react} title={t().board.react} onclick={() => (picking = !picking)}>
       <FaceSlightlySmilingPlus size={17} aria-hidden="true" />
     </button>

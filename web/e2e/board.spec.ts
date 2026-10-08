@@ -202,6 +202,23 @@ test.describe("Board (AP11.2)", () => {
     await expect(notes.getByText("last edited by Anna")).toBeVisible();
   });
 
+  test("the pencil opens a post straight in editing, Open still opens it for reading", async ({ page }) => {
+    await page.getByRole("button", { name: "Show board" }).click();
+    const board = page.getByRole("complementary", { name: "Board" });
+    const notes = board.getByRole("article", { name: "Post by Anna" });
+    await (await pointAt(notes)).getByRole("button", { name: "Edit", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Post by Anna" });
+    const text = dialog.getByRole("textbox", { name: "Edit post" });
+    await expect(text).toBeFocused();
+    await text.fill("Straight to **editing**");
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(dialog.locator("strong", { hasText: "editing" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await (await pointAt(notes)).getByRole("button", { name: "Open", exact: true }).click();
+    await expect(dialog.getByRole("textbox", { name: "Edit post" })).toHaveCount(0);
+    await expect(dialog.getByRole("button", { name: "Edit" })).toBeVisible();
+  });
+
   test("code: preview without line numbers, popup with them", async ({ page }) => {
     await page.getByRole("button", { name: "Show board" }).click();
     const code = page.getByRole("complementary", { name: "Board" }).getByRole("article", { name: "Post by Ben" }).filter({ has: page.locator(".hljs") });

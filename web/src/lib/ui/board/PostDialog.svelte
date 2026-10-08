@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { showModal } from "../modal.ts";
   import { copyText } from "../../board/clipboard.ts";
   import X from "@lucide/svelte/icons/x";
@@ -11,12 +12,15 @@
 
   let {
     post,
+    edit = false,
     onclose,
     onsave,
     ondelete,
     ontoggle,
   }: {
     post: Post;
+    /** open straight in editing (the pencil on the card) */
+    edit?: boolean;
     onclose: () => void;
     onsave: (text: string, language?: string) => Promise<boolean>;
     ondelete: () => Promise<boolean>;
@@ -25,6 +29,7 @@
   } = $props();
 
   let dialog: HTMLDialogElement;
+  let textarea = $state<HTMLTextAreaElement | null>(null);
   let editing = $state(false);
   let draft = $state("");
   let language = $state("");
@@ -33,8 +38,14 @@
   // images and files: the caption is what gets edited, it may be empty
   const hasAttachment = $derived(post.kind === "image" || post.kind === "file");
 
+  // svelte-ignore state_referenced_locally -- only the state the dialog opens with
+  if (edit) startEdit();
+
   $effect(() => {
-    return showModal(dialog, () => onclose());
+    const close = showModal(dialog, () => onclose());
+    // showModal focuses the close button; opened for editing, the text is what the user wants
+    untrack(() => { if (editing) textarea?.focus(); });
+    return close;
   });
 
   function startEdit() {
@@ -74,7 +85,7 @@
           <select bind:value={language}><option value="">{t().common.auto}</option>{#each CODE_LANGUAGES as l (l)}<option value={l}>{l}</option>{/each}</select>
         </label>
       {/if}
-      <textarea bind:value={draft} class:mono={post.kind === "code"} class:short={hasAttachment} aria-label={hasAttachment ? t().board.editDescription : t().board.editPost} placeholder={hasAttachment ? t().board.captionPlaceholder : ""} spellcheck={post.kind !== "code"}></textarea>
+      <textarea bind:this={textarea} bind:value={draft} class:mono={post.kind === "code"} class:short={hasAttachment} aria-label={hasAttachment ? t().board.editDescription : t().board.editPost} placeholder={hasAttachment ? t().board.captionPlaceholder : ""} spellcheck={post.kind !== "code"}></textarea>
     {:else}
       <PostBody {post} numbers large {ontoggle} />
       {#if post.kind === "code"}<div class="links"><LinkList text={post.text} /></div>{/if}

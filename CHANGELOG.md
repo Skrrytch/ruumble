@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Added
+- **Edit a board post directly.** A pencil next to "Open" in a post's actions opens it straight in editing (for images and files: their description).
+
 ## [0.28.2] - 2026-10-07
 
 Plugin 0.5.0 (unchanged). Room entry requires a double-click instead of a single click.
