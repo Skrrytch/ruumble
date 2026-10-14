@@ -73,11 +73,11 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
 
   test("clicking a room moves the real Mumble client", async () => {
     await gotoFloor(page, "1st floor: DEVELOPMENT");
-    await page.getByRole("button", { name: "Anna's office – enter" }).click();
+    await page.getByRole("button", { name: "Anna's office – enter" }).dblclick();
     await expect(page.getByRole("button", { name: "Anna's office – you are here" })).toBeVisible({ timeout: 5000 });
-    await page.getByRole("button", { name: "Corridor DEVELOPMENT – enter" }).click();
+    await page.getByRole("button", { name: "Corridor DEVELOPMENT – enter" }).dblclick();
     await expect(page.getByRole("button", { name: "Corridor DEVELOPMENT – you are here" })).toBeVisible({ timeout: 5000 });
-    await page.getByRole("button", { name: "Anna's office – enter" }).click();
+    await page.getByRole("button", { name: "Anna's office – enter" }).dblclick();
     await expect(page.getByRole("button", { name: "Anna's office – you are here" })).toBeVisible({ timeout: 5000 });
   });
 
@@ -150,7 +150,7 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     await benPage.goto(benUrl);
     await expect((await elevator(benPage)).getByRole("region", { name: "Entrance" }).getByRole("img", { name: /Ben \(you\)/ })).toBeVisible({ timeout: 10_000 });
     await gotoFloor(benPage, "1st floor: DEVELOPMENT");
-    await benPage.getByRole("button", { name: "Anna's office – enter" }).click();
+    await benPage.getByRole("button", { name: "Anna's office – enter" }).dblclick();
     await expect(benPage.getByRole("button", { name: "Anna's office – you are here" })).toBeVisible({ timeout: 5000 });
     // Anna's web UI: Ben is in her room and talking (Anna's client hears him)
     await expect(page.getByRole("img", { name: /^Ben/ })).toBeVisible({ timeout: 5000 });
@@ -192,7 +192,7 @@ test.describe.serial(`Live with Mumble client (${distro})`, () => {
     const posts = (await (await page.request.get("/api/board")).json()).posts as { id: string; authorName: string }[];
     const annas = posts.find((p) => p.authorName === "Anna")!;
     expect((await benPage.request.delete(`/api/board/posts/${posts.find((p) => p.authorName === "Ben")!.id}`)).status()).toBe(204);
-    await benPage.getByRole("button", { name: "Ben's office – enter" }).click();
+    await benPage.getByRole("button", { name: "Ben's office – enter" }).dblclick();
     await expect(benPage.getByRole("button", { name: "Ben's office – you are here" })).toBeVisible({ timeout: 5000 });
     expect((await benPage.request.delete(`/api/board/posts/${annas.id}`)).status()).toBe(403);
     expect((await benPage.request.patch(`/api/board/posts/${annas.id}`, { data: { text: "foreign" } })).status()).toBe(403);
