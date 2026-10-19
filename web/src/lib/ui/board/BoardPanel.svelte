@@ -300,14 +300,14 @@
 {/if}
 
 <style>
-  /* lightly tinted blue, so the board stands out from the floor plan (without the corridor's dot grid) */
-  .board { --board-bg: color-mix(in srgb, var(--color-blue-100) 45%, var(--color-paper)); position: relative; flex-shrink: 0;
+  /* its own tint (light: lightly blue), so the board stands out from the floor plan; cards and fields on it in --color-card */
+  .board { --board-bg: var(--color-board); --color-paper: var(--color-card); position: relative; flex-shrink: 0;
     /* half of the width beyond --board-grow-from (100cqw = the app's content width, i.e. without its 2 × 32 px padding) */
     width: calc(var(--board-width) + max(0px, (100cqw - (var(--board-grow-from) - 64px)) / 2)); display: flex; flex-direction: column; background: var(--board-bg); min-height: 0; }
   /* floating over the floor plan, framed by a wall like a room */
   .board.floating {
     position: absolute; z-index: 4; top: var(--wall); bottom: var(--wall); right: var(--wall);
-    box-shadow: 0 0 0 var(--wall) var(--color-ink), 0 12px 32px rgb(0 20 45 / 0.35);
+    box-shadow: 0 0 0 var(--wall) var(--color-wall), 0 12px 32px rgb(0 20 45 / 0.35);
   }
   .board.floating.left { right: auto; left: var(--wall); }
   header { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--color-blue-300); }

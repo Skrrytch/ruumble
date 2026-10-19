@@ -9,6 +9,9 @@
   /* Base colours */
   --color-ink: #003869;        /* text, walls, active states; also the fill of primary buttons, with paper as their text */
   --color-paper: #ffffff;      /* background of rooms, cards, dialogs and menus */
+  --color-page: #ffffff;       /* around the building */
+  --color-wall: #003869;       /* walls of the floor plan and the cross-section, the frame of the floating board; dark in
+                                  both themes, so the roof's name on it is white */
   --color-ink-soft: #0f4b8c;   /* hover of ink-filled buttons, numbers in code */
   --color-sky: #5aa6e7;        /* icons, focus ring */
   --color-accent: #fbd200;     /* ONLY: ring around your own avatar, the board graphic's pin and its note for unseen posts */
@@ -47,6 +50,10 @@
   /* Patterns */
   --raster-dot: #e3e3e3;       /* background grid in the corridor */
 
+  /* Board: its own tint, cards on it. The board sets --color-paper to --color-card for everything inside it. */
+  --color-board: color-mix(in srgb, var(--color-blue-100) 45%, var(--color-paper));
+  --color-card: #ffffff;
+
   /* Gradient (elevator panel) */
   --gradient-elevator: linear-gradient(90deg, #0f4b8c 0%, #003869 25%);
 
@@ -77,23 +84,32 @@
   --dur-slow: 400ms;           /* rooms resizing when people come and go */
 }
 
-/* Dark theme: the building at night. Dark floors, light lines; the dark plates and the plants stay as they are. */
+/* Dark theme: the building in the evening. Calm slate greys with a hint of blue instead of black and bright blue, less
+   contrast, muted walls; the board in a slightly warm grey with lighter cards, so it stands apart from the floor plan.
+   The dark plates and the plants stay as they are. */
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --color-ink: #d7e6f4;
-  --color-paper: #0e1924;
-  --color-ink-soft: #b3cde6;
-  --color-surface: #16232f;
-  --color-alert: #ef5350;
-  --color-backdrop: rgb(0 0 0 / 0.6);
-  --color-backdrop-soft: rgb(0 0 0 / 0.4);
+  --color-ink: #c9d2dc;
+  --color-paper: #1d232b;
+  --color-page: #14181e;
+  --color-wall: #3a4452;
+  --color-ink-soft: #aab6c3;
+  --color-sky: #6fa6d6;
+  --color-accent: #e9c63c;
+  --color-surface: #232a33;
+  --color-alert: #e0766d;
+  --color-backdrop: rgb(8 10 14 / 0.6);
+  --color-backdrop-soft: rgb(8 10 14 / 0.4);
 
-  --color-blue-700: #9dc0e2;   /* secondary text (contrast ≥ 4.5:1 on paper) */
-  --color-blue-500: #1f6fae;   /* avatars keep white initials (≥ 4.5:1) */
-  --color-blue-300: #36536f;
-  --color-blue-100: #1b3653;
-  --color-blue-50: #142536;
+  --color-blue-700: #8f9cad;   /* secondary text (contrast ≥ 4.5:1 on paper) */
+  --color-blue-500: #3f72a2;   /* avatars keep white initials (≥ 4.5:1) */
+  --color-blue-300: #3a4350;
+  --color-blue-100: #253447;   /* own room, hover: a quiet blue */
+  --color-blue-50: #222a35;
 
-  --raster-dot: #22313f;
+  --raster-dot: #2b323c;
+
+  --color-board: #26262a;
+  --color-card: #2f3036;
 }

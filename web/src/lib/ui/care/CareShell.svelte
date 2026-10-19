@@ -140,9 +140,9 @@
     color: var(--ink); background: var(--paper); font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden;
   }
   :global(:root[data-theme="dark"]) .care {
-    --ink: #d7e6f4; --ink-2: #b3cde6; --muted: #8ea7bf; --disabled: #62788d; --accent-soft: #36536f;
-    --tint: #1b3653; --raster: #22313f; --link: #6cb4ef; --line: #2a3b4c; --line-soft: #1c2a37; --control: #3e5872;
-    --surface: #16232f; --danger-tint: #3a1d1f; --danger-ink: #ffb4ab; --hover: #172a3d; --danger-line: #6b2b2b;
+    --ink: #c9d2dc; --ink-2: #aab6c3; --muted: #8f9cad; --disabled: #626d7b; --accent: #6fa6d6; --accent-soft: #3a4350;
+    --tint: #253447; --raster: #2b323c; --link: #7fb0dc; --line: #313945; --line-soft: #262d36; --control: #434d5a;
+    --surface: #232a33; --danger-tint: #3a2526; --danger-ink: #f1b2ab; --hover: #262e38; --danger-line: #6e3a37;
   }
   .care.narrow { width: min(560px, calc(100vw - 32px)); }
   .care::backdrop { background: var(--color-backdrop); }

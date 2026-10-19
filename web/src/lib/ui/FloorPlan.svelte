@@ -102,7 +102,7 @@
 
 <style>
   .floorplan { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--wall); overflow-x: auto; overflow-y: hidden; }
-  .floorplan.wide { scrollbar-color: var(--color-blue-300) var(--color-ink); }
+  .floorplan.wide { scrollbar-color: var(--color-blue-300) var(--color-wall); }
   .track { flex: 1 0 auto; min-width: 100%; display: flex; flex-direction: column; gap: var(--wall); }
   .row { display: flex; gap: var(--wall); flex: 1 1 0; min-height: 0; }
   /* never lower than two rows of people (tokens.css) */

@@ -37,8 +37,8 @@
   /** `ondelete`: from the "…" menu, only offered if the user may delete the post (author or Mumble admin) */
   /** `targets`, `oncopy`: "Copy to room …" in the "…" menu, the rooms per floor (copyTargets) */
   /** `head`: show the author header (first post of a group, postGroups); `next`: the following card continues the group */
-  /** `compact`: one line per post – avatar (author, date and last edit as its tooltip), message, reactions; attachments
-      and code as small placeholders that open the post */
+  /** `compact`: one line per post – avatar, message, reactions; author and time in the actions bar; attachments and code
+      as small placeholders that open the post */
   let { post, now, avatar = null, pinned = false, arrival = null, targets = [], head = true, next = false, compact = false, onopen, onedit, onreact, ontoggle, onpin, ondelete, oncopy }: {
     post: Post; now: number; avatar?: string | null; pinned?: boolean; arrival?: "land" | "glow" | null; targets?: CopyTargets; head?: boolean; next?: boolean; compact?: boolean;
     onopen: (post: Post) => void; onedit: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
@@ -70,13 +70,7 @@
     post.copiedFrom && (post.copiedFrom.authorName === post.authorName ? t().board.copiedFrom(post.copiedFrom.roomName) : t().board.copiedFromBy(post.copiedFrom.roomName, post.copiedFrom.authorName)),
   );
 
-  // compact: what the header and the edit line show otherwise goes into the avatar's tooltip
   const tickets = getTicketLinks();
-  const info = $derived(
-    [post.authorName, created, copiedFrom, post.updatedByName && `${t().board.editedBy(post.updatedByName)} · ${relativeTime(post.updatedAt, now)}`]
-      .filter(Boolean)
-      .join(" · "),
-  );
   const FILE_ICONS = { image: ImageIcon, pdf: FileText, text: FileText, archive: FileArchive, audio: FileMusic, video: FilePlay, other: File };
   // the placeholder: the file's name, or the first line of the code
   const chip = $derived.by(() => {
@@ -144,7 +138,7 @@
   {#if compact}
     <div class="line">
       {#if head}
-        <span class="av" class:me={post.mine} role="img" aria-label={info} title={info}>
+        <span class="av" class:me={post.mine} aria-hidden="true">
           {#if avatar && avatarBroken !== avatar}<img src={avatar} alt="" onerror={() => (avatarBroken = avatar)} />{:else}{initials(post.authorName)}{/if}
         </span>
       {:else}
@@ -187,7 +181,9 @@
     {/if}
   {/if}
   <div class="tools">
-    {#if !head || compact}<span class="stamp" title={created}>{relativeTime(post.createdAt, now)}</span>{/if}
+    <!-- compact: no header, so the bar names the author too -->
+    {#if compact}<span class="stamp"><strong class="author">{post.authorName}</strong> · <span title={created}>{relativeTime(post.createdAt, now)}</span></span>
+    {:else if !head}<span class="stamp" title={created}>{relativeTime(post.createdAt, now)}</span>{/if}
     <button type="button" class="icon-btn" aria-label={t().board.open} title={t().board.open} onclick={() => onopen(post)}><Maximize2 size={15} aria-hidden="true" /></button>
     <button type="button" class="icon-btn" aria-label={editLabel} title={editLabel} onclick={() => onedit(post)}><Pencil size={15} aria-hidden="true" /></button>
     <button type="button" class="icon-btn react" aria-expanded={picking} aria-label={t().board.react} title={t().board.react} onclick={() => (picking = !picking)}>
@@ -346,6 +342,7 @@
   @media (prefers-reduced-motion: reduce) { .tools { transition: none; } }
   .tools .icon-btn { width: 26px; height: 26px; }
   .stamp { padding: 0 6px; font-size: 12px; color: var(--color-blue-700); white-space: nowrap; }
+  .author { color: var(--color-ink); }
   .icon-btn {
     width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md);
     background: none; color: var(--color-blue-500); cursor: pointer;

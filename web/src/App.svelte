@@ -166,7 +166,7 @@
   /* floor plan: walls = 4 px dark blue as gap */
   .app { --plan-min-height: calc(var(--room-min-top) + var(--corridor-height) + var(--room-min-bottom) + 4 * var(--wall)); }
   .plan {
-    position: relative; flex: 1 1 auto; min-height: var(--plan-min-height); padding: var(--wall); background: var(--color-ink);
+    position: relative; flex: 1 1 auto; min-height: var(--plan-min-height); padding: var(--wall); background: var(--color-wall);
     display: flex; gap: var(--wall);
   }
   .vacancy, .screen {

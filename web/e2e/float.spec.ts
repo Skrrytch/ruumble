@@ -19,8 +19,8 @@ test("floating board: over the floor plan beside the own room, the choice is rem
   await page.getByRole("button", { name: "Show board" }).click();
   const docked = (await box(page, /^Let's talk/)).width;
 
-  await view(page, "Floating over the floor plan");
-  expect(await checked(page, "Floating over the floor plan")).toBe("true");
+  await view(page, "Floating");
+  expect(await checked(page, "Floating")).toBe("true");
   await expect(board(page)).toHaveClass(/floating/);
   // the floor plan gets the full width back, the board floats on the right, the own room at the top left stays free
   await expect.poll(async () => (await box(page, /^Let's talk/)).width).toBeGreaterThan(docked);
@@ -38,9 +38,9 @@ test("floating board: over the floor plan beside the own room, the choice is rem
   await page.reload();
   await page.getByRole("button", { name: "Show board" }).click();
   await expect(board(page)).toHaveClass(/floating/); // remembered
-  await view(page, "Beside the floor plan");
+  await view(page, "Integrated");
   await expect(board(page)).not.toHaveClass(/floating/);
   await page.reload();
   await page.getByRole("button", { name: "Show board" }).click();
-  expect(await checked(page, "Beside the floor plan")).toBe("true"); // remembered
+  expect(await checked(page, "Integrated")).toBe("true"); // remembered
 });

@@ -21,8 +21,9 @@ test("compact posts: one line each, attachments and code as placeholders, rememb
   // code: its first line; reactions stay right beside the message
   await expect(board(page).getByRole("button", { name: /^Open \/\/ fixes RUU-14/ })).toBeVisible();
   await expect(board(page).getByRole("button", { name: /Reactions/ }).first()).toBeVisible();
-  // author, date and last edit in the avatar's tooltip
-  await expect(image.getByRole("img", { name: /^Clara · / })).toHaveAttribute("title", /^Clara · \d/);
+  // no header line: the actions bar names the author beside the time
+  await image.hover();
+  await expect(image.getByText("Clara", { exact: true })).toBeVisible();
 
   await placeholder.click();
   await expect(page.getByRole("dialog")).toBeVisible();

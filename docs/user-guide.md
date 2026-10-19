@@ -62,8 +62,8 @@ The web UI is dark if your system uses a dark appearance, otherwise light, and f
 ### Board
 
 - The **two notes next to your room's name**, at its door on the corridor side, show and hide the board, as does the **B** key (not while you are typing). Boards exist only in rooms, not in the corridor or the entrance.
-- The board sits **beside the floor plan** and makes the rooms narrower. With **View** in its header (the sliders next to the arrow) it **floats over the floor plan** instead: on the left or right, wherever your own room stays fully visible, and it changes sides when you move.
-- Also under **View**: **compact** posts, one line each with the avatar, the message and its reactions. Images, files and code become small placeholders; click one to open the post. Point at the avatar for the author, the date and the last edit. The browser remembers both choices.
+- The board sits **beside the floor plan** and makes the rooms narrower. With **View** in its header (the sliders next to the arrow) it **floats** over the floor plan instead ("Floating" instead of "Integrated"): on the left or right, wherever your own room stays fully visible, and it changes sides when you move.
+- Also under **View**: **compact** posts, one line each with the avatar, the message and its reactions. Images, files and code become small placeholders; click one to open the post. Point at a post: the bar with its actions names the author and the time. The browser remembers both choices.
 - Everyone **who is currently in the room** can see and edit it. The author and Mumble admins can delete posts.
 - **Text** with Markdown (`**bold**`, lists, links), **code** via the `<>` icon (Ruumble suggests this itself when you paste source code), **images and files** (up to 10 MB unless your admins changed it) via the paper clip, with Ctrl+V or by dragging them in.
 - Send with the paper plane or **Ctrl+Enter**. The others in the room see a short notice in the Mumble log.

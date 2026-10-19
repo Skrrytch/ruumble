@@ -14,7 +14,7 @@ test("light system: switch to dark and back, the choice is remembered", async ({
   await toggle.click();
   await expect(html(page)).toHaveAttribute("data-theme", "dark");
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
-  expect(await background(page)).toBe("rgb(14, 25, 36)");
+  expect(await background(page)).toBe("rgb(20, 24, 30)");
   await page.reload();
   await expect(html(page)).toHaveAttribute("data-theme", "dark"); // remembered
 
