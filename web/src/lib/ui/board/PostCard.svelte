@@ -335,7 +335,7 @@
   /* actions: float on the bottom edge of the post they belong to, shown on hover, keyboard focus and while a menu or the picker is open */
   .tools {
     position: absolute; bottom: -19px; right: 8px; z-index: 2; display: inline-flex; align-items: center; gap: 1px; padding: 1px;
-    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 2px 6px rgb(0 56 105 / 0.12);
+    --color-paper: var(--color-raised); border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 0 0 1px var(--color-raised-edge), 0 2px 6px rgb(0 56 105 / 0.12);
     opacity: 0; transition: opacity 0.1s; pointer-events: none; /* hidden, it must not catch clicks meant for the next post */
   }
   .card:hover .tools, .card:focus-within .tools, .card.active .tools { opacity: 1; pointer-events: auto; }
@@ -352,7 +352,7 @@
   .more .icon-btn[aria-expanded="true"] { background: var(--color-blue-100); color: var(--color-ink); }
   .menu {
     position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; min-width: 170px; display: flex; flex-direction: column; padding: 4px;
-    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 4px 12px rgb(0 56 105 / 0.15);
+    --color-paper: var(--color-raised); border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 0 0 1px var(--color-raised-edge), 0 4px 12px rgb(0 56 105 / 0.15);
   }
   .menu button { white-space: nowrap; display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-ink); font-size: 14px; text-align: left; cursor: pointer; }
   .menu button:hover { background: var(--color-blue-100); }

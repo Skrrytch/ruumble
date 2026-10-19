@@ -370,7 +370,7 @@
   .me-name { display: block; font-size: 15px; font-weight: 700; white-space: nowrap; }
   .menu {
     position: absolute; right: 0; top: calc(100% + 6px); min-width: 260px; display: flex; flex-direction: column; gap: 2px; padding: 6px;
-    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 10px 28px rgb(0 56 105 / 0.2);
+    --color-paper: var(--color-raised); border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 0 0 1px var(--color-raised-edge), 0 10px 28px rgb(0 56 105 / 0.2);
     transform-origin: top right; animation: drop 160ms var(--ease-out) both;
   }
   .me-row { display: flex; flex-direction: column; padding: 8px 10px 10px; margin-bottom: 4px; border-bottom: 1px solid var(--color-blue-100); }

@@ -54,6 +54,11 @@
   --color-board: color-mix(in srgb, var(--color-blue-100) 45%, var(--color-paper));
   --color-card: #ffffff;
 
+  /* Menus, popovers and dialogs: raised above the page. They set --color-paper to --color-raised for everything inside
+     them and draw a ring in --color-raised-edge (invisible in the light theme) in front of their shadow. */
+  --color-raised: #ffffff;
+  --color-raised-edge: transparent;
+
   /* Gradient (elevator panel) */
   --gradient-elevator: linear-gradient(90deg, #0f4b8c 0%, #003869 25%);
 
@@ -112,4 +117,7 @@
 
   --color-board: #26262a;
   --color-card: #2f3036;
+
+  --color-raised: #313946;
+  --color-raised-edge: #556274;
 }

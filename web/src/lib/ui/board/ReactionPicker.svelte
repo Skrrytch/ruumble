@@ -44,7 +44,7 @@
 </div>
 
 <style>
-  .picker { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); background: var(--color-paper); }
+  .picker { --color-paper: var(--color-raised); box-shadow: 0 0 0 1px var(--color-raised-edge); display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); background: var(--color-paper); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px; }
   button {
     position: relative; display: flex; align-items: center; justify-content: center; min-height: 34px; padding: 0;

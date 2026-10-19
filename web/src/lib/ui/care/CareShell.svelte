@@ -135,6 +135,7 @@
     --ink: #003869; --ink-2: #00508c; --muted: #4d6b88; --disabled: #7d8fa3; --accent: #5aa6e7; --accent-soft: #9ccaf1;
     --tint: #eef5fc; --raster: #cee4f8; --link: #0078be; --line: #d5dfe9; --line-soft: #eef2f6; --control: #b9ccdd;
     --surface: #f5f5f5; --mark: var(--color-accent); --danger: var(--color-alert); --danger-tint: #fdf3f2; --danger-ink: #7a160f;
+    --color-paper: var(--color-raised); box-shadow: 0 0 0 1px var(--color-raised-edge);
     --paper: var(--color-paper); --hover: #f4f8fc; --danger-line: #f0c9c5;
     width: min(800px, calc(100vw - 32px)); max-height: 90vh; padding: 0; border: 1px solid var(--line); border-radius: 8px;
     color: var(--ink); background: var(--paper); font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden;

@@ -9,7 +9,7 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 ### Added
 - **Compact board.** "View" in the board's header switches the posts to a compact view: one line per post with the avatar, the message and its reactions; images, files and code become small placeholders that open the post; the bar of actions that appears on hover names the author beside the time. The browser remembers the choice.
 - **Floating board.** "View" in the board's header lets the board float ("Floating" instead of "Integrated") over the floor plan instead of taking its own column. It floats on the side where your own room stays fully visible and changes sides when you move. The browser remembers the choice.
-- **Dark mode.** The web UI follows the system's light or dark setting; "Dark mode" in the user menu switches it, and the browser remembers the choice. The dark theme uses calm slate greys with muted walls, and the board has a warm grey of its own, so it stands apart from the floor plan. The theme is set before the page is drawn, so a dark screen never flashes white.
+- **Dark mode.** The web UI follows the system's light or dark setting; "Dark mode" in the user menu switches it, and the browser remembers the choice. The dark theme uses calm slate greys with muted walls, and the board has a warm grey of its own, so it stands apart from the floor plan; menus, popovers and dialogs are a lighter grey with a fine edge, so they stand out from the dark page. The theme is set before the page is drawn, so a dark screen never flashes white.
 - **Edit a board post directly.** A pencil next to "Open" in a post's actions opens it straight in editing (for images and files: their description).
 
 ## [0.28.2] - 2026-10-07

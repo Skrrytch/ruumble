@@ -106,7 +106,7 @@
 </dialog>
 
 <style>
-  dialog { width: min(820px, 92vw); max-height: 86vh; border: 0; border-radius: var(--radius-md); padding: 0; color: var(--color-ink); display: flex; flex-direction: column; }
+  dialog { --color-paper: var(--color-raised); box-shadow: 0 0 0 1px var(--color-raised-edge); width: min(820px, 92vw); max-height: 86vh; border: 0; border-radius: var(--radius-md); padding: 0; color: var(--color-ink); display: flex; flex-direction: column; }
   dialog::backdrop { background: var(--color-backdrop); }
   header, footer { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
   header { border-bottom: 1px solid var(--color-blue-100); font-size: 14px; justify-content: space-between; }

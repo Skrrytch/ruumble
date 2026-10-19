@@ -71,7 +71,7 @@
 <style>
   .confirm {
     position: fixed; width: min(460px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--line); border-top: 4px solid var(--danger);
-    border-radius: 8px; background: var(--paper); color: var(--ink); overflow: hidden; box-shadow: 0 16px 40px rgb(0 56 105 / 0.25);
+    border-radius: 8px; background: var(--paper); color: var(--ink); overflow: hidden; box-shadow: 0 0 0 1px var(--color-raised-edge), 0 16px 40px rgb(0 56 105 / 0.25);
     animation: pop 160ms ease-out;
   }
   .confirm.neutral { border-top-color: var(--ink); }

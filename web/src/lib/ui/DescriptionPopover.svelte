@@ -104,7 +104,7 @@
     position: fixed; inset: auto; margin: 0; box-sizing: border-box;
     width: max(320px, 33vw); max-width: calc(100vw - 32px); max-height: 80vh; overflow: auto;
     padding: 16px 20px; border: 0; border-radius: var(--radius-md); border-top: 4px solid var(--color-blue-500);
-    background: var(--color-paper); color: var(--color-ink); box-shadow: 0 10px 28px rgb(0 56 105 / 0.35);
+    --color-paper: var(--color-raised); background: var(--color-paper); color: var(--color-ink); box-shadow: 0 0 0 1px var(--color-raised-edge), 0 10px 28px rgb(0 56 105 / 0.35);
     font-size: 14px; line-height: 1.5;
   }
   .description:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }

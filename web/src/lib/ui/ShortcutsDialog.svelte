@@ -30,7 +30,7 @@
 </dialog>
 
 <style>
-  .shortcuts { width: min(380px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: var(--radius-md); color: var(--color-ink); background: var(--color-paper); }
+  .shortcuts { --color-paper: var(--color-raised); box-shadow: 0 0 0 1px var(--color-raised-edge); width: min(380px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: var(--radius-md); color: var(--color-ink); background: var(--color-paper); }
   .shortcuts::backdrop { background: var(--color-backdrop); }
   header { display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 10px 20px; border-bottom: 1px solid var(--color-blue-100); }
   h2 { margin: 0; font-size: 17px; font-weight: 700; }
