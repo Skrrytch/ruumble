@@ -6,18 +6,21 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
-### Fixed
-- **Building overview stays open.** The lantern (building maintenance) and the plants (building care) open their dialog on top of the overview instead of closing it; closing the dialog returns to the overview.
-- **Entering rooms with the keyboard.** Since rooms are entered with a double-click (0.28.2), Enter and Space on a focused room did nothing. They enter it again, in the floor plan as well as in the cross-section and the directory of the building overview. The mouse still needs a double-click.
-
-### Changed
-- **Readable links and code.** Links, link chips and strings in code use their own link colour, which stays readable in the dark theme. Comments in code are darker in the light theme and lighter in the dark theme, so they can be read. A code preview that is wider than the card fades out on the right until it is scrolled to the end.
+Plugin 0.5.0 (unchanged). A dark mode, a board that floats over the floor plan or shows its posts compactly, and rooms that can be entered with the keyboard again.
 
 ### Added
-- **Compact board.** "View" in the board's header switches the posts to a compact view: one line per post with the avatar, the message and its reactions; images, files and code become small placeholders that open the post; the bar of actions that appears on hover names the author beside the time. The menu stays open while choosing and closes on a click elsewhere or Escape. The browser remembers the choice.
-- **Floating board.** "View" in the board's header lets the board float ("Floating" instead of "Integrated") over the floor plan instead of taking its own column. It floats on the side where your own room stays fully visible and changes sides when you move. The browser remembers the choice.
-- **Dark mode.** The web UI follows the system's light or dark setting; "Dark mode" in the user menu switches it, and the browser remembers the choice. The dark theme uses calm slate greys with muted walls, and the board has a warm grey of its own, so it stands apart from the floor plan; menus, popovers and dialogs are a lighter grey with a fine edge, so they stand out from the dark page. The theme is set before the page is drawn, so a dark screen never flashes white.
+- **Dark mode.** The web UI follows the system's light or dark setting, also when it changes while the page is open; "Dark mode" in the user menu switches it, and the browser remembers the choice. The dark theme uses calm slate greys with muted walls; the board has a warm grey of its own, so it stands apart from the floor plan, and menus, popovers and dialogs are a lighter grey with a fine edge, so they stand out from the page. The theme is set before the page is drawn, so a dark screen never flashes white.
+- **Board view menu.** A new "View" menu (sliders icon) in the board's header holds two settings, both remembered by the browser. The menu stays open while choosing and closes on a click elsewhere or Escape.
+- **Floating board.** "Floating" instead of "Integrated" lets the board float over the floor plan instead of taking its own column, so the rooms keep their full width. It floats on the side where your own room stays fully visible and changes sides when you move.
+- **Compact posts.** "Compact" instead of "Normal" shows one line per post: the avatar, the message and its reactions. Images, files and code become small placeholders that open the post; the bar of actions that appears on hover names the author beside the time.
 - **Edit a board post directly.** A pencil next to "Open" in a post's actions opens it straight in editing (for images and files: their description).
+
+### Changed
+- **Readable links and code.** Links, link chips and strings in code have their own link colour, which stays readable in the dark theme. Comments in code can be read in both themes. A code preview that is wider than its card fades out on the right until it is scrolled to the end.
+
+### Fixed
+- **Entering rooms with the keyboard.** Since rooms are entered with a double-click (0.28.2), Enter and Space on a focused room did nothing. They enter it again, in the floor plan as well as in the cross-section and the directory of the building overview. The mouse still needs a double-click.
+- **Building overview stays open.** The lantern (building maintenance) and the plants (building care) open their dialog on top of the overview instead of closing it; closing the dialog returns to the overview.
 
 ## [0.28.2] - 2026-10-07
 
