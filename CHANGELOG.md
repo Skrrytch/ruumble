@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Fixed
+- **Entering rooms with the keyboard.** Since rooms are entered with a double-click (0.28.2), Enter and Space on a focused room did nothing. They enter it again, in the floor plan as well as in the cross-section and the directory of the building overview. The mouse still needs a double-click.
+
 ### Changed
 - **Readable links and code.** Links, link chips and strings in code use their own link colour, which stays readable in the dark theme. Comments in code are darker in the light theme and lighter in the dark theme, so they can be read. A code preview that is wider than the card fades out on the right until it is scrolled to the end.
 

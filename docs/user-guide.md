@@ -39,9 +39,9 @@ Links from Mumble (welcome message, pairing link) open in your default browser. 
 ## Using Ruumble
 
 - **Top bar:** on the left the floor sign with the current floor and the number of people on it. Click it to open the **elevator**: one button per floor with its head count, the entrance below the ground floor, and at the bottom how many people are online on the server. Locked floors (nested too deeply) are greyed out; for those, use the classic channel view in Mumble. In the middle the sign of the room you are in; when you look at another floor, it takes you back.
-- **Rooms and corridor:** clicking a room or the corridor moves you to that channel. Your room is light blue, your avatar has a yellow ring.
+- **Rooms and corridor:** double-clicking a room or the corridor moves you to that channel (with the keyboard: Tab to it, then Enter or Space). A single click does nothing, so a stray click never moves you. Your room is light blue, your avatar has a yellow ring.
 - **Icons on people:** a small plug means the person uses Mumble without Ruumble (no plugin connected); muted, deafened, "quiet" (has not talked for 15 minutes), "away" (deafened and quiet for 5 minutes). An ear on a room means someone is listening in. "● Recording" means the room is being recorded.
-- **Building overview:** click "N online" at the bottom of the elevator, or press **H**: the whole building as a cross-section, next to it the directory board with everyone, their room and status. Type a name and press Enter to go to that person; click a group of people to move to their room.
+- **Building overview:** click "N online" at the bottom of the elevator, or press **H**: the whole building as a cross-section, next to it the directory board with everyone, their room and status. Type a name and press Enter to go to that person; double-click a group of people or a person to move to their room.
 - **Status:** the speech bubble right in the top bar (or the key **S**) sets a short status, such as "In a meeting until 2 pm". Everyone in Ruumble sees it as a small speech bubble at your avatar; hover it to read the text. It expires after 2 hours unless you choose another time or "never", and you can clear it any time. The texts you used last are listed below for a quick choice.
 - **Right in the top bar:** status, mute microphone and deafen; your name badge opens the user menu with "Go to my floor", the language switch, dark mode and the versions.
 
@@ -88,7 +88,7 @@ The web UI is dark if your system uses a dark appearance, otherwise light, and f
 | Pair **another browser**, profile or web app | Open Ruumble there, click **Pair this browser** and enter the code from the Mumble log (step 3). |
 | "Mumble is not connected." | Mumble is not running, not connected to the server, or the plugin is not enabled (step 2). |
 | The plugin cannot find the service | Check the Mumble log (lines starting with "Ruumble:"). It names the address the plugin connects to and, if that fails, the reason (e.g. a certificate that does not match the domain). You can set the address in `plugin.json` (see below) with `"bridgeUrl": "http://…"`. |
-| Clicking a room does nothing | You lack the Mumble permission to enter that channel; Ruumble then shows a notice. |
+| Double-clicking a room does nothing | You lack the Mumble permission to enter that channel; Ruumble then shows a notice. |
 | Update the plugin | Download the new file and install it as in step 2 (overwrite the existing one). |
 
 ### Plugin settings

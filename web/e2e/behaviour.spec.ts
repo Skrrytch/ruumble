@@ -44,6 +44,25 @@ test.describe("Sample building", () => {
     await expect(page.getByRole("button", { name: "Corridor Development – you are here" })).toBeVisible();
   });
 
+  test("keyboard: Enter or Space enters the focused room, also in the building overview", async ({ page }) => {
+    await page.getByRole("button", { name: "Clara's office – enter" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("button", { name: "Clara's office – you are here" })).toBeVisible();
+    await page.getByRole("button", { name: "Let's play – enter" }).focus();
+    await page.keyboard.press(" ");
+    await expect(page.getByRole("button", { name: "Let's play – you are here" })).toBeVisible();
+
+    await page.keyboard.press("h");
+    const dialog = page.getByRole("dialog", { name: "Building overview" });
+    await dialog.getByRole("region", { name: "Cross-section" }).getByRole("button", { name: "Enter Ben's office" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("button", { name: "Ben's office – you are here" })).toBeVisible();
+    await page.keyboard.press("h");
+    await dialog.getByRole("button", { name: /^Go to Eva/ }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("status", { name: /^You are here: Lobby/ })).toBeVisible();
+  });
+
   test("floor button only changes the view, “Go to my floor” goes back", async ({ page }) => {
     await gotoFloor(page, "Ground floor: Lobby");
     await expect(page.getByRole("heading", { name: "Lobby" })).toBeVisible();

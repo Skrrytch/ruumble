@@ -2,6 +2,7 @@
   import BellRing from "@lucide/svelte/icons/bell-ring";
   import MessageSquareText from "@lucide/svelte/icons/message-square-text";
   import Search from "@lucide/svelte/icons/search";
+  import { onActivateKey } from "../activate.ts";
   import { t } from "../../i18n/index.svelte.ts";
   import type { Floor } from "../../model/building.ts";
   import { filterDirectory, firstReachable, type DirectoryEntry, type DirectoryGroup } from "../../model/overview.ts";
@@ -70,7 +71,7 @@
                   aria-label={p.canGo ? t().overview.goTo(p.user.name, p.place) : `${personLabel(p.user)} – ${p.place}`}
                   title={p.blocked ? t().overview.blocked[p.blocked] : t().overview.goTo(p.user.name, p.place)}
                   onmouseenter={() => onhover(p.user.session)} onmouseleave={() => onhover(null)} onfocus={() => onhover(p.user.session)} onblur={() => onhover(null)}
-                  ondblclick={() => p.canGo && onvisit(p)}
+                  ondblclick={() => p.canGo && onvisit(p)} onkeydown={onActivateKey(() => p.canGo && onvisit(p))}
                 >
                   <span class="line">
                     <span class="pname">{p.user.isSelf ? `${p.user.name} (${t().people.you})` : p.user.name}</span>

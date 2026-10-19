@@ -1,5 +1,6 @@
 <script lang="ts">
   import Lock from "@lucide/svelte/icons/lock";
+  import { onActivateKey } from "../activate.ts";
   import { t } from "../../i18n/index.svelte.ts";
   import type { Building, Floor, Space } from "../../model/building.ts";
   import Lantern from "../Lantern.svelte";
@@ -51,7 +52,8 @@
   <svelte:element
     this={go ? "button" : "div"} type={go ? "button" : undefined} class="group" class:own={space.isSelf} class:go class:pending={pendingChannel === space.channelId}
     data-channel={space.channelId} aria-label={go ? t().overview.enterRoom(name) : undefined} title={go ? t().overview.enterRoom(name) : name}
-    ondblclick={go ? () => onvisit(space.channelId) : undefined} role={go ? undefined : "group"}
+    ondblclick={go ? () => onvisit(space.channelId) : undefined} onkeydown={go ? onActivateKey(() => onvisit(space.channelId)) : undefined}
+    role={go ? undefined : "group"}
   >
     {#each space.users as user (user.session)}
       <span class="who" role="presentation" onmouseenter={() => onhover(user.session)} onmouseleave={() => onhover(null)}>

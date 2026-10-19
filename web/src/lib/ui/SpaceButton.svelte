@@ -3,6 +3,7 @@
   import Lock from "@lucide/svelte/icons/lock";
   import Users from "@lucide/svelte/icons/users";
   import VolumeX from "@lucide/svelte/icons/volume-x";
+  import { onActivateKey } from "./activate.ts";
   import { canNudge, countText, fitPeople, type Room, type Space, type UserView } from "../model/building.ts";
   import Avatar from "./Avatar.svelte";
   import BoardNotes from "./board/BoardNotes.svelte";
@@ -148,6 +149,7 @@
   aria-busy={pending || undefined}
   data-channel={space.channelId}
   ondblclick={click}
+  onkeydown={onActivateKey(click)}
 >
   {#if variant === "room"}
     <!-- door at the corridor wall: the white strip cuts the opening into the wall; mirrored in the lower row.

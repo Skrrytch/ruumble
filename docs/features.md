@@ -42,8 +42,8 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 ### Building overview
 
 - Opens from the elevator's status bar ("N online") or with **H**: a large dialog with the whole building ([ADR-0019](decisions/0019-building-overview.md)).
-- **Cross-section** on the left, the building from the side: roof with the server's name, every floor stacked like in the elevator, the elevator shaft with your floor's cell tinted light blue, the entrance at the bottom. On every floor the people stand in groups, one per room, set apart by a thin line; rooms are not drawn (their name is in the tooltip). People are small avatars with their states and status in the tooltip; locked floors are hatched. Click a group to move to that room, a floor badge to look at that floor. The building stands on a plinth on the ground line, with a front door and steps up from the street, a street lantern on the left (building maintenance), two potted plants left and right of the steps (building care), buttons for building admins, and a slim cypress on the right whose crown stands in front of the wall.
-- **Directory board** on the right, the lobby's "Haustafel": every floor with the people on it, their room and status, then the entrance and channels Ruumble does not show. Search by name, room, status or floor; click a person to go to them, Enter goes to the first match. Where you cannot go, the tooltip says why.
+- **Cross-section** on the left, the building from the side: roof with the server's name, every floor stacked like in the elevator, the elevator shaft with your floor's cell tinted light blue, the entrance at the bottom. On every floor the people stand in groups, one per room, set apart by a thin line; rooms are not drawn (their name is in the tooltip). People are small avatars with their states and status in the tooltip; locked floors are hatched. Double-click a group (or Enter on it) to move to that room, click a floor badge to look at that floor. The building stands on a plinth on the ground line, with a front door and steps up from the street, a street lantern on the left (building maintenance), two potted plants left and right of the steps (building care), buttons for building admins, and a slim cypress on the right whose crown stands in front of the wall.
+- **Directory board** on the right, the lobby's "Haustafel": every floor with the people on it, their room and status, then the entrance and channels Ruumble does not show. Search by name, room, status or floor; double-click a person (or Enter on them) to go to them, Enter in the search goes to the first match. Where you cannot go, the tooltip says why.
 
 ### Status
 
@@ -61,7 +61,7 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 
 ### Moving, mute and deafen
 
-- Click a room to move there. Clicking a floor in the elevator only changes the view; "go to my floor" jumps back.
+- Double-click a room to move there, or Enter / Space on the focused room; a single click does nothing. Clicking a floor in the elevator only changes the view; "go to my floor" jumps back.
 - Moves run in your own Mumble client, so Mumble's ACLs apply. The UI waits for the server's confirmation and shows a message if the move was rejected.
 - Mute and deafen buttons toggle your own Mumble state.
 - Password-protected channels are not supported.
