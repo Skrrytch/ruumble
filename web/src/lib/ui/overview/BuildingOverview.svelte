@@ -10,6 +10,7 @@
 
   // Building overview (ADR-0019), from the elevator's status bar or with H: the cross-section of the building on the
   // left, the directory board of the lobby on the right. Hovering a person on one side marks them on the other.
+  // Building care and maintenance open on top of it; closing them returns here.
   let { app, building }: { app: RuumbleState; building: Building } = $props();
 
   let dialog: HTMLDialogElement;
@@ -33,8 +34,8 @@
   <div class="body">
     <div class="section-pane">
       <CrossSection {building} readonly={app.readonly} pendingChannel={app.pendingChannel} {highlight} onhover={(s) => (highlight = s)} onvisit={(id) => app.visit(id)} onfloor={(f) => app.viewFloor(f)}
-        ontend={tend ? () => { app.closeOverview(); void app.openCare({ kind: "building" }); } : undefined}
-        onmaintain={tend ? () => { app.closeOverview(); void app.openMaintenance(); } : undefined}
+        ontend={tend ? () => void app.openCare({ kind: "building" }) : undefined}
+        onmaintain={tend ? () => void app.openMaintenance() : undefined}
       />
     </div>
     <Directory {groups} floors={building.floors} {highlight} onhover={(s) => (highlight = s)} onvisit={(p) => app.visit(p.channelId)} onfloor={(f) => app.viewFloor(f)}

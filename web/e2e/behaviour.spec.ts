@@ -347,11 +347,14 @@ test.describe("Building overview", () => {
     const section = page.getByRole("dialog", { name: "Building overview" }).getByRole("region", { name: "Cross-section" });
     await section.getByRole("button", { name: "Building maintenance" }).click();
     await expect(page.getByRole("dialog", { name: "Building maintenance" })).toBeVisible();
-    await expect(page.getByRole("dialog", { name: "Building overview" })).toHaveCount(0);
+    // on top of the overview: Escape closes only the maintenance, the overview stays
     await page.keyboard.press("Escape");
-    await page.keyboard.press("h");
+    await expect(page.getByRole("dialog", { name: "Building maintenance" })).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "Building overview" })).toBeVisible();
     await section.getByRole("button", { name: "Building care" }).click();
     await expect(page.getByRole("dialog", { name: "Building care" })).toBeVisible();
+    await page.getByRole("dialog", { name: "Building care" }).getByRole("button", { name: "Close" }).last().click();
+    await expect(page.getByRole("dialog", { name: "Building overview" })).toBeVisible();
     // without Write on the root channel they are only decoration
     await page.goto("/?fixture=edge-cases&talking=0");
     await page.keyboard.press("h");

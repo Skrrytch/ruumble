@@ -227,6 +227,11 @@ test.describe("Building maintenance (ADR-0016)", () => {
     await expect(dialog.getByRole("heading", { name: "Access" })).toBeVisible();
     await expect(dialog.getByRole("heading", { name: "Clara" })).toBeVisible();
     await dialog.getByRole("button", { name: "Close" }).last().click();
+    // back in the building overview, which the maintenance opened on top of
+    const overview = page.getByRole("dialog", { name: "Building overview" });
+    await expect(overview).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(overview).toHaveCount(0);
     await page.getByRole("button", { name: "Show board" }).click();
     const board = page.getByRole("complementary", { name: "Board" });
     await board.getByRole("textbox", { name: "New post" }).click(); // the tools appear with focus
