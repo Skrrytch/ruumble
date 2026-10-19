@@ -136,19 +136,19 @@
   .tree { position: absolute; bottom: 15px; right: 3px; z-index: 1; display: flex; pointer-events: none; }
   /* the roof: a flat gable in navy with the building's name, flush with the outer walls (shaft to right wall) */
   .roof {
-    height: 50px; background: var(--color-navy); color: var(--color-white);
+    height: 50px; background: var(--color-ink); color: var(--color-paper);
     clip-path: polygon(0 100%, 50% 0, 100% 100%); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;
     font-size: 13px; font-weight: 700; letter-spacing: 0.04em;
   }
   .roof span { max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .storey { display: grid; grid-template-columns: 40px minmax(0, 1fr); }
   /* the elevator shaft: a grey strip through every floor */
-  .shaft { position: relative; display: flex; align-items: center; justify-content: center; background: var(--color-surface); border-left: 2px solid var(--color-navy); border-top: 3px solid var(--color-navy); }
+  .shaft { position: relative; display: flex; align-items: center; justify-content: center; background: var(--color-surface); border-left: 2px solid var(--color-ink); border-top: 3px solid var(--color-ink); }
   /* the own floor: its cell in the shaft is tinted, like the own room in the floor plan */
   .storey.mine .shaft { background: var(--color-blue-100); }
   .fbadge {
-    position: relative; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--color-navy); background: var(--color-white); padding: 0;
-    color: var(--color-navy); font: inherit; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer;
+    position: relative; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--color-ink); background: var(--color-paper); padding: 0;
+    color: var(--color-ink); font: inherit; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer;
   }
   .fbadge:hover:not(:disabled) { background: var(--color-blue-100); }
   .fbadge:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -157,7 +157,7 @@
   /* a floor: the slab on top, the outer wall on the right; the people stand on the slab below */
   .floor {
     display: flex; flex-wrap: wrap; align-items: flex-end; min-width: 0; min-height: 52px; padding: 8px 10px 6px;
-    border-top: 3px solid var(--color-navy); border-right: 2px solid var(--color-navy); background: var(--color-white);
+    border-top: 3px solid var(--color-ink); border-right: 2px solid var(--color-ink); background: var(--color-paper);
   }
   /* a group: the people of one room, set apart from the next by a thin line */
   .group {
@@ -173,25 +173,25 @@
   .group.go:hover, .group.pending { background: var(--color-blue-50); }
   .who { position: relative; display: inline-flex; }
   .closed { display: flex; align-items: center; gap: 6px; align-self: center; font-size: 12px; color: var(--color-blue-700); }
-  .storey.locked .floor { background: repeating-linear-gradient(135deg, var(--color-surface) 0 6px, var(--color-white) 6px 12px); }
+  .storey.locked .floor { background: repeating-linear-gradient(135deg, var(--color-surface) 0 6px, var(--color-paper) 6px 12px); }
   /* the ground line of a section drawing: the building stands on it, it reaches beyond the walls */
-  .ground-line { height: 3px; background: var(--color-navy); }
+  .ground-line { height: 3px; background: var(--color-ink); }
   /* the entrance storey: the door stands on the slab, at the left next to the shaft */
   .ground .floor { padding-bottom: 0; align-items: flex-end; gap: 6px; }
   .front-door { display: block; flex: none; margin-right: 6px; }
   /* the door stands on the slab, the people in the middle of the storey like on every other floor */
   .ground .group { align-self: center; }
-  .front-door .canopy { fill: var(--color-navy); }
-  .front-door .frame { fill: var(--color-navy); }
+  .front-door .canopy { fill: var(--color-ink); }
+  .front-door .frame { fill: var(--color-ink); }
   .front-door .fanlight { fill: var(--color-blue-100); }
   .front-door .leaf { fill: var(--color-blue-500); }
   .front-door .panel { fill: none; stroke: var(--color-blue-100); stroke-width: 1; opacity: 0.7; }
-  .front-door .handle { fill: var(--color-white); }
+  .front-door .handle { fill: var(--color-paper); }
   /* plinth below the entrance storey: 15 px high, three steps centred under the door: its centre is at shaft 40 +
      padding 10 + half the door 17 − the plinth's wall 2 = 65 px; each step is 10 px wider than the one above */
   .plinth {
-    position: relative; height: 15px; margin: 0 44px; border-top: 3px solid var(--color-navy);
-    border-left: 2px solid var(--color-navy); border-right: 2px solid var(--color-navy); background: var(--color-surface);
+    position: relative; height: 15px; margin: 0 44px; border-top: 3px solid var(--color-ink);
+    border-left: 2px solid var(--color-ink); border-right: 2px solid var(--color-ink); background: var(--color-surface);
   }
   /* the plants beside the steps stand on the street in front of the plinth, reaching up the entrance storey: 3 px clear
      of the lowest step (from 41 to 89 px, see .step) */
@@ -201,6 +201,6 @@
   .porch.right { left: 92px; }
   .step {
     position: absolute; top: calc(var(--step) * 5px - 3px); left: calc(65px - 14px - var(--step) * 5px); width: calc(28px + var(--step) * 10px);
-    height: 5px; background: var(--color-white); border: 1.5px solid var(--color-navy); border-bottom: 0; box-sizing: border-box;
+    height: 5px; background: var(--color-paper); border: 1.5px solid var(--color-ink); border-bottom: 0; box-sizing: border-box;
   }
 </style>

@@ -11,5 +11,5 @@
 
 <style>
   .wrench { display: block; overflow: visible; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.25)); }
-  .steel { fill: var(--color-steel); stroke: var(--color-navy); stroke-width: 1.2; stroke-linejoin: round; }
+  .steel { fill: var(--color-steel); stroke: var(--color-ink); stroke-width: 1.2; stroke-linejoin: round; }
 </style>

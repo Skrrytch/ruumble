@@ -12,7 +12,7 @@ How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.m
 
 - Top-level channels become **floors**, the floor channel itself is the **corridor**, second-level channels are **rooms**. A floor without subchannels is an **open floor**.
 - Order follows the channels' **position** in Mumble, then the name, as in the Mumble client. The first floor is the ground floor. There are no special names or keywords.
-- **Top bar** instead of a side column, so the floor plan gets the full width: the **floor sign** with the current floor and its head count opens the **elevator** as a dropdown (head count behind every floor, everyone online and the server name in a status bar at the bottom); in the middle the **room sign** of the own place (leads back from another floor); on the right the **status**, mute, deafen and the **name badge**, which opens the user menu ("go to my floor", language, versions).
+- **Top bar** instead of a side column, so the floor plan gets the full width: the **floor sign** with the current floor and its head count opens the **elevator** as a dropdown (head count behind every floor, everyone online and the server name in a status bar at the bottom); in the middle the **room sign** of the own place (leads back from another floor); on the right the **status**, mute, deafen and the **name badge**, which opens the user menu ("go to my floor", language, dark mode, versions).
 - Users in the root channel stand in the **entrance**, at the bottom of the elevator.
 - **Locked floors:** a floor with more than two levels is greyed out in the elevator, with the reason. The rule is re-evaluated live on every change.
 - **Linked channels** are hidden, including their subchannels. The other rooms use the space.
@@ -132,6 +132,12 @@ On the other side of the building in the building overview stands a lantern for 
 
 - Web UI in **German and English**: German if the browser prefers German, otherwise English. A switch in the user menu overrides it and is remembered in the browser.
 - Mumble notices from the board use the language the plugin reports.
+
+### Dark mode
+
+- Light and dark theme for the whole web UI. Without a choice it follows the system setting (`prefers-color-scheme`), also when that changes while the page is open; "Dark mode" in the user menu overrides it and is remembered in the browser.
+- The theme is set by `public/theme.js` before the first paint (the CSP allows no inline script), so a dark screen never flashes white.
+- Colours are named by role in `tokens.css` (`ink`, `paper`, the blue ramp by distance from the background); the dark theme only swaps values. The dark plates (floor sign, elevator, directory, lightbox) and the plants look the same in both themes. Pictures and files on the board are shown as they are.
 
 ### Operations and compatibility
 

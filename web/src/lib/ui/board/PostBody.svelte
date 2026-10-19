@@ -43,7 +43,7 @@
   .caption { margin-top: 8px; }
   .tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
   .tasks label { display: flex; align-items: flex-start; gap: 8px; min-height: 28px; padding: 2px 0; cursor: pointer; }
-  .tasks input { width: 16px; height: 16px; margin: 3px 0 0; accent-color: var(--color-navy); flex-shrink: 0; cursor: pointer; }
+  .tasks input { width: 16px; height: 16px; margin: 3px 0 0; accent-color: var(--color-ink); flex-shrink: 0; cursor: pointer; }
   .tasks input:disabled { cursor: default; }
   .tasks .done .md { text-decoration: line-through; color: var(--color-blue-700); }
   .md :global(p) { margin: 0 0 6px; }

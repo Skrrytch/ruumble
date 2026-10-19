@@ -240,7 +240,7 @@
   .wrap-corridor { flex: none; }
   .wrap-open { flex-grow: 1; }
   .room {
-    position: relative; border: 0; margin: 0; padding: 20px 22px; background: var(--color-white);
+    position: relative; border: 0; margin: 0; padding: 20px 22px; background: var(--color-paper);
     text-align: left; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
     flex: 1 1 auto; min-width: 0; width: 100%; transition: background var(--dur) var(--ease-out);
   }
@@ -249,7 +249,7 @@
   .room.mine, .room.mine:hover { background: var(--color-blue-100); cursor: default; }
   .room.locked { cursor: not-allowed; }
   .room.readonly { cursor: default; }
-  .room.locked:hover { background: var(--color-white); }
+  .room.locked:hover { background: var(--color-paper); }
   .room.pending { cursor: progress; }
   .room.pending.slow .count { color: var(--color-blue-500); }
 
@@ -260,7 +260,7 @@
   .wrap-room.lower > .room { padding: calc(var(--door-strip) + 8px) 14px 12px; }
   .door { position: absolute; left: 34px; bottom: calc(-1 * var(--wall)); z-index: 2; overflow: visible; }
   .lower .door { bottom: auto; top: calc(-1 * var(--wall)); transform: scaleY(-1); }
-  .door .opening { fill: var(--color-white); }
+  .door .opening { fill: var(--color-paper); }
   /* the leaf turns about its hinge (2, 50); the swing shows the part of the quarter circle (length 69.12) it has opened */
   .door .leaf {
     stroke: var(--color-blue-700); stroke-width: 2; stroke-linecap: round;
@@ -275,7 +275,7 @@
   .more { display: flex; flex-direction: column; align-items: center; width: 60px; height: 63px; }
   .more-tile {
     width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    background: var(--color-blue-50); color: var(--color-navy); font-size: 14px; font-weight: 700;
+    background: var(--color-blue-50); color: var(--color-ink); font-size: 14px; font-weight: 700;
   }
   .plate {
     position: absolute; right: 14px; bottom: 8px; max-width: calc(100% - 14px - var(--plate-reserve, 90px));
@@ -341,7 +341,7 @@
   .people { display: flex; flex-wrap: wrap; gap: 12px; }
 
   .raster {
-    background-color: var(--color-white);
+    background-color: var(--color-paper);
     background-image: radial-gradient(var(--raster-dot) 2px, transparent 2.4px);
     background-size: 10px 10px;
   }

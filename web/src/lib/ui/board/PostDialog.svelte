@@ -106,8 +106,8 @@
 </dialog>
 
 <style>
-  dialog { width: min(820px, 92vw); max-height: 86vh; border: 0; border-radius: var(--radius-md); padding: 0; color: var(--color-navy); display: flex; flex-direction: column; }
-  dialog::backdrop { background: rgb(0 56 105 / 0.45); }
+  dialog { width: min(820px, 92vw); max-height: 86vh; border: 0; border-radius: var(--radius-md); padding: 0; color: var(--color-ink); display: flex; flex-direction: column; }
+  dialog::backdrop { background: var(--color-backdrop); }
   header, footer { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
   header { border-bottom: 1px solid var(--color-blue-100); font-size: 14px; justify-content: space-between; }
   footer { border-top: 1px solid var(--color-blue-100); }
@@ -119,8 +119,8 @@
   .lang { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 8px; }
   .links { margin-top: 8px; }
   .edited { margin: 0 16px 8px; font-size: 12px; color: var(--color-blue-700); }
-  button { min-height: 36px; padding: 0 14px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); color: var(--color-navy); font-size: 14px; cursor: pointer; }
-  button.primary { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); font-weight: 700; }
+  button { min-height: 36px; padding: 0 14px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); color: var(--color-ink); font-size: 14px; cursor: pointer; }
+  button.primary { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-paper); font-weight: 700; }
   button.danger { border-color: var(--color-alert); color: var(--color-alert); }
   button.icon { border: 0; min-height: 36px; min-width: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
   button:disabled { opacity: 0.5; cursor: default; }

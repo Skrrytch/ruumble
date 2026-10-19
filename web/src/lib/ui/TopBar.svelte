@@ -14,11 +14,13 @@
   import MessageSquareText from "@lucide/svelte/icons/message-square-text";
   import Mic from "@lucide/svelte/icons/mic";
   import MicOff from "@lucide/svelte/icons/mic-off";
+  import Moon from "@lucide/svelte/icons/moon";
   import UserIcon from "@lucide/svelte/icons/user";
   import Users from "@lucide/svelte/icons/users";
   import { locale, setLocale, t } from "../i18n/index.svelte.ts";
   import { countText, initials, ownPlace, type Building, type Floor } from "../model/building.ts";
   import type { RuumbleState } from "../state.svelte.ts";
+  import { setTheme, theme } from "../theme.svelte.ts";
   import Avatar from "./Avatar.svelte";
   import Key from "./Key.svelte";
 
@@ -203,9 +205,13 @@
           <button type="button" class="item" onclick={() => setLocale(other)}>
             <Languages size={18} aria-hidden="true" />{t().core.switchLanguage(t().core.languageName[other])}
           </button>
+          <!-- light or dark: the system setting until chosen here, then remembered in this browser -->
+          <button type="button" class="item" aria-pressed={theme() === "dark"} onclick={() => setTheme(theme() === "dark" ? "light" : "dark")}>
+            <Moon size={18} aria-hidden="true" />{t().core.darkMode}<span class="switch">{theme() === "dark" ? t().common.on : t().common.off}</span>
+          </button>
           <!-- a sound when someone nudges you, for this browser (ADR-0020); the notice shows either way -->
           <button type="button" class="item" aria-pressed={app.nudgeSound} onclick={() => app.toggleNudgeSound()}>
-            {#if app.nudgeSound}<Bell size={18} aria-hidden="true" />{:else}<BellOff size={18} aria-hidden="true" />{/if}{t().nudge.sound}<span class="switch">{app.nudgeSound ? t().nudge.on : t().nudge.off}</span>
+            {#if app.nudgeSound}<Bell size={18} aria-hidden="true" />{:else}<BellOff size={18} aria-hidden="true" />{/if}{t().nudge.sound}<span class="switch">{app.nudgeSound ? t().common.on : t().common.off}</span>
           </button>
           <!-- the keyboard shortcuts, also with ? -->
           <button type="button" class="item" onclick={() => { open = null; app.helpOpen = true; }}>
@@ -252,7 +258,7 @@
     display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;
   }
   .plate-text { min-width: 0; }
-  .floor-sign .caption { color: var(--color-blue-100); }
+  .floor-sign .caption { color: var(--color-plate-muted); }
   h1 { margin: 0; font-size: 20px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .call {
     display: flex; align-items: center; justify-content: center; width: 24px; height: 44px; margin-left: 2px; flex-shrink: 0;
@@ -277,7 +283,7 @@
     transition: background var(--dur) var(--ease-out);
   }
   .floor:hover { background: rgb(255 255 255 / 0.08); }
-  .floor.active, .floor.active:hover { background: var(--color-white); color: var(--color-navy); }
+  .floor.active, .floor.active:hover { background: var(--color-paper); color: var(--color-ink); }
   .floor.blocked { opacity: 0.55; cursor: not-allowed; }
   .floor.blocked:hover { background: transparent; }
   .fbadge {
@@ -286,16 +292,16 @@
   }
   /* own floor: the yellow ring of the own avatar */
   .floor.mine .fbadge { box-shadow: 0 0 0 2px var(--color-accent); }
-  .floor.active .fbadge { border-color: var(--color-navy); background: var(--color-navy); color: var(--color-white); }
+  .floor.active .fbadge { border-color: var(--color-ink); background: var(--color-ink); color: var(--color-paper); }
   .ftext { min-width: 0; }
   .fname { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
   .name { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .fpeople { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--color-blue-100); font-variant-numeric: tabular-nums; }
+  .fpeople { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--color-plate-muted); font-variant-numeric: tabular-nums; }
   .floor.active .fpeople { color: var(--color-blue-700); }
-  .sub { font-size: 12px; color: var(--color-blue-100); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .sub { font-size: 12px; color: var(--color-plate-muted); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
   .floor.active .sub { color: var(--color-blue-700); }
   .entrance { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding: 10px 6px 2px; border-top: 1px solid rgb(255 255 255 / 0.2); }
-  .entrance-head { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 13px; font-weight: 700; color: var(--color-blue-100); }
+  .entrance-head { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 13px; font-weight: 700; color: var(--color-plate-muted); }
   .key-icon { display: inline-flex; }
   .entrance-people { display: flex; flex-wrap: wrap; gap: 4px; }
   .entrance-people :global(.person) { width: 48px; }
@@ -313,7 +319,7 @@
   .overview-link:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
   .overview-link .building { margin-left: auto; }
   .online { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
-  .building { color: var(--color-blue-100); overflow: hidden; text-overflow: ellipsis; }
+  .building { color: var(--color-plate-muted); overflow: hidden; text-overflow: ellipsis; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-sky); box-shadow: 0 0 0 3px rgb(90 166 231 / 0.25); }
 
   /* room sign: light blue like the own room, a door plate */
@@ -321,7 +327,7 @@
   .room-sign {
     --plate: linear-gradient(var(--color-blue-100), var(--color-blue-100)); --screw-color: var(--color-blue-500);
     display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 52px; max-width: 360px; padding: 5px 22px;
-    border: 2px solid var(--color-navy); color: var(--color-navy); box-shadow: 0 2px 0 rgb(0 56 105 / 0.2);
+    border: 2px solid var(--color-ink); color: var(--color-ink); box-shadow: 0 2px 0 rgb(0 56 105 / 0.2);
   }
   .room-sign .caption { color: var(--color-blue-700); }
   .room-name { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -330,20 +336,20 @@
   .room-sign :global(.back) { flex-shrink: 0; align-self: center; color: var(--color-blue-500); }
 
   .tool {
-    width: 40px; height: 40px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white);
-    display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-navy); flex-shrink: 0;
+    width: 40px; height: 40px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-ink); flex-shrink: 0;
     transition: background var(--dur) var(--ease-out);
   }
   .tool:hover { background: var(--color-blue-100); }
-  .tool[aria-pressed="true"] { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); }
+  .tool[aria-pressed="true"] { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-paper); }
   .tool:disabled { opacity: 0.5; cursor: not-allowed; }
-  .tool:disabled:hover { background: var(--color-white); }
+  .tool:disabled:hover { background: var(--color-paper); }
 
   /* name badge: white card with a yellow band, hanging on a clip */
   .me {
     position: relative; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 9px 10px 5px 8px; margin: 6px 0 0 6px;
     border: 1px solid var(--color-blue-300); border-top: 5px solid var(--color-accent); border-radius: 6px;
-    background: var(--color-white); color: var(--color-navy); cursor: pointer; text-align: left;
+    background: var(--color-paper); color: var(--color-ink); cursor: pointer; text-align: left;
     box-shadow: 0 2px 0 rgb(0 56 105 / 0.15), 0 4px 10px rgb(0 56 105 / 0.12);
     transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
   }
@@ -355,7 +361,7 @@
   .me[aria-expanded="true"] { background: var(--color-surface); }
   .me :global(.chevron) { color: var(--color-blue-500); }
   .av-me {
-    width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; background: var(--color-navy); color: var(--color-white);
+    width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; background: var(--color-ink); color: var(--color-paper);
     box-shadow: 0 0 0 2px var(--color-accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; overflow: hidden;
   }
   .av-me img { width: 100%; height: 100%; object-fit: cover; }
@@ -364,7 +370,7 @@
   .me-name { display: block; font-size: 15px; font-weight: 700; white-space: nowrap; }
   .menu {
     position: absolute; right: 0; top: calc(100% + 6px); min-width: 260px; display: flex; flex-direction: column; gap: 2px; padding: 6px;
-    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); box-shadow: 0 10px 28px rgb(0 56 105 / 0.2);
+    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 10px 28px rgb(0 56 105 / 0.2);
     transform-origin: top right; animation: drop 160ms var(--ease-out) both;
   }
   .me-row { display: flex; flex-direction: column; padding: 8px 10px 10px; margin-bottom: 4px; border-bottom: 1px solid var(--color-blue-100); }
@@ -372,7 +378,7 @@
   .me-row .l { font-size: 13px; color: var(--color-blue-700); }
   .item {
     display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border: 0; border-radius: var(--radius-md);
-    background: none; color: var(--color-navy); font-size: 14px; text-align: left; cursor: pointer;
+    background: none; color: var(--color-ink); font-size: 14px; text-align: left; cursor: pointer;
   }
   .item:hover { background: var(--color-blue-100); }
   .item .key { margin-left: auto; min-width: 20px; padding: 0 5px; border: 1px solid var(--color-blue-300); border-radius: 4px; font: inherit; font-size: 12px; font-weight: 700; text-align: center; color: var(--color-blue-700); }

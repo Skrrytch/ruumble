@@ -36,7 +36,7 @@
 <style>
   .debug {
     position: fixed; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; padding: 10px;
-    background: var(--color-white); border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); font-size: 12px; z-index: 10;
+    background: var(--color-paper); border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); font-size: 12px; z-index: 10;
   }
   .debug button, .debug select { font-size: 12px; padding: 4px 8px; }
   label { display: flex; gap: 6px; align-items: center; }

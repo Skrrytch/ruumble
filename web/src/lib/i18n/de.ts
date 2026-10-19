@@ -20,6 +20,8 @@ export const de = {
     copied: "Kopiert",
     edit: "Bearbeiten",
     auto: "automatisch",
+    on: "an",
+    off: "aus",
     mumbleOffline: MUMBLE_OFFLINE,
     notShown: "Du bist in einem Bereich, der hier nicht darstellbar ist.",
     corridor: "Flur",
@@ -84,6 +86,7 @@ export const de = {
     ui: (v: string) => `Ruumble ${v}`,
     switchLanguage: (to: string) => `Sprache wechseln: ${to}`,
     languageName: { de: "Deutsch", en: "English" },
+    darkMode: "Dunkler Modus",
   },
   floorPlan: {
     lockText: { "too-deep": "Die Kanalstruktur dieser Etage ist tiefer als zwei Ebenen." },
@@ -464,8 +467,6 @@ export const de = {
     unreachable: (name: string) => `${name} ist gerade nicht erreichbar.`,
     /** user menu: play a sound in this browser when someone nudges you */
     sound: "Ton beim Anstupsen",
-    on: "an",
-    off: "aus",
   },
   boardErrors: {
     "not-paired": MUMBLE_OFFLINE,

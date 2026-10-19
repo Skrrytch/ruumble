@@ -41,7 +41,7 @@
   .thumb img { display: block; width: 100%; height: auto; max-height: 200px; object-fit: contain; }
   .thumb.large img { max-height: 60vh; }
   .thumb:focus-visible, .file:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
-  .file { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-navy); text-decoration: none; }
+  .file { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-ink); text-decoration: none; }
   .file:hover { border-color: var(--color-blue-300); }
   .icon { display: inline-flex; color: var(--color-blue-500); }
   .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }

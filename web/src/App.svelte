@@ -139,19 +139,19 @@
   /* floor plan: walls = 4 px dark blue as gap */
   .app { --plan-min-height: calc(var(--room-min-top) + var(--corridor-height) + var(--room-min-bottom) + 4 * var(--wall)); }
   .plan {
-    flex: 1 1 auto; min-height: var(--plan-min-height); padding: var(--wall); background: var(--color-navy);
+    flex: 1 1 auto; min-height: var(--plan-min-height); padding: var(--wall); background: var(--color-ink);
     display: flex; gap: var(--wall);
   }
   .vacancy, .screen {
     flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 40px;
-    background: var(--color-white); font-size: 15px; color: var(--color-blue-700);
+    background: var(--color-paper); font-size: 15px; color: var(--color-blue-700);
   }
-  .vacancy strong, .screen strong { font-size: 20px; color: var(--color-navy); }
-  .screen { align-items: center; text-align: center; color: var(--color-navy); }
+  .vacancy strong, .screen strong { font-size: 20px; color: var(--color-ink); }
+  .screen { align-items: center; text-align: center; color: var(--color-ink); }
 
   .toast {
     position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); display: flex; align-items: center; gap: 16px;
-    padding: 12px 16px; border-radius: var(--radius-md); background: var(--color-navy); color: var(--color-white); font-size: 15px;
+    padding: 12px 16px; border-radius: var(--radius-md); background: var(--color-ink); color: var(--color-paper); font-size: 15px;
   }
-  .toast button { border: 0; background: transparent; color: var(--color-white); font-size: 20px; cursor: pointer; min-width: 44px; min-height: 44px; }
+  .toast button { border: 0; background: transparent; color: var(--color-paper); font-size: 20px; cursor: pointer; min-width: 44px; min-height: 44px; }
 </style>

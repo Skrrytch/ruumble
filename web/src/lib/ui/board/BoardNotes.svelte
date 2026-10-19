@@ -29,14 +29,14 @@
 
 <style>
   .notes { display: block; overflow: visible; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.18)); }
-  .paper { fill: var(--color-white); stroke: var(--color-blue-500); stroke-width: 1; }
+  .paper { fill: var(--color-paper); stroke: var(--color-blue-500); stroke-width: 1; }
   .line { stroke: var(--color-blue-500); stroke-width: 1.1; stroke-linecap: round; }
-  .pin { stroke: var(--color-navy); stroke-width: 0.7; }
+  .pin { stroke: var(--color-ink); stroke-width: 0.7; }
   .pin.a { fill: var(--color-sky); }
   .pin.b { fill: var(--color-accent); }
-  .new-paper { fill: var(--color-accent); stroke: var(--color-navy); }
-  .new-line { stroke: var(--color-navy); }
-  .pin.c { fill: var(--color-navy); }
+  .new-paper { fill: var(--color-accent); stroke: var(--color-ink); }
+  .new-line { stroke: var(--color-ink); }
+  .pin.c { fill: var(--color-ink); }
   /* the new note is pinned on from above, then the stack wobbles once; replayed for every further post */
   .new { transform-box: fill-box; transform-origin: 50% 0; animation: note-land 420ms var(--ease-out) both; }
   .notes.fresh { transform-origin: 50% 20%; animation: notes-wobble 700ms 300ms ease-in-out; }

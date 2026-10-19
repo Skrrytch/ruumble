@@ -128,9 +128,9 @@
   .left { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
   .list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
   .list li + li { border-top: 1px solid var(--line-soft); }
-  .floor-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 10px; border: 0; background: #fff; font: inherit; color: var(--ink); text-align: left; }
+  .floor-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 10px; border: 0; background: var(--paper); font: inherit; color: var(--ink); text-align: left; }
   button.floor-row { cursor: pointer; }
-  button.floor-row:hover { background: #f4f8fc; }
+  button.floor-row:hover { background: var(--hover); }
   .spacer { flex: none; width: 16px; }
   .floor-row .name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .floor-row .meta { flex: 1; text-align: right; }

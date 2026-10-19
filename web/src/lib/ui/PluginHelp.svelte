@@ -28,10 +28,10 @@
   .help { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 16px; max-width: 560px; }
   .download {
     display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 16px;
-    border-radius: var(--radius-md); background: var(--color-navy); color: var(--color-white);
+    border-radius: var(--radius-md); background: var(--color-ink); color: var(--color-paper);
     font-weight: 700; text-decoration: none;
   }
-  .download:hover { background: var(--color-navy-light); }
+  .download:hover { background: var(--color-ink-soft); }
   .download:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   .versions { margin: 0; font-size: 12px; color: var(--color-blue-700); }
   ol { margin: 0; padding-left: 20px; text-align: left; font-size: 14px; line-height: 1.6; color: var(--color-blue-700); }

@@ -76,7 +76,7 @@
   .av.quiet { opacity: 0.7; }
   .av.away { opacity: 0.4; }
   /* own user: the only yellow element */
-  .av.me { background: var(--color-navy); box-shadow: 0 0 0 3px var(--color-accent); }
+  .av.me { background: var(--color-ink); color: var(--color-paper); box-shadow: 0 0 0 3px var(--color-accent); }
   /* talking indicator: pulsing ring in medium blue (docs/internal/charter.md) */
   .av.talking::after {
     content: ""; position: absolute; inset: -7px; border-radius: 50%;
@@ -86,23 +86,23 @@
   @keyframes pulse { 0% { opacity: 1; transform: scale(0.92); } 100% { opacity: 0.35; transform: scale(1.06); } }
   .rec {
     position: absolute; left: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%;
-    background: var(--color-alert); border: 2px solid var(--color-white);
+    background: var(--color-alert); border: 2px solid var(--color-paper);
   }
   /* without Ruumble (no plugin connected, the rarer case): a small plug at the bottom left, quieter than the state badges */
   .plain {
     position: absolute; left: -5px; bottom: -5px; width: 18px; height: 18px; border-radius: 50%;
-    background: var(--color-white); border: 1px solid var(--color-blue-300); color: var(--color-blue-500);
+    background: var(--color-paper); border: 1px solid var(--color-blue-300); color: var(--color-blue-500);
     display: flex; align-items: center; justify-content: center;
   }
   .bubble {
     position: absolute; right: -7px; top: -7px; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--color-white); border: 1px solid var(--color-navy); color: var(--color-navy);
+    background: var(--color-paper); border: 1px solid var(--color-ink); color: var(--color-ink);
     display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgb(0 56 105 / 0.25);
   }
   .flag {
     position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--color-white); border: 1px solid var(--color-blue-300); color: var(--color-navy);
+    background: var(--color-paper); border: 1px solid var(--color-blue-300); color: var(--color-ink);
     display: flex; align-items: center; justify-content: center;
   }
-  .flag.server { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); }
+  .flag.server { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-paper); }
 </style>

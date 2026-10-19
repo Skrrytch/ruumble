@@ -210,18 +210,18 @@
 {/snippet}
 
 <style>
-  .card { position: relative; background: var(--color-white); border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+  .card { position: relative; background: var(--color-paper); border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
   /* a group (postGroups): the cards join, a hairline between the posts */
   .card.joined { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
   .card.cont { margin-top: -9px; border-top-color: var(--color-blue-100); border-top-style: dashed; border-top-left-radius: 0; border-top-right-radius: 0; }
   /* 24 px hit area around the 7 px dot, centred on the top edge */
   .pin { position: absolute; top: -12px; left: 50%; width: 24px; height: 24px; margin-left: -12px; padding: 0; border: 0; background: none; cursor: pointer; z-index: 1; }
   .pin .dot, .pin .glyph { position: absolute; left: 50%; top: 50%; border-radius: 50%; transform: translate(-50%, -50%); }
-  .pin .dot { width: 7px; height: 7px; background: var(--color-navy); transition: width 0.12s, height 0.12s; }
+  .pin .dot { width: 7px; height: 7px; background: var(--color-ink); transition: width 0.12s, height 0.12s; }
   /* like the actions: only on hover and keyboard focus, so a column of short posts stays calm */
   .pin { opacity: 0; transition: opacity 0.1s; pointer-events: none; }
   .card:hover .pin, .card:focus-within .pin, .card.active .pin { opacity: 1; pointer-events: auto; }
-  .pin .glyph { display: flex; align-items: center; justify-content: center; color: var(--color-white); opacity: 0; transition: opacity 0.12s; }
+  .pin .glyph { display: flex; align-items: center; justify-content: center; color: var(--color-paper); opacity: 0; transition: opacity 0.12s; }
   .pin:hover .dot, .pin:focus-visible .dot { width: 22px; height: 22px; }
   .pin:hover .glyph, .pin:focus-visible .glyph { opacity: 1; }
   .pin:focus-visible { outline: none; }
@@ -236,28 +236,28 @@
     100% { transform: none; }
   }
   @keyframes card-glow {
-    0%, 25% { border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 55%, transparent); background: color-mix(in srgb, var(--color-accent) 18%, var(--color-white)); }
-    100% { border-color: var(--color-blue-100); box-shadow: 0 0 0 3px transparent; background: var(--color-white); }
+    0%, 25% { border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 55%, transparent); background: color-mix(in srgb, var(--color-accent) 18%, var(--color-paper)); }
+    100% { border-color: var(--color-blue-100); box-shadow: 0 0 0 3px transparent; background: var(--color-paper); }
   }
   header { display: flex; align-items: center; gap: 6px; min-height: 22px; }
   .av { width: 20px; height: 20px; border-radius: 50%; background: var(--color-blue-500); color: var(--color-white); font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
   .av img { width: 100%; height: 100%; object-fit: cover; }
-  .av.me { background: var(--color-navy); box-shadow: 0 0 0 2px var(--color-accent); }
+  .av.me { background: var(--color-ink); color: var(--color-paper); box-shadow: 0 0 0 2px var(--color-accent); }
   .who { line-height: 1.2; font-size: 13px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .when { font-size: 12px; color: var(--color-blue-700); }
   .progress { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--color-blue-700); }
-  .progress.complete { color: var(--color-navy); }
+  .progress.complete { color: var(--color-ink); }
   .progress + .summary { margin-left: 0; }
   .summary {
     margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 22px; padding: 0 8px 0 4px; flex-shrink: 0;
-    border: 1px solid var(--color-blue-300); border-radius: 999px; background: var(--color-white); color: var(--color-navy);
+    border: 1px solid var(--color-blue-300); border-radius: 999px; background: var(--color-paper); color: var(--color-ink);
     font-size: 12px; font-weight: 700; cursor: pointer;
   }
   .summary:hover { background: var(--color-blue-100); }
-  .summary.mine { border-color: var(--color-navy); background: var(--color-blue-100); }
+  .summary.mine { border-color: var(--color-ink); background: var(--color-blue-100); }
   .icons { display: inline-flex; }
   /* slightly overlapping, like a stack */
-  .icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--color-white); border: 1px solid var(--color-blue-100); }
+  .icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--color-paper); border: 1px solid var(--color-blue-100); }
   .icon + .icon { margin-left: -5px; }
   .body.clamped { max-height: calc(var(--lines) * 1.5em); overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent); mask-image: linear-gradient(to bottom, #000 70%, transparent); }
   .row { display: flex; align-items: flex-start; gap: 8px; }
@@ -266,11 +266,11 @@
   .side .summary, .side .progress { margin-left: 0; }
   .edited { font-size: 11px; color: var(--color-blue-700); }
   /* the post being pointed at stands out a little, so it is clear what the actions apply to (also within a group) */
-  .card:hover, .card:focus-within, .card.active { background: color-mix(in srgb, var(--color-blue-100) 35%, var(--color-white)); }
+  .card:hover, .card:focus-within, .card.active { background: color-mix(in srgb, var(--color-blue-100) 35%, var(--color-paper)); }
   /* actions: float on the bottom edge of the post they belong to, shown on hover, keyboard focus and while a menu or the picker is open */
   .tools {
     position: absolute; bottom: -19px; right: 8px; z-index: 2; display: inline-flex; align-items: center; gap: 1px; padding: 1px;
-    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); box-shadow: 0 2px 6px rgb(0 56 105 / 0.12);
+    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 2px 6px rgb(0 56 105 / 0.12);
     opacity: 0; transition: opacity 0.1s; pointer-events: none; /* hidden, it must not catch clicks meant for the next post */
   }
   .card:hover .tools, .card:focus-within .tools, .card.active .tools { opacity: 1; pointer-events: auto; }
@@ -281,14 +281,14 @@
     width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md);
     background: none; color: var(--color-blue-500); cursor: pointer;
   }
-  .icon-btn:hover { background: var(--color-blue-100); color: var(--color-navy); }
+  .icon-btn:hover { background: var(--color-blue-100); color: var(--color-ink); }
   .more { position: relative; display: inline-flex; }
-  .more .icon-btn[aria-expanded="true"] { background: var(--color-blue-100); color: var(--color-navy); }
+  .more .icon-btn[aria-expanded="true"] { background: var(--color-blue-100); color: var(--color-ink); }
   .menu {
     position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; min-width: 170px; display: flex; flex-direction: column; padding: 4px;
-    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); box-shadow: 0 4px 12px rgb(0 56 105 / 0.15);
+    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 4px 12px rgb(0 56 105 / 0.15);
   }
-  .menu button { white-space: nowrap; display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); font-size: 14px; text-align: left; cursor: pointer; }
+  .menu button { white-space: nowrap; display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-ink); font-size: 14px; text-align: left; cursor: pointer; }
   .menu button:hover { background: var(--color-blue-100); }
   .menu .danger { color: var(--color-alert); }
   .menu [aria-disabled="true"] { color: var(--color-blue-700); cursor: default; }
@@ -298,6 +298,6 @@
   .menu { overflow-y: auto; }
   .menu:global(.up) { top: auto; bottom: calc(100% + 4px); }
   .menu button:focus-visible { outline: 3px solid var(--color-sky); outline-offset: -3px; }
-  .react[aria-expanded="true"] { background: var(--color-blue-100); color: var(--color-navy); }
+  .react[aria-expanded="true"] { background: var(--color-blue-100); color: var(--color-ink); }
   .icon-btn:focus-visible, .summary:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
 </style>

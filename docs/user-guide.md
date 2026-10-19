@@ -43,7 +43,7 @@ Links from Mumble (welcome message, pairing link) open in your default browser. 
 - **Icons on people:** a small plug means the person uses Mumble without Ruumble (no plugin connected); muted, deafened, "quiet" (has not talked for 15 minutes), "away" (deafened and quiet for 5 minutes). An ear on a room means someone is listening in. "● Recording" means the room is being recorded.
 - **Building overview:** click "N online" at the bottom of the elevator, or press **H**: the whole building as a cross-section, next to it the directory board with everyone, their room and status. Type a name and press Enter to go to that person; click a group of people to move to their room.
 - **Status:** the speech bubble right in the top bar (or the key **S**) sets a short status, such as "In a meeting until 2 pm". Everyone in Ruumble sees it as a small speech bubble at your avatar; hover it to read the text. It expires after 2 hours unless you choose another time or "never", and you can clear it any time. The texts you used last are listed below for a quick choice.
-- **Right in the top bar:** status, mute microphone and deafen; your name badge opens the user menu with "Go to my floor", the language switch and the versions.
+- **Right in the top bar:** status, mute microphone and deafen; your name badge opens the user menu with "Go to my floor", the language switch, dark mode and the versions.
 
 ### Keyboard and tab
 
@@ -54,6 +54,10 @@ Links from Mumble (welcome message, pairing link) open in your default browser. 
 The web UI is in German if your browser prefers German, otherwise in English. You can switch it in the user menu (your name, top right); the browser remembers your choice.
 
 The plugin's messages in the Mumble log follow the system language (Linux: `LC_ALL`, then `LC_MESSAGES`, then `LANG`; Windows: the display language): German for German, English for everything else.
+
+### Dark mode
+
+The web UI is dark if your system uses a dark appearance, otherwise light, and follows it when it changes. "Dark mode" in the user menu switches it; the browser remembers your choice, and from then on the system setting no longer applies.
 
 ### Board
 

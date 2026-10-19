@@ -99,7 +99,7 @@
 </CareShell>
 
 <style>
-  .floor-plate { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 1px 10px 1px 4px; border: 1px solid var(--ink); border-radius: 3px; background: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .floor-plate { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 1px 10px 1px 4px; border: 1px solid var(--ink); border-radius: 3px; background: var(--paper); font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .loading { margin: 0; color: var(--muted); }
   .error { margin: 0; color: var(--danger); }
 </style>

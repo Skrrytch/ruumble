@@ -44,18 +44,18 @@
 </div>
 
 <style>
-  .picker { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); background: var(--color-white); }
+  .picker { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); background: var(--color-paper); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px; }
   button {
     position: relative; display: flex; align-items: center; justify-content: center; min-height: 34px; padding: 0;
-    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); color: var(--color-navy); cursor: pointer;
+    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); color: var(--color-ink); cursor: pointer;
   }
   button:hover { background: var(--color-blue-100); }
-  button.mine { background: var(--color-blue-100); border-color: var(--color-navy); }
+  button.mine { background: var(--color-blue-100); border-color: var(--color-ink); }
   button:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   .count {
     position: absolute; top: -6px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
-    background: var(--color-navy); color: var(--color-white); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
+    background: var(--color-ink); color: var(--color-paper); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
   }
-  .meaning { min-height: 1.4em; font-size: 13px; color: var(--color-navy); }
+  .meaning { min-height: 1.4em; font-size: 13px; color: var(--color-ink); }
 </style>

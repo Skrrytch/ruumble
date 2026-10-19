@@ -61,13 +61,13 @@
   .nudge-card {
     position: fixed; inset: auto; margin: 0; box-sizing: border-box; max-width: 260px;
     display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 0; border-radius: var(--radius-md);
-    background: var(--color-navy); color: var(--color-white); box-shadow: 0 6px 18px rgb(0 56 105 / 0.35); font-size: 13px; line-height: 1.35;
+    background: var(--color-ink); color: var(--color-paper); box-shadow: 0 6px 18px rgb(0 56 105 / 0.35); font-size: 13px; line-height: 1.35;
   }
   .label { font-weight: 700; overflow-wrap: anywhere; }
   .hint { color: var(--color-blue-100); font-size: 12px; }
   .nudge {
     align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; min-height: 32px; padding: 0 12px;
-    border: 0; border-radius: var(--radius-md); background: var(--color-white); color: var(--color-navy); font: inherit; font-weight: 700; cursor: pointer;
+    border: 0; border-radius: var(--radius-md); background: var(--color-paper); color: var(--color-ink); font: inherit; font-weight: 700; cursor: pointer;
   }
   .nudge:hover { background: var(--color-blue-100); }
   .nudge:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }

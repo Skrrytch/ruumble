@@ -160,24 +160,24 @@
   textarea.mono { font-family: var(--font-mono); font-size: 13px; }
   textarea:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
   .bar { display: flex; align-items: center; gap: 8px; }
-  .tool { width: 40px; height: 40px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); color: var(--color-navy); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-  .tool[aria-pressed="true"] { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); }
+  .tool { width: 40px; height: 40px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); color: var(--color-ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .tool[aria-pressed="true"] { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-paper); }
   .hint { font-size: 12px; color: var(--color-blue-700); flex: 1; }
   select { flex: 1; min-height: 36px; font: inherit; font-size: 13px; }
-  .pin { margin-left: auto; width: 44px; min-height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: var(--color-navy); color: var(--color-white); font-weight: 700; cursor: pointer; }
+  .pin { margin-left: auto; width: 44px; min-height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: var(--color-ink); color: var(--color-paper); font-weight: 700; cursor: pointer; }
   .tool:disabled { opacity: 0.4; cursor: default; }
-  .attachment { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); }
+  .attachment { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); }
   .attachment.failed { border-color: var(--color-alert); }
   .attachment img { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
   .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; line-height: 1.3; }
   .fname { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .size { font-size: 12px; color: var(--color-blue-700); }
   .err { font-size: 12px; color: var(--color-alert); }
-  progress { width: 100%; height: 4px; accent-color: var(--color-navy); }
-  .remove { width: 32px; height: 32px; border: 0; background: none; color: var(--color-navy); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border-radius: var(--radius-md); flex-shrink: 0; }
+  progress { width: 100%; height: 4px; accent-color: var(--color-ink); }
+  .remove { width: 32px; height: 32px; border: 0; background: none; color: var(--color-ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border-radius: var(--radius-md); flex-shrink: 0; }
   .remove:hover { background: var(--color-surface); }
   .pin:disabled { opacity: 0.5; cursor: default; }
   .suggest { display: flex; align-items: center; gap: 8px; font-size: 13px; background: var(--color-blue-100); padding: 6px 8px; border-radius: var(--radius-md); }
-  .suggest button { min-height: 28px; padding: 0 10px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); cursor: pointer; }
+  .suggest button { min-height: 28px; padding: 0 10px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); cursor: pointer; }
   button:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
 </style>

@@ -20,10 +20,10 @@
 
 <style>
   .binders { display: block; overflow: visible; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.18)); }
-  .spine { stroke: var(--color-navy); stroke-width: 0.8; }
+  .spine { stroke: var(--color-ink); stroke-width: 0.8; }
   .spine.a { fill: var(--color-blue-500); }
   .spine.b { fill: var(--color-sky); }
-  .label { fill: var(--color-white); stroke: var(--color-navy); stroke-width: 0.5; }
+  .label { fill: var(--color-paper); stroke: var(--color-ink); stroke-width: 0.5; }
   .line { stroke: var(--color-blue-500); stroke-width: 0.9; stroke-linecap: round; }
-  .hole { fill: var(--color-white); stroke: var(--color-navy); stroke-width: 0.6; }
+  .hole { fill: var(--color-paper); stroke: var(--color-ink); stroke-width: 0.6; }
 </style>

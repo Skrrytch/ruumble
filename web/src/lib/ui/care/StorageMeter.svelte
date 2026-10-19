@@ -9,7 +9,7 @@
 </div>
 
 <style>
-  .meter { position: relative; height: 10px; border: 1px solid var(--line); border-radius: 2px; background: #fff; overflow: hidden; }
+  .meter { position: relative; height: 10px; border: 1px solid var(--line); border-radius: 2px; background: var(--paper); overflow: hidden; }
   .fill { position: absolute; inset: 0 auto 0 0; background: var(--ink); }
   .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
 </style>

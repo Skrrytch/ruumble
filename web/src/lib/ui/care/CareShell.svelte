@@ -135,11 +135,17 @@
     --ink: #003869; --ink-2: #00508c; --muted: #4d6b88; --disabled: #7d8fa3; --accent: #5aa6e7; --accent-soft: #9ccaf1;
     --tint: #eef5fc; --raster: #cee4f8; --link: #0078be; --line: #d5dfe9; --line-soft: #eef2f6; --control: #b9ccdd;
     --surface: #f5f5f5; --mark: var(--color-accent); --danger: var(--color-alert); --danger-tint: #fdf3f2; --danger-ink: #7a160f;
+    --paper: var(--color-paper); --hover: #f4f8fc; --danger-line: #f0c9c5;
     width: min(800px, calc(100vw - 32px)); max-height: 90vh; padding: 0; border: 1px solid var(--line); border-radius: 8px;
-    color: var(--ink); background: #fff; font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden;
+    color: var(--ink); background: var(--paper); font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden;
+  }
+  :global(:root[data-theme="dark"]) .care {
+    --ink: #d7e6f4; --ink-2: #b3cde6; --muted: #8ea7bf; --disabled: #62788d; --accent-soft: #36536f;
+    --tint: #1b3653; --raster: #22313f; --link: #6cb4ef; --line: #2a3b4c; --line-soft: #1c2a37; --control: #3e5872;
+    --surface: #16232f; --danger-tint: #3a1d1f; --danger-ink: #ffb4ab; --hover: #172a3d; --danger-line: #6b2b2b;
   }
   .care.narrow { width: min(560px, calc(100vw - 32px)); }
-  .care::backdrop { background: rgb(0 56 105 / 0.45); }
+  .care::backdrop { background: var(--color-backdrop); }
   header { position: relative; display: flex; gap: 12px; align-items: center; padding: 14px 12px; border-bottom: 1px solid var(--line); flex: none; }
   .raster {
     position: absolute; inset: 0 0 0 auto; width: 320px; pointer-events: none;
@@ -166,10 +172,10 @@
   /* buttons of the care dialogs, also used by the views (global within .care) */
   .care :global(.btn) {
     height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 1px solid var(--control); border-radius: 4px;
-    background: #fff; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; flex: none;
+    background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; flex: none;
     transition: background 150ms ease-out, opacity 150ms ease-out;
   }
-  .care :global(.btn.primary) { border-color: var(--ink); background: var(--ink); color: #fff; }
+  .care :global(.btn.primary) { border-color: var(--ink); background: var(--ink); color: var(--paper); }
   .care :global(.btn.secondary:hover) { background: var(--tint); }
   .care :global(.btn.danger) { border-color: var(--danger); color: var(--danger); }
   .care :global(.btn.danger:hover) { background: var(--danger-tint); }

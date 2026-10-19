@@ -21,6 +21,6 @@
   .leaf { fill: var(--color-leaf); stroke: var(--color-leaf-dark); stroke-width: 0.8; }
   .leaf.dark { fill: var(--color-leaf-dark); }
   .vein { fill: none; stroke: var(--color-leaf-dark); stroke-width: 0.7; stroke-linecap: round; opacity: 0.6; }
-  .pot { fill: var(--color-pot); stroke: var(--color-navy); stroke-width: 0.8; stroke-linejoin: round; }
+  .pot { fill: var(--color-pot); stroke: var(--color-ink); stroke-width: 0.8; stroke-linejoin: round; }
   .rim { stroke-width: 0.8; }
 </style>

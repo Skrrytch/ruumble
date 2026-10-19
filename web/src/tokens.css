@@ -1,14 +1,29 @@
 /* Ruumble – design tokens of the building web UI.
-   Only the values the web UI actually uses. */
+   Only the values the web UI actually uses.
+   Two themes: light (default) and dark, chosen by `data-theme` on <html> (lib/theme.svelte.ts, set before the first
+   paint by index.html). Colours are named by their role, so the dark theme only swaps values; the blues are a ramp
+   by distance from the background (100 = closest), which the dark theme mirrors. */
 :root {
+  color-scheme: light;
+
   /* Base colours */
-  --color-navy: #003869;       /* text, walls, active states */
+  --color-ink: #003869;        /* text, walls, active states; also the fill of primary buttons, with paper as their text */
+  --color-paper: #ffffff;      /* background of rooms, cards, dialogs and menus */
+  --color-ink-soft: #0f4b8c;   /* hover of ink-filled buttons, numbers in code */
   --color-sky: #5aa6e7;        /* icons, focus ring */
   --color-accent: #fbd200;     /* ONLY: ring around your own avatar, the board graphic's pin and its note for unseen posts */
   --color-surface: #f5f5f5;    /* elevator core, hover */
-  --color-white: #ffffff;
-  --color-navy-light: #0f4b8c;
   --color-alert: #c62828;      /* ONLY: recording indicator (AP10), deleting a post, destructive steps of care, keys and maintenance */
+
+  /* Plates that stay dark in both themes (floor sign, elevator, directory, lightbox) and avatars on blue-500:
+     their text keeps these fixed values */
+  --color-white: #ffffff;
+  --color-navy: #003869;       /* fill of such a plate where it is not the elevator gradient (lightbox bar) */
+  --color-plate-muted: #cee4f8; /* captions and secondary text on those plates */
+
+  /* Behind modal dialogs; the soft one behind a confirmation on top of a dialog */
+  --color-backdrop: rgb(0 56 105 / 0.45);
+  --color-backdrop-soft: rgb(0 56 105 / 0.25);
 
   /* Plant (care, ADR-0014): ONLY the potted plant in rooms, corridors and at the entrance, and the cypress beside the
      building in the building overview (ADR-0019), whose trunk is the only bark */
@@ -60,4 +75,25 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur: 160ms;
   --dur-slow: 400ms;           /* rooms resizing when people come and go */
+}
+
+/* Dark theme: the building at night. Dark floors, light lines; the dark plates and the plants stay as they are. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-ink: #d7e6f4;
+  --color-paper: #0e1924;
+  --color-ink-soft: #b3cde6;
+  --color-surface: #16232f;
+  --color-alert: #ef5350;
+  --color-backdrop: rgb(0 0 0 / 0.6);
+  --color-backdrop-soft: rgb(0 0 0 / 0.4);
+
+  --color-blue-700: #9dc0e2;   /* secondary text (contrast ≥ 4.5:1 on paper) */
+  --color-blue-500: #1f6fae;   /* avatars keep white initials (≥ 4.5:1) */
+  --color-blue-300: #36536f;
+  --color-blue-100: #1b3653;
+  --color-blue-50: #142536;
+
+  --raster-dot: #22313f;
 }

@@ -44,9 +44,9 @@
   }
   a { border: 1px solid var(--color-blue-100); background: var(--color-surface); color: var(--color-blue-500); text-decoration: none; }
   a span { overflow: hidden; text-overflow: ellipsis; }
-  a:hover { border-color: var(--color-blue-300); color: var(--color-navy); }
+  a:hover { border-color: var(--color-blue-300); color: var(--color-ink); }
   button { border: 0; background: none; color: var(--color-blue-700); cursor: pointer; }
-  button:hover { color: var(--color-navy); text-decoration: underline; }
+  button:hover { color: var(--color-ink); text-decoration: underline; }
   .rest { color: var(--color-blue-700); }
   a:focus-visible, button:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
 </style>

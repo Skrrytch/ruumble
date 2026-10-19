@@ -114,7 +114,7 @@
   .lightbox::backdrop { background: transparent; }
   .bar { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: var(--color-navy); }
   .name { flex: 1; font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .zoom { font-size: 13px; min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; color: var(--color-blue-100); }
+  .zoom { font-size: 13px; min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; color: var(--color-plate-muted); }
   button, .btn { width: 40px; height: 40px; border: 0; border-radius: var(--radius-md); background: rgb(255 255 255 / 0.12); color: var(--color-white); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
   button:hover, .btn:hover { background: rgb(255 255 255 / 0.22); }
   button:disabled { opacity: 0.4; cursor: default; }

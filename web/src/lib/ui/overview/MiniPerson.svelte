@@ -26,12 +26,12 @@
   .mini img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
   .mini.quiet { opacity: 0.7; }
   .mini.away { opacity: 0.4; }
-  .mini.me { background: var(--color-navy); box-shadow: 0 0 0 2px var(--color-accent); }
+  .mini.me { background: var(--color-ink); color: var(--color-paper); box-shadow: 0 0 0 2px var(--color-accent); }
   .mini.highlight { box-shadow: 0 0 0 3px var(--color-sky); transform: scale(1.15); z-index: 1; }
   .mini.me.highlight { box-shadow: 0 0 0 2px var(--color-accent), 0 0 0 5px var(--color-sky); }
   /* a status: a small white speech dot at the top right, like the bubble at the big avatar */
   .status {
     position: absolute; right: -3px; top: -3px; width: 9px; height: 9px; border-radius: 50% 50% 50% 0;
-    background: var(--color-white); border: 1.5px solid var(--color-navy);
+    background: var(--color-paper); border: 1.5px solid var(--color-ink);
   }
 </style>

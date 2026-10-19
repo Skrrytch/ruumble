@@ -30,11 +30,11 @@
 </dialog>
 
 <style>
-  .shortcuts { width: min(380px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: var(--radius-md); color: var(--color-navy); background: var(--color-white); }
-  .shortcuts::backdrop { background: rgb(0 56 105 / 0.45); }
+  .shortcuts { width: min(380px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: var(--radius-md); color: var(--color-ink); background: var(--color-paper); }
+  .shortcuts::backdrop { background: var(--color-backdrop); }
   header { display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 10px 20px; border-bottom: 1px solid var(--color-blue-100); }
   h2 { margin: 0; font-size: 17px; font-weight: 700; }
-  .close { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-navy); cursor: pointer; }
+  .close { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-ink); cursor: pointer; }
   .close:hover { background: var(--color-blue-100); }
   .close:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   dl { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; margin: 0; padding: 16px 20px 8px; }

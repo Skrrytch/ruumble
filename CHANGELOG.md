@@ -7,6 +7,7 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 ## [Unreleased]
 
 ### Added
+- **Dark mode.** The web UI follows the system's light or dark setting; "Dark mode" in the user menu switches it, and the browser remembers the choice. The theme is set before the page is drawn, so a dark screen never flashes white.
 - **Edit a board post directly.** A pencil next to "Open" in a post's actions opens it straight in editing (for images and files: their description).
 
 ## [0.28.2] - 2026-10-07

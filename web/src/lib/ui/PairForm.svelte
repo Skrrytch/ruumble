@@ -42,16 +42,16 @@
   .row { display: flex; gap: 8px; }
   input {
     width: 9ch; min-height: 44px; padding: 0 12px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md);
-    font: inherit; font-size: 20px; letter-spacing: 0.1em; text-align: center; color: var(--color-navy);
+    font: inherit; font-size: 20px; letter-spacing: 0.1em; text-align: center; color: var(--color-ink);
   }
   input:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   .primary {
     display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 16px; border: 0;
-    border-radius: var(--radius-md); background: var(--color-navy); color: var(--color-white); font-weight: 700; cursor: pointer;
+    border-radius: var(--radius-md); background: var(--color-ink); color: var(--color-paper); font-weight: 700; cursor: pointer;
   }
-  .primary:hover:not(:disabled) { background: var(--color-navy-light); }
+  .primary:hover:not(:disabled) { background: var(--color-ink-soft); }
   .primary:disabled { opacity: 0.5; cursor: default; }
   .primary:focus-visible, .link:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
-  .link { min-height: 32px; border: 0; background: transparent; color: var(--color-navy); text-decoration: underline; cursor: pointer; }
-  .error { color: var(--color-navy); font-weight: 700; }
+  .link { min-height: 32px; border: 0; background: transparent; color: var(--color-ink); text-decoration: underline; cursor: pointer; }
+  .error { color: var(--color-ink); font-weight: 700; }
 </style>

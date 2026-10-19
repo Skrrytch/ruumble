@@ -71,11 +71,11 @@
 <style>
   .confirm {
     position: fixed; width: min(460px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--line); border-top: 4px solid var(--danger);
-    border-radius: 8px; background: #fff; color: var(--ink); overflow: hidden; box-shadow: 0 16px 40px rgb(0 56 105 / 0.25);
+    border-radius: 8px; background: var(--paper); color: var(--ink); overflow: hidden; box-shadow: 0 16px 40px rgb(0 56 105 / 0.25);
     animation: pop 160ms ease-out;
   }
   .confirm.neutral { border-top-color: var(--ink); }
-  .confirm::backdrop { background: rgb(0 56 105 / 0.25); }
+  .confirm::backdrop { background: var(--color-backdrop-soft); }
   .raster {
     position: absolute; inset: 0 0 auto auto; width: 180px; height: 72px; pointer-events: none;
     background-image: radial-gradient(circle, var(--raster) 2px, transparent 2.4px); background-size: 8px 8px;

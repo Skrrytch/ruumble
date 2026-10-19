@@ -14,7 +14,7 @@
 <style>
   .lantern { display: block; overflow: visible; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.18)); }
   .glow { fill: var(--color-sky); opacity: 0.18; }
-  .glass { fill: var(--color-blue-100); stroke: var(--color-navy); stroke-width: 0.9; stroke-linejoin: round; }
-  .frame { fill: var(--color-navy); }
-  .post { fill: none; stroke: var(--color-navy); stroke-width: 1.8; stroke-linecap: round; }
+  .glass { fill: var(--color-blue-100); stroke: var(--color-ink); stroke-width: 0.9; stroke-linejoin: round; }
+  .frame { fill: var(--color-ink); }
+  .post { fill: none; stroke: var(--color-ink); stroke-width: 1.8; stroke-linecap: round; }
 </style>

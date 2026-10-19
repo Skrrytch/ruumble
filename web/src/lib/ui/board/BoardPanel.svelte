@@ -261,40 +261,40 @@
 
 <style>
   /* lightly tinted blue, so the board stands out from the floor plan (without the corridor's dot grid) */
-  .board { --board-bg: color-mix(in srgb, var(--color-blue-100) 45%, var(--color-white)); position: relative; flex-shrink: 0;
+  .board { --board-bg: color-mix(in srgb, var(--color-blue-100) 45%, var(--color-paper)); position: relative; flex-shrink: 0;
     /* half of the width beyond --board-grow-from (100cqw = the app's content width, i.e. without its 2 × 32 px padding) */
     width: calc(var(--board-width) + max(0px, (100cqw - (var(--board-grow-from) - 64px)) / 2)); display: flex; flex-direction: column; background: var(--board-bg); min-height: 0; }
   header { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--color-blue-300); }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .title { flex: 1; font-weight: 700; }
-  .search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); color: var(--color-blue-500); }
+  .search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); color: var(--color-blue-500); }
   .search:focus-within { outline: 3px solid var(--color-sky); outline-offset: 0; }
-  .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; font-size: 14px; color: var(--color-navy); }
-  .tool { position: relative; width: 36px; height: 36px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); color: var(--color-navy); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-  .tool.active { border-color: var(--color-navy); background: var(--color-blue-100); }
-  .dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--color-navy); }
+  .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; font-size: 14px; color: var(--color-ink); }
+  .tool { position: relative; width: 36px; height: 36px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); color: var(--color-ink); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+  .tool.active { border-color: var(--color-ink); background: var(--color-blue-100); }
+  .dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--color-ink); }
   .filter { position: relative; }
   .menu {
     position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; min-width: 150px; display: flex; flex-direction: column; padding: 4px;
-    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-white); box-shadow: 0 4px 12px rgb(0 56 105 / 0.15);
+    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 4px 12px rgb(0 56 105 / 0.15);
   }
-  .menu button { min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); font-size: 14px; text-align: left; cursor: pointer; }
+  .menu button { min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-ink); font-size: 14px; text-align: left; cursor: pointer; }
   .menu button:hover { background: var(--color-blue-100); }
   .menu button[aria-checked="true"] { font-weight: 700; background: var(--color-blue-100); }
   .pindraft {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 12px 0; padding: 4px 6px 4px 10px; color: var(--color-navy);
-    border: 1px solid var(--color-blue-300); border-left: 3px solid var(--color-navy); border-radius: var(--radius-md); background: var(--color-white);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 12px 0; padding: 4px 6px 4px 10px; color: var(--color-ink);
+    border: 1px solid var(--color-blue-300); border-left: 3px solid var(--color-ink); border-radius: var(--radius-md); background: var(--color-paper);
   }
-  .pindraft input { flex: 1; min-width: 0; height: 28px; padding: 0 6px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); font: inherit; font-size: 14px; font-weight: 700; color: var(--color-navy); }
+  .pindraft input { flex: 1; min-width: 0; height: 28px; padding: 0 6px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); font: inherit; font-size: 14px; font-weight: 700; color: var(--color-ink); }
   .pindraft input:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
-  .pindraft .ok { height: 28px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: var(--color-navy); color: var(--color-white); font-size: 13px; font-weight: 700; cursor: pointer; }
+  .pindraft .ok { height: 28px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: var(--color-ink); color: var(--color-paper); font-size: 13px; font-weight: 700; cursor: pointer; }
   .pindraft .ok:disabled { opacity: 0.5; cursor: default; }
-  .pindraft .cancel { width: 28px; height: 28px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .pindraft .cancel { width: 28px; height: 28px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
   .pindraft .cancel:hover { background: var(--color-blue-100); }
   .pindraft .ok:focus-visible, .pindraft .cancel:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   .replaces { flex-basis: 100%; font-size: 12px; color: var(--color-blue-700); }
   .narrowed { display: flex; align-items: center; gap: 6px; padding: 4px 12px; font-size: 13px; color: var(--color-blue-700); border-bottom: 1px solid var(--color-blue-100); }
-  .clear { width: 24px; height: 24px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-navy); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .clear { width: 24px; height: 24px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
   .clear:hover { background: var(--color-blue-100); }
   .tool:focus-visible, .menu button:focus-visible, .clear:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   /* same side spacing as header and input (12 px) */
@@ -303,13 +303,13 @@
   .drop {
     position: absolute; inset: 8px; z-index: 2; display: flex; align-items: center; justify-content: center; pointer-events: none;
     border: 2px dashed var(--color-blue-500); border-radius: var(--radius-md); background: rgb(255 255 255 / 0.85);
-    font-weight: 700; color: var(--color-navy);
+    font-weight: 700; color: var(--color-ink);
   }
   /* the list scrolls; the button floats above its top edge */
   .list-wrap { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; }
   .new-above {
     position: absolute; top: 8px; left: 50%; z-index: 2; transform: translateX(-50%); display: flex; align-items: center; gap: 6px;
-    height: 30px; padding: 0 12px; border: 0; border-radius: 15px; background: var(--color-navy); color: var(--color-white);
+    height: 30px; padding: 0 12px; border: 0; border-radius: 15px; background: var(--color-ink); color: var(--color-paper);
     font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgb(0 56 105 / 0.25); animation: pill-in 300ms var(--ease-out) both;
   }
   .new-above:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }

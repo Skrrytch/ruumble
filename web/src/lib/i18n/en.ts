@@ -26,6 +26,8 @@ export const en: Messages = {
     copied: "Copied",
     edit: "Edit",
     auto: "automatic",
+    on: "on",
+    off: "off",
     mumbleOffline: MUMBLE_OFFLINE,
     notShown: "You are in an area that cannot be shown here.",
     corridor: "Corridor",
@@ -88,6 +90,7 @@ export const en: Messages = {
     ui: (v) => `Ruumble ${v}`,
     switchLanguage: (to) => `Change language: ${to}`,
     languageName: { de: "Deutsch", en: "English" },
+    darkMode: "Dark mode",
   },
   floorPlan: {
     lockText: { "too-deep": "The channel structure of this floor is deeper than two levels." },
@@ -436,8 +439,6 @@ export const en: Messages = {
     notInRoom: (name: string) => `${name} is no longer in your room.`,
     unreachable: (name: string) => `${name} cannot be reached right now.`,
     sound: "Sound when nudged",
-    on: "on",
-    off: "off",
   },
   boardErrors: {
     "not-paired": MUMBLE_OFFLINE,

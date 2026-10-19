@@ -3,20 +3,22 @@
 html, body { margin: 0; height: 100%; }
 body {
   font-family: var(--font-sans);
-  background: var(--color-white);
-  color: var(--color-navy);
+  background: var(--color-paper);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
 }
 button { font: inherit; color: inherit; }
+/* form fields on paper in both themes, not the browser's grey field of the dark colour scheme */
+input, textarea, select { color: inherit; background-color: var(--color-paper); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
 /* Syntax highlighting (highlight.js), only with colours from the tokens */
-.hljs { color: var(--color-navy); }
+.hljs { color: var(--color-ink); }
 .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-doctag { color: var(--color-blue-700); font-weight: 700; }
 .hljs-string, .hljs-attr, .hljs-template-tag, .hljs-regexp, .hljs-addition { color: var(--color-blue-500); }
 .hljs-comment, .hljs-quote, .hljs-meta { color: var(--color-blue-300); font-style: italic; }
-.hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet { color: var(--color-navy-light); }
-.hljs-title, .hljs-section, .hljs-name, .hljs-type { color: var(--color-navy); font-weight: 700; }
+.hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet { color: var(--color-ink-soft); }
+.hljs-title, .hljs-section, .hljs-name, .hljs-type { color: var(--color-ink); font-weight: 700; }
 .hljs-deletion { color: var(--color-alert); }

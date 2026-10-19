@@ -45,7 +45,7 @@
   li + li { border-top: 1px dashed var(--accent-soft); }
   .text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
   .meta { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .remove { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid #f0c9c5; border-radius: 4px; background: #fff; color: var(--danger); cursor: pointer; }
+  .remove { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--danger-line); border-radius: 4px; background: var(--paper); color: var(--danger); cursor: pointer; }
   .remove:hover { background: var(--danger-tint); }
   .remove:disabled { opacity: 0.45; cursor: default; }
   .none { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }

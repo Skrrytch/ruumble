@@ -113,7 +113,7 @@
   .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .field.grow { flex: 1 1 100%; }
   label { font-size: 13px; font-weight: 700; }
-  input, select { height: 40px; padding: 0 10px; border: 1px solid var(--control); border-radius: 4px; font: inherit; color: var(--ink); background: #fff; }
+  input, select { height: 40px; padding: 0 10px; border: 1px solid var(--control); border-radius: 4px; font: inherit; color: var(--ink); background: var(--paper); }
   input { width: 100%; box-sizing: border-box; }
   .count { align-self: flex-end; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .count.full { color: var(--danger); font-weight: 700; }
@@ -121,7 +121,7 @@
   section h3 { margin-bottom: 8px; }
   .recent { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
   .chip {
-    max-width: 100%; min-height: 32px; padding: 4px 12px; border: 1px solid var(--control); border-radius: 16px; background: #fff;
+    max-width: 100%; min-height: 32px; padding: 4px 12px; border: 1px solid var(--control); border-radius: 16px; background: var(--paper);
     color: var(--ink); font: inherit; font-size: 13px; text-align: left; cursor: pointer; overflow-wrap: anywhere;
   }
   .chip:hover { background: var(--tint); }
