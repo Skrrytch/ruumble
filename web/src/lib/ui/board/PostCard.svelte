@@ -329,7 +329,7 @@
   .chip .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip.mono .label { font-family: var(--font-mono); font-size: 12px; }
   .caption :global(code) { background: var(--color-surface); padding: 0 3px; border-radius: 3px; font-size: 13px; }
-  .caption :global(a) { color: var(--color-blue-500); }
+  .caption :global(a) { color: var(--color-link); }
   /* the post being pointed at stands out a little, so it is clear what the actions apply to (also within a group) */
   .card:hover, .card:focus-within, .card.active { background: color-mix(in srgb, var(--color-blue-100) 35%, var(--color-paper)); }
   /* actions: float on the bottom edge of the post they belong to, shown on hover, keyboard focus and while a menu or the picker is open */
@@ -345,7 +345,7 @@
   .author { color: var(--color-ink); }
   .icon-btn {
     width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md);
-    background: none; color: var(--color-blue-500); cursor: pointer;
+    background: none; color: var(--color-link); cursor: pointer;
   }
   .icon-btn:hover { background: var(--color-blue-100); color: var(--color-ink); }
   .more { position: relative; display: inline-flex; }
@@ -360,7 +360,7 @@
   .menu [aria-disabled="true"] { color: var(--color-blue-700); cursor: default; }
   .menu [aria-disabled="true"]:hover { background: none; }
   .menu-title { padding: 6px 10px 4px; font-size: 12px; font-weight: 700; color: var(--color-blue-700); white-space: nowrap; }
-  .floor { padding: 6px 10px 2px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-blue-500); }
+  .floor { padding: 6px 10px 2px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-link); }
   .menu { overflow-y: auto; }
   .menu:global(.up) { top: auto; bottom: calc(100% + 4px); }
   .menu button:focus-visible { outline: 3px solid var(--color-sky); outline-offset: -3px; }

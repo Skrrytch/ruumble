@@ -43,6 +43,8 @@
   /* Blues */
   --color-blue-700: #00508c;   /* secondary text (contrast ≥ 4.5:1 on white) */
   --color-blue-500: #0078be;   /* avatar fill of other users, floor kicker */
+  --color-link: #0078be;       /* links and blue text or icons on paper (blue-500 in the light theme) */
+  --color-code-comment: #58738f; /* comments in code (≥ 4.5:1 on surface) */
   --color-blue-300: #9ccaf1;   /* door arcs, tool button borders */
   --color-blue-50: #eef5fc;    /* "+n" tile for people who do not fit */
   --color-blue-100: #cee4f8;   /* own room, tool button hover */
@@ -109,6 +111,8 @@
 
   --color-blue-700: #8f9cad;   /* secondary text (contrast ≥ 4.5:1 on paper) */
   --color-blue-500: #3f72a2;   /* avatars keep white initials (≥ 4.5:1) */
+  --color-link: #7fb3e0;       /* ≥ 4.5:1 on paper, cards and raised surfaces */
+  --color-code-comment: #8a97a8;
   --color-blue-300: #3a4350;
   --color-blue-100: #253447;   /* own room, hover: a quiet blue */
   --color-blue-50: #222a35;

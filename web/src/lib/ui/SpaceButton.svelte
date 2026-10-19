@@ -251,7 +251,7 @@
   .room.readonly { cursor: default; }
   .room.locked:hover { background: var(--color-paper); }
   .room.pending { cursor: progress; }
-  .room.pending.slow .count { color: var(--color-blue-500); }
+  .room.pending.slow .count { color: var(--color-link); }
 
   /* Rooms (design "Grundriss: Flurseite"): a 48 px door strip on the corridor side holds the plant behind the door,
      the door and, right-aligned, the board and the door plate; the people fill the rest from the far wall.
@@ -335,7 +335,7 @@
   .plant-spot.tend:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 0; }
 
   .title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; font-weight: 700; }
-  .icon { display: inline-flex; flex: none; color: var(--color-blue-500); }
+  .icon { display: inline-flex; flex: none; color: var(--color-link); }
   .rec { font-size: 12px; font-weight: 700; color: var(--color-alert); white-space: nowrap; }
   .count { font-size: 13px; color: var(--color-blue-700); display: block; margin-top: 4px; }
   .people { display: flex; flex-wrap: wrap; gap: 12px; }

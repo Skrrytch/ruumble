@@ -17,8 +17,8 @@ input, textarea, select { color: inherit; background-color: var(--color-paper); 
 /* Syntax highlighting (highlight.js), only with colours from the tokens */
 .hljs { color: var(--color-ink); }
 .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-doctag { color: var(--color-blue-700); font-weight: 700; }
-.hljs-string, .hljs-attr, .hljs-template-tag, .hljs-regexp, .hljs-addition { color: var(--color-blue-500); }
-.hljs-comment, .hljs-quote, .hljs-meta { color: var(--color-blue-300); font-style: italic; }
+.hljs-string, .hljs-attr, .hljs-template-tag, .hljs-regexp, .hljs-addition { color: var(--color-link); }
+.hljs-comment, .hljs-quote, .hljs-meta { color: var(--color-code-comment); font-style: italic; }
 .hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet { color: var(--color-ink-soft); }
 .hljs-title, .hljs-section, .hljs-name, .hljs-type { color: var(--color-ink); font-weight: 700; }
 .hljs-deletion { color: var(--color-alert); }

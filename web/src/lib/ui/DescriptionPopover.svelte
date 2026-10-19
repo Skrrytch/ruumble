@@ -112,7 +112,7 @@
   .body :global(:first-child) { margin-top: 0; }
   .body :global(:last-child) { margin-bottom: 0; }
   .body :global(p) { margin: 0 0 0.6em; }
-  .body :global(a) { color: var(--color-blue-500); }
+  .body :global(a) { color: var(--color-link); }
   .body :global(img) { max-width: 100%; height: auto; }
   .body :global(table) { border-collapse: collapse; }
   .body :global(th), .body :global(td) { padding: 2px 8px; border: 1px solid var(--color-blue-100); text-align: left; }

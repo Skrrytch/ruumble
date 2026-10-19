@@ -42,7 +42,7 @@
     display: inline-flex; align-items: center; gap: 4px; min-width: 0; min-height: 22px; padding: 0 8px; border-radius: 999px;
     font-size: 12px; line-height: 1; white-space: nowrap;
   }
-  a { border: 1px solid var(--color-blue-100); background: var(--color-surface); color: var(--color-blue-500); text-decoration: none; }
+  a { border: 1px solid var(--color-blue-100); background: var(--color-surface); color: var(--color-link); text-decoration: none; }
   a span { overflow: hidden; text-overflow: ellipsis; }
   a:hover { border-color: var(--color-blue-300); color: var(--color-ink); }
   button { border: 0; background: none; color: var(--color-blue-700); cursor: pointer; }

@@ -229,7 +229,7 @@
   .left, .right { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .right { justify-self: end; }
   .dropdown { position: relative; min-width: 0; }
-  .note { font-size: 13px; font-weight: 700; color: var(--color-blue-500); white-space: nowrap; }
+  .note { font-size: 13px; font-weight: 700; color: var(--color-link); white-space: nowrap; }
   .caption { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; }
   .plate-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
   .sign:focus-visible, .me:focus-visible, .tool:focus-visible, .item:focus-visible, .floor:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
@@ -333,7 +333,7 @@
   .room-name { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   button.room-sign { cursor: pointer; transition: transform var(--dur) var(--ease-out); }
   button.room-sign:hover { transform: translateY(-1px); }
-  .room-sign :global(.back) { flex-shrink: 0; align-self: center; color: var(--color-blue-500); }
+  .room-sign :global(.back) { flex-shrink: 0; align-self: center; color: var(--color-link); }
 
   .tool {
     width: 40px; height: 40px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper);
@@ -359,14 +359,14 @@
   }
   .me:hover { transform: rotate(-1deg) translateY(-1px); }
   .me[aria-expanded="true"] { background: var(--color-surface); }
-  .me :global(.chevron) { color: var(--color-blue-500); }
+  .me :global(.chevron) { color: var(--color-link); }
   .av-me {
     width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; background: var(--color-ink); color: var(--color-paper);
     box-shadow: 0 0 0 2px var(--color-accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; overflow: hidden;
   }
   .av-me img { width: 100%; height: 100%; object-fit: cover; }
   .me-text { min-width: 0; }
-  .me .caption { color: var(--color-blue-500); }
+  .me .caption { color: var(--color-link); }
   .me-name { display: block; font-size: 15px; font-weight: 700; white-space: nowrap; }
   .menu {
     position: absolute; right: 0; top: calc(100% + 6px); min-width: 260px; display: flex; flex-direction: column; gap: 2px; padding: 6px;

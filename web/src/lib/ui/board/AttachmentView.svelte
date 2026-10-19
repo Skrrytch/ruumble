@@ -43,9 +43,9 @@
   .thumb:focus-visible, .file:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   .file { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--color-blue-100); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-ink); text-decoration: none; }
   .file:hover { border-color: var(--color-blue-300); }
-  .icon { display: inline-flex; color: var(--color-blue-500); }
+  .icon { display: inline-flex; color: var(--color-link); }
   .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
   .fname { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .size { font-size: 12px; color: var(--color-blue-700); }
-  .dl { display: inline-flex; color: var(--color-blue-500); }
+  .dl { display: inline-flex; color: var(--color-link); }
 </style>

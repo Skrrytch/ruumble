@@ -49,7 +49,7 @@
   .md :global(p) { margin: 0 0 6px; }
   .md :global(h1), .md :global(h2), .md :global(h3) { font-size: 15px; margin: 4px 0 6px; }
   .md :global(ul), .md :global(ol) { margin: 0 0 6px; padding-left: 20px; }
-  .md :global(a) { color: var(--color-blue-500); }
+  .md :global(a) { color: var(--color-link); }
   .md :global(code) { background: var(--color-surface); padding: 0 3px; border-radius: 3px; font-size: 13px; }
   .md :global(pre) { background: var(--color-surface); padding: 8px; border-radius: var(--radius-md); overflow-x: auto; font-size: 12.5px; }
   .md :global(table) { border-collapse: collapse; font-size: 13px; }

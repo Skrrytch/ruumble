@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Changed
+- **Readable links and code.** Links, link chips and strings in code use their own link colour, which stays readable in the dark theme. Comments in code are darker in the light theme and lighter in the dark theme, so they can be read. A code preview that is wider than the card fades out on the right until it is scrolled to the end.
+
 ### Added
 - **Compact board.** "View" in the board's header switches the posts to a compact view: one line per post with the avatar, the message and its reactions; images, files and code become small placeholders that open the post; the bar of actions that appears on hover names the author beside the time. The browser remembers the choice.
 - **Floating board.** "View" in the board's header lets the board float ("Floating" instead of "Integrated") over the floor plan instead of taking its own column. It floats on the side where your own room stays fully visible and changes sides when you move. The browser remembers the choice.

@@ -60,13 +60,13 @@
   .bar :global(svg) { flex-shrink: 0; }
   .title { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .progress { font-size: 12px; font-weight: 700; color: var(--color-blue-700); }
-  .chevron { display: inline-flex; color: var(--color-blue-500); transition: transform 0.15s; }
+  .chevron { display: inline-flex; color: var(--color-link); transition: transform 0.15s; }
   .open .chevron { transform: rotate(180deg); }
   .content { max-height: 40vh; overflow-y: auto; padding: 4px 12px 8px; border-top: 1px solid var(--color-blue-100); }
   footer { display: flex; align-items: center; gap: 8px; padding: 2px 6px 4px 12px; }
   .by { flex: 1; min-width: 0; font-size: 11px; color: var(--color-blue-700); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .link { border: 0; background: none; padding: 4px 0; min-height: 28px; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--color-blue-500); cursor: pointer; }
-  .icon-btn { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-blue-500); cursor: pointer; }
+  .link { border: 0; background: none; padding: 4px 0; min-height: 28px; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--color-link); cursor: pointer; }
+  .icon-btn { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-link); cursor: pointer; }
   .icon-btn:hover { background: var(--color-blue-100); color: var(--color-ink); }
   .bar:focus-visible, .link:focus-visible, .icon-btn:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { .chevron { transition: none; } }

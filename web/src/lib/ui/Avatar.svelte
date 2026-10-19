@@ -91,7 +91,7 @@
   /* without Ruumble (no plugin connected, the rarer case): a small plug at the bottom left, quieter than the state badges */
   .plain {
     position: absolute; left: -5px; bottom: -5px; width: 18px; height: 18px; border-radius: 50%;
-    background: var(--color-paper); border: 1px solid var(--color-blue-300); color: var(--color-blue-500);
+    background: var(--color-paper); border: 1px solid var(--color-blue-300); color: var(--color-link);
     display: flex; align-items: center; justify-content: center;
   }
   .bubble {
