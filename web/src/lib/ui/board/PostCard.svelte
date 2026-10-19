@@ -1,9 +1,16 @@
 <script lang="ts">
   import { copyText } from "../../board/clipboard.ts";
   import Check from "@lucide/svelte/icons/check";
+  import CodeXml from "@lucide/svelte/icons/code-xml";
   import Copy from "@lucide/svelte/icons/copy";
   import Download from "@lucide/svelte/icons/download";
   import Ellipsis from "@lucide/svelte/icons/ellipsis";
+  import File from "@lucide/svelte/icons/file";
+  import FileArchive from "@lucide/svelte/icons/file-archive";
+  import FileMusic from "@lucide/svelte/icons/file-music";
+  import FilePlay from "@lucide/svelte/icons/file-play";
+  import FileText from "@lucide/svelte/icons/file-text";
+  import ImageIcon from "@lucide/svelte/icons/image";
   import Forward from "@lucide/svelte/icons/forward";
   import FaceSlightlySmilingPlus from "@lucide/svelte/icons/face-slightly-smiling-plus";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
@@ -13,10 +20,11 @@
   import PinOff from "@lucide/svelte/icons/pin-off";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import { parseTaskList, type Post, type ReactionKind } from "@ruumble/protocol";
-  import { PREVIEW_LINES, isLong, relativeTime, summarizeReactions, type CopyTarget, type CopyTargets } from "../../board/model.ts";
+  import { PREVIEW_LINES, fileKind, isLong, relativeTime, summarizeReactions, type CopyTarget, type CopyTargets } from "../../board/model.ts";
+  import { renderInline } from "../../board/render.ts";
   import { intlLocale, t } from "../../i18n/index.svelte.ts";
   import { initials } from "../../model/building.ts";
-  import { getFileUrl } from "../../board/context.ts";
+  import { getFileUrl, getTicketLinks } from "../../board/context.ts";
   import LinkList from "./LinkList.svelte";
   import PostBody from "./PostBody.svelte";
   import ReactionPicker from "./ReactionPicker.svelte";
@@ -29,8 +37,10 @@
   /** `ondelete`: from the "…" menu, only offered if the user may delete the post (author or Mumble admin) */
   /** `targets`, `oncopy`: "Copy to room …" in the "…" menu, the rooms per floor (copyTargets) */
   /** `head`: show the author header (first post of a group, postGroups); `next`: the following card continues the group */
-  let { post, now, avatar = null, pinned = false, arrival = null, targets = [], head = true, next = false, onopen, onedit, onreact, ontoggle, onpin, ondelete, oncopy }: {
-    post: Post; now: number; avatar?: string | null; pinned?: boolean; arrival?: "land" | "glow" | null; targets?: CopyTargets; head?: boolean; next?: boolean;
+  /** `compact`: one line per post – avatar (author, date and last edit as its tooltip), message, reactions; attachments
+      and code as small placeholders that open the post */
+  let { post, now, avatar = null, pinned = false, arrival = null, targets = [], head = true, next = false, compact = false, onopen, onedit, onreact, ontoggle, onpin, ondelete, oncopy }: {
+    post: Post; now: number; avatar?: string | null; pinned?: boolean; arrival?: "land" | "glow" | null; targets?: CopyTargets; head?: boolean; next?: boolean; compact?: boolean;
     onopen: (post: Post) => void; onedit: (post: Post) => void; onreact: (post: Post, kind: ReactionKind) => void;
     ontoggle: (post: Post, index: number, done: boolean) => void; onpin: (post: Post) => void; ondelete: (post: Post) => void; oncopy: (post: Post, target: CopyTarget) => void;
   } = $props();
@@ -59,6 +69,23 @@
   const copiedFrom = $derived(
     post.copiedFrom && (post.copiedFrom.authorName === post.authorName ? t().board.copiedFrom(post.copiedFrom.roomName) : t().board.copiedFromBy(post.copiedFrom.roomName, post.copiedFrom.authorName)),
   );
+
+  // compact: what the header and the edit line show otherwise goes into the avatar's tooltip
+  const tickets = getTicketLinks();
+  const info = $derived(
+    [post.authorName, created, copiedFrom, post.updatedByName && `${t().board.editedBy(post.updatedByName)} · ${relativeTime(post.updatedAt, now)}`]
+      .filter(Boolean)
+      .join(" · "),
+  );
+  const FILE_ICONS = { image: ImageIcon, pdf: FileText, text: FileText, archive: FileArchive, audio: FileMusic, video: FilePlay, other: File };
+  // the placeholder: the file's name, or the first line of the code
+  const chip = $derived.by(() => {
+    if (post.kind === "code") return { Icon: CodeXml, label: post.text.split("\n").find((l) => l.trim())?.trim() || t().board.kinds.code, mono: true };
+    if (!post.attachment) return null;
+    const name = post.attachment.name || t().board.fallbackName;
+    return { Icon: post.kind === "image" ? ImageIcon : FILE_ICONS[fileKind(post.attachment.mime, name)], label: name, mono: false };
+  });
+  const caption = $derived(post.attachment && post.text.trim() ? renderInline(post.text, tickets()) : "");
 
   // "…" menu: closes on choice, Escape and a click elsewhere; "Copy to room …" turns it into the list of rooms
   let menuOpen = $state(false);
@@ -106,7 +133,7 @@
 
 <!-- compact: one header line, only for the first post of a group; the actions appear on hover and keyboard focus -->
 <article
-  class="card" class:cont={!head} class:joined={next} class:active={menuOpen || picking || copied}
+  class="card" class:compact class:cont={!head} class:joined={next} class:active={menuOpen || picking || copied}
   class:land={arrival === "land"} class:glow={arrival === "glow"} aria-label={t().board.postBy(post.authorName)}
 >
   <!-- the pin dot is also the handle for "keep on top": it grows into a button on hover and keyboard focus -->
@@ -114,7 +141,28 @@
     <span class="dot" aria-hidden="true"></span>
     <span class="glyph" aria-hidden="true">{#if pinned}<PinOff size={12} />{:else}<Pin size={12} />{/if}</span>
   </button>
-  {#if head}
+  {#if compact}
+    <div class="line">
+      {#if head}
+        <span class="av" class:me={post.mine} role="img" aria-label={info} title={info}>
+          {#if avatar && avatarBroken !== avatar}<img src={avatar} alt="" onerror={() => (avatarBroken = avatar)} />{:else}{initials(post.authorName)}{/if}
+        </span>
+      {:else}
+        <span class="av-space" aria-hidden="true"></span>
+      {/if}
+      <div class="body" class:clamped={long} style:--lines={PREVIEW_LINES}>
+        {#if chip}
+          <!-- the caption: Markdown without HTML, sanitised with DOMPurify (renderInline, render.ts) -->
+          <button type="button" class="chip" class:mono={chip.mono} aria-label={t().board.openItem(chip.label)} title={t().board.openItem(chip.label)} onclick={() => onopen(post)}>
+            <chip.Icon size={14} aria-hidden="true" /><span class="label">{chip.label}</span>
+          </button>{#if caption}{" "}<span class="caption">{@html caption}</span>{/if}
+        {:else}
+          <PostBody {post} ontoggle={(index, done) => ontoggle(post, index, done)} />
+        {/if}
+      </div>
+      {#if tasks || summary.total}<span class="side">{@render badges()}</span>{/if}
+    </div>
+  {:else if head}
     <header>
       <span class="av" class:me={post.mine} aria-hidden="true">
         {#if avatar && avatarBroken !== avatar}<img src={avatar} alt="" onerror={() => (avatarBroken = avatar)} />{:else}{initials(post.authorName)}{/if}
@@ -125,19 +173,21 @@
       {@render badges()}
     </header>
   {/if}
-  <div class="row">
-    <div class="body" class:clamped={long} style:--lines={PREVIEW_LINES}>
-      <PostBody {post} ontoggle={(index, done) => ontoggle(post, index, done)} />
+  {#if !compact}
+    <div class="row">
+      <div class="body" class:clamped={long} style:--lines={PREVIEW_LINES}>
+        <PostBody {post} ontoggle={(index, done) => ontoggle(post, index, done)} />
+      </div>
+      {#if !head && (tasks || summary.total)}<span class="side">{@render badges()}</span>{/if}
     </div>
-    {#if !head && (tasks || summary.total)}<span class="side">{@render badges()}</span>{/if}
-  </div>
-  <!-- outside the clamped body, so links far down in a long log stay one click away (A4) -->
-  {#if post.kind === "code"}<LinkList text={post.text} limit={3} onmore={() => onopen(post)} />{/if}
-  {#if post.updatedByName}
-    <div class="edited">{t().board.editedBy(post.updatedByName)} · {relativeTime(post.updatedAt, now)}</div>
+    <!-- outside the clamped body, so links far down in a long log stay one click away (A4) -->
+    {#if post.kind === "code"}<LinkList text={post.text} limit={3} onmore={() => onopen(post)} />{/if}
+    {#if post.updatedByName}
+      <div class="edited">{t().board.editedBy(post.updatedByName)} · {relativeTime(post.updatedAt, now)}</div>
+    {/if}
   {/if}
   <div class="tools">
-    {#if !head}<span class="stamp" title={created}>{relativeTime(post.createdAt, now)}</span>{/if}
+    {#if !head || compact}<span class="stamp" title={created}>{relativeTime(post.createdAt, now)}</span>{/if}
     <button type="button" class="icon-btn" aria-label={t().board.open} title={t().board.open} onclick={() => onopen(post)}><Maximize2 size={15} aria-hidden="true" /></button>
     <button type="button" class="icon-btn" aria-label={editLabel} title={editLabel} onclick={() => onedit(post)}><Pencil size={15} aria-hidden="true" /></button>
     <button type="button" class="icon-btn react" aria-expanded={picking} aria-label={t().board.react} title={t().board.react} onclick={() => (picking = !picking)}>
@@ -265,6 +315,25 @@
   .side { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
   .side .summary, .side .progress { margin-left: 0; }
   .edited { font-size: 11px; color: var(--color-blue-700); }
+  /* compact: one line per post, less padding; a group's cards join with the smaller gap of the compact list */
+  .card.compact { padding: 4px 8px; }
+  .card.compact.cont { margin-top: -5px; }
+  .line { display: flex; align-items: flex-start; gap: 8px; }
+  .line .av, .av-space { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; }
+  .line .body { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+  .line .body :global(.md p) { margin: 0; }
+  .line .body :global(.tasks label) { min-height: 22px; padding: 0; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px; max-width: 100%; height: 22px; padding: 0 8px; vertical-align: top;
+    border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-ink); font-size: 13px; cursor: pointer;
+  }
+  .chip:hover { border-color: var(--color-ink); background: var(--color-blue-100); }
+  .chip:focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; }
+  .chip :global(svg) { flex-shrink: 0; }
+  .chip .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip.mono .label { font-family: var(--font-mono); font-size: 12px; }
+  .caption :global(code) { background: var(--color-surface); padding: 0 3px; border-radius: 3px; font-size: 13px; }
+  .caption :global(a) { color: var(--color-blue-500); }
   /* the post being pointed at stands out a little, so it is clear what the actions apply to (also within a group) */
   .card:hover, .card:focus-within, .card.active { background: color-mix(in srgb, var(--color-blue-100) 35%, var(--color-paper)); }
   /* actions: float on the bottom edge of the post they belong to, shown on hover, keyboard focus and while a menu or the picker is open */

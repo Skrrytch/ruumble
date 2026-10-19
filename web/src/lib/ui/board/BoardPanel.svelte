@@ -2,9 +2,9 @@
   import ChevronLeft from "@lucide/svelte/icons/chevron-left";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ListFilter from "@lucide/svelte/icons/list-filter";
-  import PictureInPicture2 from "@lucide/svelte/icons/picture-in-picture-2";
   import Pin from "@lucide/svelte/icons/pin";
   import Search from "@lucide/svelte/icons/search";
+  import SlidersHorizontal from "@lucide/svelte/icons/sliders-horizontal";
   import X from "@lucide/svelte/icons/x";
   import type { Post } from "@ruumble/protocol";
   import { untrack } from "svelte";
@@ -50,6 +50,20 @@
     app.boardFilter = f;
     filterOpen = false;
     filterButton?.focus();
+  }
+  // view menu: docked or floating board, normal or compact posts; closes like the filter menu
+  let viewOpen = $state(false);
+  let viewButton = $state<HTMLButtonElement | null>(null);
+  $effect(() => {
+    if (!viewOpen) return;
+    const close = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest(".view")) viewOpen = false; };
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  });
+  function setView(change: () => void): void {
+    change();
+    viewOpen = false;
+    viewButton?.focus();
   }
   function clearNarrowing(): void {
     app.boardFilter = "all";
@@ -155,7 +169,7 @@
 
 <aside id="board-panel" class="board" class:floating={app.boardFloating} class:left={app.boardFloating && app.boardSide === "left"} aria-label={t().board.title} {ondragenter} {ondragover} {ondragleave} {ondrop}>
   {#if dragDepth > 0}<div class="drop" aria-hidden="true">{t().board.dropHere}</div>{/if}
-  <!-- one slim row: search, filter, floating or docked, close. The heading only for screen readers: the room is the user's own -->
+  <!-- one slim row: search, filter, view, close. The heading only for screen readers: the room is the user's own -->
   <header>
     <h2 class="sr-only">{t().board.title}</h2>
     {#if board}
@@ -184,13 +198,30 @@
     {:else}
       <span class="title">{t().board.title}</span>
     {/if}
-    <!-- docked: a column beside the floor plan; floating: over it, on the side that leaves the own room free -->
-    <button
-      type="button" class="tool" class:active={app.boardFloating} aria-pressed={app.boardFloating} aria-label={t().board.float} title={t().board.float}
-      onclick={() => app.toggleBoardFloating()}
-    >
-      <PictureInPicture2 size={18} aria-hidden="true" />
-    </button>
+    <!-- view: docked (a column beside the floor plan) or floating (over it, on the side that leaves the own room free);
+         normal or compact posts -->
+    <div class="view">
+      <button
+        type="button" class="tool" bind:this={viewButton} aria-haspopup="menu" aria-expanded={viewOpen}
+        aria-label={t().board.view} title={t().board.view} onclick={() => (viewOpen = !viewOpen)}
+      >
+        <SlidersHorizontal size={18} aria-hidden="true" />
+      </button>
+      {#if viewOpen}
+        <div class="menu" role="menu" tabindex="-1" aria-label={t().board.view} onkeydown={(e) => { if (e.key === "Escape") { viewOpen = false; viewButton?.focus(); } }}>
+          <div role="group" aria-labelledby="view-placement">
+            <div class="menu-title" id="view-placement">{t().board.viewPlacement}</div>
+            <button type="button" role="menuitemradio" aria-checked={!app.boardFloating} onclick={() => setView(() => app.setBoardFloating(false))} {@attach (el) => el.focus()}>{t().board.docked}</button>
+            <button type="button" role="menuitemradio" aria-checked={app.boardFloating} onclick={() => setView(() => app.setBoardFloating(true))}>{t().board.floating}</button>
+          </div>
+          <div role="group" aria-labelledby="view-posts">
+            <div class="menu-title" id="view-posts">{t().board.viewPosts}</div>
+            <button type="button" role="menuitemradio" aria-checked={!app.boardCompact} onclick={() => setView(() => app.setBoardCompact(false))}>{t().board.normal}</button>
+            <button type="button" role="menuitemradio" aria-checked={app.boardCompact} onclick={() => setView(() => app.setBoardCompact(true))}>{t().board.compact}</button>
+          </div>
+        </div>
+      {/if}
+    </div>
     <button
       type="button" class="tool" aria-label={t().board.hide} title={t().board.withKey(t().board.hide, SHORTCUT_KEYS.toggleBoard)}
       aria-keyshortcuts={SHORTCUT_KEYS.toggleBoard.toUpperCase()} onclick={() => app.closeBoard()}
@@ -237,9 +268,9 @@
       {#if newAbove > 0}
         <button type="button" class="new-above" onclick={showNew}><ArrowUp size={14} aria-hidden="true" />{t().board.newAbove(newAbove)}</button>
       {/if}
-      <div class="list" bind:this={list} onscroll={() => { if (newAbove && !scrolledDown()) newAbove = 0; }}>
+      <div class="list" class:compact={app.boardCompact} bind:this={list} onscroll={() => { if (newAbove && !scrolledDown()) newAbove = 0; }}>
         {#each listed as post, i (post.id)}
-          <PostCard {post} {now} head={groups[i]?.head ?? true} next={groups[i]?.next ?? false} arrival={arrived[post.id] ?? null} avatar={app.avatarOf(post.authorName)} onopen={(p) => { openEditing = false; openId = p.id; }} onedit={(p) => { openEditing = true; openId = p.id; }} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
+          <PostCard {post} {now} compact={app.boardCompact} head={groups[i]?.head ?? true} next={groups[i]?.next ?? false} arrival={arrived[post.id] ?? null} avatar={app.avatarOf(post.authorName)} onopen={(p) => { openEditing = false; openId = p.id; }} onedit={(p) => { openEditing = true; openId = p.id; }} onreact={(p, kind) => app.react(p, kind)} ontoggle={(p, index, done) => app.toggleTask(p, index, done)}
             pinned={post.id === pinnedPost?.id} onpin={pinFromDot} ondelete={(p) => app.deletePost(p.id)} {targets} oncopy={(p, target) => app.copyPost(p, target)} />
         {:else}
           <!-- only the post on top: nothing to say below it -->
@@ -288,7 +319,11 @@
   .tool { position: relative; width: 36px; height: 36px; border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); color: var(--color-ink); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
   .tool.active { border-color: var(--color-ink); background: var(--color-blue-100); }
   .dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--color-ink); }
-  .filter { position: relative; }
+  .filter, .view { position: relative; }
+  .view .menu { min-width: 230px; }
+  .menu-title { padding: 6px 10px 2px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-blue-700); }
+  .menu [role="group"] { display: flex; flex-direction: column; }
+  .menu [role="group"] + [role="group"] { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--color-blue-100); }
   .menu {
     position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; min-width: 150px; display: flex; flex-direction: column; padding: 4px;
     border: 1px solid var(--color-blue-300); border-radius: var(--radius-md); background: var(--color-paper); box-shadow: 0 4px 12px rgb(0 56 105 / 0.15);
@@ -315,6 +350,7 @@
   /* same side spacing as header and input (12 px) */
   /* room at the bottom for the actions floating on the last card's edge */
   .list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 14px 12px 26px; min-height: 0; }
+  .list.compact { gap: 4px; padding-top: 10px; }
   .drop {
     position: absolute; inset: 8px; z-index: 2; display: flex; align-items: center; justify-content: center; pointer-events: none;
     border: 2px dashed var(--color-blue-500); border-radius: var(--radius-md); background: rgb(255 255 255 / 0.85);

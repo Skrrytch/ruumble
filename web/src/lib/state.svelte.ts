@@ -47,8 +47,9 @@ const NUDGE_NOTICE_MS = 30_000;
 
 /** per room: creation time of the newest post the user has seen on its board (only in this browser) */
 const SEEN_KEY = "ruumble.boardSeen";
-/** the board floats over the floor plan instead of taking its own column (only in this browser) */
+/** view of the board, only in this browser: floating over the floor plan instead of its own column; compact posts */
 const FLOATING_KEY = "ruumble.boardFloating";
+const COMPACT_KEY = "ruumble.boardCompact";
 
 export class RuumbleState {
   snapshot = $state<Snapshot | null>(null);
@@ -109,8 +110,10 @@ export class RuumbleState {
   /** play a sound in this browser when someone nudges the own user (ADR-0020), remembered per browser */
   nudgeSound = $state(readNudgeSound());
   /** the board floats over the floor plan (remembered per browser); its side is chosen by the floor plan (model/float.ts) */
-  boardFloating = $state(readFloating());
+  boardFloating = $state(readFlag(FLOATING_KEY));
   boardSide = $state<BoardSide>("right");
+  /** compact posts: one line each, attachments and code as small placeholders (remembered per browser) */
+  boardCompact = $state(readFlag(COMPACT_KEY));
   private boardChannel: number | null = null;
   private boardSeen = readSeen();
 
@@ -268,14 +271,14 @@ export class RuumbleState {
     this.boardOpen = false;
   }
 
-  toggleBoardFloating(): void {
-    this.boardFloating = !this.boardFloating;
-    try {
-      if (this.boardFloating) localStorage.setItem(FLOATING_KEY, "1");
-      else localStorage.removeItem(FLOATING_KEY);
-    } catch {
-      // private mode or similar: then only applies until reload
-    }
+  setBoardFloating(on: boolean): void {
+    this.boardFloating = on;
+    storeFlag(FLOATING_KEY, on);
+  }
+
+  setBoardCompact(on: boolean): void {
+    this.boardCompact = on;
+    storeFlag(COMPACT_KEY, on);
   }
 
   async loadBoard(): Promise<void> {
@@ -737,11 +740,20 @@ function wrap<K extends CareView["kind"]>(kind: K, r: BoardResult<Extract<CareVi
   return r.ok ? { ok: true, value: { kind, value: r.value } as CareView } : r;
 }
 
-function readFloating(): boolean {
+function readFlag(key: string): boolean {
   try {
-    return localStorage.getItem(FLOATING_KEY) === "1";
+    return localStorage.getItem(key) === "1";
   } catch {
     return false;
+  }
+}
+
+function storeFlag(key: string, on: boolean): void {
+  try {
+    if (on) localStorage.setItem(key, "1");
+    else localStorage.removeItem(key);
+  } catch {
+    // private mode or similar: then only applies until reload
   }
 }
 

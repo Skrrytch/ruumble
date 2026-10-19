@@ -70,7 +70,9 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 
 Every room has a board next to the floor plan. It shows the board of the room you are in; the board graphic in your room or the **B** key opens and closes it.
 
-- **Docked or floating**: docked, the board is a column beside the floor plan and the rooms get narrower; floating, it lies over the floor plan. The side is chosen so the own room stays fully visible (`web/src/lib/model/float.ts`); it is measured again when the floor, the people or the window size change, and keeps its side while that still works, so it does not jump. Rooms under the board are reached by hiding it or via the building overview. The choice is remembered in the browser.
+- **View menu** in the header (sliders icon) with two settings, both remembered in the browser:
+- **Docked or floating**: docked, the board is a column beside the floor plan and the rooms get narrower; floating, it lies over the floor plan. The side is chosen so the own room stays fully visible (`web/src/lib/model/float.ts`); it is measured again when the floor, the people or the window size change, and keeps its side while that still works, so it does not jump. Rooms under the board are reached by hiding it or via the building overview.
+- **Normal or compact posts**: compact, every post is one line (a new line only where the text needs it) with less padding: the avatar, the message and the reactions and task progress right after it. Images, files and code are small placeholders (file name or the code's first line) that open the post; author, date, origin of a copy and the last edit are the avatar's tooltip. Several posts by the same person in a row share one avatar.
 
 - **Text** with Markdown (headings, lists, links, tables).
 - **Source code** with syntax highlighting, language detected or chosen, line numbers in the full view, copy button. Pasting multi-line code suggests pinning it as code.

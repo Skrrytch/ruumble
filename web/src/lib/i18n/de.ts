@@ -148,7 +148,14 @@ export const de = {
     /** tooltip with the keyboard shortcut */
     withKey: (label: string, key: string) => `${label} (${key.toUpperCase()})`,
     hide: "Pinnwand ausblenden",
-    float: "Pinnwand schweben lassen",
+    view: "Ansicht",
+    viewPlacement: "Pinnwand",
+    docked: "Neben dem Grundriss",
+    floating: "Schwebend über dem Grundriss",
+    viewPosts: "Beiträge",
+    normal: "Normal",
+    compact: "Kompakt",
+    openItem: (name: string) => `${name} öffnen`,
     /** "…" button on a card */
     moreActions: "Weitere Aktionen",
     dropHere: "Loslassen zum Anheften",
