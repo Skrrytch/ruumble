@@ -51,7 +51,8 @@
     filterOpen = false;
     filterButton?.focus();
   }
-  // view menu: docked or floating board, normal or compact posts; closes like the filter menu
+  // view menu: docked or floating board, normal or compact posts; stays open while choosing, so the effect is visible
+  // and the other setting is one click away; closes on a click elsewhere and Escape
   let viewOpen = $state(false);
   let viewButton = $state<HTMLButtonElement | null>(null);
   $effect(() => {
@@ -60,11 +61,6 @@
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   });
-  function setView(change: () => void): void {
-    change();
-    viewOpen = false;
-    viewButton?.focus();
-  }
   function clearNarrowing(): void {
     app.boardFilter = "all";
     app.boardQuery = "";
@@ -211,13 +207,13 @@
         <div class="menu" role="menu" tabindex="-1" aria-label={t().board.view} onkeydown={(e) => { if (e.key === "Escape") { viewOpen = false; viewButton?.focus(); } }}>
           <div role="group" aria-labelledby="view-placement">
             <div class="menu-title" id="view-placement">{t().board.viewPlacement}</div>
-            <button type="button" role="menuitemradio" aria-checked={!app.boardFloating} onclick={() => setView(() => app.setBoardFloating(false))} {@attach (el) => el.focus()}>{t().board.docked}</button>
-            <button type="button" role="menuitemradio" aria-checked={app.boardFloating} onclick={() => setView(() => app.setBoardFloating(true))}>{t().board.floating}</button>
+            <button type="button" role="menuitemradio" aria-checked={!app.boardFloating} onclick={() => app.setBoardFloating(false)} {@attach (el) => el.focus()}>{t().board.docked}</button>
+            <button type="button" role="menuitemradio" aria-checked={app.boardFloating} onclick={() => app.setBoardFloating(true)}>{t().board.floating}</button>
           </div>
           <div role="group" aria-labelledby="view-posts">
             <div class="menu-title" id="view-posts">{t().board.viewPosts}</div>
-            <button type="button" role="menuitemradio" aria-checked={!app.boardCompact} onclick={() => setView(() => app.setBoardCompact(false))}>{t().board.normal}</button>
-            <button type="button" role="menuitemradio" aria-checked={app.boardCompact} onclick={() => setView(() => app.setBoardCompact(true))}>{t().board.compact}</button>
+            <button type="button" role="menuitemradio" aria-checked={!app.boardCompact} onclick={() => app.setBoardCompact(false)}>{t().board.normal}</button>
+            <button type="button" role="menuitemradio" aria-checked={app.boardCompact} onclick={() => app.setBoardCompact(true)}>{t().board.compact}</button>
           </div>
         </div>
       {/if}

@@ -3,11 +3,14 @@ import { expect, test, type Page } from "@playwright/test";
 const board = (page: Page) => page.getByRole("complementary", { name: "Board" });
 /** picks an entry of the board's view menu */
 async function view(page: Page, name: string): Promise<void> {
-  await board(page).getByRole("button", { name: "View" }).click();
+  const button = board(page).getByRole("button", { name: "View" });
+  if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
   await board(page).getByRole("menuitemradio", { name }).click();
+  await page.keyboard.press("Escape"); // the menu stays open after a choice
 }
 const checked = async (page: Page, name: string) => {
-  await board(page).getByRole("button", { name: "View" }).click();
+  const button = board(page).getByRole("button", { name: "View" });
+  if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
   const value = await board(page).getByRole("menuitemradio", { name }).getAttribute("aria-checked");
   await page.keyboard.press("Escape");
   return value;
