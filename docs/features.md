@@ -70,6 +70,8 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 
 Every room has a board next to the floor plan. It shows the board of the room you are in; the board graphic in your room or the **B** key opens and closes it.
 
+- **Docked or floating**: docked, the board is a column beside the floor plan and the rooms get narrower; floating, it lies over the floor plan. The side is chosen so the own room stays fully visible (`web/src/lib/model/float.ts`); it is measured again when the floor, the people or the window size change, and keeps its side while that still works, so it does not jump. Rooms under the board are reached by hiding it or via the building overview. The choice is remembered in the browser.
+
 - **Text** with Markdown (headings, lists, links, tables).
 - **Source code** with syntax highlighting, language detected or chosen, line numbers in the full view, copy button. Pasting multi-line code suggests pinning it as code.
 - **Images**: paste, drag and drop or paper clip. Preview in the card, full-screen view with zoom, pan and download.

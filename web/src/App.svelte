@@ -1,7 +1,9 @@
 <script lang="ts">
   import Unplug from "@lucide/svelte/icons/unplug";
+  import { untrack } from "svelte";
   import type { MockAdapter } from "./lib/adapter/mock.ts";
   import { FEW_ROOMS, ownPlace } from "./lib/model/building.ts";
+  import { floatSide } from "./lib/model/float.ts";
   import type { RuumbleState } from "./lib/state.svelte.ts";
   import DebugPanel from "./lib/ui/DebugPanel.svelte";
   import FloorPlan from "./lib/ui/FloorPlan.svelte";
@@ -23,10 +25,35 @@
 
   const building = $derived(app.building);
   const floor = $derived(app.floor);
-  // few rooms: the open board gets more width
+  // few rooms: the open board gets more width (not when it floats over the floor plan)
   const fewRooms = $derived(
-    app.boardOpen && !app.readonly && !!floor && !floor.lock && floor.rooms.length > 0 && floor.rooms.length <= FEW_ROOMS,
+    app.boardOpen && !app.boardFloating && !app.readonly && !!floor && !floor.lock && floor.rooms.length > 0 && floor.rooms.length <= FEW_ROOMS,
   );
+
+  // floating board: on the side where the own room stays fully visible. Measured again when the floor or the people
+  // change, when the window resizes and when the rooms have finished resizing (they animate their width).
+  let plan = $state<HTMLElement | null>(null);
+  $effect(() => {
+    if (!plan || !app.boardOpen || !app.boardFloating || app.readonly) return;
+    void [app.floor, app.snapshot];
+    const el = plan;
+    const measure = () => {
+      const board = el.querySelector<HTMLElement>("#board-panel");
+      const room = el.querySelector<HTMLElement>(".floorplan .mine");
+      // the board keeps a wall's width of distance to the room
+      const width = (board?.offsetWidth ?? 0) + parseFloat(getComputedStyle(el).paddingLeft);
+      app.boardSide = floatSide(room?.getBoundingClientRect() ?? null, el.getBoundingClientRect(), width, untrack(() => app.boardSide));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    el.addEventListener("transitionend", measure);
+    el.addEventListener("scroll", measure, true); // a wide floor plan scrolls sideways
+    return () => {
+      window.removeEventListener("resize", measure);
+      el.removeEventListener("transitionend", measure);
+      el.removeEventListener("scroll", measure, true);
+    };
+  });
 
   // the tab says where one is: "Let's talk · Ruumble"; without an own place just "Ruumble"
   $effect(() => {
@@ -81,7 +108,7 @@
     <!-- top bar instead of an elevator column: the floor plan gets the full width -->
     <TopBar {app} {building} {floor} />
 
-    <div class="plan" class:few={fewRooms}>
+    <div class="plan" class:few={fewRooms} bind:this={plan}>
       {#if floor}
         <!-- also when vacant: if the user is on a locked floor, its notice appears there -->
         <FloorPlan
@@ -139,7 +166,7 @@
   /* floor plan: walls = 4 px dark blue as gap */
   .app { --plan-min-height: calc(var(--room-min-top) + var(--corridor-height) + var(--room-min-bottom) + 4 * var(--wall)); }
   .plan {
-    flex: 1 1 auto; min-height: var(--plan-min-height); padding: var(--wall); background: var(--color-ink);
+    position: relative; flex: 1 1 auto; min-height: var(--plan-min-height); padding: var(--wall); background: var(--color-ink);
     display: flex; gap: var(--wall);
   }
   .vacancy, .screen {

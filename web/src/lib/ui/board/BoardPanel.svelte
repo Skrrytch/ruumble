@@ -1,6 +1,8 @@
 <script lang="ts">
+  import ChevronLeft from "@lucide/svelte/icons/chevron-left";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ListFilter from "@lucide/svelte/icons/list-filter";
+  import PictureInPicture2 from "@lucide/svelte/icons/picture-in-picture-2";
   import Pin from "@lucide/svelte/icons/pin";
   import Search from "@lucide/svelte/icons/search";
   import X from "@lucide/svelte/icons/x";
@@ -151,9 +153,9 @@
   }
 </script>
 
-<aside id="board-panel" class="board" aria-label={t().board.title} {ondragenter} {ondragover} {ondragleave} {ondrop}>
+<aside id="board-panel" class="board" class:floating={app.boardFloating} class:left={app.boardFloating && app.boardSide === "left"} aria-label={t().board.title} {ondragenter} {ondragover} {ondragleave} {ondrop}>
   {#if dragDepth > 0}<div class="drop" aria-hidden="true">{t().board.dropHere}</div>{/if}
-  <!-- one slim row: search, filter, close. The heading only for screen readers: the room is the user's own -->
+  <!-- one slim row: search, filter, floating or docked, close. The heading only for screen readers: the room is the user's own -->
   <header>
     <h2 class="sr-only">{t().board.title}</h2>
     {#if board}
@@ -182,11 +184,18 @@
     {:else}
       <span class="title">{t().board.title}</span>
     {/if}
+    <!-- docked: a column beside the floor plan; floating: over it, on the side that leaves the own room free -->
+    <button
+      type="button" class="tool" class:active={app.boardFloating} aria-pressed={app.boardFloating} aria-label={t().board.float} title={t().board.float}
+      onclick={() => app.toggleBoardFloating()}
+    >
+      <PictureInPicture2 size={18} aria-hidden="true" />
+    </button>
     <button
       type="button" class="tool" aria-label={t().board.hide} title={t().board.withKey(t().board.hide, SHORTCUT_KEYS.toggleBoard)}
       aria-keyshortcuts={SHORTCUT_KEYS.toggleBoard.toUpperCase()} onclick={() => app.closeBoard()}
     >
-      <ChevronRight size={20} />
+      {#if app.boardFloating && app.boardSide === "left"}<ChevronLeft size={20} />{:else}<ChevronRight size={20} />{/if}
     </button>
   </header>
   {#if board && narrowed}
@@ -264,6 +273,12 @@
   .board { --board-bg: color-mix(in srgb, var(--color-blue-100) 45%, var(--color-paper)); position: relative; flex-shrink: 0;
     /* half of the width beyond --board-grow-from (100cqw = the app's content width, i.e. without its 2 × 32 px padding) */
     width: calc(var(--board-width) + max(0px, (100cqw - (var(--board-grow-from) - 64px)) / 2)); display: flex; flex-direction: column; background: var(--board-bg); min-height: 0; }
+  /* floating over the floor plan, framed by a wall like a room */
+  .board.floating {
+    position: absolute; z-index: 4; top: var(--wall); bottom: var(--wall); right: var(--wall);
+    box-shadow: 0 0 0 var(--wall) var(--color-ink), 0 12px 32px rgb(0 20 45 / 0.35);
+  }
+  .board.floating.left { right: auto; left: var(--wall); }
   header { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--color-blue-300); }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .title { flex: 1; font-weight: 700; }

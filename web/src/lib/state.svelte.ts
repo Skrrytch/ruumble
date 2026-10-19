@@ -7,6 +7,7 @@ import type { BoardErrorCode, BoardResult, ConnectionState, MumbleAdapter, PairE
 import { formatSize, newestPost, parseSeen, unseenPosts, type BoardFilter, type CopyTarget } from "./board/model.ts";
 import type { CareTarget } from "./care/model.ts";
 import { t } from "./i18n/index.svelte.ts";
+import type { BoardSide } from "./model/float.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type BuildOptions, type Building, type Floor } from "./model/building.ts";
 import { playNudgeSound, readNudgeSound, storeNudgeSound } from "./nudge.ts";
 
@@ -46,6 +47,8 @@ const NUDGE_NOTICE_MS = 30_000;
 
 /** per room: creation time of the newest post the user has seen on its board (only in this browser) */
 const SEEN_KEY = "ruumble.boardSeen";
+/** the board floats over the floor plan instead of taking its own column (only in this browser) */
+const FLOATING_KEY = "ruumble.boardFloating";
 
 export class RuumbleState {
   snapshot = $state<Snapshot | null>(null);
@@ -105,6 +108,9 @@ export class RuumbleState {
   statusError = $state<BoardErrorCode | null>(null);
   /** play a sound in this browser when someone nudges the own user (ADR-0020), remembered per browser */
   nudgeSound = $state(readNudgeSound());
+  /** the board floats over the floor plan (remembered per browser); its side is chosen by the floor plan (model/float.ts) */
+  boardFloating = $state(readFloating());
+  boardSide = $state<BoardSide>("right");
   private boardChannel: number | null = null;
   private boardSeen = readSeen();
 
@@ -260,6 +266,16 @@ export class RuumbleState {
 
   closeBoard(): void {
     this.boardOpen = false;
+  }
+
+  toggleBoardFloating(): void {
+    this.boardFloating = !this.boardFloating;
+    try {
+      if (this.boardFloating) localStorage.setItem(FLOATING_KEY, "1");
+      else localStorage.removeItem(FLOATING_KEY);
+    } catch {
+      // private mode or similar: then only applies until reload
+    }
   }
 
   async loadBoard(): Promise<void> {
@@ -719,6 +735,14 @@ function saveFile(blob: Blob, name: string): void {
 
 function wrap<K extends CareView["kind"]>(kind: K, r: BoardResult<Extract<CareView, { kind: K }>["value"]>): BoardResult<CareView> {
   return r.ok ? { ok: true, value: { kind, value: r.value } as CareView } : r;
+}
+
+function readFloating(): boolean {
+  try {
+    return localStorage.getItem(FLOATING_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
 function readSeen(): Record<string, number> {

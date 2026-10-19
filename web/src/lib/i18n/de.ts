@@ -148,6 +148,7 @@ export const de = {
     /** tooltip with the keyboard shortcut */
     withKey: (label: string, key: string) => `${label} (${key.toUpperCase()})`,
     hide: "Pinnwand ausblenden",
+    float: "Pinnwand schweben lassen",
     /** "…" button on a card */
     moreActions: "Weitere Aktionen",
     dropHere: "Loslassen zum Anheften",
