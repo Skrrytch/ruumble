@@ -619,6 +619,10 @@
                   },
                   "ruumble": {
                     "type": "boolean"
+                  },
+                  "person": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{16}$"
                   }
                 },
                 "required": [
@@ -832,6 +836,209 @@
             "type",
             "session",
             "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "tube"
+            },
+            "message": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "from": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{16}$"
+                    },
+                    "to": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{16}$"
+                    },
+                    "fromName": {
+                      "type": "string"
+                    },
+                    "toName": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "kind": {
+                      "type": "string",
+                      "const": "text"
+                    },
+                    "text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "from",
+                    "to",
+                    "fromName",
+                    "toName",
+                    "at",
+                    "kind",
+                    "text"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "from": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{16}$"
+                    },
+                    "to": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{16}$"
+                    },
+                    "fromName": {
+                      "type": "string"
+                    },
+                    "toName": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "kind": {
+                      "type": "string",
+                      "const": "invite"
+                    },
+                    "channelId": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "channelName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "from",
+                    "to",
+                    "fromName",
+                    "toName",
+                    "at",
+                    "kind",
+                    "channelId",
+                    "channelName"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "from": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{16}$"
+                    },
+                    "to": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{16}$"
+                    },
+                    "fromName": {
+                      "type": "string"
+                    },
+                    "toName": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "kind": {
+                      "type": "string",
+                      "const": "reaction"
+                    },
+                    "target": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "reaction": {
+                      "type": "string",
+                      "enum": [
+                        "agree",
+                        "disagree",
+                        "looking",
+                        "thinking",
+                        "wait",
+                        "done",
+                        "broken",
+                        "unclear",
+                        "important",
+                        "idea",
+                        "release",
+                        "deal",
+                        "happy",
+                        "sad",
+                        "applause",
+                        "congrats",
+                        "birthday",
+                        "break",
+                        "cheers"
+                      ]
+                    },
+                    "on": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "from",
+                    "to",
+                    "fromName",
+                    "toName",
+                    "at",
+                    "kind",
+                    "target",
+                    "reaction",
+                    "on"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "message"
           ],
           "additionalProperties": false
         }

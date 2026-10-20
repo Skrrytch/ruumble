@@ -2,7 +2,7 @@
  * Mediation between plugins and web UIs (ADR-0001, -0003, -0004, -0005, -0007, -0017).
  * Transport-independent: connections are just objects with `send` and `close`.
  */
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   PROTOCOL_VERSION,
   PluginToBridge,
@@ -54,9 +54,12 @@ export interface Viewer {
   channelId: number;
 }
 
-/** a person reachable through their plugin (personOf) */
+/** a person reachable through their plugin (personOf, personById) */
 export interface Person {
   certHash: string;
+  /** stable name in the snapshot (personIdOf) */
+  personId: string;
+  session: number;
   name: string;
   channelId: number;
   /** deafened by themselves or by the server */
@@ -71,6 +74,8 @@ export interface Person {
 interface PluginEntry {
   conn: Conn<BridgeToPlugin>;
   certHash: string;
+  /** personIdOf(certHash), shown in the snapshot */
+  personId: string;
   session: number;
   /** Mumble client and plugin as reported by the plugin (operations, compatibility) */
   mumbleVersion: string;
@@ -181,11 +186,23 @@ export class Hub {
    * plugin (Mumble log) and their own web UIs (nudge, ADR-0020); null without a plugin
    */
   personOf(session: number): Person | null {
-    const user = this.state?.users.find((u) => u.session === session);
-    const plugin = user && [...this.plugins.values()].find((p) => p.session === session);
-    if (!user || !plugin) return null;
+    const plugin = [...this.plugins.values()].find((p) => p.session === session);
+    return plugin ? this.person(plugin) : null;
+  }
+
+  /** the same, by the stable name from the snapshot (tube mail, ADR-0021) */
+  personById(personId: string): Person | null {
+    const plugin = [...this.plugins.values()].find((p) => p.personId === personId);
+    return plugin ? this.person(plugin) : null;
+  }
+
+  private person(plugin: PluginEntry): Person | null {
+    const user = this.state?.users.find((u) => u.session === plugin.session);
+    if (!user) return null;
     return {
       certHash: plugin.certHash,
+      personId: plugin.personId,
+      session: plugin.session,
       name: user.name,
       channelId: user.channel,
       deaf: user.selfDeaf || user.deaf,
@@ -276,7 +293,7 @@ export class Hub {
           }
           if (previous && previous.conn !== conn) previous.conn.close(4001, "replaced");
           if (entry && entry.certHash !== msg.certHash) this.removePlugin(entry);
-          entry = { conn, certHash: msg.certHash, session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unknown", pluginVersion: msg.pluginVersion, locale: msg.locale ?? "de", remoteAddress };
+          entry = { conn, certHash: msg.certHash, personId: personIdOf(msg.certHash), session: msg.session, mumbleVersion: msg.mumbleVersion ?? "unknown", pluginVersion: msg.pluginVersion, locale: msg.locale ?? "de", remoteAddress };
           this.plugins.set(msg.certHash, entry);
           const pairUrl = msg.paired ? undefined : `${this.opts.publicUrl ?? baseUrl}/pair?code=${this.opts.pairing.createCode(msg.certHash, name)}`;
           conn.send(pairUrl ? { v, type: "welcome", pairUrl } : { v, type: "welcome" });
@@ -407,17 +424,18 @@ export class Hub {
   private publicUsers(): Snapshot["users"] {
     const s = this.state;
     if (!s) return [];
-    const withPlugin = new Set<number>();
+    const withPlugin = new Map<number, string>();
     const statusOf = new Map<number, UserStatus>();
     for (const p of this.plugins.values()) {
-      withPlugin.add(p.session);
+      withPlugin.set(p.session, p.personId);
       const status = this.opts.statusOf?.(p.certHash);
       if (status) statusOf.set(p.session, status);
     }
     // addresses never leave the service
     return s.users.map(({ address: _address, ...u }) => {
       const status = statusOf.get(u.session);
-      return { ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null, ...(status ? { status } : {}), ...(withPlugin.has(u.session) ? { ruumble: true } : {}) };
+      const person = withPlugin.get(u.session);
+      return { ...u, avatar: this.opts.avatarVersion?.(u.userId) ?? null, ...(status ? { status } : {}), ...(person ? { ruumble: true, person } : {}) };
     });
   }
 
@@ -471,6 +489,14 @@ export class Hub {
   get pluginCount(): number {
     return this.plugins.size;
   }
+}
+
+/**
+ * The stable name of a person in the snapshot (tube mail, ADR-0021): a hash of the certificate hash, so web UIs can
+ * keep conversations across reconnects without learning the certificate hash itself.
+ */
+export function personIdOf(certHash: string): string {
+  return createHash("sha256").update(`ruumble-person:${certHash}`).digest("hex").slice(0, 16);
 }
 
 /** normalise IPv4-in-IPv6 (::ffff:1.2.3.4 → 1.2.3.4); neither source includes ports */

@@ -59,6 +59,14 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 - They get a line in their Mumble log ("Anna nudged you and would like your attention.", in their language) and, in Ruumble, a notice with two short tones from the browser, which deafening does not silence. Browsers play sound only after the page was clicked once.
 - "Sound when nudged" in the user menu switches the tones off for this browser; the notice shows either way. Nothing is stored.
 
+### Tube mail
+
+- **Private messages** between two people who use Ruumble, wherever they are in the building ([ADR-0021](decisions/0021-tube-mail.md)). Start from the person card (hover someone with Ruumble: "Send tube mail") or the directory board (**H**: the capsule beside a person, or **P** on them).
+- A window at the bottom right with **one tab per person**. Its head shows where the other one is right now, their status and **Go there**; **Come over!** (door button) invites them to your own room, and they can follow with one click. Messages take the board's quick reactions (A1).
+- New messages outside the conversation in view show a notice at the top right with **Reply**; the capsule in the top bar counts the unread ones. Texts and invitations also go as a line to the recipient's Mumble log, so they see them without an open Ruumble tab.
+- **P** opens and closes the window, **comma** and **full stop** switch tabs, **Escape** collapses it into a small station.
+- The service only passes messages on and keeps nothing. Each browser keeps a conversation for **24 hours after its last message**; "Forget history" removes it at once, and revoking the browser's key removes them all. Up to 2,000 characters, 30 messages per minute.
+
 ### Moving, mute and deafen
 
 - Double-click a room to move there, or Enter / Space on the focused room; a single click does nothing. Clicking a floor in the elevator only changes the view; "go to my floor" jumps back.
@@ -163,7 +171,7 @@ Tested versions: see [operations](operations.md#requirements).
 
 ### What Mumble does not allow
 
-- **Reading or writing the chat:** the plugin API cannot, and Ice would need the write secret and would also deliver all private messages. Ruumble complements the Mumble chat instead.
+- **Reading or writing the chat:** the plugin API cannot, and Ice would need the write secret and would also deliver all private messages. Ruumble complements the Mumble chat instead, with its own tube mail between people who use Ruumble (ADR-0021).
 - **Buttons, menus or clickable links in the Mumble client:** the plugin API has no UI; plugin log lines are plain text.
 - **Playing sounds from the plugin:** possible with plugin API 1.0 (`playSample`; 1.2 only adds a volume), but not used: it would need a plugin release and a sound file in the bundle. Sounds come from the browser (nudge, ADR-0020).
 
@@ -177,6 +185,7 @@ Tested versions: see [operations](operations.md#requirements).
 | B – Status line | done (Unreleased), kept by the service instead of the Mumble comment (ADR-0018) |
 | C – Knocking | idea, decision open |
 | Nudge a deafened person in the own room | done (Unreleased, ADR-0020); a sound from the plugin is the next step if needed |
+| Tube mail: private messages between two people | done (Unreleased, ADR-0021); not accepting tube mail from someone, a sound, browser notifications are possible next steps |
 | F – More controls | idea, decision open |
 | G – "Door closed" | dropped (2026-10-03): Mumble has no knocking |
 | A1 – Quick reactions | done (0.10.0) |

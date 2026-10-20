@@ -14,6 +14,7 @@
     ontoggleboard,
     ontend,
     onnudge,
+    ontube,
   }: {
     floor: Floor;
     readonly?: boolean;
@@ -27,6 +28,8 @@
     ontend?: (target: { kind: "room" | "floor"; channelId: number }) => void;
     /** nudge a deafened person in the own room (ADR-0020) */
     onnudge?: (user: UserView) => void;
+    /** send someone tube mail (ADR-0021) */
+    ontube?: (user: UserView) => void;
   } = $props();
   const tendRoom = (channelId: number) => (ontend ? () => ontend({ kind: "room", channelId }) : undefined);
   const tendFloor = $derived(ontend ? () => ontend({ kind: "floor", channelId: floor.channelId }) : undefined);
@@ -70,14 +73,14 @@
       pending={pendingChannel === floor.channelId}
       {talking}
       {readonly}
-      {onjoin} {onnudge}
+      {onjoin} {onnudge} {ontube}
       ontend={tendFloor}
     />
   {:else}
     <div class="track" style:width={width > 1 ? `${width * 100}%` : undefined}>
       <div class="row top">
         {#each rows.top as room (room.channelId)}
-          <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {onnudge} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
+          <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {onnudge} {ontube} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
         {/each}
       </div>
       <SpaceButton
@@ -88,12 +91,12 @@
         pending={pendingChannel === floor.channelId}
         {talking}
         {readonly}
-        {onjoin} {onnudge}
+        {onjoin} {onnudge} {ontube}
         ontend={tendFloor}
       />
       <div class="row bottom">
         {#each rows.bottom as room (room.channelId)}
-          <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {onnudge} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
+          <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {onnudge} {ontube} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
         {/each}
       </div>
     </div>

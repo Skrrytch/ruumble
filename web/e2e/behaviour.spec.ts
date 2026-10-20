@@ -280,7 +280,7 @@ test.describe("Status (B)", () => {
     await expect(dialog).toHaveCount(0);
     await expect(button).toHaveAttribute("aria-pressed", "true");
     await expect(button).toHaveAttribute("title", "My status: Reviewing the release (S)");
-    await expect(page.getByRole("img", { name: /^Anna \(you\), .*Status: Reviewing the release \(until \d\d:\d\d\)$/ })).toBeVisible();
+    await expect(page.getByRole("img", { name: /^Anna \(you\), .*Status: Reviewing the release \(until (\w+ )?\d\d:\d\d\)$/ })).toBeVisible();
 
     await button.click();
     await expect(dialog.getByText("Current")).toBeVisible();
@@ -387,7 +387,7 @@ test.describe("Tab title and shortcuts", () => {
   test("? lists the shortcuts, also from the user menu", async ({ page }) => {
     await page.keyboard.press("?");
     const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
-    const rows: [string, string][] = [["B", "Show and hide the board"], ["H", "Building overview"], ["S", "My status"], ["?", "This list"], ["Esc", "Close a dialog"]];
+    const rows: [string, string][] = [["B", "Show and hide the board"], ["H", "Building overview"], ["S", "My status"], ["P", "Open and close tube mail"], [",", "Tube mail: previous tab"], [".", "Tube mail: next tab"], ["?", "This list"], ["Esc", "Close a dialog, collapse tube mail"]];
     for (const [key, what] of rows) {
       await expect(dialog.getByText(key, { exact: true })).toBeVisible();
       await expect(dialog.getByText(what, { exact: true })).toBeVisible();

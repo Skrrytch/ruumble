@@ -17,6 +17,8 @@ Someone who has deafened themselves in Mumble hears nothing: no voice, and no Mu
 | **API** | `POST /api/nudge` `{ session }` → 204, errors `not-paired`, `invalid` (oneself), `not-found` (unknown or without plugin), `not-in-room`, `not-deaf` (409, new), `rate-limited` (`bridge/src/nudge.ts`). |
 | **Storage** | None. Nothing is logged or kept. |
 
+Current state (2026-10-20): the card is now the person card of every person with Ruumble (ADR-0021); it shows "Nudge" only under the rules above, next to "Send tube mail".
+
 ## Rejected options
 - **A sound from the plugin (`playSample`).** Available since plugin API 1.0 (1.2 only adds a volume), and Mumble's audio output does not check for deafen, so it would probably be heard. It needs a plugin release, a sound file in the bundle and a live test; the browser sound needs none of it. Kept as the next step if people without an open Ruumble tab should hear a nudge.
 - **Nudging from anywhere in the building.** Unwanted: a nudge is the tap on the shoulder of someone next to you, not a call across the building.

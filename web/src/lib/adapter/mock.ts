@@ -7,17 +7,30 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, NUDGE_INTERVAL_MS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, STATUS_LIMITS, StatusRequest, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type StatusView, type TalkingState, type TicketLinks, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, NUDGE_INTERVAL_MS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, STATUS_LIMITS, StatusRequest, TubeSend, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type StatusView, type TalkingState, type TicketLinks, type TubeMessage, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
 import vacant from "@ruumble/protocol/fixtures/vacant.json";
-import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus, StatusApi } from "./types.ts";
+import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus, StatusApi, TubeApi } from "./types.ts";
 
 const MINUTE = 60_000;
 
 /** Attachment in the mock: content in memory, address as blob or data URL */
 interface MockFile { attachment: Omit<Uploaded, "name">; blob?: Blob; url: string }
+
+/** like the service's stable name of a person (ADR-0021), here from the user name: two 32-bit FNV-1a hashes */
+export function mockPersonId(name: string): string {
+  const fnv = (seed: number) => {
+    let h = seed;
+    for (const ch of name) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+    return h.toString(16).padStart(8, "0");
+  };
+  return fnv(2166136261) + fnv(0x811c9dc5 ^ 0x5bd1e995);
+}
+
+/** what the others answer in the mock, in turn */
+const TUBE_REPLIES = ["Sounds good!", "Give me five minutes.", "Thanks, will do.", "Sure, why not?"];
 
 const hexId = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
 
@@ -160,6 +173,8 @@ export interface MockOptions {
   talking?: boolean;
   /** false: this browser is not paired yet; code 123456 pairs it (ADR-0012) */
   paired?: boolean;
+  /** the others answer tube mail and come over when invited (ADR-0021) */
+  replies?: boolean;
 }
 
 /** code that pairs in the mock */
@@ -481,7 +496,7 @@ export class MockAdapter implements MumbleAdapter {
   };
 
   constructor(fixture: FixtureName | Snapshot = "sample", opts: MockOptions = {}) {
-    this.opts = { confirmMs: 250, rejectMs: 3000, talking: true, paired: true, ...opts };
+    this.opts = { confirmMs: 250, rejectMs: 3000, talking: true, paired: true, replies: true, ...opts };
     this.paired = this.opts.paired;
     this.state = clone(typeof fixture === "string" ? FIXTURES[fixture]! : fixture);
     if (!this.state.self) this.plugin = "disconnected";
@@ -508,6 +523,8 @@ export class MockAdapter implements MumbleAdapter {
 
   stop(): void {
     if (this.talkTimer) clearInterval(this.talkTimer);
+    for (const timer of this.tubeTimers) clearTimeout(timer);
+    this.tubeTimers.clear();
     if (this.pendingJoin) clearTimeout(this.pendingJoin.timer);
     if (this.statusTimer) clearTimeout(this.statusTimer);
     this.events = null;
@@ -526,6 +543,54 @@ export class MockAdapter implements MumbleAdapter {
     if (last !== undefined && Date.now() - last < NUDGE_INTERVAL_MS) return { ok: false, error: "rate-limited" };
     this.nudged.set(session, Date.now());
     return { ok: true, value: true };
+  }
+
+  /** like the service (ADR-0021): to someone else whose plugin is connected; the answer also comes as an event */
+  private tubeSeq = 1;
+  private tubeReply = 0;
+  private tubeTimers = new Set<ReturnType<typeof setTimeout>>();
+  readonly tube: TubeApi = {
+    send: async (request) => {
+      const me = this.me();
+      if (this.plugin === "disconnected" || !me) return { ok: false, error: "not-paired" };
+      const parsed = TubeSend.safeParse(request);
+      const other = parsed.success ? this.state.users.find((u) => u.ruumble && u.session !== me.session && mockPersonId(u.name) === parsed.data.to) : undefined;
+      if (!parsed.success || parsed.data.to === mockPersonId(me.name)) return { ok: false, error: "invalid" };
+      if (!other) return { ok: false, error: "not-found" };
+      const send = parsed.data;
+      const head = { id: `tube-${this.tubeSeq++}`, from: mockPersonId(me.name), to: send.to, fromName: me.name, toName: other.name, at: Date.now() };
+      const message: TubeMessage =
+        send.kind === "text" ? { ...head, kind: "text", text: send.text }
+        : send.kind === "invite" ? { ...head, kind: "invite", channelId: me.channel, channelName: this.channelName(me.channel) }
+        : { ...head, kind: "reaction", target: send.target, reaction: send.reaction, on: send.on };
+      this.events?.tube(message);
+      if (this.opts.replies && message.kind === "text") this.later(1500, () => this.tubeFrom(other.session, TUBE_REPLIES[this.tubeReply++ % TUBE_REPLIES.length]!));
+      if (this.opts.replies && message.kind === "invite") {
+        this.later(1200, () => this.tubeFrom(other.session, "On my way!"));
+        this.later(2400, () => {
+          other.channel = message.channelId;
+          this.emit();
+        });
+      }
+      return { ok: true, value: message };
+    },
+  };
+
+  private later(ms: number, fn: () => void): void {
+    const timer = setTimeout(() => {
+      this.tubeTimers.delete(timer);
+      fn();
+    }, ms);
+    this.tubeTimers.add(timer);
+  }
+
+  /** tube mail from someone else to the own user: a text, or an invitation to their room */
+  private tubeFrom(session: number, text: string | null): void {
+    const me = this.me();
+    const other = this.state.users.find((u) => u.session === session);
+    if (!me || !other || this.plugin === "disconnected") return;
+    const head = { id: `tube-${this.tubeSeq++}`, from: mockPersonId(other.name), to: mockPersonId(me.name), fromName: other.name, toName: me.name, at: Date.now() };
+    this.events?.tube(text === null ? { ...head, kind: "invite", channelId: other.channel, channelName: this.channelName(other.channel) } : { ...head, kind: "text", text });
   }
 
   async versions(): Promise<Versions> {
@@ -606,6 +671,13 @@ export class MockAdapter implements MumbleAdapter {
     const me = this.me();
     const other = me && this.state.users.find((u) => u.session !== me.session && u.channel === me.channel);
     if (other) this.events?.nudge(other.session, other.name);
+  }
+
+  /** someone with Ruumble elsewhere in the building sends the own user tube mail, or invites them to their room */
+  tubeMe(invite = false): void {
+    const me = this.me();
+    const other = me && this.state.users.find((u) => u.session !== me.session && u.channel !== me.channel && u.ruumble);
+    if (other) this.tubeFrom(other.session, invite ? null : `Hi ${me.name}, do you have a minute?`);
   }
 
   /** The next switch is not confirmed despite access permission (as with the rate limit, S2). */
@@ -806,6 +878,7 @@ export class MockAdapter implements MumbleAdapter {
     const me = state.users.find((u) => u.session === state.self?.session);
     if (me && this.plugin === "connected") me.ruumble = true;
     else if (me) delete me.ruumble;
+    for (const u of state.users) if (u.ruumble) u.person = mockPersonId(u.name);
     this.events?.snapshot(state);
   }
 }

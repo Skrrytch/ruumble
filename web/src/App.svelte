@@ -20,6 +20,8 @@
   import BuildingOverview from "./lib/ui/overview/BuildingOverview.svelte";
   import ShortcutsDialog from "./lib/ui/ShortcutsDialog.svelte";
   import StatusDialog from "./lib/ui/StatusDialog.svelte";
+  import TubePanel from "./lib/ui/tube/TubePanel.svelte";
+  import TubeToast from "./lib/ui/tube/TubeToast.svelte";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
 
@@ -66,7 +68,8 @@
 
   // keyboard shortcuts (lib/shortcuts.ts): only in the building view; the board needs an own user
   function onkeydown(e: KeyboardEvent): void {
-    if (!building || app.connection !== "connected") return;
+    // handled already, e.g. P on a person of the directory board, which closes the overview on the way
+    if (!building || app.connection !== "connected" || e.defaultPrevented) return;
     const shortcut = shortcutOf(e, !!document.querySelector("dialog[open]"));
     if (shortcut === "toggleBoard" && !app.readonly) {
       e.preventDefault();
@@ -80,6 +83,12 @@
     } else if (shortcut === "overview") {
       e.preventDefault();
       app.openOverview();
+    } else if (shortcut === "tube" && app.me) {
+      e.preventDefault();
+      app.tube.toggle();
+    } else if ((shortcut === "tubePrev" || shortcut === "tubeNext") && app.tube.panel === "open") {
+      e.preventDefault();
+      app.tube.cycle(shortcut === "tubeNext" ? 1 : -1);
     }
   }
 </script>
@@ -122,6 +131,7 @@
           ontoggleboard={() => app.toggleBoard()}
           ontend={(target) => app.openCare(target)}
           onnudge={(user) => void app.nudge(user)}
+          ontube={(user) => { if (user.person) app.tube.open(user.person, user.name); }}
         />
       {:else}
         <div class="vacancy" role="status">
@@ -137,6 +147,10 @@
     {#if app.statusOpen}<StatusDialog {app} />{/if}
     {#if app.helpOpen}<ShortcutsDialog onclose={() => (app.helpOpen = false)} />{/if}
     {#if app.overviewOpen && building}<BuildingOverview {app} {building} />{/if}
+    {#if app.me}
+      <TubePanel {app} />
+      <TubeToast {app} />
+    {/if}
   {/if}
 
   {#if app.connection === "reconnecting" && building}

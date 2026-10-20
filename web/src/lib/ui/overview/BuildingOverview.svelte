@@ -39,7 +39,8 @@
       />
     </div>
     <Directory {groups} floors={building.floors} {highlight} onhover={(s) => (highlight = s)} onvisit={(p) => app.visit(p.channelId)} onfloor={(f) => app.viewFloor(f)}
-      onnudge={(p) => { app.closeOverview(); void app.nudge(p.user); }} />
+      onnudge={(p) => { app.closeOverview(); void app.nudge(p.user); }}
+      ontube={(p) => { if (!p.user.person) return; app.closeOverview(); app.tube.open(p.user.person, p.user.name); }} />
   </div>
 </dialog>
 

@@ -16,6 +16,8 @@ export const PROTOCOL_VERSION = 1 as const;
 const v = z.literal(PROTOCOL_VERSION);
 const channelId = z.number().int().min(0);
 const session = z.number().int().min(1);
+/** stable, opaque name of a person who uses Ruumble: derived from the certificate hash, never the hash itself (ADR-0021) */
+const personId = z.string().regex(/^[0-9a-f]{16}$/);
 
 // ---------------------------------------------------------------- Raw Mumble data
 
@@ -66,6 +68,8 @@ export const User = z.object({
   status: UserStatus.optional(),
   /** uses Ruumble: the person's plugin is connected to this service; missing: no */
   ruumble: z.boolean().optional(),
+  /** stable name of the person while their plugin is connected; tube mail is addressed and kept by it (ADR-0021) */
+  person: personId.optional(),
 });
 export type User = z.infer<typeof User>;
 
@@ -424,6 +428,38 @@ export const NUDGE_INTERVAL_MS = 60_000;
 export const NudgeRequest = z.object({ session });
 export type NudgeRequest = z.infer<typeof NudgeRequest>;
 
+// ---------------------------------------------------------------- Tube mail (REST under /api/tube, ADR-0021)
+
+/** tube mail: longest text, messages per person and minute; conversations are forgotten in the browser this long after their last message */
+export const TUBE_LIMITS = { textChars: 2000, perMinute: 30, keepMs: 24 * 60 * 60 * 1000 } as const;
+const tubeId = z.string().min(1).max(64);
+
+/** POST /api/tube: a text, an invitation to the own room ("come over") or a quick reaction (A1) to a message */
+export const TubeSend = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("text"), to: personId, text: z.string().trim().min(1).max(TUBE_LIMITS.textChars) }),
+  z.object({ kind: z.literal("invite"), to: personId }),
+  z.object({ kind: z.literal("reaction"), to: personId, target: tubeId, reaction: ReactionKind, on: z.boolean() }),
+]);
+export type TubeSend = z.infer<typeof TubeSend>;
+
+const tubeHead = {
+  id: tubeId,
+  from: personId,
+  to: personId,
+  /** names of both at the time of sending */
+  fromName: z.string(),
+  toName: z.string(),
+  at: z.number().int(),
+};
+/** a message as the service hands it to the web UIs of both people (answer to POST /api/tube, and the event `tube`) */
+export const TubeMessage = z.discriminatedUnion("kind", [
+  z.object({ ...tubeHead, kind: z.literal("text"), text: z.string().min(1).max(TUBE_LIMITS.textChars) }),
+  /** "come over": the sender's channel when they sent it */
+  z.object({ ...tubeHead, kind: z.literal("invite"), channelId, channelName: z.string() }),
+  z.object({ ...tubeHead, kind: z.literal("reaction"), target: tubeId, reaction: ReactionKind, on: z.boolean() }),
+]);
+export type TubeMessage = z.infer<typeof TubeMessage>;
+
 /** POST /api/board/posts/:id/copy: copy a post of the own room to another room the user may enter */
 export const CopyRequest = z.object({ channelId });
 export type CopyRequest = z.infer<typeof CopyRequest>;
@@ -472,7 +508,7 @@ export const BoardError = z.object({
 
 export type BoardErrorCode = z.infer<typeof BoardError>["error"];
 
-/** HTTP status of each REST error (board, care, keys, maintenance, status, nudge); one table for the whole service */
+/** HTTP status of each REST error (board, care, keys, maintenance, status, nudge, tube mail); one table for the whole service */
 export const API_ERROR_STATUS: Record<BoardErrorCode, number> = {
   "not-paired": 401, "not-in-room": 403, "no-board-here": 404, "not-found": 404, forbidden: 403, "too-large": 413, "bad-type": 415, invalid: 400, "rate-limited": 429, "not-deaf": 409,
 };
@@ -488,6 +524,9 @@ export const UiBoard = z.object({ v, type: z.literal("board"), channelId });
 /** WebSocket: someone in the room wants the attention of this (deafened) user; only to that user's web UIs (ADR-0020) */
 export const UiNudge = z.object({ v, type: z.literal("nudge"), session, name: z.string() });
 
+/** WebSocket: tube mail from or to the own user, to the web UIs of both people only; nothing is kept (ADR-0021) */
+export const UiTube = z.object({ v, type: z.literal("tube"), message: TubeMessage });
+
 export const UiTalking = z.object({ v, type: z.literal("talking"), session, state: TalkingState });
 export const UiResult = z.object({ v, type: z.literal("result"), id: commandId, result: CommandResult });
 export const UiStatus = z.object({
@@ -498,7 +537,7 @@ export const UiStatus = z.object({
   preview: z.boolean().optional(),
 });
 
-export const BridgeToUi = z.discriminatedUnion("type", [Snapshot, UiTalking, UiResult, UiStatus, UiBoard, UiNudge]);
+export const BridgeToUi = z.discriminatedUnion("type", [Snapshot, UiTalking, UiResult, UiStatus, UiBoard, UiNudge, UiTube]);
 export type BridgeToUi = z.infer<typeof BridgeToUi>;
 
 // ---------------------------------------------------------------- Helpers

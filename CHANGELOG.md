@@ -6,6 +6,12 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Added
+- **Tube mail.** Private messages between two people who use Ruumble, wherever they are in the building. Hover someone with Ruumble and choose "Send tube mail", or use the capsule beside them in the directory board (H), also P on the focused person. A window at the bottom right has one tab per person and shows where the other one is right now, with their status and "Go there"; "Come over!" invites them to your room, and messages take the board's quick reactions. New messages show a notice with "Reply", the capsule in the top bar counts the unread ones, and texts also appear in the recipient's Mumble log. P opens and closes the window, comma and full stop switch tabs, Escape collapses it. The service only passes messages on; your browser keeps a conversation for 24 hours after its last message, "Forget history" removes it at once, and revoking the browser's key removes them all (ADR-0021).
+
+### Changed
+- **Person card for everyone with Ruumble.** Hovering someone who uses Ruumble shows a card with their states and "Send tube mail" instead of the plain tooltip, shortly after the pointer rests on them; "Nudge" stays limited to deafened people in your room.
+
 ## [0.29.0] - 2026-10-19
 
 Plugin 0.5.0 (unchanged). A dark mode, a board that floats over the floor plan or shows its posts compactly, and rooms that can be entered with the keyboard again.

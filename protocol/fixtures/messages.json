@@ -110,6 +110,51 @@
       "v": 1,
       "type": "board",
       "channelId": 3
+    },
+    {
+      "v": 1,
+      "type": "tube",
+      "message": {
+        "id": "m1",
+        "from": "a1b2c3d4e5f60718",
+        "to": "0f1e2d3c4b5a6978",
+        "fromName": "Anna",
+        "toName": "Ben",
+        "at": 1790000000000,
+        "kind": "text",
+        "text": "Got a minute?"
+      }
+    },
+    {
+      "v": 1,
+      "type": "tube",
+      "message": {
+        "id": "m2",
+        "from": "0f1e2d3c4b5a6978",
+        "to": "a1b2c3d4e5f60718",
+        "fromName": "Ben",
+        "toName": "Anna",
+        "at": 1790000060000,
+        "kind": "invite",
+        "channelId": 3,
+        "channelName": "Let's talk"
+      }
+    },
+    {
+      "v": 1,
+      "type": "tube",
+      "message": {
+        "id": "m3",
+        "from": "a1b2c3d4e5f60718",
+        "to": "0f1e2d3c4b5a6978",
+        "fromName": "Anna",
+        "toName": "Ben",
+        "at": 1790000090000,
+        "kind": "reaction",
+        "target": "m2",
+        "reaction": "agree",
+        "on": true
+      }
     }
   ],
   "invalid": [
@@ -139,6 +184,34 @@
       "type": "result",
       "id": "c-1",
       "result": "maybe"
+    },
+    {
+      "v": 1,
+      "type": "tube",
+      "message": {
+        "id": "m4",
+        "from": "not-a-person",
+        "to": "0f1e2d3c4b5a6978",
+        "fromName": "Anna",
+        "toName": "Ben",
+        "at": 1,
+        "kind": "text",
+        "text": "x"
+      }
+    },
+    {
+      "v": 1,
+      "type": "tube",
+      "message": {
+        "id": "m5",
+        "from": "a1b2c3d4e5f60718",
+        "to": "0f1e2d3c4b5a6978",
+        "fromName": "Anna",
+        "toName": "Ben",
+        "at": 1,
+        "kind": "text",
+        "text": ""
+      }
     }
   ]
 }

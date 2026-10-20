@@ -40,6 +40,15 @@
      The lantern that opens it in the building overview (ADR-0019) uses navy, sky and blue-100. */
   --color-steel: #c9d6e3;
 
+  /* Tube mail (ADR-0021): ONLY the bubbles of the other person in a conversation (tint) and the line under their tab
+     (line); six hues apart from the reserved ones, picked per person (tube/model.ts tintOf). Ink text on every tint. */
+  --tube-1: #dff1ef; --tube-1-line: #2f8f8a;
+  --tube-2: #f8e9df; --tube-2-line: #b8643a;
+  --tube-3: #ece6f6; --tube-3-line: #7a5fb0;
+  --tube-4: #ecf0dc; --tube-4-line: #6f7f2c;
+  --tube-5: #f7e3ea; --tube-5-line: #b0476b;
+  --tube-6: #e3ebf5; --tube-6-line: #3d6fa8;
+
   /* Blues */
   --color-blue-700: #00508c;   /* secondary text (contrast ≥ 4.5:1 on white) */
   --color-blue-500: #0078be;   /* avatar fill of other users, floor kicker */
@@ -118,6 +127,13 @@
   --color-blue-50: #222a35;
 
   --raster-dot: #2b323c;
+
+  --tube-1: #213a3a; --tube-1-line: #5fb8b0;
+  --tube-2: #3b2d25; --tube-2-line: #d88f62;
+  --tube-3: #302a41; --tube-3-line: #a58ad6;
+  --tube-4: #31351f; --tube-4-line: #a3b55a;
+  --tube-5: #3b2630; --tube-5-line: #d77b9b;
+  --tube-6: #253140; --tube-6-line: #7aa3d6;
 
   --color-board: #26262a;
   --color-card: #2f3036;

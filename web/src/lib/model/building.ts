@@ -38,6 +38,8 @@ export interface UserView {
   recording: boolean;
   /** uses Ruumble: the person's plugin is connected to the service */
   usesRuumble: boolean;
+  /** stable name while their plugin is connected: tube mail goes there (ADR-0021); null without plugin */
+  person: string | null;
   /** status set in Ruumble (B, ADR-0018); `until` null: no expiry */
   status: { text: string; until: number | null } | null;
 }
@@ -236,8 +238,14 @@ export function userViewOf(u: User, selfSession: number | null, avatarUrl: Build
     idleMinutes: u.idleMinutes,
     recording: u.recording,
     usesRuumble: u.ruumble ?? false,
+    person: u.person ?? null,
     status: u.status ?? null,
   };
+}
+
+/** may the own user send this person tube mail (ADR-0021): someone else who uses Ruumble, while the own one does */
+export function canTube(user: UserView, selfConnected: boolean): boolean {
+  return selfConnected && !user.isSelf && user.person !== null;
 }
 
 /** may the own user nudge this person (ADR-0020): someone else in the own room who is deafened and uses Ruumble */

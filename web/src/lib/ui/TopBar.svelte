@@ -15,6 +15,7 @@
   import Mic from "@lucide/svelte/icons/mic";
   import MicOff from "@lucide/svelte/icons/mic-off";
   import Moon from "@lucide/svelte/icons/moon";
+  import Pill from "@lucide/svelte/icons/pill";
   import UserIcon from "@lucide/svelte/icons/user";
   import Users from "@lucide/svelte/icons/users";
   import { locale, setLocale, t } from "../i18n/index.svelte.ts";
@@ -46,6 +47,7 @@
   const muted = $derived(me ? me.selfMute || me.selfDeaf : false);
   const deaf = $derived(me?.selfDeaf ?? false);
   const myStatus = $derived(me?.status ?? null);
+  const unread = $derived(app.tube.unread);
   const myAvatar = $derived(me ? app.avatarOf(me.name) : null);
   let avatarBroken = $state<string | null>(null); // URL that could not be loaded → initials
   const hidden = $derived(building.self?.kind === "hidden");
@@ -170,6 +172,15 @@
   </div>
 
   <div class="right">
+    <!-- tube mail (ADR-0021): opens its window; the number of unread messages on it -->
+    <button
+      type="button" class="tool tube" aria-pressed={app.tube.panel === "open"} aria-keyshortcuts="P"
+      aria-label={unread ? `${t().tube.title}, ${t().tube.unread(unread)}` : t().tube.title} title={`${t().tube.title} (P)`}
+      disabled={!me} onclick={() => app.tube.toggle()}
+    >
+      <Pill size={20} />
+      {#if unread}<span class="count" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>{/if}
+    </button>
     <!-- the own status (B, ADR-0018): filled while one is set, its text in the tooltip -->
     <button type="button" class="tool" aria-pressed={!!myStatus} aria-label={t().status.title} title={`${myStatus ? t().status.current(myStatus.text) : t().status.set} (S)`} disabled={!me} onclick={() => void app.openStatus()}>
       {#if myStatus}<MessageSquareText size={20} />{:else}<MessageSquare size={20} />{/if}
@@ -343,6 +354,13 @@
   .tool:hover { background: var(--color-blue-100); }
   .tool[aria-pressed="true"] { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-paper); }
   .tool:disabled { opacity: 0.5; cursor: not-allowed; }
+  .tube { position: relative; }
+  .tube .count {
+    position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; box-sizing: border-box;
+    background: var(--color-ink); color: var(--color-paper); box-shadow: 0 0 0 2px var(--color-paper);
+    font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums;
+  }
+  .tube[aria-pressed="true"] .count { background: var(--color-paper); color: var(--color-ink); box-shadow: 0 0 0 2px var(--color-ink); }
   .tool:disabled:hover { background: var(--color-paper); }
 
   /* name badge: white card with a yellow band, hanging on a clip */

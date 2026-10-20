@@ -2,8 +2,8 @@
  * LiveAdapter: WebSocket to the Ruumble service (`/ws/ui`, ADR-0007).
  * Reconnects with increasing delay after a drop. Results are matched to commands by ID.
  */
-import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, StatusView, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
-import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, KeysApi, MaintenanceApi, BoardResult, MumbleAdapter, PairApi, PairResult, StatusApi } from "./types.ts";
+import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, StatusView, TubeMessage, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, KeysApi, MaintenanceApi, BoardResult, MumbleAdapter, PairApi, PairResult, StatusApi, TubeApi } from "./types.ts";
 
 /** REST of the board; the pairing cookie is sent automatically (same-origin) */
 async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit = {}): Promise<BoardResult<T>> {
@@ -65,6 +65,10 @@ const liveStatus: StatusApi = {
   load: () => call(StatusView, "/api/status"),
   set: (text, minutes) => call(StatusView, "/api/status", { method: "PUT", body: JSON.stringify({ text, minutes }) }),
   clear: () => call(StatusView, "/api/status", { method: "DELETE" }),
+};
+
+const liveTube: TubeApi = {
+  send: (message) => call(TubeMessage, "/api/tube", { method: "POST", body: JSON.stringify(message) }),
 };
 
 async function download(url: string): Promise<BoardResult<{ stream: ReadableStream<Uint8Array>; name: string }>> {
@@ -142,6 +146,7 @@ export class LiveAdapter implements MumbleAdapter {
   readonly keys: KeysApi = liveKeys;
   readonly maintenance: MaintenanceApi = liveMaintenance;
   readonly status: StatusApi = liveStatus;
+  readonly tube: TubeApi = liveTube;
   readonly pairing: PairApi = {
     request: async () => {
       const r = await pairCall("/api/pair/request");
@@ -214,6 +219,8 @@ export class LiveAdapter implements MumbleAdapter {
           return this.events.board(msg.channelId);
         case "nudge":
           return this.events.nudge(msg.session, msg.name);
+        case "tube":
+          return this.events.tube(msg.message);
         case "result": {
           const p = this.pending.get(msg.id);
           if (p) {
