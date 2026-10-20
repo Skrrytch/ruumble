@@ -199,7 +199,7 @@ describe("tube mail in the web UI (state)", () => {
     expect(sent[3]).toMatchObject({ on: false });
   });
 
-  it("the window: toggle, collapse, tabs, close and forget", () => {
+  it("the window: toggle, tabs, close and forget", () => {
     const { tube } = setup();
     tube.toggle();
     expect(tube.panel).toBe("open");
@@ -210,10 +210,10 @@ describe("tube mail in the web UI (state)", () => {
     expect(tube.active).toBe(BEN);
     tube.cycle(1);
     expect(tube.active).toBe(ANNA);
-    tube.collapse();
-    expect(tube.panel).toBe("collapsed");
-    tube.expand();
+    tube.toggle();
+    tube.toggle();
     expect(tube.panel).toBe("open");
+    expect(tube.active).toBe(ANNA); // where one left off
     tube.close(ANNA);
     expect(tube.active).toBe(BEN);
     tube.forget(BEN);

@@ -1,7 +1,7 @@
 <script lang="ts">
   import BellRing from "@lucide/svelte/icons/bell-ring";
-  import MessageSquareText from "@lucide/svelte/icons/message-square-text";
-  import Pill from "@lucide/svelte/icons/pill";
+  import Tag from "@lucide/svelte/icons/tag";
+  import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import Search from "@lucide/svelte/icons/search";
   import { onActivateKey } from "../activate.ts";
   import { t } from "../../i18n/index.svelte.ts";
@@ -12,7 +12,7 @@
   // The directory board in the lobby ("Haustafel", ADR-0019): a dark plate like the floor sign, per floor its badge,
   // name and the people with their room and status; a search over all of it. A person is a button to go to them,
   // a floor heading shows that floor; Enter in the search goes to the first match. A deafened person in the own room
-  // has a bell beside them that nudges them (ADR-0020); everyone who uses Ruumble a capsule for tube mail, also P on
+  // has a bell beside them that nudges them (ADR-0020); everyone who uses Ruumble the conversation symbol for tube mail, also P on
   // the focused person (ADR-0021).
   let {
     groups,
@@ -93,12 +93,12 @@
                     <span class="place">{p.place}</span>
                   </span>
                   {#if p.user.status}
-                    <span class="pstatus"><MessageSquareText size={11} aria-hidden="true" />{p.user.status.text}</span>
+                    <span class="pstatus"><Tag size={11} aria-hidden="true" />{p.user.status.text}</span>
                   {/if}
                 </button>
                 {#if p.canTube}
                   <button type="button" class="side" aria-label={t().tube.label(p.user.name)} title={`${t().tube.label(p.user.name)} (P)`} onclick={() => ontube(p)}>
-                    <Pill size={16} aria-hidden="true" />
+                    <MessagesSquare size={16} aria-hidden="true" />
                   </button>
                 {/if}
                 {#if p.canNudge}

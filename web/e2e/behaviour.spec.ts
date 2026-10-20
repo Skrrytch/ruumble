@@ -231,7 +231,7 @@ test.describe("Status (B)", () => {
 
   test("others' status shows as a bubble with its text", async ({ page }) => {
     await expect(page.getByRole("img", { name: /^Clara, .*Status: Focus time, please write$/ })).toBeVisible();
-    await expect(page.locator(".bubble[title='Status: Focus time, please write']")).toBeVisible();
+    await expect(page.locator(".status-tag[title='Status: Focus time, please write']")).toBeVisible();
   });
 
   test("close to the limit a counter shows how much is left", async ({ page }) => {
@@ -387,7 +387,7 @@ test.describe("Tab title and shortcuts", () => {
   test("? lists the shortcuts, also from the user menu", async ({ page }) => {
     await page.keyboard.press("?");
     const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
-    const rows: [string, string][] = [["B", "Show and hide the board"], ["H", "Building overview"], ["S", "My status"], ["P", "Open and close tube mail"], [",", "Tube mail: previous tab"], [".", "Tube mail: next tab"], ["?", "This list"], ["Esc", "Close a dialog, collapse tube mail"]];
+    const rows: [string, string][] = [["B", "Show and hide the board"], ["H", "Building overview"], ["S", "My status"], ["P", "Open and close tube mail"], [",", "Tube mail: previous tab"], [".", "Tube mail: next tab"], ["?", "This list"], ["Esc", "Close a dialog or tube mail"]];
     for (const [key, what] of rows) {
       await expect(dialog.getByText(key, { exact: true })).toBeVisible();
       await expect(dialog.getByText(what, { exact: true })).toBeVisible();

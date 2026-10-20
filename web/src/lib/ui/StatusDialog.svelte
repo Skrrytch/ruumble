@@ -1,13 +1,13 @@
 <script lang="ts">
-  import MessageSquareText from "@lucide/svelte/icons/message-square-text";
-  import MessageSquareX from "@lucide/svelte/icons/message-square-x";
+  import Eraser from "@lucide/svelte/icons/eraser";
+  import Tag from "@lucide/svelte/icons/tag";
   import { STATUS_DEFAULT_MINUTES, STATUS_DURATIONS, STATUS_LIMITS } from "@ruumble/protocol";
   import { t } from "../i18n/index.svelte.ts";
   import { statusErrorText, type RuumbleState } from "../state.svelte.ts";
   import { expiryText } from "../status.ts";
   import CareShell from "./care/CareShell.svelte";
 
-  // My status (B, ADR-0018), from the speech bubble in the top bar: a free text and an expiry (2 hours by default, or
+  // My status (B, ADR-0018), from the tag in the top bar: a free text and an expiry (2 hours by default, or
   // never); the current status on top with an icon that clears it; below, the texts used last for a quick choice
   // (they fill the field).
   let { app }: { app: RuumbleState } = $props();
@@ -49,7 +49,7 @@
   houseRule={t().status.rule}
   status={app.statusError && app.status ? { text: statusErrorText(app.statusError), error: true } : null}
 >
-  {#snippet glyph()}<span class="glyph"><MessageSquareText size={30} /></span>{/snippet}
+  {#snippet glyph()}<span class="glyph"><Tag size={30} /></span>{/snippet}
   <p class="intro">{t().status.intro}</p>
   {#if !app.status}
     {#if app.statusError}<p class="error" role="alert">{statusErrorText(app.statusError)}</p>{:else}<p class="intro">{t().status.loading}</p>{/if}
@@ -57,7 +57,7 @@
     {#if current}
       <div class="now">
         <p><span class="caption">{t().status.now}</span><span class="text">{current.text}</span><span class="until">{expiryText(current.until)}</span></p>
-        <button type="button" class="clear" aria-label={t().status.clear} title={t().status.clear} disabled={app.statusBusy} onclick={() => void app.saveStatus(null)}><MessageSquareX size={20} /></button>
+        <button type="button" class="clear" aria-label={t().status.clear} title={t().status.clear} disabled={app.statusBusy} onclick={() => void app.saveStatus(null)}><Eraser size={20} /></button>
       </div>
     {/if}
     <form onsubmit={submit}>

@@ -16,6 +16,8 @@ Item B of the feature list: a short status such as "In a meeting until 2 pm", sh
 | **API** | `GET /api/status` → `{ current, recent }`, `PUT /api/status` `{ text, minutes }`, `DELETE /api/status` (`bridge/src/status.ts`). |
 | **Web UI** | A speech bubble at the top right of the avatar, its text and expiry in the tooltip and in the avatar's label. A speech-bubble button in the top bar, before mute, opens "My status": text, expiry, set, clear, and the recent texts as a quick choice that fills the field. |
 
+Current state (2026-10-20): the symbol is a tag instead of a speech bubble, at the avatar and in the top bar; the speech bubbles now stand for tube mail (ADR-0021).
+
 ## Rejected options
 - **Mumble comment via the plugin:** does not reach the server (see Context).
 - **Mumble comment via Ice:** needs the write secret, against ADR-0002.

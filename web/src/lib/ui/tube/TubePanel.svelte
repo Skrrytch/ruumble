@@ -1,9 +1,8 @@
 <script lang="ts">
-  import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import DoorOpen from "@lucide/svelte/icons/door-open";
   import Eraser from "@lucide/svelte/icons/eraser";
-  import MessageSquareText from "@lucide/svelte/icons/message-square-text";
-  import Pill from "@lucide/svelte/icons/pill";
+  import Tag from "@lucide/svelte/icons/tag";
+  import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import SendHorizontal from "@lucide/svelte/icons/send-horizontal";
   import SmilePlus from "@lucide/svelte/icons/smile-plus";
   import X from "@lucide/svelte/icons/x";
@@ -22,7 +21,7 @@
   // Tube mail (ADR-0021): a window docked at the bottom right, over the floor plan and the board, with one tab per
   // person. The head of a conversation says where the other one is right now (from the snapshot), with the way to go
   // there; below the messages, the reactions of the board (A1) and the invitation to the own room ("come over").
-  // Collapsed, it is a small station with the people of the open tabs.
+  // Closed, the button in the top bar counts what is unread, and P brings the window back.
   let { app }: { app: RuumbleState } = $props();
 
   const tube = $derived(app.tube);
@@ -104,33 +103,26 @@
     }
   }
 
-  /** Escape anywhere in the window collapses it (the reaction picker closes itself first) */
+  /** Escape anywhere in the window closes it, the focus goes back to its button (the reaction picker closes first) */
   function onpanelkey(e: KeyboardEvent): void {
     if (e.key !== "Escape") return;
     e.stopPropagation();
-    if (picker) picker = null;
-    else tube.collapse();
+    if (picker) {
+      picker = null;
+      return;
+    }
+    tube.closePanel();
+    document.querySelector<HTMLElement>("[data-tube-button]")?.focus();
   }
 </script>
 
-{#if tube.panel === "collapsed"}
-  <!-- the station: the people of the open tabs, and how much is unread -->
-  <button type="button" class="station" aria-label={tube.unread ? `${t().tube.expand}, ${t().tube.unread(tube.unread)}` : t().tube.expand} title={`${t().tube.expand} (P)`} onclick={() => tube.expand()}>
-    <Pill size={20} aria-hidden="true" />
-    <span class="stack" aria-hidden="true">
-      {#each tube.tabs.slice(0, 4) as c (c.person)}<span class="mini">{initials(c.name)}</span>{/each}
-      {#if tube.tabs.length > 4}<span class="mini more">+{tube.tabs.length - 4}</span>{/if}
-    </span>
-    {#if tube.unread}<span class="badge" aria-hidden="true">{tube.unread}</span>{/if}
-  </button>
-{:else if tube.panel === "open"}
+{#if tube.panel === "open"}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <section class="tube tint-{tint}" aria-label={t().tube.title} bind:this={panel} onkeydown={onpanelkey}>
     <header class="bar">
-      <Pill size={18} aria-hidden="true" />
+      <MessagesSquare size={18} aria-hidden="true" />
       <h2>{t().tube.title}</h2>
-      <button type="button" class="bar-btn" aria-label={t().tube.collapse} title={`${t().tube.collapse} (Esc)`} onclick={() => tube.collapse()}><ChevronDown size={18} /></button>
-      <button type="button" class="bar-btn" aria-label={t().common.close} title={`${t().common.close} (P)`} onclick={() => tube.closePanel()}><X size={18} /></button>
+      <button type="button" class="bar-btn" aria-label={t().common.close} title={`${t().common.close} (P, Esc)`} onclick={() => tube.closePanel()}><X size={18} /></button>
     </header>
 
     {#if tube.tabs.length}
@@ -164,7 +156,7 @@
             <span class="who-name">{conversation.name}</span>
             <span class="who-place"><DoorOpen size={13} aria-hidden="true" />{place}</span>
             {#if partner?.entry.user.status}
-              <span class="who-status"><MessageSquareText size={11} aria-hidden="true" />{partner.entry.user.status.text}</span>
+              <span class="who-status"><Tag size={11} aria-hidden="true" />{partner.entry.user.status.text}</span>
             {/if}
           </div>
           {#if partner?.entry.canGo}
@@ -239,14 +231,14 @@
           <p class="hint">
             <span><kbd>{SHORTCUT_KEYS.tube.toUpperCase()}</kbd> {t().tube.keyToggle}</span>
             <span><kbd>{SHORTCUT_KEYS.tubePrev}</kbd> <kbd>{SHORTCUT_KEYS.tubeNext}</kbd> {t().tube.keyTabs}</span>
-            <span><kbd>Esc</kbd> {t().tube.keyCollapse}</span>
+            <span><kbd>Esc</kbd> {t().tube.keyClose}</span>
           </p>
           <p class="hint">{t().tube.keep}</p>
         </div>
       </div>
     {:else}
       <div class="empty">
-        <Pill size={36} aria-hidden="true" />
+        <MessagesSquare size={36} aria-hidden="true" />
         <strong>{t().tube.none}</strong>
         <span>{t().tube.noneHint}</span>
       </div>
@@ -271,7 +263,7 @@
     animation: rise 200ms var(--ease-out) both;
   }
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { .tube, .station { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .tube, .row { animation: none; } }
 
   .bar { display: flex; align-items: center; gap: 8px; height: 44px; flex: none; padding: 0 6px 0 14px; background: var(--color-wall); color: var(--color-white); }
   h2 { margin: 0; flex: 1; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; }
@@ -365,20 +357,10 @@
 
   .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px; text-align: center; color: var(--color-blue-700); font-size: 13px; line-height: 1.5; }
   .empty strong { color: var(--color-ink); font-size: 15px; }
-  .empty :global(svg) { color: var(--color-blue-300); transform: rotate(-35deg); }
+  .empty :global(svg) { color: var(--color-blue-300); }
 
-  .station {
-    position: fixed; right: 32px; bottom: 24px; z-index: 20; display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px 0 14px;
-    border: 0; border-radius: 26px; background: var(--color-wall); color: var(--color-white); cursor: pointer;
-    box-shadow: 0 8px 24px rgb(0 56 105 / 0.3); animation: rise 200ms var(--ease-out) both;
-  }
-  .station:hover { transform: translateY(-1px); }
-  .stack { display: flex; padding-left: 6px; }
-  .stack .mini { width: 26px; height: 26px; margin-left: -6px; box-shadow: 0 0 0 2px var(--color-wall); }
-  .stack .more { background: var(--color-blue-100); color: var(--color-ink); }
-  .station .badge { background: var(--color-white); color: var(--color-navy); }
 
-  .bar-btn:focus-visible, .tab-btn:focus-visible, .tab-close:focus-visible, .go:focus-visible, .icon-btn:focus-visible, .chip:focus-visible, .round:focus-visible, .station:focus-visible {
+  .bar-btn:focus-visible, .tab-btn:focus-visible, .tab-close:focus-visible, .go:focus-visible, .icon-btn:focus-visible, .chip:focus-visible, .round:focus-visible {
     outline: 3px solid var(--color-sky); outline-offset: 1px;
   }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

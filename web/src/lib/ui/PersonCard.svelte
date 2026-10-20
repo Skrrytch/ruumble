@@ -5,7 +5,7 @@
   // the scrolling floor plan clips it. The avatar sits inside the room's button, so the card is placed beside it
   // rather than in it; the keyboard way is the directory board (H).
   import BellRing from "@lucide/svelte/icons/bell-ring";
-  import Pill from "@lucide/svelte/icons/pill";
+  import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import { t } from "../i18n/index.svelte.ts";
   import type { UserView } from "../model/building.ts";
   import { personLabel } from "../status.ts";
@@ -61,7 +61,7 @@
   <span class="actions">
     {#if ontube}
       <button type="button" class="act" aria-label={t().tube.label(user.name)} onclick={() => ontube(user)}>
-        <Pill size={16} aria-hidden="true" />{t().tube.button}
+        <MessagesSquare size={16} aria-hidden="true" />{t().tube.button}
       </button>
     {/if}
     {#if onnudge}

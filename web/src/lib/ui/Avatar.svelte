@@ -1,6 +1,6 @@
 <script lang="ts">
   import HeadphoneOff from "@lucide/svelte/icons/headphone-off";
-  import MessageSquareText from "@lucide/svelte/icons/message-square-text";
+  import Tag from "@lucide/svelte/icons/tag";
   import MicOff from "@lucide/svelte/icons/mic-off";
   import Unplug from "@lucide/svelte/icons/unplug";
   import type { UserView } from "../model/building.ts";
@@ -27,7 +27,7 @@
   const presence = $derived(talking ? "active" : user.presence);
 
   const p = $derived(t().people);
-  // status (B, ADR-0018): a speech bubble at the top right, its text in the tooltip
+  // status (B, ADR-0018): a tag at the top right, its text in the tooltip
   const status = $derived(user.status ? statusLabel(user.status) : null);
   const label = $derived(personLabel(user, talking));
   /** same words as in the label, capitalised as the badge tooltip */
@@ -45,7 +45,7 @@
       <span class="plain" title={cap(p.withoutRuumble)}><Unplug size={10} strokeWidth={2.5} /></span>
     {/if}
     {#if status}
-      <span class="bubble" title={status}><MessageSquareText size={12} strokeWidth={2.5} /></span>
+      <span class="status-tag" title={status}><Tag size={12} strokeWidth={2.5} /></span>
     {/if}
     {#if user.recording}
       <span class="rec" title={cap(p.recording)}></span>
@@ -94,7 +94,7 @@
     background: var(--color-paper); border: 1px solid var(--color-blue-300); color: var(--color-link);
     display: flex; align-items: center; justify-content: center;
   }
-  .bubble {
+  .status-tag {
     position: absolute; right: -7px; top: -7px; width: 22px; height: 22px; border-radius: 50%;
     background: var(--color-paper); border: 1px solid var(--color-ink); color: var(--color-ink);
     display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgb(0 56 105 / 0.25);

@@ -11,7 +11,7 @@ import {
   tabAfterClose, unreadTotal, STORAGE_PREFIX, type Book, type TubeItem,
 } from "./model.ts";
 
-export type TubePanel = "closed" | "open" | "collapsed";
+export type TubePanel = "closed" | "open";
 
 /** the notice of a new message while its conversation is not in view */
 export interface TubeToast {
@@ -171,14 +171,11 @@ export class TubeState {
   /** P: open the window (on the last tab) or close it */
   toggle(): void {
     if (this.panel === "open") this.panel = "closed";
-    else this.expand();
+    else this.reopen();
   }
 
-  collapse(): void {
-    this.panel = "collapsed";
-  }
-
-  expand(): void {
+  /** open again where one left off: the last tab in view, else the first */
+  private reopen(): void {
     this.panel = "open";
     if (!this.active || !this.book[this.active]?.open) this.active = this.tabs[0]?.person ?? null;
     if (this.active) this.update(markRead(this.book, this.active));

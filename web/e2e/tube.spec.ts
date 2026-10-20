@@ -76,7 +76,7 @@ test.describe("Tube mail", () => {
     await expect(panel(page)).toContainText("You are there.");
   });
 
-  test("P, comma and full stop, Escape into the station; kept after a reload until forgotten", async ({ page }) => {
+  test("P, comma and full stop, Escape closes; kept after a reload until forgotten", async ({ page }) => {
     await openFromCard(page, "Clara");
     await input(page, "Clara").fill("First");
     await page.keyboard.press("Enter");
@@ -93,8 +93,9 @@ test.describe("Tube mail", () => {
 
     await input(page, "Ben").press("Escape");
     await expect(panel(page)).toHaveCount(0);
-    await page.getByRole("button", { name: "Expand tube mail" }).click();
-    await expect(panel(page)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Tube mail", exact: true })).toBeFocused();
+    await page.keyboard.press("p");
+    await expect(panel(page).getByRole("tab", { name: "Ben" })).toHaveAttribute("aria-selected", "true");
     await panel(page).getByRole("heading", { name: "Tube mail" }).click();
     await page.keyboard.press("p");
     await expect(panel(page)).toHaveCount(0);

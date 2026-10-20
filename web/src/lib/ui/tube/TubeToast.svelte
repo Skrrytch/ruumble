@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Pill from "@lucide/svelte/icons/pill";
+  import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import X from "@lucide/svelte/icons/x";
   import { t } from "../../i18n/index.svelte.ts";
   import { initials } from "../../model/building.ts";
@@ -15,7 +15,7 @@
   <div class="tube-toast" role="status">
     <span class="mini" aria-hidden="true">{initials(toast.name)}</span>
     <div class="body">
-      <span class="from"><Pill size={13} aria-hidden="true" />{t().tube.from(toast.name)}</span>
+      <span class="from"><MessagesSquare size={13} aria-hidden="true" />{t().tube.from(toast.name)}</span>
       <span class="text">{toast.text}</span>
       <button type="button" class="reply" onclick={() => app.tube.open(toast.person, toast.name)}>{t().tube.reply}</button>
     </div>

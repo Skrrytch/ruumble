@@ -10,12 +10,11 @@
   import Languages from "@lucide/svelte/icons/languages";
   import LocateFixed from "@lucide/svelte/icons/locate-fixed";
   import Lock from "@lucide/svelte/icons/lock";
-  import MessageSquare from "@lucide/svelte/icons/message-square";
-  import MessageSquareText from "@lucide/svelte/icons/message-square-text";
   import Mic from "@lucide/svelte/icons/mic";
   import MicOff from "@lucide/svelte/icons/mic-off";
   import Moon from "@lucide/svelte/icons/moon";
-  import Pill from "@lucide/svelte/icons/pill";
+  import Tag from "@lucide/svelte/icons/tag";
+  import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import UserIcon from "@lucide/svelte/icons/user";
   import Users from "@lucide/svelte/icons/users";
   import { locale, setLocale, t } from "../i18n/index.svelte.ts";
@@ -174,23 +173,26 @@
   <div class="right">
     <!-- tube mail (ADR-0021): opens its window; the number of unread messages on it -->
     <button
-      type="button" class="tool tube" aria-pressed={app.tube.panel === "open"} aria-keyshortcuts="P"
+      type="button" class="tool tube" data-tube-button aria-pressed={app.tube.panel === "open"} aria-keyshortcuts="P"
       aria-label={unread ? `${t().tube.title}, ${t().tube.unread(unread)}` : t().tube.title} title={`${t().tube.title} (P)`}
       disabled={!me} onclick={() => app.tube.toggle()}
     >
-      <Pill size={20} />
+      <MessagesSquare size={20} />
       {#if unread}<span class="count" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>{/if}
     </button>
-    <!-- the own status (B, ADR-0018): filled while one is set, its text in the tooltip -->
+    <!-- the own status (B, ADR-0018): a tag like the one at the avatar, filled while one is set, its text in the tooltip -->
     <button type="button" class="tool" aria-pressed={!!myStatus} aria-label={t().status.title} title={`${myStatus ? t().status.current(myStatus.text) : t().status.set} (S)`} disabled={!me} onclick={() => void app.openStatus()}>
-      {#if myStatus}<MessageSquareText size={20} />{:else}<MessageSquare size={20} />{/if}
+      <Tag size={20} />
     </button>
+    <!-- mute and deafen belong together: one joined pair, set apart from tube mail and status -->
+    <div class="audio" role="group" aria-label={t().core.audio}>
     <button type="button" class="tool" aria-pressed={muted} aria-label={t().core.mute} title={t().core.mute} disabled={!me} onclick={() => app.toggleMute()}>
       {#if muted}<MicOff size={20} />{:else}<Mic size={20} />{/if}
     </button>
     <button type="button" class="tool" aria-pressed={deaf} aria-label={t().core.deaf} title={t().core.deaf} disabled={!me} onclick={() => app.toggleDeaf()}>
       {#if deaf}<HeadphoneOff size={20} />{:else}<Headphones size={20} />{/if}
     </button>
+    </div>
     <div class="dropdown" data-dropdown="user">
       <!-- the name badge: yellow band like the ring around the own avatar, on a clip -->
       <button type="button" class="me" bind:this={userButton} aria-expanded={open === "user"} aria-controls="user-menu" aria-label={t().core.userMenu} title={t().core.userMenu} onclick={() => toggle("user")}>
@@ -355,6 +357,14 @@
   .tool[aria-pressed="true"] { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-paper); }
   .tool:disabled { opacity: 0.5; cursor: not-allowed; }
   .tube { position: relative; }
+  /* mute and deafen: a joined pair with a little room before it */
+  .audio { display: flex; margin-left: 10px; border-radius: var(--radius-md); box-shadow: 0 1px 0 rgb(0 56 105 / 0.12); }
+  .audio .tool { border-radius: 0; background: var(--color-surface); }
+  .audio .tool:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); }
+  .audio .tool:last-child { border-left: 0; border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+  .audio .tool:hover { background: var(--color-blue-100); }
+  .audio .tool[aria-pressed="true"] { background: var(--color-ink); border-color: var(--color-ink); }
+  .audio .tool:disabled:hover { background: var(--color-surface); }
   .tube .count {
     position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; box-sizing: border-box;
     background: var(--color-ink); color: var(--color-paper); box-shadow: 0 0 0 2px var(--color-paper);

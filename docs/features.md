@@ -34,7 +34,7 @@ How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.m
 | **Recording** (red dot at the avatar, hint at the room) | Ice |
 | **Listening** (ear icon at the room, "N people are listening", no names) | Ice |
 | **Mumble avatars** of registered users, otherwise initials | Ice `getTexture` |
-| **Status** (speech bubble at the avatar, text and expiry in the tooltip) | set in Ruumble, kept by the service (ADR-0018) |
+| **Status** (tag at the avatar, text and expiry in the tooltip) | set in Ruumble, kept by the service (ADR-0018) |
 | **Without Ruumble** (small plug at the bottom left of the avatar, for people using Mumble only) | no plugin of the person is connected to the service |
 
 Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` rejects registered users (bug in Mumble); Ruumble then shows initials.
@@ -47,9 +47,9 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 
 ### Status
 
-- The speech-bubble button in the top bar, before mute, or the key **S** opens **My status**: a free text (one line, up to 80 characters) and when it expires: after 2 hours by default, or after 30 minutes, 1, 4 or 8 hours, or never. Set it, change it, or clear it.
+- The tag button in the top bar, before mute, or the key **S** opens **My status**: a free text (one line, up to 80 characters) and when it expires: after 2 hours by default, or after 30 minutes, 1, 4 or 8 hours, or never. Set it, change it, or clear it.
 - Below, the **last five texts** you used, for a quick choice: a click puts the text into the field.
-- Everyone in Ruumble sees a **speech bubble** at your avatar, with the text and the expiry in its tooltip; the button in the top bar is filled while your status is set. It shows while your Mumble is connected with the plugin.
+- Everyone in Ruumble sees a small **tag** at your avatar, with the text and the expiry in its tooltip; the button in the top bar is filled while your status is set. It shows while your Mumble is connected with the plugin.
 - Kept by the service per person, so it follows you to other browsers; plain Mumble clients do not see it (ADR-0018). Someone without a status for 90 days is forgotten, recent texts included.
 
 ### Nudge
@@ -61,10 +61,10 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 
 ### Tube mail
 
-- **Private messages** between two people who use Ruumble, wherever they are in the building ([ADR-0021](decisions/0021-tube-mail.md)). Start from the person card (hover someone with Ruumble: "Send tube mail") or the directory board (**H**: the capsule beside a person, or **P** on them).
+- **Private messages** between two people who use Ruumble, wherever they are in the building ([ADR-0021](decisions/0021-tube-mail.md)). Start from the person card (hover someone with Ruumble: "Send tube mail") or the directory board (**H**: the conversation symbol beside a person, or **P** on them).
 - A window at the bottom right with **one tab per person**. Its head shows where the other one is right now, their status and **Go there**; **Come over!** (door button) invites them to your own room, and they can follow with one click. Messages take the board's quick reactions (A1).
-- New messages outside the conversation in view show a notice at the top right with **Reply**; the capsule in the top bar counts the unread ones. Texts and invitations also go as a line to the recipient's Mumble log, so they see them without an open Ruumble tab.
-- **P** opens and closes the window, **comma** and **full stop** switch tabs, **Escape** collapses it into a small station.
+- New messages outside the conversation in view show a notice at the top right with **Reply**; the conversation button in the top bar counts the unread ones. Texts and invitations also go as a line to the recipient's Mumble log, so they see them without an open Ruumble tab.
+- **P** opens and closes the window, **comma** and **full stop** switch tabs, **Escape** closes it.
 - The service only passes messages on and keeps nothing. Each browser keeps a conversation for **24 hours after its last message**; "Forget history" removes it at once, and revoking the browser's key removes them all. Up to 2,000 characters, 30 messages per minute.
 
 ### Moving, mute and deafen
