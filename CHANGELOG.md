@@ -6,6 +6,8 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+Plugin 0.5.0 (unchanged). Tube mail hands files directly to other people, private messages are now "A quiet word", and the status sits at the name badge.
+
 ### Added
 - **Tube mail.** Hand a file to people who are in Ruumble at the same time: "Send a file" on the person card, in the new tube mail panel (a file with an arrow in the top bar), or drop a file on a person or a room (a file dropped anywhere else is ignored instead of replacing Ruumble in the tab). Pick people one by one or everyone with Ruumble in a room, add a note. Each recipient sees who sends what and accepts or declines; accepting is a normal browser download, and a line in the Mumble log tells them about it too. The panel shows every recipient's state and progress and lets you withdraw a parcel. Nothing is stored on the server: the file stays in the sender's tab and passes through the service piece by piece, so the sender keeps the tab open until everyone has it (at most 8 hours). Up to 500 MB and 50 recipients; files that can run programs come with a warning ([how it works](docs/tube-mail.md), ADR-0022).
 - **Tube mail bandwidth** in the building maintenance: all transfers together, 16 Mbit/s by default (`TUBE_MAIL_MBIT`), 0 for unlimited, so files do not crowd out Mumble's voice.
@@ -13,6 +15,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 ### Changed
 - **Status at the name badge.** The own status is a small tag at the avatar of the name badge, as at every avatar in the floor plan, instead of a button in the toolbar: filled while a status is set, dashed while none is. A click on your own avatar in the floor plan opens it too, as do "My status …" in the user menu and S. Status tags are filled so a set status stands out, and their tooltip shows just the text and its expiry, without "Status:".
 - **Tube mail is now "A quiet word".** Private messages between two people are called "A quiet word" (German "Unter vier Augen"), the person card offers "Have a quiet word"; the Mumble-log line reads "Message from Anna: …". Conversations kept by the browser carry over. The name "tube mail" is kept for sending files between people.
+
+### Upgrading
+- No configuration changes needed: change the image tag to `0.31.0` and restart. The new `TUBE_MAIL_MBIT` (default 16) is optional and can also be set in the building maintenance.
+- The service stores no files sent by tube mail; they only pass through. Nothing new to back up.
 
 ## [0.30.0] - 2026-10-22
 
