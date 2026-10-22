@@ -67,6 +67,13 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 - **P** opens and closes the window, **comma** and **full stop** switch tabs, **Escape** closes it.
 - The service only passes messages on and keeps nothing. Each browser keeps a conversation for **24 hours after its last message**; "Forget history" removes it at once, and revoking the browser's key removes them all. Up to 2,000 characters, 30 messages per minute.
 
+### Tube mail
+
+- **Hand a file to people** who are in Ruumble at the same time, without storing it anywhere ([ADR-0022](decisions/0022-tube-mail-files.md), [how it works](tube-mail.md)). Choose "Send a file" on the person card or in the tube mail panel, or drop a file on a room; pick people one by one or a room's people at once, add a note.
+- Each recipient gets a notice (who, file name, type, size, note) with **Accept**, **Decline** and **Later**, and a line in their Mumble log. Accepting starts a normal browser download. Files that can run programs come with a warning.
+- The tube mail button in the top bar (a file with an arrow) counts parcels waiting for an answer and shows a ring while own ones are on their way. Its panel lists **Incoming** and **Outgoing** with every recipient's state and progress; a parcel can be withdrawn.
+- The file stays in the sender's tab and goes straight through the service to each recipient who accepts, piece by piece; the service keeps nothing. The sender keeps the tab open until everyone has it (at most 8 hours). Up to 500 MB per file and 50 recipients; all transfers together share a bandwidth set in the building maintenance.
+
 ### Moving, mute and deafen
 
 - Double-click a room to move there, or Enter / Space on the focused room; a single click does nothing. Clicking a floor in the elevator only changes the view; "go to my floor" jumps back.
@@ -127,7 +134,7 @@ Every paired browser is a key. "My keys" in the user menu lists one's own (brows
 
 ### Building maintenance
 
-On the other side of the building in the building overview stands a lantern for admins (Write permission on the root channel). It opens the building's settings: how long posts are kept, the storage quota, the largest attachment, how long data of deleted rooms is kept, and whether a new post sends a Mumble notice. The environment variables are the defaults; "All to default" goes back to them. Changes that make the next cleanup delete data (shorter retention, a quota below the storage in use, a shorter grace for deleted rooms) are pointed out and confirmed. The section "Access" lists everyone else's keys, each revocable ([ADR-0016](decisions/0016-building-maintenance.md)).
+On the other side of the building in the building overview stands a lantern for admins (Write permission on the root channel). It opens the building's settings: how long posts are kept, the storage quota, the largest attachment, how long data of deleted rooms is kept, whether a new post sends a Mumble notice, and the bandwidth of tube mail. The environment variables are the defaults; "All to default" goes back to them. Changes that make the next cleanup delete data (shorter retention, a quota below the storage in use, a shorter grace for deleted rooms) are pointed out and confirmed. The section "Access" lists everyone else's keys, each revocable ([ADR-0016](decisions/0016-building-maintenance.md)).
 
 ### Pairing and security
 
@@ -138,6 +145,7 @@ On the other side of the building in the building overview stands a lantern for 
 - Identity by plausibility check: certificate hash of the plugin and, optionally, the IP address (`ADDRESS_CHECK=off|warn|enforce`, [ADR-0004](decisions/0004-identity-and-pairing.md)). A connected plugin cannot be replaced from another address, new keys are announced in the Mumble log, and only the service's own pages may use the cookie ([ADR-0017](decisions/0017-threat-model-after-board-and-care.md)).
 - The service reads Mumble via Ice with the **read secret only** and never writes to Mumble.
 - IP addresses never leave the service. Rate limit of 5 commands per second per user.
+- Tube mail: files pass through without being stored, accepting needs a one-time ticket, downloads are always plain files ([how tube mail works](tube-mail.md#security-and-privacy)).
 - Board content: Markdown rendered without raw HTML and sanitised, Content-Security-Policy for the whole UI, `nosniff` for images, files always as downloads.
 
 ### Languages
@@ -185,6 +193,7 @@ Tested versions: see [operations](operations.md#requirements).
 | B – Status line | done (Unreleased), kept by the service instead of the Mumble comment (ADR-0018) |
 | C – Knocking | idea, decision open |
 | Nudge a deafened person in the own room | done (Unreleased, ADR-0020); a sound from the plugin is the next step if needed |
+| Tube mail: files directly between people | done (Unreleased, ADR-0022); surviving a reload of the sender's tab is a possible next step |
 | A quiet word: private messages between two people | done (0.30.0 as "tube mail", ADR-0021); not accepting messages from someone, a sound, browser notifications are possible next steps |
 | F – More controls | idea, decision open |
 | G – "Door closed" | dropped (2026-10-03): Mumble has no knocking |

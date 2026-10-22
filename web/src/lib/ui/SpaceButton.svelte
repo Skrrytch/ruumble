@@ -29,6 +29,8 @@
     ontend,
     onnudge,
     onchat,
+    onparcel,
+    ondropfile,
   }: {
     space: Space | Room;
     variant: "room" | "corridor" | "open";
@@ -53,7 +55,29 @@
     onnudge?: (user: UserView) => void;
     /** send someone else who uses Ruumble direct chat (ADR-0021) */
     onchat?: (user: UserView) => void;
+    /** send someone else who uses Ruumble a file by tube mail (ADR-0022) */
+    onparcel?: (user: UserView) => void;
+    /** a file dropped here: tube mail to the people with Ruumble in this space (ADR-0022) */
+    ondropfile?: (file: File, channelId: number) => void;
   } = $props();
+
+  // tube mail: a file dragged over a space with someone to send to lights it up; dropped, it opens the send dialog
+  const droppable = $derived(!!ondropfile && !readonly && space.users.some((u) => canChat(u, true)));
+  let dropping = $state(false);
+  const carriesFile = (e: DragEvent) => !!e.dataTransfer?.types.includes("Files");
+  function dragOver(e: DragEvent): void {
+    if (!droppable || !carriesFile(e)) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    dropping = true;
+  }
+  function dropFile(e: DragEvent): void {
+    dropping = false;
+    const file = e.dataTransfer?.files[0];
+    if (!droppable || !file) return;
+    e.preventDefault();
+    ondropfile!(file, space.channelId);
+  }
 
 
   const room = $derived("grow" in space ? space : null);
@@ -160,12 +184,16 @@
   class:readonly
   class:pending
   class:slow={pending && slow}
+  class:dropping
   aria-label={ariaLabel}
   aria-disabled={disabled || space.isSelf || undefined}
   aria-busy={pending || undefined}
   data-channel={space.channelId}
   ondblclick={click}
   onkeydown={onActivateKey(click)}
+  ondragover={dragOver}
+  ondragleave={() => (dropping = false)}
+  ondrop={dropFile}
 >
   {#if variant === "room"}
     <!-- door at the corridor wall: the white strip cuts the opening into the wall; mirrored in the lower row.
@@ -245,7 +273,8 @@
 {#if card && cardUser}
   <PersonCard user={cardUser} anchor={card.anchor} talking={talking[cardUser.session] ?? false} onenter={keepCard} onleave={dropCard}
     onnudge={onnudge && nudgeable(cardUser) ? (user) => { card = null; onnudge(user); } : undefined}
-    onchat={onchat && chatable(cardUser) ? (user) => { card = null; onchat(user); } : undefined} />
+    onchat={onchat && chatable(cardUser) ? (user) => { card = null; onchat(user); } : undefined}
+    onparcel={onparcel && chatable(cardUser) ? (user) => { card = null; onparcel(user); } : undefined} />
 {/if}
 </div>
 
@@ -270,6 +299,8 @@
   .room.readonly { cursor: default; }
   .room.locked:hover { background: var(--color-paper); }
   .room.pending { cursor: progress; }
+  /* a file dragged over a space with someone to send it to (tube mail) */
+  .room.dropping { outline: 3px dashed var(--color-blue-500); outline-offset: -6px; background: var(--color-surface); }
   .room.pending.slow .count { color: var(--color-link); }
 
   /* Rooms (design "Grundriss: Flurseite"): a 48 px door strip on the corridor side holds the plant behind the door,

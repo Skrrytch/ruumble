@@ -7,12 +7,12 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, NUDGE_INTERVAL_MS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, STATUS_LIMITS, StatusRequest, ChatSend, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type StatusView, type TalkingState, type TicketLinks, type ChatMessage, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, NUDGE_INTERVAL_MS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, STATUS_LIMITS, StatusRequest, ChatSend, ParcelOffer, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type StatusView, type TalkingState, type TicketLinks, type ChatMessage, type Parcel, type ParcelState, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
 import vacant from "@ruumble/protocol/fixtures/vacant.json";
-import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus, StatusApi, ChatApi } from "./types.ts";
+import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus, StatusApi, ChatApi, TubeApi } from "./types.ts";
 
 const MINUTE = 60_000;
 
@@ -140,7 +140,7 @@ class Refused {
   constructor(readonly error: BoardErrorCode) {}
 }
 
-const MOCK_DEFAULTS: BuildingSettings = { retentionDays: 365, quotaMB: 2048, maxFileMB: BOARD_LIMITS.fileBytes / (1024 * 1024), graceDays: 7, notifyNewPosts: true };
+const MOCK_DEFAULTS: BuildingSettings = { retentionDays: 365, quotaMB: 2048, maxFileMB: BOARD_LIMITS.fileBytes / (1024 * 1024), graceDays: 7, notifyNewPosts: true, tubeMailMbit: 16 };
 
 /** paired browsers (key cabinet, ADR-0015): the own ones (first: this browser) and others' */
 function sampleKeys(now: number): { mine: DeviceKey[]; others: KeyCabinet["others"] } {
@@ -576,6 +576,87 @@ export class MockAdapter implements MumbleAdapter {
     },
   };
 
+  /**
+   * like the service (ADR-0022), simulated: the others accept an own parcel after a moment and the "upload" moves
+   * on with every piece; a parcel to the own user comes from tubeMe() and "downloads" a small text file
+   */
+  private parcels = new Map<string, Parcel>();
+  readonly tube: TubeApi = {
+    offer: async (request) => {
+      const me = this.me();
+      if (this.plugin === "disconnected" || !me) return { ok: false, error: "not-paired" };
+      const parsed = ParcelOffer.safeParse(request);
+      if (!parsed.success) return { ok: false, error: "invalid" };
+      const offer = parsed.data;
+      const known = this.parcels.get(offer.id);
+      if (known) return { ok: true, value: clone(known) };
+      const recipients = this.state.users
+        .filter((u) => u.ruumble && u.session !== me.session && offer.to.includes(mockPersonId(u.name)))
+        .map((u) => ({ person: mockPersonId(u.name), name: u.name, state: "offered" as const, sent: 0 }));
+      if (!recipients.length) return { ok: false, error: "not-found" };
+      const at = Date.now();
+      const parcel: Parcel = { id: offer.id, from: mockPersonId(me.name), fromName: me.name, name: offer.name, type: offer.type, size: offer.size, note: offer.note, at, until: at + 8 * 3600_000, holder: true, ended: null, recipients };
+      this.parcels.set(parcel.id, parcel);
+      this.events?.parcel(clone(parcel));
+      if (this.opts.replies) {
+        recipients.forEach((r, i) => this.later(1200 + i * 700, () => {
+          if (!this.setParcel(parcel.id, r.person, "accepted")) return;
+          this.events?.parcelPull(parcel.id, r.person, 0);
+        }));
+      }
+      return { ok: true, value: clone(parcel) };
+    },
+    accept: async (id) => {
+      const parcel = this.parcels.get(id);
+      const me = this.me();
+      if (!parcel || !me || parcel.from === mockPersonId(me.name)) return { ok: false, error: "not-found" };
+      const person = mockPersonId(me.name);
+      this.setParcel(id, person, "accepted");
+      this.later(300, () => this.setParcel(id, person, "receiving", Math.round(parcel.size / 2)));
+      this.later(900, () => this.setParcel(id, person, "received", parcel.size));
+      return { ok: true, value: id };
+    },
+    decline: async (id) => {
+      const me = this.me();
+      return me && this.setParcel(id, mockPersonId(me.name), "declined") ? { ok: true, value: true } : { ok: false, error: "not-found" };
+    },
+    withdraw: async (id) => {
+      const parcel = this.parcels.get(id);
+      if (!parcel) return { ok: false, error: "not-found" };
+      this.parcels.delete(id);
+      this.events?.parcel({ ...clone(parcel), ended: "withdrawn" });
+      return { ok: true, value: true };
+    },
+    piece: async (id, to, offset, bytes) => {
+      const parcel = this.parcels.get(id);
+      const r = parcel?.recipients.find((x) => x.person === to);
+      if (!parcel || !r || offset !== r.sent) return { ok: false, error: "not-found" };
+      await new Promise((resolve) => setTimeout(resolve, 120)); // a visible pace
+      const sent = r.sent + bytes.size;
+      this.setParcel(id, to, sent >= parcel.size ? "received" : "receiving", sent);
+      return { ok: true, value: true };
+    },
+    held: () => {},
+    downloadUrl: (ticket) => {
+      const parcel = this.parcels.get(ticket);
+      return URL.createObjectURL(new Blob([`${parcel?.name ?? "file"} came by tube mail (mock).\n`], { type: "text/plain" }));
+    },
+  };
+
+  /** a recipient's state changes; everyone done: the parcel ends */
+  private setParcel(id: string, person: string, state: ParcelState, sent?: number): boolean {
+    const parcel = this.parcels.get(id);
+    const r = parcel?.recipients.find((x) => x.person === person);
+    if (!parcel || !r) return false;
+    r.state = state;
+    if (sent !== undefined) r.sent = sent;
+    const done = parcel.recipients.every((x) => x.state === "received" || x.state === "declined");
+    if (done) this.parcels.delete(id);
+    else this.parcels.set(id, parcel); // keep it for downloadUrl until it ends
+    this.events?.parcel({ ...clone(parcel), ended: done ? "done" : null });
+    return true;
+  }
+
   private later(ms: number, fn: () => void): void {
     const timer = setTimeout(() => {
       this.chatTimers.delete(timer);
@@ -678,6 +759,22 @@ export class MockAdapter implements MumbleAdapter {
     const me = this.me();
     const other = me && this.state.users.find((u) => u.session !== me.session && u.channel !== me.channel && u.ruumble);
     if (other) this.chatFrom(other.session, invite ? null : `Hi ${me.name}, do you have a minute?`);
+  }
+
+  /** someone with Ruumble sends the own user a file by tube mail; `executable`: a program, with the warning */
+  tubeMe(executable = false): void {
+    const me = this.me();
+    const other = me && this.state.users.find((u) => u.session !== me.session && u.ruumble);
+    if (!me || !other) return;
+    const id = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    const at = Date.now();
+    const parcel: Parcel = {
+      id, from: mockPersonId(other.name), fromName: other.name, at, until: at + 8 * 3600_000, holder: true, ended: null,
+      ...(executable ? { name: "setup.exe", type: "application/x-msdownload", size: 48_213_504, note: "" } : { name: "Quarterly report.pdf", type: "application/pdf", size: 2_516_582, note: "Page 3 is new" }),
+      recipients: [{ person: mockPersonId(me.name), name: me.name, state: "offered", sent: 0 }],
+    };
+    this.parcels.set(id, parcel);
+    this.events?.parcel(clone(parcel));
   }
 
   /** The next switch is not confirmed despite access permission (as with the rate limit, S2). */

@@ -2,7 +2,7 @@
  * Interface between web UI and Mumble (ADR-0007).
  * Implementations: MockAdapter (fixtures, simulated Mumble) and LiveAdapter (WebSocket and REST to the service).
  */
-import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, BuildingSettings, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, StatusView, TalkingState, ChatMessage, ChatSend, Uploaded, Versions } from "@ruumble/protocol";
+import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, BuildingSettings, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, StatusView, TalkingState, ChatMessage, ChatSend, Parcel, ParcelOffer, Uploaded, Versions } from "@ruumble/protocol";
 
 export type BoardErrorCode = ServerBoardError | "offline";
 export type BoardResult<T> = { ok: true; value: T } | { ok: false; error: BoardErrorCode };
@@ -86,6 +86,24 @@ export interface ChatApi {
   send(message: ChatSend): Promise<BoardResult<ChatMessage>>;
 }
 
+/**
+ * Tube mail (ADR-0022): files handed from person to person, passed through by the service. The file stays in the
+ * sender's tab, which uploads it piece by piece when the service asks for it (`parcelPull`).
+ */
+export interface TubeApi {
+  offer(offer: ParcelOffer): Promise<BoardResult<Parcel>>;
+  /** a ticket for the download (downloadUrl); the download should start right away */
+  accept(id: string): Promise<BoardResult<string>>;
+  decline(id: string): Promise<BoardResult<true>>;
+  withdraw(id: string): Promise<BoardResult<true>>;
+  /** one piece for recipient `to`; resolves once it went out */
+  piece(id: string, to: string, offset: number, bytes: Blob): Promise<BoardResult<true>>;
+  /** the parcels whose file this tab holds; the adapter tells the service again after every reconnect */
+  held(ids: string[]): void;
+  /** where the browser downloads the file with a ticket */
+  downloadUrl(ticket: string): string;
+}
+
 export type PluginStatus = "connected" | "disconnected";
 
 /** Connection of the web UI to the service (LiveAdapter only) */
@@ -104,6 +122,12 @@ export interface AdapterEvents {
   nudge(session: number, name: string): void;
   /** a direct message from or to the own user, also what another window of the own user sent (ADR-0021) */
   chat(message: ChatMessage): void;
+  /** a parcel of tube mail sent or received changed (ADR-0022) */
+  parcel(parcel: Parcel): void;
+  /** this tab holds the file of parcel `id`: send it to `to` from `offset` */
+  parcelPull(id: string, to: string, offset: number): void;
+  /** the service does not know these held parcels (it restarted): offer them again */
+  parcelsMissing(ids: string[]): void;
   connection(state: ConnectionState): void;
 }
 
@@ -120,6 +144,7 @@ export interface MumbleAdapter {
   /** get the attention of a deafened person in the own room (ADR-0020); once a minute per person */
   nudge(session: number): Promise<BoardResult<true>>;
   chat: ChatApi;
+  tube: TubeApi;
   pairing: PairApi;
   /** versions of service and offered plugin (notice pages); null if unknown */
   versions(): Promise<Versions | null>;

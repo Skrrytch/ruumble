@@ -50,6 +50,8 @@ export interface StoreOptions {
   maxFileMB?: number;
   graceDays?: number;
   notifyNewPosts?: boolean;
+  /** bandwidth of all tube mail transfers in Mbit/s, 0: unlimited (ADR-0022) */
+  tubeMailMbit?: number;
   /** attachments without a post (uploaded, never pinned) are deleted after this */
   orphanMinutes?: number;
   now?: () => number;
@@ -174,7 +176,7 @@ export class BoardStore {
   private places: { floors: Set<number>; rooms: Set<number> } | null = null;
 
   constructor(dir: string, opts: StoreOptions = {}) {
-    this.opts = { retentionDays: 365, quotaBytes: 2048 * MB, maxFileMB: 10, graceDays: 7, notifyNewPosts: true, orphanMinutes: 60, now: Date.now, ...opts };
+    this.opts = { retentionDays: 365, quotaBytes: 2048 * MB, maxFileMB: 10, graceDays: 7, notifyNewPosts: true, tubeMailMbit: 16, orphanMinutes: 60, now: Date.now, ...opts };
     this.dir = join(dir, "board");
     mkdirSync(this.dir, { recursive: true });
     rmSync(this.tmpDir, { recursive: true, force: true }); // uploads cut off by a restart
@@ -204,7 +206,7 @@ export class BoardStore {
   /** the defaults: environment variables, else built in */
   get settingDefaults(): BuildingSettings {
     const o = this.opts;
-    return { retentionDays: o.retentionDays, quotaMB: Math.round(o.quotaBytes / MB), maxFileMB: o.maxFileMB, graceDays: o.graceDays, notifyNewPosts: o.notifyNewPosts };
+    return { retentionDays: o.retentionDays, quotaMB: Math.round(o.quotaBytes / MB), maxFileMB: o.maxFileMB, graceDays: o.graceDays, notifyNewPosts: o.notifyNewPosts, tubeMailMbit: o.tubeMailMbit };
   }
 
   get settings(): BuildingSettings {

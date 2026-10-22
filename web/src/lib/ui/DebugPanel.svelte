@@ -32,6 +32,8 @@
     <button type="button" onclick={() => mock.nudgeMe()}>Someone nudges me</button>
     <button type="button" onclick={() => mock.chatMe()}>Someone sends me a direct message</button>
     <button type="button" onclick={() => mock.chatMe(true)}>Someone invites me over</button>
+    <button type="button" onclick={() => mock.tubeMe()}>Someone sends me a file</button>
+    <button type="button" onclick={() => mock.tubeMe(true)}>Someone sends me a program</button>
   {/if}
 </aside>
 

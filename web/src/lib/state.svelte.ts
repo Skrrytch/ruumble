@@ -11,6 +11,7 @@ import type { BoardSide } from "./model/float.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type BuildOptions, type Building, type Floor } from "./model/building.ts";
 import { playNudgeSound, readNudgeSound, storeNudgeSound } from "./nudge.ts";
 import { ChatState } from "./chat/state.svelte.ts";
+import { TubeState } from "./tube/state.svelte.ts";
 
 export type Notice = { text: string };
 
@@ -159,14 +160,18 @@ export class RuumbleState {
 
   /** direct chat (ADR-0021): conversations, its window and notices */
   readonly chat: ChatState;
+  /** tube mail (ADR-0022): parcels sent and received, the panel, the send dialog, the files this tab holds */
+  readonly tube: TubeState;
 
   constructor(private readonly adapter: MumbleAdapter) {
     this.chat = new ChatState(adapter, { notice: (text) => this.setNotice({ text }) });
+    this.tube = new TubeState(adapter, { notice: (text) => this.setNotice({ text }), download: startDownload });
   }
 
   start(): void {
     void this.adapter.versions().then((v) => (this.versions = v));
     this.chat.start();
+    this.tube.start();
     this.adapter.start({
       snapshot: (s) => this.onSnapshot(s),
       talking: (session, state) => this.onTalking(session, state),
@@ -183,6 +188,7 @@ export class RuumbleState {
           this.closeMaintenance();
           this.closeStatus();
           this.chat.forgetAll(); // what this browser kept of the conversations goes with the key
+          this.tube.forgetAll();
         }
       },
       // also while closed: the toggle shows posts the user has not seen yet
@@ -194,12 +200,16 @@ export class RuumbleState {
         if (this.nudgeSound) playNudgeSound();
       },
       chat: (message) => this.chat.receive(message),
+      parcel: (parcel) => this.tube.receive(parcel),
+      parcelPull: (id, to, offset) => void this.tube.pull(id, to, offset),
+      parcelsMissing: (ids) => void this.tube.missing(ids),
     });
   }
 
   stop(): void {
     this.adapter.stop();
     this.chat.stop();
+    this.tube.stop();
   }
 
   async requestPairing(): Promise<void> {
@@ -679,6 +689,7 @@ export class RuumbleState {
   private onSnapshot(s: Snapshot): void {
     this.snapshot = s;
     this.chat.identify(s.users.find((u) => u.session === s.self?.session)?.person ?? null);
+    this.tube.identify(s.users.find((u) => u.session === s.self?.session)?.person ?? null);
     // room changed: the sidebar always shows the board of the current room; closed, the toggle counts its unseen posts
     const channel = s.users.find((u) => u.session === s.self?.session)?.channel ?? null;
     if (channel !== this.boardChannel) void this.loadBoard();
@@ -774,4 +785,15 @@ function readSeen(): Record<string, number> {
   } catch {
     return {};
   }
+}
+
+/** a download by the browser, as if a link with `download` was clicked (tube mail) */
+function startDownload(url: string, name: string): void {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.rel = "noopener";
+  document.body.append(a);
+  a.click();
+  a.remove();
 }

@@ -18,14 +18,15 @@
     draft = app.maintenance ? { ...app.maintenance.settings } : null;
   });
 
-  type NumberKey = "retentionDays" | "quotaMB" | "maxFileMB" | "graceDays";
+  type NumberKey = "retentionDays" | "quotaMB" | "maxFileMB" | "graceDays" | "tubeMailMbit";
   /** the input range, from the schema the service checks against */
   const range = (key: NumberKey) => BuildingSettings.shape[key];
-  const fields: { key: NumberKey; unit: "days" | "mb" }[] = [
+  const fields: { key: NumberKey; unit: "days" | "mb" | "mbit" }[] = [
     { key: "retentionDays", unit: "days" },
     { key: "quotaMB", unit: "mb" },
     { key: "maxFileMB", unit: "mb" },
     { key: "graceDays", unit: "days" },
+    { key: "tubeMailMbit", unit: "mbit" },
   ];
   const valid = $derived(!!draft && BuildingSettings.safeParse(draft).success);
   const saved = $derived(app.maintenance?.settings);
@@ -96,9 +97,9 @@
               <label for={`setting-${f.key}`}>{t().maintenance.fields[f.key]}</label>
               <span class="input">
                 <input id={`setting-${f.key}`} type="number" min={range(f.key).minValue} max={range(f.key).maxValue} step="1" bind:value={draft[f.key]} disabled={app.maintenanceBusy} />
-                <span class="unit">{f.unit === "days" ? t().maintenance.days : "MB"}</span>
+                <span class="unit">{f.unit === "days" ? t().maintenance.days : f.unit === "mb" ? "MB" : "Mbit/s"}</span>
               </span>
-              <span class="hint">{t().maintenance.defaultValue(String(defaults[f.key]))}{#if f.key === "quotaMB"}{" · "}{t().maintenance.used(formatSize(app.maintenance.usedBytes))}{/if}</span>
+              <span class="hint">{t().maintenance.defaultValue(String(defaults[f.key]))}{#if f.key === "quotaMB"}{" · "}{t().maintenance.used(formatSize(app.maintenance.usedBytes))}{/if}{#if f.key === "tubeMailMbit"}{" · "}{t().maintenance.unlimited}{/if}</span>
             </div>
           {/each}
         </div>

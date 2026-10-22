@@ -18,6 +18,8 @@
  *                                                them in the building maintenance (ADR-0016), like the largest
  *                                                attachment (10 MB), the grace for deleted rooms (7 days) and notices
  *                                                (whole numbers: 1–3650 days, at least 10 MB, else the start fails)
+ *   TUBE_MAIL_MBIT (16)                          tube mail: bandwidth of all file transfers together in Mbit/s, 0 = unlimited;
+ *                                                a default, admins may change it in the building maintenance (ADR-0022)
  *   LOG_LEVEL (info)                             Fastify/pino logging
  *   BUILD_VERSION                                set by the image build: the exact build (git describe), shown instead of
  *                                                the package version under /api/version and in the log
@@ -49,6 +51,7 @@ import { Pairing } from "./pairing.ts";
 import { Poller } from "./poller.ts";
 import { StatusBook, statusRoutes } from "./status.ts";
 import { chatRoutes } from "./chat.ts";
+import { TubeMail, tubeRoutes } from "./tube.ts";
 
 const env = process.env;
 const required = (key: string) => {
@@ -74,7 +77,7 @@ const readSecret = (file: string) => {
 };
 
 /** a default of the building maintenance (ADR-0016): within the range admins may set, else the settings could not be saved */
-const settingDefault = (name: string, key: "retentionDays" | "quotaMB", fallback: number) => {
+const settingDefault = (name: string, key: "retentionDays" | "quotaMB" | "tubeMailMbit", fallback: number) => {
   const value = Number(env[name] ?? fallback);
   const { minValue, maxValue } = BuildingSettings.shape[key];
   if (Number.isInteger(value) && value >= minValue! && value <= maxValue!) return value;
@@ -83,7 +86,7 @@ const settingDefault = (name: string, key: "retentionDays" | "quotaMB", fallback
 
 // board storage (ADR-0011); the backup needs nothing else, hence before the rest of the configuration
 const dataDir = resolve(env.DATA_DIR ?? "data");
-const store = new BoardStore(dataDir, { retentionDays: settingDefault("RETENTION_DAYS", "retentionDays", 365), quotaBytes: settingDefault("BOARD_QUOTA_MB", "quotaMB", 2048) * 1024 * 1024 });
+const store = new BoardStore(dataDir, { retentionDays: settingDefault("RETENTION_DAYS", "retentionDays", 365), quotaBytes: settingDefault("BOARD_QUOTA_MB", "quotaMB", 2048) * 1024 * 1024, tubeMailMbit: settingDefault("TUBE_MAIL_MBIT", "tubeMailMbit", 16) });
 if (process.argv[2] === "backup") {
   const target = resolve(process.argv[3] ?? "backup");
   await store.backup(target);
@@ -278,6 +281,10 @@ await app.register(statusRoutes, { book: statuses, gate });
 await app.register(nudgeRoutes, { hub, gate });
 // direct messages between two people, wherever they are; passed on, never stored (ADR-0021)
 await app.register(chatRoutes, { hub, gate });
+// tube mail: files passed through from one person to others, never stored (ADR-0022)
+const tubeMail = new TubeMail({ hub, bytesPerSecond: () => (store.settings.tubeMailMbit * 1_000_000) / 8 });
+hub.watchUis(tubeMail);
+await app.register(tubeRoutes, { mail: tubeMail, gate });
 
 // building maintenance: settings that used to be fixed (ADR-0016)
 await app.register(maintenanceRoutes, { store, gate, log });

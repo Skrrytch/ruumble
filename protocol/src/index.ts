@@ -18,6 +18,8 @@ const channelId = z.number().int().min(0);
 const session = z.number().int().min(1);
 /** stable, opaque name of a person who uses Ruumble: derived from the certificate hash, never the hash itself (ADR-0021) */
 const personId = z.string().regex(/^[0-9a-f]{16}$/);
+/** a parcel of tube mail (ADR-0022): chosen by the sender's tab, 32 hex characters */
+const parcelId = z.string().regex(/^[0-9a-f]{32}$/);
 
 // ---------------------------------------------------------------- Raw Mumble data
 
@@ -141,7 +143,14 @@ export type BridgeToPlugin = z.infer<typeof BridgeToPlugin>;
 
 export const UiCommand = z.object({ v, type: z.literal("command"), id: commandId, body: CommandBody });
 
-export const UiToBridge = z.discriminatedUnion("type", [UiCommand]);
+/**
+ * Tube mail (ADR-0022): the parcels whose file this tab holds; sent on every connect and whenever the set changes.
+ * The service asks only this tab for the file, and withdraws parcels whose tab is gone for TUBE_LIMITS.graceMs.
+ */
+export const UiParcelsHeld = z.object({ v, type: z.literal("parcels-held"), ids: z.array(parcelId).max(10) });
+export type UiParcelsHeld = z.infer<typeof UiParcelsHeld>;
+
+export const UiToBridge = z.discriminatedUnion("type", [UiCommand, UiParcelsHeld]);
 export type UiToBridge = z.infer<typeof UiToBridge>;
 
 // ---------------------------------------------------------------- Service → web UI
@@ -380,6 +389,8 @@ export const BuildingSettings = z.object({
   graceDays: z.number().int().min(0).max(90),
   /** notice in the Mumble log of the others in the room when someone pins or brings a post */
   notifyNewPosts: z.boolean(),
+  /** all tube mail transfers together, in Mbit/s; 0: unlimited (ADR-0022) */
+  tubeMailMbit: z.number().int().min(0).max(10_000),
 });
 export type BuildingSettings = z.infer<typeof BuildingSettings>;
 
@@ -460,6 +471,67 @@ export const ChatMessage = z.discriminatedUnion("kind", [
 ]);
 export type ChatMessage = z.infer<typeof ChatMessage>;
 
+// ---------------------------------------------------------------- Tube mail (REST under /api/parcels, ADR-0022)
+
+const MB = 1024 * 1024;
+/**
+ * tube mail: largest file, size of one piece of the upload (below nginx's default request limit of 1 MB), longest note,
+ * recipients per parcel, open parcels per sender, new parcels per sender and minute, how long a parcel lasts at most,
+ * how long it outlives the sender's tab, how long a ticket for the download is valid, how long the download waits
+ * for the sender's first piece
+ */
+export const TUBE_LIMITS = {
+  fileBytes: 500 * MB, pieceBytes: MB / 2, noteChars: 500, recipients: 50, openPerPerson: 10, perMinute: 20,
+  lifeMs: 8 * 60 * 60_000, graceMs: 2 * 60_000, ticketMs: 30_000, firstPieceMs: 60_000,
+} as const;
+
+/** POST /api/parcels: offer a file; the file stays in the sender's tab. `again`: the same parcel after a restart of the service, without a new Mumble notice */
+export const ParcelOffer = z.object({
+  id: parcelId,
+  to: z.array(personId).min(1).max(TUBE_LIMITS.recipients),
+  name: z.string().trim().min(1).max(255),
+  /** media type as the sender's browser names it; only shown, the download is always application/octet-stream */
+  type: z.string().max(100),
+  size: z.number().int().min(1).max(TUBE_LIMITS.fileBytes),
+  note: z.string().trim().max(TUBE_LIMITS.noteChars),
+  again: z.boolean().optional(),
+});
+export type ParcelOffer = z.infer<typeof ParcelOffer>;
+
+/** where a parcel stands for one recipient: offered → accepted (download open) → receiving → received; or declined, failed (may accept again) */
+export const ParcelState = z.enum(["offered", "accepted", "receiving", "received", "declined", "failed"]);
+export type ParcelState = z.infer<typeof ParcelState>;
+/** why a parcel is over: everyone has it or declined, the sender withdrew it, it expired, the sender's tab is gone */
+export const ParcelEnd = z.enum(["done", "withdrawn", "expired", "sender-gone"]);
+export type ParcelEnd = z.infer<typeof ParcelEnd>;
+
+export const ParcelRecipient = z.object({ person: personId, name: z.string(), state: ParcelState, sent: count });
+export type ParcelRecipient = z.infer<typeof ParcelRecipient>;
+
+/** a parcel as its sender sees it; a recipient sees only themselves among the recipients */
+export const Parcel = z.object({
+  id: parcelId,
+  from: personId,
+  fromName: z.string(),
+  name: z.string(),
+  type: z.string(),
+  size: count,
+  note: z.string(),
+  at: count,
+  /** it is withdrawn at this time at the latest */
+  until: count,
+  /** the sender's tab with the file is connected */
+  holder: z.boolean(),
+  /** set once: the last event of this parcel */
+  ended: ParcelEnd.nullable(),
+  recipients: z.array(ParcelRecipient),
+});
+export type Parcel = z.infer<typeof Parcel>;
+
+/** POST /api/parcels/:id/accept: the download GET /api/parcels/download/:ticket, once and within TUBE_LIMITS.ticketMs */
+export const ParcelTicket = z.object({ ticket: z.string().regex(/^[0-9a-f]{32}$/) });
+export type ParcelTicket = z.infer<typeof ParcelTicket>;
+
 /** POST /api/board/posts/:id/copy: copy a post of the own room to another room the user may enter */
 export const CopyRequest = z.object({ channelId });
 export type CopyRequest = z.infer<typeof CopyRequest>;
@@ -502,15 +574,15 @@ export type PostUpdate = z.infer<typeof PostUpdate>;
 
 /** error response of the REST API */
 export const BoardError = z.object({
-  /** `not-deaf`: a nudge for someone who hears again (ADR-0020) */
-  error: z.enum(["not-paired", "not-in-room", "no-board-here", "not-found", "forbidden", "too-large", "bad-type", "invalid", "rate-limited", "not-deaf"]),
+  /** `not-deaf`: a nudge for someone who hears again (ADR-0020); `sender-away`: the tab with the file of a parcel is not connected (ADR-0022) */
+  error: z.enum(["not-paired", "not-in-room", "no-board-here", "not-found", "forbidden", "too-large", "bad-type", "invalid", "rate-limited", "not-deaf", "sender-away"]),
 });
 
 export type BoardErrorCode = z.infer<typeof BoardError>["error"];
 
 /** HTTP status of each REST error (board, care, keys, maintenance, status, nudge, direct chat); one table for the whole service */
 export const API_ERROR_STATUS: Record<BoardErrorCode, number> = {
-  "not-paired": 401, "not-in-room": 403, "no-board-here": 404, "not-found": 404, forbidden: 403, "too-large": 413, "bad-type": 415, invalid: 400, "rate-limited": 429, "not-deaf": 409,
+  "not-paired": 401, "not-in-room": 403, "no-board-here": 404, "not-found": 404, forbidden: 403, "too-large": 413, "bad-type": 415, invalid: 400, "rate-limited": 429, "not-deaf": 409, "sender-away": 409,
 };
 
 /** Minimal schema type so consumers need not import zod themselves */
@@ -527,6 +599,13 @@ export const UiNudge = z.object({ v, type: z.literal("nudge"), session, name: z.
 /** WebSocket: a direct message from or to the own user, to the web UIs of both people only; nothing is kept (ADR-0021) */
 export const UiChat = z.object({ v, type: z.literal("chat"), message: ChatMessage });
 
+/** WebSocket: a parcel of tube mail changed, to the web UIs of its sender and of each recipient (ADR-0022) */
+export const UiParcel = z.object({ v, type: z.literal("parcel"), parcel: Parcel });
+/** WebSocket, only to the tab that holds the file: send it to this recipient, piece by piece from `offset` */
+export const UiParcelPull = z.object({ v, type: z.literal("parcel-pull"), id: parcelId, to: personId, offset: count });
+/** WebSocket, answer to `parcels-held`: parcels the service does not know (it restarted); the tab offers them again */
+export const UiParcelsMissing = z.object({ v, type: z.literal("parcels-missing"), ids: z.array(parcelId) });
+
 export const UiTalking = z.object({ v, type: z.literal("talking"), session, state: TalkingState });
 export const UiResult = z.object({ v, type: z.literal("result"), id: commandId, result: CommandResult });
 export const UiStatus = z.object({
@@ -537,7 +616,7 @@ export const UiStatus = z.object({
   preview: z.boolean().optional(),
 });
 
-export const BridgeToUi = z.discriminatedUnion("type", [Snapshot, UiTalking, UiResult, UiStatus, UiBoard, UiNudge, UiChat]);
+export const BridgeToUi = z.discriminatedUnion("type", [Snapshot, UiTalking, UiResult, UiStatus, UiBoard, UiNudge, UiChat, UiParcel, UiParcelPull, UiParcelsMissing]);
 export type BridgeToUi = z.infer<typeof BridgeToUi>;
 
 // ---------------------------------------------------------------- Helpers

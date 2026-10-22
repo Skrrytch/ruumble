@@ -14,6 +14,7 @@ import {
   type CommandResult,
   type Locale,
   type Snapshot,
+  type UiParcelsHeld,
   type UserStatus,
 } from "@ruumble/protocol";
 import { RateLimiter } from "./access.ts";
@@ -93,6 +94,21 @@ interface UiEntry {
   certHash: string | null;
   /** public name of the device token it connected with (key cabinet, ADR-0015) */
   keyId: string | null;
+  /** what other modules see of it (watchUis) */
+  handle: UiHandle;
+}
+
+/** one connected web UI (a browser tab) as other modules see it */
+export interface UiHandle {
+  readonly certHash: string | null;
+  send(msg: BridgeToUi): void;
+}
+
+/** what a module learns about the paired web UIs (tube mail, ADR-0022) */
+export interface UiWatcher {
+  connected(ui: UiHandle): void;
+  held(ui: UiHandle, msg: UiParcelsHeld): void;
+  closed(ui: UiHandle): void;
 }
 
 const v = PROTOCOL_VERSION;
@@ -105,6 +121,7 @@ export class Hub {
   /** command ID in the plugin → web UI and its ID */
   private readonly pending = new Map<string, { ui: UiEntry; id: string; certHash: string }>();
   private readonly commands = new RateLimiter(MAX_COMMANDS_PER_SECOND, 1000);
+  private watcher: UiWatcher | null = null;
 
   constructor(opts: HubOptions) {
     this.opts = opts;
@@ -128,6 +145,16 @@ export class Hub {
     const plugin = certHash ? this.plugins.get(certHash) : undefined;
     const user = plugin && this.state?.users.find((u) => u.session === plugin.session);
     return plugin && user ? { certHash: plugin.certHash, session: plugin.session, name: user.name, channelId: user.channel } : null;
+  }
+
+  /** learn about paired web UIs coming, going and what they hold (tube mail, ADR-0022) */
+  watchUis(watcher: UiWatcher): void {
+    this.watcher = watcher;
+  }
+
+  /** to the web UIs of a paired person, also while their plugin is not connected */
+  toUisOf(certHash: string, msg: BridgeToUi): void {
+    this.forUis(certHash, (ui) => ui.conn.send(msg));
   }
 
   /** Is this channel a room with a board? 2nd level, not temporary (ADR-0011) */
@@ -383,19 +410,22 @@ export class Hub {
       conn.close(4401, "not-paired");
       return { onMessage: () => {}, onClose: () => {} };
     }
-    const ui: UiEntry = { conn, certHash, keyId };
+    const ui: UiEntry = { conn, certHash, keyId, handle: { certHash, send: (msg) => conn.send(msg) } };
     this.uis.add(ui);
     const plugin = certHash ? this.plugins.get(certHash) : undefined;
     conn.send({ v, type: "status", plugin: plugin ? "connected" : "disconnected", ...(certHash ? {} : { preview: true }) });
     this.sendSnapshot(ui);
+    if (certHash) this.watcher?.connected(ui.handle);
     return {
       onMessage: (raw: string) => {
         const msg = parse(UiToBridge, raw);
         if (msg?.type === "command") this.command(ui, msg.id, msg.body);
+        else if (msg?.type === "parcels-held" && certHash) this.watcher?.held(ui.handle, msg);
       },
       onClose: () => {
-        this.uis.delete(ui);
+        if (!this.uis.delete(ui)) return;
         for (const [id, p] of this.pending) if (p.ui === ui) this.pending.delete(id);
+        if (certHash) this.watcher?.closed(ui.handle);
       },
     };
   }

@@ -15,6 +15,8 @@
     ontend,
     onnudge,
     onchat,
+    onparcel,
+    ondropfile,
   }: {
     floor: Floor;
     readonly?: boolean;
@@ -30,6 +32,10 @@
     onnudge?: (user: UserView) => void;
     /** send someone a direct message (ADR-0021) */
     onchat?: (user: UserView) => void;
+    /** send someone a file by tube mail (ADR-0022) */
+    onparcel?: (user: UserView) => void;
+    /** a file dropped on a room or the corridor: tube mail to the people there */
+    ondropfile?: (file: File, channelId: number) => void;
   } = $props();
   const tendRoom = (channelId: number) => (ontend ? () => ontend({ kind: "room", channelId }) : undefined);
   const tendFloor = $derived(ontend ? () => ontend({ kind: "floor", channelId: floor.channelId }) : undefined);
@@ -73,14 +79,14 @@
       pending={pendingChannel === floor.channelId}
       {talking}
       {readonly}
-      {onjoin} {onnudge} {onchat}
+      {onjoin} {onnudge} {onchat} {onparcel} {ondropfile}
       ontend={tendFloor}
     />
   {:else}
     <div class="track" style:width={width > 1 ? `${width * 100}%` : undefined}>
       <div class="row top">
         {#each rows.top as room (room.channelId)}
-          <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {onnudge} {onchat} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
+          <SpaceButton space={room} variant="room" row="top" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {onnudge} {onchat} {onparcel} {ondropfile} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
         {/each}
       </div>
       <SpaceButton
@@ -91,12 +97,12 @@
         pending={pendingChannel === floor.channelId}
         {talking}
         {readonly}
-        {onjoin} {onnudge} {onchat}
+        {onjoin} {onnudge} {onchat} {onparcel} {ondropfile}
         ontend={tendFloor}
       />
       <div class="row bottom">
         {#each rows.bottom as room (room.channelId)}
-          <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {onnudge} {onchat} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
+          <SpaceButton space={room} variant="room" row="bottom" title={room.name} pending={pendingChannel === room.channelId} {talking} {readonly} {onjoin} {onnudge} {onchat} {onparcel} {ondropfile} {boardOpen} {boardUnseen} {ontoggleboard} ontend={tendRoom(room.channelId)} />
         {/each}
       </div>
     </div>

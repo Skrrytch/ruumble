@@ -305,10 +305,10 @@ describe("BoardStore", () => {
   it("building settings: defaults from the options, only differences stored, applied at once (ADR-0016)", () => {
     let now = 100 * DAY;
     const { store, dir } = tempStore({ retentionDays: 30, now: () => now });
-    expect(store.settings).toEqual({ retentionDays: 30, quotaMB: 2048, maxFileMB: 10, graceDays: 7, notifyNewPosts: true });
+    expect(store.settings).toEqual({ retentionDays: 30, quotaMB: 2048, maxFileMB: 10, graceDays: 7, notifyNewPosts: true, tubeMailMbit: 16 });
     store.create({ channelId: 3, kind: "text", text: "old", authorHash: A, authorName: "Anna" });
     now += 20 * DAY;
-    store.saveSettings({ retentionDays: 14, quotaMB: 2048, maxFileMB: 2, graceDays: 0, notifyNewPosts: false });
+    store.saveSettings({ retentionDays: 14, quotaMB: 2048, maxFileMB: 2, graceDays: 0, notifyNewPosts: false, tubeMailMbit: 0 });
     expect(store.retentionDays).toBe(14);
     expect(store.maxFileBytes).toBe(2 * 1024 * 1024);
     expect(store.quotaBytes).toBe(2048 * 1024 * 1024);
@@ -316,7 +316,7 @@ describe("BoardStore", () => {
     store.close();
     // reopened with another default: unchanged values follow the new default, changed ones stay
     const again = new BoardStore(dir, { retentionDays: 60, quotaBytes: 4096 * 1024 * 1024 });
-    expect(again.settings).toEqual({ retentionDays: 14, quotaMB: 4096, maxFileMB: 2, graceDays: 0, notifyNewPosts: false });
+    expect(again.settings).toEqual({ retentionDays: 14, quotaMB: 4096, maxFileMB: 2, graceDays: 0, notifyNewPosts: false, tubeMailMbit: 0 });
     expect(again.settingDefaults.retentionDays).toBe(60);
     again.saveSettings(again.settingDefaults);
     expect(again.settings).toEqual(again.settingDefaults);

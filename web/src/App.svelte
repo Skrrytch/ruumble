@@ -22,6 +22,10 @@
   import StatusDialog from "./lib/ui/StatusDialog.svelte";
   import ChatPanel from "./lib/ui/chat/ChatPanel.svelte";
   import ChatToast from "./lib/ui/chat/ChatToast.svelte";
+  import TubeDialog from "./lib/ui/tube/TubeDialog.svelte";
+  import TubePanel from "./lib/ui/tube/TubePanel.svelte";
+  import TubeToast from "./lib/ui/tube/TubeToast.svelte";
+  import { candidates, peopleIn } from "./lib/tube/model.ts";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
 
@@ -132,6 +136,8 @@
           ontend={(target) => app.openCare(target)}
           onnudge={(user) => void app.nudge(user)}
           onchat={(user) => { if (user.person) app.chat.open(user.person, user.name); }}
+          onparcel={(user) => { if (user.person) app.tube.compose(null, [user.person]); }}
+          ondropfile={(file, channelId) => app.tube.compose(file, peopleIn(candidates(app.snapshot, app.tube.me), channelId))}
         />
       {:else}
         <div class="vacancy" role="status">
@@ -150,6 +156,8 @@
     {#if app.me}
       <ChatPanel {app} />
       <ChatToast {app} />
+      {#if app.tube.panel}<TubePanel {app} />{:else}<TubeToast {app} />{/if}
+      {#if app.tube.draft}<TubeDialog {app} />{/if}
     {/if}
   {/if}
 

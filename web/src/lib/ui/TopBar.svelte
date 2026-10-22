@@ -13,6 +13,7 @@
   import Mic from "@lucide/svelte/icons/mic";
   import MicOff from "@lucide/svelte/icons/mic-off";
   import Moon from "@lucide/svelte/icons/moon";
+  import FileOutput from "@lucide/svelte/icons/file-output";
   import Tag from "@lucide/svelte/icons/tag";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import UserIcon from "@lucide/svelte/icons/user";
@@ -47,6 +48,11 @@
   const deaf = $derived(me?.selfDeaf ?? false);
   const myStatus = $derived(me?.status ?? null);
   const unread = $derived(app.chat.unread);
+  const parcels = $derived(app.tube.waiting);
+  const sending = $derived(app.tube.progress);
+  const tubeLabel = $derived(
+    [t().tube.title, parcels ? t().tube.waiting(parcels) : "", sending !== null ? t().tube.sending(Math.round(sending * 100)) : ""].filter(Boolean).join(", "),
+  );
   const myAvatar = $derived(me ? app.avatarOf(me.name) : null);
   let avatarBroken = $state<string | null>(null); // URL that could not be loaded → initials
   const hidden = $derived(building.self?.kind === "hidden");
@@ -171,6 +177,17 @@
   </div>
 
   <div class="right">
+    <!-- tube mail (ADR-0022): opens its panel; the number of parcels waiting for an answer, a ring while own ones are on their way -->
+    <button
+      type="button" class="tool tube" data-tube-button aria-pressed={app.tube.panel} aria-label={tubeLabel} title={tubeLabel}
+      disabled={!me} onclick={() => app.tube.togglePanel()}
+    >
+      <FileOutput size={20} />
+      {#if sending !== null}
+        <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20" pathLength="100" stroke-dasharray={`${Math.max(4, sending * 100)} 100`} /></svg>
+      {/if}
+      {#if parcels}<span class="count" aria-hidden="true">{parcels > 99 ? "99+" : parcels}</span>{/if}
+    </button>
     <!-- direct chat (ADR-0021): opens its window; the number of unread messages on it -->
     <button
       type="button" class="tool chat" data-chat-button aria-pressed={app.chat.panel === "open"} aria-keyshortcuts="P"
@@ -356,7 +373,10 @@
   .tool:hover { background: var(--color-blue-100); }
   .tool[aria-pressed="true"] { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-paper); }
   .tool:disabled { opacity: 0.5; cursor: not-allowed; }
-  .chat { position: relative; }
+  .chat, .tube { position: relative; }
+  /* own parcels on their way: a ring around the button that fills up */
+  .ring { position: absolute; inset: -3px; width: calc(100% + 6px); height: calc(100% + 6px); transform: rotate(-90deg); pointer-events: none; overflow: visible; }
+  .ring circle { fill: none; stroke: var(--color-blue-500); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 400ms var(--ease-out); }
   /* mute and deafen: a joined pair with a little room before it */
   .audio { display: flex; margin-left: 10px; border-radius: var(--radius-md); box-shadow: 0 1px 0 rgb(0 56 105 / 0.12); }
   .audio .tool { border-radius: 0; background: var(--color-surface); }
@@ -365,12 +385,12 @@
   .audio .tool:hover { background: var(--color-blue-100); }
   .audio .tool[aria-pressed="true"] { background: var(--color-ink); border-color: var(--color-ink); }
   .audio .tool:disabled:hover { background: var(--color-surface); }
-  .chat .count {
+  .chat .count, .tube .count {
     position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; box-sizing: border-box;
     background: var(--color-ink); color: var(--color-paper); box-shadow: 0 0 0 2px var(--color-paper);
     font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums;
   }
-  .chat[aria-pressed="true"] .count { background: var(--color-paper); color: var(--color-ink); box-shadow: 0 0 0 2px var(--color-ink); }
+  .chat[aria-pressed="true"] .count, .tube[aria-pressed="true"] .count { background: var(--color-paper); color: var(--color-ink); box-shadow: 0 0 0 2px var(--color-ink); }
   .tool:disabled:hover { background: var(--color-paper); }
 
   /* name badge: white card with a yellow band, hanging on a clip */

@@ -26,6 +26,7 @@ The templates already set these.
 | `PREVIEW` | `false` | `true`: unpaired browsers see the building read-only |
 | `RETENTION_DAYS` | `365` | How long board posts are kept; admins can delete older posts per room earlier (room care). Default only: admins can change it in the building maintenance |
 | `BOARD_QUOTA_MB` | `2048` | Storage for board attachments; when full, the oldest posts with attachments are deleted. Default only, like `RETENTION_DAYS` |
+| `TUBE_MAIL_MBIT` | `16` | Bandwidth of all tube mail transfers together, in Mbit/s; `0` is unlimited. Every file crosses the server's line twice and shares it with Mumble's voice ([how tube mail works](../tube-mail.md)). Default only: admins can change it in the building maintenance |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 
 **Set by the image**, not changed normally: `DATA_DIR` (`/data`), `WEB_DIST`, `PLUGIN_BUNDLE`, `PLUGIN_BUNDLE_DIR`.

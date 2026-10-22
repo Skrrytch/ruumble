@@ -2,8 +2,8 @@
  * LiveAdapter: WebSocket to the Ruumble service (`/ws/ui`, ADR-0007).
  * Reconnects with increasing delay after a drop. Results are matched to commands by ID.
  */
-import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, StatusView, ChatMessage, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
-import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, KeysApi, MaintenanceApi, BoardResult, MumbleAdapter, PairApi, PairResult, StatusApi, ChatApi } from "./types.ts";
+import { BoardError, BoardView, BridgeToUi, BuildingCare, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, PROTOCOL_VERSION, PairError, PairRequested, Pinned, Post, StatusView, ChatMessage, Parcel, ParcelTicket, Uploaded, Versions, parse, type CommandBody, type CommandResult, type Parser } from "@ruumble/protocol";
+import type { AdapterEvents, BoardApi, BoardErrorCode, CareApi, KeysApi, MaintenanceApi, BoardResult, MumbleAdapter, PairApi, PairResult, StatusApi, ChatApi, TubeApi } from "./types.ts";
 
 /** REST of the board; the pairing cookie is sent automatically (same-origin) */
 async function call<T>(schema: Parser<T> | null, url: string, init: RequestInit = {}): Promise<BoardResult<T>> {
@@ -147,6 +147,26 @@ export class LiveAdapter implements MumbleAdapter {
   readonly maintenance: MaintenanceApi = liveMaintenance;
   readonly status: StatusApi = liveStatus;
   readonly chat: ChatApi = liveChat;
+  /** parcels this tab holds (tube mail): told to the service on every connect */
+  private heldIds: string[] = [];
+  readonly tube: TubeApi = {
+    offer: (offer) => call(Parcel, "/api/parcels", { method: "POST", body: JSON.stringify(offer) }),
+    accept: async (id) => {
+      const r = await call(ParcelTicket, `/api/parcels/${encodeURIComponent(id)}/accept`, { method: "POST" });
+      return r.ok ? { ok: true, value: r.value.ticket } : r;
+    },
+    decline: (id) => call<true>(null, `/api/parcels/${encodeURIComponent(id)}/decline`, { method: "POST" }),
+    withdraw: (id) => call<true>(null, `/api/parcels/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    piece: (id, to, offset, bytes) =>
+      call<true>(null, `/api/parcels/${encodeURIComponent(id)}/pieces/${encodeURIComponent(to)}?offset=${offset}`, {
+        method: "POST", body: bytes, headers: { "content-type": "application/octet-stream" },
+      }),
+    held: (ids) => {
+      this.heldIds = ids;
+      this.sendHeld();
+    },
+    downloadUrl: (ticket) => `/api/parcels/download/${encodeURIComponent(ticket)}`,
+  };
   readonly pairing: PairApi = {
     request: async () => {
       const r = await pairCall("/api/pair/request");
@@ -201,10 +221,17 @@ export class LiveAdapter implements MumbleAdapter {
     });
   }
 
+  private sendHeld(): void {
+    if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ v: PROTOCOL_VERSION, type: "parcels-held", ids: this.heldIds }));
+  }
+
   private open(): void {
     const socket = new WebSocket(this.url);
     this.socket = socket;
-    socket.onopen = () => (this.retryMs = 500);
+    socket.onopen = () => {
+      this.retryMs = 500;
+      this.sendHeld();
+    };
     socket.onmessage = (e) => {
       const msg = parse(BridgeToUi, String(e.data));
       if (!msg || !this.events) return;
@@ -221,6 +248,12 @@ export class LiveAdapter implements MumbleAdapter {
           return this.events.nudge(msg.session, msg.name);
         case "chat":
           return this.events.chat(msg.message);
+        case "parcel":
+          return this.events.parcel(msg.parcel);
+        case "parcel-pull":
+          return this.events.parcelPull(msg.id, msg.to, msg.offset);
+        case "parcels-missing":
+          return this.events.parcelsMissing(msg.ids);
         case "result": {
           const p = this.pending.get(msg.id);
           if (p) {

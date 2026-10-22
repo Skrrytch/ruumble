@@ -6,6 +6,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Added
+- **Tube mail.** Hand a file to people who are in Ruumble at the same time: "Send a file" on the person card, in the new tube mail panel (a file with an arrow in the top bar), or drop a file on a room. Pick people one by one or everyone with Ruumble in a room, add a note. Each recipient sees who sends what and accepts or declines; accepting is a normal browser download, and a line in the Mumble log tells them about it too. The panel shows every recipient's state and progress and lets you withdraw a parcel. Nothing is stored on the server: the file stays in the sender's tab and passes through the service piece by piece, so the sender keeps the tab open until everyone has it (at most 8 hours). Up to 500 MB and 50 recipients; files that can run programs come with a warning ([how it works](docs/tube-mail.md), ADR-0022).
+- **Tube mail bandwidth** in the building maintenance: all transfers together, 16 Mbit/s by default (`TUBE_MAIL_MBIT`), 0 for unlimited, so files do not crowd out Mumble's voice.
+
 ### Changed
 - **Tube mail is now "A quiet word".** Private messages between two people are called "A quiet word" (German "Unter vier Augen"), the person card offers "Have a quiet word"; the Mumble-log line reads "Message from Anna: …". Conversations kept by the browser carry over. The name "tube mail" is kept for sending files between people.
 
