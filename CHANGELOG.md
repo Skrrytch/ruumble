@@ -6,6 +6,8 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-10-22
+
 Plugin 0.5.0 (unchanged). Tube mail for private messages between two people, a person card for everyone with Ruumble, and clearer symbols in the top bar.
 
 ### Added
@@ -343,6 +345,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.30.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.29.0
 [0.28.2]: https://github.com/Skrrytch/ruumble/releases/tag/v0.28.2
 [0.28.1]: https://github.com/Skrrytch/ruumble/releases/tag/v0.28.1
