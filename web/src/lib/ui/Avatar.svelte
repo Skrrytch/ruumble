@@ -12,12 +12,15 @@
     talking = false,
     showName = true,
     tooltip = true,
+    dropTarget = false,
   }: {
     user: UserView;
     talking?: boolean;
     showName?: boolean;
     /** false: a card shows who it is instead (nudge, ADR-0020) */
     tooltip?: boolean;
+    /** a file is dragged over this person: tube mail goes to them alone (ADR-0022) */
+    dropTarget?: boolean;
   } = $props();
 
   // image not loadable → initials (AP9)
@@ -35,7 +38,7 @@
 </script>
 
 <span class="person" title={tooltip ? label : undefined} aria-label={label} role="img" data-session={user.session}>
-  <span class="av {presence}" class:me={user.isSelf} class:talking aria-hidden="true">
+  <span class="av {presence}" class:me={user.isSelf} class:talking class:drop={dropTarget} aria-hidden="true">
     {#if imageUrl}
       <img src={imageUrl} alt="" onerror={() => (failedUrl = imageUrl)} />
     {:else}
@@ -94,6 +97,8 @@
     background: var(--color-paper); border: 1px solid var(--color-blue-300); color: var(--color-link);
     display: flex; align-items: center; justify-content: center;
   }
+  /* a file dragged over the person (tube mail): a dashed ring */
+  .av.drop { outline: 3px dashed var(--color-blue-500); outline-offset: 3px; }
   .status-tag {
     position: absolute; right: -7px; top: -7px; width: 22px; height: 22px; border-radius: 50%;
     background: var(--color-paper); border: 1px solid var(--color-ink); color: var(--color-ink);

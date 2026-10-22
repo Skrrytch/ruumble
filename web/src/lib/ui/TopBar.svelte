@@ -197,11 +197,7 @@
       <MessagesSquare size={20} />
       {#if unread}<span class="count" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>{/if}
     </button>
-    <!-- the own status (B, ADR-0018): a tag like the one at the avatar, filled while one is set, its text in the tooltip -->
-    <button type="button" class="tool" aria-pressed={!!myStatus} aria-label={t().status.title} title={`${myStatus ? t().status.current(myStatus.text) : t().status.set} (S)`} disabled={!me} onclick={() => void app.openStatus()}>
-      <Tag size={20} />
-    </button>
-    <!-- mute and deafen belong together: one joined pair, set apart from the direct chat and status -->
+    <!-- mute and deafen belong together: one joined pair, set apart from tube mail and the direct chat -->
     <div class="audio" role="group" aria-label={t().core.audio}>
     <button type="button" class="tool" aria-pressed={muted} aria-label={t().core.mute} title={t().core.mute} disabled={!me} onclick={() => app.toggleMute()}>
       {#if muted}<MicOff size={20} />{:else}<Mic size={20} />{/if}
@@ -219,6 +215,14 @@
         <span class="me-text"><span class="caption">{t().core.nameTag}</span><span class="me-name">{me?.name ?? t().header.preview}</span></span>
         <ChevronDown size={18} class="chevron" aria-hidden="true" />
       </button>
+      <!-- the own status (B, ADR-0018): a tag at the avatar of the name badge, as at every avatar in the floor plan;
+           its text in the tooltip, dashed while none is set. A button of its own: the badge opens the user menu -->
+      {#if me}
+        <button type="button" class="status-tag" class:set={!!myStatus} aria-pressed={!!myStatus} aria-label={t().status.title} aria-keyshortcuts="S"
+          title={`${myStatus ? t().status.current(myStatus.text) : t().status.set} (S)`} onclick={() => void app.openStatus()}>
+          <span class="tag-face"><Tag size={12} strokeWidth={2.5} /></span>
+        </button>
+      {/if}
       {#if open === "user"}
         <div id="user-menu" class="menu" role="group" aria-label={t().core.userMenu} {@attach focusFirst}>
           {#if me}
@@ -226,6 +230,10 @@
           {/if}
           <button type="button" class="item" disabled={!myFloor} onclick={() => { app.goHome(); open = null; }}>
             <LocateFixed size={18} aria-hidden="true" />{t().core.home}
+          </button>
+          <!-- my status, also with S and from the tag at the avatar (ADR-0018) -->
+          <button type="button" class="item" onclick={() => { open = null; void app.openStatus(); }}>
+            <Tag size={18} aria-hidden="true" />{t().status.menu}<kbd class="key">S</kbd>
           </button>
           <!-- my keys: the own paired browsers (ADR-0015) -->
           <button type="button" class="item" disabled={!me} onclick={() => { open = null; void app.openKeys(); }}>
@@ -413,6 +421,20 @@
     box-shadow: 0 0 0 2px var(--color-accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; overflow: hidden;
   }
   .av-me img { width: 100%; height: 100%; object-fit: cover; }
+  /* the status tag on the badge's avatar: a 28 px target around a 22 px tag like the one in the floor plan */
+  .status-tag {
+    position: absolute; left: 34px; top: 7px; width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer;
+    display: grid; place-items: center; z-index: 1;
+  }
+  .tag-face {
+    width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; box-sizing: border-box;
+    background: var(--color-paper); border: 1px dashed var(--color-blue-300); color: var(--color-blue-700);
+    transition: transform var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+  }
+  .status-tag.set .tag-face { border: 1px solid var(--color-ink); color: var(--color-ink); box-shadow: 0 1px 2px rgb(0 56 105 / 0.25); }
+  .status-tag:hover .tag-face { transform: scale(1.1); border-color: var(--color-ink); color: var(--color-ink); }
+  .status-tag:focus-visible { outline: none; }
+  .status-tag:focus-visible .tag-face { outline: 3px solid var(--color-sky); outline-offset: 1px; }
   .me-text { min-width: 0; }
   .me .caption { color: var(--color-link); }
   .me-name { display: block; font-size: 15px; font-weight: 700; white-space: nowrap; }

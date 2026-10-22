@@ -25,7 +25,6 @@
   import TubeDialog from "./lib/ui/tube/TubeDialog.svelte";
   import TubePanel from "./lib/ui/tube/TubePanel.svelte";
   import TubeToast from "./lib/ui/tube/TubeToast.svelte";
-  import { candidates, peopleIn } from "./lib/tube/model.ts";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
 
@@ -67,6 +66,14 @@
     document.title = place ? `${place.name} · Ruumble` : "Ruumble";
   });
 
+  // a file dropped where nothing takes it would replace Ruumble with the file in this tab: the drop is swallowed here,
+  // after the board, the rooms and the send dialog had their turn (tube mail, ADR-0022)
+  function guardFiles(e: DragEvent): void {
+    if (e.defaultPrevented || !e.dataTransfer?.types.includes("Files")) return;
+    e.preventDefault();
+    if (e.type === "dragover") e.dataTransfer.dropEffect = "none";
+  }
+
   // a nudge plays a sound (ADR-0020); browsers allow that only after the page was used once
   $effect(() => unlockAudioOnFirstUse());
 
@@ -97,7 +104,7 @@
   }
 </script>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} ondragover={guardFiles} ondrop={guardFiles} />
 
 <div class="app">
   {#if app.connection === "unpaired"}
@@ -137,7 +144,7 @@
           onnudge={(user) => void app.nudge(user)}
           onchat={(user) => { if (user.person) app.chat.open(user.person, user.name); }}
           onparcel={(user) => { if (user.person) app.tube.compose(null, [user.person]); }}
-          ondropfile={(file, channelId) => app.tube.compose(file, peopleIn(candidates(app.snapshot, app.tube.me), channelId))}
+          ondropfile={(file, people) => app.tube.compose(file, people)}
         />
       {:else}
         <div class="vacancy" role="status">

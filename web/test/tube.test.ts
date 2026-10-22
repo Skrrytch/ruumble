@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { TUBE_LIMITS, type Parcel, type ParcelOffer, type ParcelState, type Snapshot } from "@ruumble/protocol";
 import type { MumbleAdapter } from "../src/lib/adapter/types.ts";
 import {
-  candidates, fileProblem, incoming, isExecutable, merge, mine, newParcelId, outgoing, peopleIn, roomChoices, sendingProgress, stillNeeded, stillOpen,
+  candidates, fileProblem, incoming, isExecutable, merge, mine, newParcelId, outgoing, roomChoices, sendingProgress, stillNeeded, stillOpen,
   togglePerson, toggleRoom, typeLabel, waiting, waitingCount, without, withoutRuumble, type Parcels,
 } from "../src/lib/tube/model.ts";
 import { TubeState, tubeErrorText } from "../src/lib/tube/state.svelte.ts";
@@ -81,7 +81,6 @@ describe("tube mail: the parcels of the own person (ADR-0022)", () => {
     expect(withoutRuumble(null)).toEqual([]);
     const rooms = roomChoices(list, 2);
     expect(rooms.map((r) => r.name)).toEqual(["Lab", "", "Kitchen"]);
-    expect(peopleIn(list, 1)).toEqual([BEN]);
     let picked = toggleRoom([BEN], rooms[0]!);
     expect(picked).toEqual([BEN, ANNA]);
     picked = toggleRoom(picked, rooms[0]!);

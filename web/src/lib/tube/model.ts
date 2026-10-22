@@ -119,11 +119,6 @@ export function withoutRuumble(snapshot: Snapshot | null): string[] {
   return snapshot.users.filter((u) => !u.person && u.session !== snapshot.self?.session).map((u) => u.name).sort((a, b) => a.localeCompare(b));
 }
 
-/** the people to send to in one channel (a file dropped on a room) */
-export function peopleIn(list: Candidate[], channelId: number): string[] {
-  return list.filter((c) => c.channelId === channelId).map((c) => c.person);
-}
-
 /** a room as a quick choice: its people with Ruumble at this moment */
 export interface RoomChoice {
   channelId: number;

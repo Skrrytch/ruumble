@@ -34,8 +34,8 @@
     onchat?: (user: UserView) => void;
     /** send someone a file by tube mail (ADR-0022) */
     onparcel?: (user: UserView) => void;
-    /** a file dropped on a room or the corridor: tube mail to the people there */
-    ondropfile?: (file: File, channelId: number) => void;
+    /** a file dropped on a room, the corridor or a person: tube mail to them */
+    ondropfile?: (file: File, people: string[]) => void;
   } = $props();
   const tendRoom = (channelId: number) => (ontend ? () => ontend({ kind: "room", channelId }) : undefined);
   const tendFloor = $derived(ontend ? () => ontend({ kind: "floor", channelId: floor.channelId }) : undefined);

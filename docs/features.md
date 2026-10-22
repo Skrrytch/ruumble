@@ -12,7 +12,7 @@ How to use Ruumble: [user-guide.md](user-guide.md). How to run it: [operations.m
 
 - Top-level channels become **floors**, the floor channel itself is the **corridor**, second-level channels are **rooms**. A floor without subchannels is an **open floor**.
 - Order follows the channels' **position** in Mumble, then the name, as in the Mumble client. The first floor is the ground floor. There are no special names or keywords.
-- **Top bar** instead of a side column, so the floor plan gets the full width: the **floor sign** with the current floor and its head count opens the **elevator** as a dropdown (head count behind every floor, everyone online and the server name in a status bar at the bottom); in the middle the **room sign** of the own place (leads back from another floor); on the right the **status**, mute, deafen and the **name badge**, which opens the user menu ("go to my floor", language, dark mode, versions).
+- **Top bar** instead of a side column, so the floor plan gets the full width: the **floor sign** with the current floor and its head count opens the **elevator** as a dropdown (head count behind every floor, everyone online and the server name in a status bar at the bottom); in the middle the **room sign** of the own place (leads back from another floor); on the right tube mail, "A quiet word", mute, deafen and the **name badge** with the status tag at its avatar; the badge opens the user menu ("go to my floor", language, dark mode, versions).
 - Users in the root channel stand in the **entrance**, at the bottom of the elevator.
 - **Locked floors:** a floor with more than two levels is greyed out in the elevator, with the reason. The rule is re-evaluated live on every change.
 - **Linked channels** are hidden, including their subchannels. The other rooms use the space.
@@ -47,9 +47,9 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 
 ### Status
 
-- The tag button in the top bar, before mute, or the key **S** opens **My status**: a free text (one line, up to 80 characters) and when it expires: after 2 hours by default, or after 30 minutes, 1, 4 or 8 hours, or never. Set it, change it, or clear it.
+- The tag at the avatar of your name badge (top right), "My status …" in the user menu or the key **S** opens **My status**: a free text (one line, up to 80 characters) and when it expires: after 2 hours by default, or after 30 minutes, 1, 4 or 8 hours, or never. Set it, change it, or clear it.
 - Below, the **last five texts** you used, for a quick choice: a click puts the text into the field.
-- Everyone in Ruumble sees a small **tag** at your avatar, with the text and the expiry in its tooltip; the button in the top bar is filled while your status is set. It shows while your Mumble is connected with the plugin.
+- Everyone in Ruumble sees a small **tag** at your avatar, with the text and the expiry in its tooltip; the tag on your name badge is solid while your status is set and dashed while none is. It shows while your Mumble is connected with the plugin.
 - Kept by the service per person, so it follows you to other browsers; plain Mumble clients do not see it (ADR-0018). Someone without a status for 90 days is forgotten, recent texts included.
 
 ### Nudge
@@ -69,7 +69,7 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 
 ### Tube mail
 
-- **Hand a file to people** who are in Ruumble at the same time, without storing it anywhere ([ADR-0022](decisions/0022-tube-mail-files.md), [how it works](tube-mail.md)). Choose "Send a file" on the person card or in the tube mail panel, or drop a file on a room; pick people one by one or a room's people at once, add a note.
+- **Hand a file to people** who are in Ruumble at the same time, without storing it anywhere ([ADR-0022](decisions/0022-tube-mail-files.md), [how it works](tube-mail.md)). Choose "Send a file" on the person card or in the tube mail panel, or drop a file on a person (only them) or a room (everyone with Ruumble there); a file dropped anywhere else is ignored instead of opening in the tab; pick people one by one or a room's people at once, add a note.
 - Each recipient gets a notice (who, file name, type, size, note) with **Accept**, **Decline** and **Later**, and a line in their Mumble log. Accepting starts a normal browser download. Files that can run programs come with a warning.
 - The tube mail button in the top bar (a file with an arrow) counts parcels waiting for an answer and shows a ring while own ones are on their way. Its panel lists **Incoming** and **Outgoing** with every recipient's state and progress; a parcel can be withdrawn.
 - The file stays in the sender's tab and goes straight through the service to each recipient who accepts, piece by piece; the service keeps nothing. The sender keeps the tab open until everyone has it (at most 8 hours). Up to 500 MB per file and 50 recipients; all transfers together share a bandwidth set in the building maintenance.

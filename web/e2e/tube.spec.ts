@@ -33,6 +33,37 @@ test.describe("Tube mail", () => {
     await expect(panel(page)).toContainText("No tube mail on its way right now.");
   });
 
+  /** drag a file over `target` and drop it there; resolves with whether the page took the drop (prevented the default) */
+  async function dropFile(page: Page, target: ReturnType<Page["locator"]>, name = "notes.txt"): Promise<boolean> {
+    const data = await page.evaluateHandle((n) => {
+      const dt = new DataTransfer();
+      dt.items.add(new File(["hello"], n, { type: "text/plain" }));
+      return dt;
+    }, name);
+    await target.dispatchEvent("dragover", { dataTransfer: data });
+    return target.evaluate((el, dt) => !el.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true })), data);
+  }
+
+  test("a file dropped on a person goes to them alone, on a room to everyone with Ruumble there", async ({ page }) => {
+    await dropFile(page, person(page, "Clara"));
+    await expect(dialog(page).getByRole("checkbox", { name: /Clara/ })).toBeChecked();
+    await expect(dialog(page).getByRole("checkbox", { name: /Ben/ })).not.toBeChecked();
+    await expect(dialog(page)).toContainText("notes.txt");
+    // the file row takes another file
+    await dropFile(page, dialog(page).getByRole("group", { name: "notes.txt" }), "other.txt");
+    await expect(dialog(page)).toContainText("other.txt");
+    await dialog(page).getByRole("button", { name: "Close" }).first().click();
+    await dropFile(page, page.locator(".floorplan").getByRole("button", { name: /^Ben's office/ }));
+    await expect(dialog(page).getByRole("checkbox", { name: /Ben/ })).toBeChecked();
+    await expect(dialog(page).getByRole("checkbox", { name: /Clara/ })).not.toBeChecked();
+  });
+
+  test("a file dropped anywhere else stays out: the page keeps it from opening in the tab", async ({ page }) => {
+    expect(await dropFile(page, page.locator("header.topbar"))).toBe(true);
+    await expect(dialog(page)).toHaveCount(0);
+    await expect(page).toHaveURL(/fixture=sample/);
+  });
+
   test("rooms are a quick choice; a parcel can be withdrawn", async ({ page }) => {
     await button(page).click();
     await panel(page).getByRole("button", { name: "Send a file …" }).click();

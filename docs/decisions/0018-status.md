@@ -18,6 +18,8 @@ Item B of the feature list: a short status such as "In a meeting until 2 pm", sh
 
 Current state (2026-10-20): the symbol is a tag instead of a speech bubble, at the avatar and in the top bar; the speech bubbles now stand for tube mail (ADR-0021).
 
+Current state (2026-10-22): the button left the toolbar of the top bar. The own status is a tag at the avatar of the name badge, as at every avatar in the floor plan: solid while a status is set, dashed while none is, its text in the tooltip; it is a button of its own beside the badge (which opens the user menu). "My status …" in the user menu and the key **S** open it too.
+
 ## Rejected options
 - **Mumble comment via the plugin:** does not reach the server (see Context).
 - **Mumble comment via Ice:** needs the write secret, against ADR-0002.

@@ -57,26 +57,39 @@
     onchat?: (user: UserView) => void;
     /** send someone else who uses Ruumble a file by tube mail (ADR-0022) */
     onparcel?: (user: UserView) => void;
-    /** a file dropped here: tube mail to the people with Ruumble in this space (ADR-0022) */
-    ondropfile?: (file: File, channelId: number) => void;
+    /** a file dropped here: tube mail to these people (the one under the pointer, else everyone with Ruumble here, ADR-0022) */
+    ondropfile?: (file: File, people: string[]) => void;
   } = $props();
 
-  // tube mail: a file dragged over a space with someone to send to lights it up; dropped, it opens the send dialog
-  const droppable = $derived(!!ondropfile && !readonly && space.users.some((u) => canChat(u, true)));
+  // tube mail: a file dragged over a space with someone to send to lights it up, or the person under the pointer;
+  // dropped, it opens the send dialog with them chosen
+  const recipients = $derived(ondropfile && !readonly ? space.users.filter((u) => canChat(u, true)) : []);
   let dropping = $state(false);
+  /** the person under the pointer while a file is dragged over them */
+  let dropSession = $state<number | null>(null);
   const carriesFile = (e: DragEvent) => !!e.dataTransfer?.types.includes("Files");
+  function personAt(e: DragEvent): UserView | undefined {
+    const anchor = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-session]");
+    return anchor ? recipients.find((u) => u.session === Number(anchor.dataset.session)) : undefined;
+  }
   function dragOver(e: DragEvent): void {
-    if (!droppable || !carriesFile(e)) return;
+    if (!recipients.length || !carriesFile(e)) return;
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     dropping = true;
+    dropSession = personAt(e)?.session ?? null;
+  }
+  function dragLeave(): void {
+    dropping = false;
+    dropSession = null;
   }
   function dropFile(e: DragEvent): void {
-    dropping = false;
     const file = e.dataTransfer?.files[0];
-    if (!droppable || !file) return;
+    const one = personAt(e);
+    dragLeave();
+    if (!recipients.length || !file) return;
     e.preventDefault();
-    ondropfile!(file, space.channelId);
+    ondropfile!(file, (one ? [one] : recipients).map((u) => u.person!));
   }
 
 
@@ -184,7 +197,7 @@
   class:readonly
   class:pending
   class:slow={pending && slow}
-  class:dropping
+  class:dropping={dropping && dropSession === null}
   aria-label={ariaLabel}
   aria-disabled={disabled || space.isSelf || undefined}
   aria-busy={pending || undefined}
@@ -192,7 +205,7 @@
   ondblclick={click}
   onkeydown={onActivateKey(click)}
   ondragover={dragOver}
-  ondragleave={() => (dropping = false)}
+  ondragleave={dragLeave}
   ondrop={dropFile}
 >
   {#if variant === "room"}
@@ -207,7 +220,7 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <span class="people" bind:clientWidth={peopleWidth} bind:clientHeight={peopleHeight} onpointerover={overPerson} onpointerout={dropCard}>
       {#each fit.shown as user (user.session)}
-        <Avatar {user} talking={talking[user.session] ?? false} tooltip={!cardable(user)} />
+        <Avatar {user} talking={talking[user.session] ?? false} tooltip={!cardable(user)} dropTarget={dropSession === user.session} />
       {/each}
       {#if fit.hidden.length}
         {@const names = t().space.morePeople(fit.hidden.map((u) => u.name).join(", "))}
@@ -233,7 +246,7 @@
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <span class="people" onpointerover={overPerson} onpointerout={dropCard}>
         {#each space.users as user (user.session)}
-          <Avatar {user} talking={talking[user.session] ?? false} tooltip={!cardable(user)} />
+          <Avatar {user} talking={talking[user.session] ?? false} tooltip={!cardable(user)} dropTarget={dropSession === user.session} />
         {/each}
       </span>
     {/if}

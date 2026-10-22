@@ -420,6 +420,8 @@ export const de = {
   status: {
     title: "Mein Status",
     set: "Status setzen",
+    /** the entry in the user menu */
+    menu: "Mein Status …",
     current: (text: string) => `Mein Status: ${text}`,
     intro: "Ein kurzer Text an deinem Avatar, den alle in Ruumble sehen. Er erscheint, solange dein Mumble mit dem Plugin verbunden ist.",
     label: "Status",

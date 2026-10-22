@@ -26,6 +26,13 @@
     if (file) app.tube.setFile(file);
   }
 
+  function over(e: DragEvent): void {
+    if (!e.dataTransfer?.types.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    dragging = true;
+  }
+
   function drop(e: DragEvent): void {
     e.preventDefault();
     dragging = false;
@@ -44,17 +51,14 @@
   <form onsubmit={submit}>
     <input bind:this={picker} id="tube-file" class="picker" type="file" onchange={pick} tabindex="-1" aria-hidden="true" />
     {#if draft.file}
-      <div class="file">
+      <div class="file" class:dragging role="group" aria-label={draft.file.name} ondragover={over} ondragleave={() => (dragging = false)} ondrop={drop}>
         <FileIcon size={22} aria-hidden="true" />
         <span class="fname">{draft.file.name}</span>
         <span class="meta">{[typeLabel(draft.file.name, draft.file.type), formatSize(draft.file.size)].filter(Boolean).join(" · ")}</span>
         <button type="button" class="btn secondary small" onclick={() => picker?.click()}>{t().tube.dialog.change}</button>
       </div>
     {:else}
-      <button
-        type="button" class="dropzone" class:dragging onclick={() => picker?.click()}
-        ondragover={(e) => { e.preventDefault(); dragging = true; }} ondragleave={() => (dragging = false)} ondrop={drop}
-      >
+      <button type="button" class="dropzone" class:dragging onclick={() => picker?.click()} ondragover={over} ondragleave={() => (dragging = false)} ondrop={drop}>
         <FileOutput size={26} aria-hidden="true" />
         <span>{t().tube.dialog.drop}</span>
       </button>
@@ -110,6 +114,7 @@
     background: var(--paper); color: var(--muted); font: inherit; font-size: 14px; cursor: pointer;
   }
   .dropzone:hover, .dropzone.dragging { border-color: var(--ink); background: var(--tint); color: var(--ink); }
+  .file.dragging { outline: 2px dashed var(--ink); outline-offset: 2px; }
   .file { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; align-items: center; gap: 2px 12px; padding: 10px 12px; border-radius: 6px; background: var(--tint); }
   .file :global(svg) { grid-row: span 2; }
   .fname { font-weight: 700; overflow-wrap: anywhere; }
