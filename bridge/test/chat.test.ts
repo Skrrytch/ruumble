@@ -1,17 +1,17 @@
 import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
-import type { BridgeToPlugin, BridgeToUi, Snapshot, TubeMessage } from "@ruumble/protocol";
+import type { BridgeToPlugin, BridgeToUi, Snapshot, ChatMessage } from "@ruumble/protocol";
 import { Gate } from "../src/access.ts";
 import { Hub, personIdOf } from "../src/hub.ts";
 import { Pairing } from "../src/pairing.ts";
 import { Poller } from "../src/poller.ts";
-import { tubeRoutes, tubeText } from "../src/tube.ts";
+import { chatRoutes, chatText } from "../src/chat.ts";
 import { FakeSource, recorder } from "./fake.ts";
 
 const A = "a".repeat(40), B = "b".repeat(40), C = "c".repeat(40);
 const anna = personIdOf(A), ben = personIdOf(B), clara = personIdOf(C);
 
-describe("tube mail (ADR-0021)", () => {
+describe("direct chat (ADR-0021)", () => {
   /** Anna (7) on the floor, Ben (8) in the office, Clara (9) without a plugin; Anna has two windows open */
   async function setup(o: { perMinute?: number } = {}) {
     const source = new FakeSource();
@@ -32,9 +32,9 @@ describe("tube mail (ADR-0021)", () => {
     hub.uiConnected(uis.clara.conn, C);
     const cookie = { anna: pairing.redeem(pairing.createCode(A, "Anna"))!, clara: pairing.redeem(pairing.createCode(C, "Clara"))! };
     const app = Fastify();
-    await app.register(tubeRoutes, { hub, gate: new Gate({ hub, source, certHashOf: (c) => pairing.certHashOf(c) }), now: () => 1_000, ...o });
+    await app.register(chatRoutes, { hub, gate: new Gate({ hub, source, certHashOf: (c) => pairing.certHashOf(c) }), now: () => 1_000, ...o });
     const send = (who: keyof typeof cookie | null, payload: unknown) =>
-      app.inject({ method: "POST", url: "/api/tube", headers: who ? { cookie: cookie[who] } : {}, payload: payload as object });
+      app.inject({ method: "POST", url: "/api/chat", headers: who ? { cookie: cookie[who] } : {}, payload: payload as object });
     return { send, plugins, uis };
   }
 
@@ -52,24 +52,24 @@ describe("tube mail (ADR-0021)", () => {
     const { send, plugins, uis } = await setup();
     const res = await send("anna", { kind: "text", to: ben, text: "  Got a minute?\nIt's about the release.  " });
     expect(res.statusCode).toBe(200);
-    const message = res.json() as TubeMessage;
+    const message = res.json() as ChatMessage;
     expect(message).toMatchObject({ from: anna, to: ben, fromName: "Anna", toName: "Ben", at: 1_000, kind: "text", text: "Got a minute?\nIt's about the release." });
-    expect(uis.ben.last("tube")).toEqual({ v: 1, type: "tube", message });
-    expect(uis.anna.last("tube")).toEqual({ v: 1, type: "tube", message });
-    expect(uis.anna2.last("tube")).toEqual({ v: 1, type: "tube", message });
-    expect(uis.clara.last("tube")).toBeUndefined();
-    expect(plugins[8]!.last("notify")).toEqual({ v: 1, type: "notify", text: "Tube mail from Anna: Got a minute? It's about the release." });
+    expect(uis.ben.last("chat")).toEqual({ v: 1, type: "chat", message });
+    expect(uis.anna.last("chat")).toEqual({ v: 1, type: "chat", message });
+    expect(uis.anna2.last("chat")).toEqual({ v: 1, type: "chat", message });
+    expect(uis.clara.last("chat")).toBeUndefined();
+    expect(plugins[8]!.last("notify")).toEqual({ v: 1, type: "notify", text: "Message from Anna: Got a minute? It's about the release." });
     expect(plugins[7]!.last("notify")).toBeUndefined();
   });
 
   it("an invitation carries the sender's room; a reaction reaches the web UIs only", async () => {
     const { send, plugins, uis } = await setup();
-    const invite = (await send("anna", { kind: "invite", to: ben })).json() as TubeMessage;
+    const invite = (await send("anna", { kind: "invite", to: ben })).json() as ChatMessage;
     expect(invite).toMatchObject({ kind: "invite", channelId: 1, channelName: "1F" });
-    expect(plugins[8]!.last("notify")?.text).toBe("Tube mail from Anna: Come over to 1F!");
+    expect(plugins[8]!.last("notify")?.text).toBe("Message from Anna: Come over to 1F!");
     const reaction = await send("anna", { kind: "reaction", to: ben, target: invite.id, reaction: "agree", on: true });
     expect(reaction.json()).toMatchObject({ kind: "reaction", target: invite.id, reaction: "agree", on: true });
-    expect(uis.ben.last("tube")?.message.kind).toBe("reaction");
+    expect(uis.ben.last("chat")?.message.kind).toBe("reaction");
     expect(plugins[8]!.sent.filter((m) => m.type === "notify")).toHaveLength(1);
   });
 
@@ -98,11 +98,11 @@ describe("tube mail (ADR-0021)", () => {
 
   it("the log line in both languages, on one line and shortened to fit", () => {
     const head = { id: "m", from: anna, to: ben, fromName: "Anna", toName: "Ben", at: 0 };
-    expect(tubeText({ ...head, kind: "text", text: "Hallo" })).toBe("Rohrpost von Anna: Hallo");
-    expect(tubeText({ ...head, kind: "invite", channelId: 3, channelName: "Küche" })).toBe("Rohrpost von Anna: Komm rüber in den Raum Küche!");
-    const long = tubeText({ ...head, kind: "text", text: "x".repeat(2000) }, "en")!;
+    expect(chatText({ ...head, kind: "text", text: "Hallo" })).toBe("Nachricht von Anna: Hallo");
+    expect(chatText({ ...head, kind: "invite", channelId: 3, channelName: "Küche" })).toBe("Nachricht von Anna: Komm rüber in den Raum Küche!");
+    const long = chatText({ ...head, kind: "text", text: "x".repeat(2000) }, "en")!;
     expect(long).toHaveLength(300);
     expect(long.endsWith("x…")).toBe(true);
-    expect(tubeText({ ...head, kind: "reaction", target: "m", reaction: "agree", on: true })).toBeNull();
+    expect(chatText({ ...head, kind: "reaction", target: "m", reaction: "agree", on: true })).toBeNull();
   });
 });

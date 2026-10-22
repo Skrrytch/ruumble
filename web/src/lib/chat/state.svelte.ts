@@ -1,20 +1,20 @@
 /**
- * Tube mail in the web UI (ADR-0021): the conversations of the own user, the window with one tab per person, and the
+ * The direct chat in the web UI (ADR-0021): the conversations of the own user, the window with one tab per person, and the
  * notice when something arrives. The book lives in this browser's localStorage, per own person, and every
  * conversation is forgotten a day after its last text or invitation; nothing is kept by the service.
  */
-import { TUBE_LIMITS, type ReactionKind, type TubeMessage, type TubeSend } from "@ruumble/protocol";
+import { CHAT_LIMITS, type ReactionKind, type ChatMessage, type ChatSend } from "@ruumble/protocol";
 import type { BoardErrorCode, MumbleAdapter } from "../adapter/types.ts";
 import { t } from "../i18n/index.svelte.ts";
 import {
   adjacentTab, closeConversation, forget, markRead, openConversation, openTabs, parseBook, prune, receive, storageKey,
-  tabAfterClose, unreadTotal, STORAGE_PREFIX, type Book, type TubeItem,
+  tabAfterClose, unreadTotal, LEGACY_PREFIX, STORAGE_PREFIX, type Book, type ChatItem,
 } from "./model.ts";
 
-export type TubePanel = "closed" | "open";
+export type ChatPanel = "closed" | "open";
 
 /** the notice of a new message while its conversation is not in view */
-export interface TubeToast {
+export interface ChatToast {
   person: string;
   name: string;
   text: string;
@@ -23,14 +23,14 @@ export interface TubeToast {
 const TOAST_MS = 8000;
 const PRUNE_EVERY_MS = 60_000;
 
-/** what the tube mail needs from the rest of the web UI */
-export interface TubeHost {
+/** what the direct chat needs from the rest of the web UI */
+export interface ChatHost {
   notice(text: string): void;
 }
 
 /** plain text for a message that did not go out */
-export function tubeErrorText(error: BoardErrorCode, name: string): string {
-  const m = t().tube.errors;
+export function chatErrorText(error: BoardErrorCode, name: string): string {
+  const m = t().chat.errors;
   return error === "rate-limited" ? m.rateLimited
     : error === "not-found" ? m.unreachable(name)
     : error === "invalid" ? m.invalid
@@ -39,12 +39,12 @@ export function tubeErrorText(error: BoardErrorCode, name: string): string {
     : t().notices.actionFailed;
 }
 
-export class TubeState {
+export class ChatState {
   book = $state<Book>({});
-  panel = $state<TubePanel>("closed");
+  panel = $state<ChatPanel>("closed");
   /** the other person of the tab in view */
   active = $state<string | null>(null);
-  toast = $state<TubeToast | null>(null);
+  toast = $state<ChatToast | null>(null);
   /** unsent text per person, while the page is open */
   drafts = $state<Record<string, string>>({});
   /** a message is on its way */
@@ -67,7 +67,7 @@ export class TubeState {
 
   constructor(
     private readonly adapter: MumbleAdapter,
-    private readonly host: TubeHost,
+    private readonly host: ChatHost,
   ) {}
 
   start(): void {
@@ -95,7 +95,7 @@ export class TubeState {
   identify(me: string | null): void {
     if (!me || me === this.me) return;
     this.me = me;
-    this.book = prune(parseBook(read(storageKey(me))), Date.now());
+    this.book = prune(parseBook(read(storageKey(me)) ?? takeLegacy(me)), Date.now());
     this.active = this.tabs[0]?.person ?? null;
     this.save();
   }
@@ -109,14 +109,14 @@ export class TubeState {
     this.drafts = {};
     this.me = null;
     try {
-      for (const key of Object.keys(localStorage)) if (key.startsWith(STORAGE_PREFIX)) localStorage.removeItem(key);
+      for (const key of Object.keys(localStorage)) if (key.startsWith(STORAGE_PREFIX) || key.startsWith(LEGACY_PREFIX)) localStorage.removeItem(key);
     } catch {
       /* no storage: nothing kept */
     }
   }
 
   /** a message from the service (event or answer); a new one from someone else shows a notice unless it is in view */
-  receive(m: TubeMessage): void {
+  receive(m: ChatMessage): void {
     if (!this.me) return;
     const person = m.from === this.me ? m.to : m.from;
     const seen = this.inView(person);
@@ -125,7 +125,7 @@ export class TubeState {
     if (this.active === null || !this.book[this.active]?.open) this.active = person;
     if (r.arrived && !seen) {
       const { conversation, item } = r.arrived;
-      this.showToast({ person, name: conversation.name, text: item.kind === "text" ? item.text : t().tube.inviteFrom(item.channelName) });
+      this.showToast({ person, name: conversation.name, text: item.kind === "text" ? item.text : t().chat.inviteFrom(item.channelName) });
     }
   }
 
@@ -195,8 +195,8 @@ export class TubeState {
     const person = this.active;
     const text = person ? (this.drafts[person] ?? "").trim() : "";
     if (!person || !text) return false;
-    if (text.length > TUBE_LIMITS.textChars) {
-      this.host.notice(t().tube.errors.invalid);
+    if (text.length > CHAT_LIMITS.textChars) {
+      this.host.notice(t().chat.errors.invalid);
       return false;
     }
     const ok = await this.send({ kind: "text", to: person, text });
@@ -210,7 +210,7 @@ export class TubeState {
   }
 
   /** set or take back the own quick reaction on a message */
-  react(item: TubeItem, kind: ReactionKind): Promise<boolean> {
+  react(item: ChatItem, kind: ReactionKind): Promise<boolean> {
     if (!this.active) return Promise.resolve(false);
     const on = !item.reactions.some((r) => r.kind === kind && r.mine);
     return this.send({ kind: "reaction", to: this.active, target: item.id, reaction: kind, on });
@@ -221,15 +221,15 @@ export class TubeState {
     this.toast = null;
   }
 
-  private async send(message: TubeSend): Promise<boolean> {
+  private async send(message: ChatSend): Promise<boolean> {
     this.busy = true;
-    const r = await this.adapter.tube.send(message);
+    const r = await this.adapter.chat.send(message);
     this.busy = false;
     if (r.ok) {
       this.receive(r.value);
       return true;
     }
-    this.host.notice(tubeErrorText(r.error, this.book[message.to]?.name ?? ""));
+    this.host.notice(chatErrorText(r.error, this.book[message.to]?.name ?? ""));
     return false;
   }
 
@@ -246,7 +246,7 @@ export class TubeState {
     return this.panel === "open" && this.active === person && !document.hidden;
   }
 
-  private showToast(toast: TubeToast): void {
+  private showToast(toast: ChatToast): void {
     this.toast = toast;
     if (this.toastTimer) clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => (this.toast = null), TOAST_MS);
@@ -276,4 +276,15 @@ function read(key: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** the book as 0.30.0 kept it (tube mail); removed there, saved under the new key by the caller */
+function takeLegacy(me: string): string | null {
+  const raw = read(`${LEGACY_PREFIX}${me}`);
+  try {
+    localStorage.removeItem(`${LEGACY_PREFIX}${me}`);
+  } catch {
+    /* no storage */
+  }
+  return raw;
 }

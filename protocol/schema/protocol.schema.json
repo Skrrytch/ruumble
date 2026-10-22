@@ -848,7 +848,7 @@
             },
             "type": {
               "type": "string",
-              "const": "tube"
+              "const": "chat"
             },
             "message": {
               "oneOf": [

@@ -1,22 +1,22 @@
 // @vitest-environment jsdom
 import { describe, expect, it, beforeEach } from "vitest";
-import { TUBE_LIMITS, type TubeMessage, type TubeSend } from "@ruumble/protocol";
+import { CHAT_LIMITS, type ChatMessage, type ChatSend } from "@ruumble/protocol";
 import type { MumbleAdapter } from "../src/lib/adapter/types.ts";
 import {
   adjacentTab, closeConversation, forget, markRead, openConversation, openTabs, parseBook, prune, reactionsOf, receive, storageKey, tabAfterClose,
   tintOf, unreadTotal, type Book,
-} from "../src/lib/tube/model.ts";
-import { TubeState, tubeErrorText } from "../src/lib/tube/state.svelte.ts";
+} from "../src/lib/chat/model.ts";
+import { ChatState, chatErrorText } from "../src/lib/chat/state.svelte.ts";
 
 const ME = "0000000000000001", ANNA = "00000000000000aa", BEN = "00000000000000bb";
-const DAY = TUBE_LIMITS.keepMs;
+const DAY = CHAT_LIMITS.keepMs;
 
 let seq = 0;
-function text(from: string, to: string, at: number, body = "hi"): TubeMessage {
+function text(from: string, to: string, at: number, body = "hi"): ChatMessage {
   return { id: `m${++seq}`, from, to, fromName: from === ME ? "Me" : from === ANNA ? "Anna" : "Ben", toName: to === ME ? "Me" : to === ANNA ? "Anna" : "Ben", at, kind: "text", text: body };
 }
 
-describe("tube mail: the conversations of the own user (ADR-0021)", () => {
+describe("direct chat: the conversations of the own user (ADR-0021)", () => {
   it("a message from someone starts their conversation as a tab and counts as unread unless it is in view", () => {
     const m = text(ANNA, ME, 1000, "Got a minute?");
     const r = receive({}, m, ME, false);
@@ -37,7 +37,7 @@ describe("tube mail: the conversations of the own user (ADR-0021)", () => {
   });
 
   it("an invitation keeps the room; messages stay in time order and the last one sets the expiry", () => {
-    const invite: TubeMessage = { id: "inv", from: ANNA, to: ME, fromName: "Anna", toName: "Me", at: 5000, kind: "invite", channelId: 3, channelName: "Kitchen" };
+    const invite: ChatMessage = { id: "inv", from: ANNA, to: ME, fromName: "Anna", toName: "Me", at: 5000, kind: "invite", channelId: 3, channelName: "Kitchen" };
     let book = receive({}, invite, ME, false).book;
     book = receive(book, text(ME, ANNA, 4000), ME, false).book;
     expect(book[ANNA]!.items.map((i) => i.at)).toEqual([4000, 5000]);
@@ -48,7 +48,7 @@ describe("tube mail: the conversations of the own user (ADR-0021)", () => {
   it("reactions: set and taken back by either side, in the order of the reactions, shown with names", () => {
     const m = text(ANNA, ME, 1000);
     let book = receive({}, m, ME, true).book;
-    const react = (from: string, reaction: "agree" | "idea", on: boolean): TubeMessage =>
+    const react = (from: string, reaction: "agree" | "idea", on: boolean): ChatMessage =>
       ({ id: `r${++seq}`, from, to: from === ME ? ANNA : ME, fromName: "", toName: "", at: 2000, kind: "reaction", target: m.id, reaction, on });
     book = receive(book, react(ME, "idea", true), ME, false).book;
     book = receive(book, react(ANNA, "agree", true), ME, false).book;
@@ -134,107 +134,119 @@ describe("tube mail: the conversations of the own user (ADR-0021)", () => {
       d: { person: "d", name: "x", items: [{ id: "1" }, null, { id: "2", mine: true, at: 1, kind: "text", text: "ok", channelId: null, channelName: "", reactions: [{ kind: "nope", mine: true, theirs: false }] }], last: 1, unread: 0, open: true, opened: 1 },
     };
     expect(parseBook(JSON.stringify(broken))).toEqual({ d: { ...broken.d, items: [] } });
-    expect(storageKey(ME)).toBe(`ruumble.tube.${ME}`);
+    expect(storageKey(ME)).toBe(`ruumble.chat.${ME}`);
   });
 });
 
-describe("tube mail in the web UI (state)", () => {
+describe("direct chat in the web UI (state)", () => {
   /** a service that answers every send with the message, from ME */
-  function setup(fail: Parameters<typeof tubeErrorText>[0] | null = null) {
-    const sent: TubeSend[] = [];
+  function setup(fail: Parameters<typeof chatErrorText>[0] | null = null) {
+    const sent: ChatSend[] = [];
     const notices: string[] = [];
     const adapter = {
-      tube: {
-        send: async (s: TubeSend) => {
+      chat: {
+        send: async (s: ChatSend) => {
           sent.push(s);
           if (fail) return { ok: false as const, error: fail };
           const head = { id: `s${++seq}`, from: ME, to: s.to, fromName: "Me", toName: "Anna", at: Date.now() };
-          const message: TubeMessage = s.kind === "text" ? { ...head, kind: "text", text: s.text }
+          const message: ChatMessage = s.kind === "text" ? { ...head, kind: "text", text: s.text }
             : s.kind === "invite" ? { ...head, kind: "invite", channelId: 1, channelName: "Lobby" }
             : { ...head, kind: "reaction", target: s.target, reaction: s.reaction, on: s.on };
           return { ok: true as const, value: message };
         },
       },
     } as unknown as MumbleAdapter;
-    const tube = new TubeState(adapter, { notice: (t) => notices.push(t) });
-    tube.identify(ME);
-    return { tube, sent, notices };
+    const chat = new ChatState(adapter, { notice: (t) => notices.push(t) });
+    chat.identify(ME);
+    return { chat, sent, notices };
   }
 
   beforeEach(() => localStorage.clear());
 
   it("something arrives: a notice, unread, kept in this browser per own person", () => {
-    const { tube } = setup();
-    tube.receive(text(ANNA, ME, Date.now(), "Got a minute?"));
-    expect(tube.toast).toEqual({ person: ANNA, name: "Anna", text: "Got a minute?" });
-    expect(tube.unread).toBe(1);
-    expect(tube.active).toBe(ANNA);
+    const { chat } = setup();
+    chat.receive(text(ANNA, ME, Date.now(), "Got a minute?"));
+    expect(chat.toast).toEqual({ person: ANNA, name: "Anna", text: "Got a minute?" });
+    expect(chat.unread).toBe(1);
+    expect(chat.active).toBe(ANNA);
     expect(parseBook(localStorage.getItem(storageKey(ME)))[ANNA]!.items).toHaveLength(1);
-    const again = setup().tube;
+    const again = setup().chat;
     expect(again.tabs.map((c) => c.person)).toEqual([ANNA]);
     again.forgetAll();
     expect(localStorage.length).toBe(0);
     expect(again.tabs).toEqual([]);
   });
 
+  it("takes over the conversations kept under the old name (tube mail, 0.30.0) once", () => {
+    const { chat } = setup();
+    chat.receive(text(ANNA, ME, Date.now(), "Got a minute?"));
+    const kept = localStorage.getItem(storageKey(ME))!;
+    localStorage.clear();
+    localStorage.setItem(`ruumble.tube.${ME}`, kept);
+    const again = setup().chat;
+    expect(again.tabs.map((c) => c.person)).toEqual([ANNA]);
+    expect(localStorage.getItem(`ruumble.tube.${ME}`)).toBeNull();
+    expect(localStorage.getItem(storageKey(ME))).not.toBeNull();
+  });
+
   it("open, write, invite, react; what is in view is read and brings no notice", async () => {
-    const { tube, sent } = setup();
-    tube.open(ANNA, "Anna");
-    expect(tube.panel).toBe("open");
-    tube.setDraft(ANNA, "  Hello  ");
-    expect(await tube.sendText()).toBe(true);
+    const { chat, sent } = setup();
+    chat.open(ANNA, "Anna");
+    expect(chat.panel).toBe("open");
+    chat.setDraft(ANNA, "  Hello  ");
+    expect(await chat.sendText()).toBe(true);
     expect(sent[0]).toEqual({ kind: "text", to: ANNA, text: "Hello" });
-    expect(tube.drafts[ANNA]).toBe("");
-    expect(await tube.sendText()).toBe(false); // nothing to send
-    await tube.invite();
+    expect(chat.drafts[ANNA]).toBe("");
+    expect(await chat.sendText()).toBe(false); // nothing to send
+    await chat.invite();
     expect(sent[1]).toEqual({ kind: "invite", to: ANNA });
-    tube.receive(text(ANNA, ME, Date.now()));
-    expect(tube.toast).toBeNull();
-    expect(tube.unread).toBe(0);
-    const item = tube.conversation!.items.at(-1)!;
-    await tube.react(item, "agree");
+    chat.receive(text(ANNA, ME, Date.now()));
+    expect(chat.toast).toBeNull();
+    expect(chat.unread).toBe(0);
+    const item = chat.conversation!.items.at(-1)!;
+    await chat.react(item, "agree");
     expect(sent[2]).toMatchObject({ kind: "reaction", target: item.id, reaction: "agree", on: true });
-    expect(tube.conversation!.items.at(-1)!.reactions).toEqual([{ kind: "agree", mine: true, theirs: false }]);
-    await tube.react(tube.conversation!.items.at(-1)!, "agree");
+    expect(chat.conversation!.items.at(-1)!.reactions).toEqual([{ kind: "agree", mine: true, theirs: false }]);
+    await chat.react(chat.conversation!.items.at(-1)!, "agree");
     expect(sent[3]).toMatchObject({ on: false });
   });
 
   it("the window: toggle, tabs, close and forget", () => {
-    const { tube } = setup();
-    tube.toggle();
-    expect(tube.panel).toBe("open");
-    tube.toggle();
-    expect(tube.panel).toBe("closed");
-    tube.open(ANNA, "Anna");
-    tube.open(BEN, "Ben");
-    expect(tube.active).toBe(BEN);
-    tube.cycle(1);
-    expect(tube.active).toBe(ANNA);
-    tube.toggle();
-    tube.toggle();
-    expect(tube.panel).toBe("open");
-    expect(tube.active).toBe(ANNA); // where one left off
-    tube.close(ANNA);
-    expect(tube.active).toBe(BEN);
-    tube.forget(BEN);
-    expect(tube.active).toBeNull();
-    expect(tube.tabs).toEqual([]);
-    tube.open(ANNA, "Anna");
-    tube.close(ANNA);
-    expect(tube.panel).toBe("closed");
+    const { chat } = setup();
+    chat.toggle();
+    expect(chat.panel).toBe("open");
+    chat.toggle();
+    expect(chat.panel).toBe("closed");
+    chat.open(ANNA, "Anna");
+    chat.open(BEN, "Ben");
+    expect(chat.active).toBe(BEN);
+    chat.cycle(1);
+    expect(chat.active).toBe(ANNA);
+    chat.toggle();
+    chat.toggle();
+    expect(chat.panel).toBe("open");
+    expect(chat.active).toBe(ANNA); // where one left off
+    chat.close(ANNA);
+    expect(chat.active).toBe(BEN);
+    chat.forget(BEN);
+    expect(chat.active).toBeNull();
+    expect(chat.tabs).toEqual([]);
+    chat.open(ANNA, "Anna");
+    chat.close(ANNA);
+    expect(chat.panel).toBe("closed");
   });
 
   it("what did not go out: a notice in words, the draft stays", async () => {
-    const { tube, notices } = setup("rate-limited");
-    tube.open(ANNA, "Anna");
-    tube.setDraft(ANNA, "Hello");
-    expect(await tube.sendText()).toBe(false);
-    expect(tube.drafts[ANNA]).toBe("Hello");
-    expect(notices).toEqual(["Too much tube mail in a short time – please wait a moment."]);
-    tube.setDraft(ANNA, "x".repeat(TUBE_LIMITS.textChars + 1));
-    expect(await tube.sendText()).toBe(false);
+    const { chat, notices } = setup("rate-limited");
+    chat.open(ANNA, "Anna");
+    chat.setDraft(ANNA, "Hello");
+    expect(await chat.sendText()).toBe(false);
+    expect(chat.drafts[ANNA]).toBe("Hello");
+    expect(notices).toEqual(["Too many messages in a short time – please wait a moment."]);
+    chat.setDraft(ANNA, "x".repeat(CHAT_LIMITS.textChars + 1));
+    expect(await chat.sendText()).toBe(false);
     expect(notices[1]).toBe("The message is empty or too long.");
-    expect(["not-found", "invalid", "not-paired", "offline", "forbidden"].map((e) => tubeErrorText(e as "invalid", "Anna"))).toEqual([
+    expect(["not-found", "invalid", "not-paired", "offline", "forbidden"].map((e) => chatErrorText(e as "invalid", "Anna"))).toEqual([
       "Anna cannot be reached right now.", "The message is empty or too long.", "Mumble is not connected.", "No connection to the Ruumble service.", "Action not possible.",
     ]);
   });

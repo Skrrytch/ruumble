@@ -2,7 +2,7 @@
  * Interface between web UI and Mumble (ADR-0007).
  * Implementations: MockAdapter (fixtures, simulated Mumble) and LiveAdapter (WebSocket and REST to the service).
  */
-import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, BuildingSettings, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, StatusView, TalkingState, TubeMessage, TubeSend, Uploaded, Versions } from "@ruumble/protocol";
+import type { Attachment, BoardErrorCode as ServerBoardError, BoardView, BuildingCare, BuildingSettings, CareDone, FloorCare, KeyCabinet, Maintenance, RoomCare, CommandBody, CommandResult, NewPost, PairErrorCode as ServerPairError, Pinned, Post, PostUpdate, ReactionKind, Snapshot, StatusView, TalkingState, ChatMessage, ChatSend, Uploaded, Versions } from "@ruumble/protocol";
 
 export type BoardErrorCode = ServerBoardError | "offline";
 export type BoardResult<T> = { ok: true; value: T } | { ok: false; error: BoardErrorCode };
@@ -81,9 +81,9 @@ export interface StatusApi {
   clear(): Promise<BoardResult<StatusView>>;
 }
 
-/** Tube mail (ADR-0021): a message to someone else who uses Ruumble; the answer is the message as both will see it */
-export interface TubeApi {
-  send(message: TubeSend): Promise<BoardResult<TubeMessage>>;
+/** Direct chat (ADR-0021): a message to someone else who uses Ruumble; the answer is the message as both will see it */
+export interface ChatApi {
+  send(message: ChatSend): Promise<BoardResult<ChatMessage>>;
 }
 
 export type PluginStatus = "connected" | "disconnected";
@@ -102,8 +102,8 @@ export interface AdapterEvents {
   board(channelId: number): void;
   /** someone in the room nudged the own (deafened) user (ADR-0020) */
   nudge(session: number, name: string): void;
-  /** tube mail from or to the own user, also what another window of the own user sent (ADR-0021) */
-  tube(message: TubeMessage): void;
+  /** a direct message from or to the own user, also what another window of the own user sent (ADR-0021) */
+  chat(message: ChatMessage): void;
   connection(state: ConnectionState): void;
 }
 
@@ -119,7 +119,7 @@ export interface MumbleAdapter {
   status: StatusApi;
   /** get the attention of a deafened person in the own room (ADR-0020); once a minute per person */
   nudge(session: number): Promise<BoardResult<true>>;
-  tube: TubeApi;
+  chat: ChatApi;
   pairing: PairApi;
   /** versions of service and offered plugin (notice pages); null if unknown */
   versions(): Promise<Versions | null>;

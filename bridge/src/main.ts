@@ -48,7 +48,7 @@ import { originGuard } from "./origin.ts";
 import { Pairing } from "./pairing.ts";
 import { Poller } from "./poller.ts";
 import { StatusBook, statusRoutes } from "./status.ts";
-import { tubeRoutes } from "./tube.ts";
+import { chatRoutes } from "./chat.ts";
 
 const env = process.env;
 const required = (key: string) => {
@@ -276,8 +276,8 @@ await app.register(keyRoutes, {
 await app.register(statusRoutes, { book: statuses, gate });
 // nudge a deafened person in the own room (ADR-0020)
 await app.register(nudgeRoutes, { hub, gate });
-// tube mail between two people, wherever they are; passed on, never stored (ADR-0021)
-await app.register(tubeRoutes, { hub, gate });
+// direct messages between two people, wherever they are; passed on, never stored (ADR-0021)
+await app.register(chatRoutes, { hub, gate });
 
 // building maintenance: settings that used to be fixed (ADR-0016)
 await app.register(maintenanceRoutes, { store, gate, log });

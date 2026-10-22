@@ -37,3 +37,5 @@ So private messages in Ruumble are a channel of their own beside Mumble's.
 - Every browser has its own history: what arrived while no Ruumble window was open is only in the Mumble log, and a second device shows only what it received.
 - Someone at a shared computer should use "Forget history" or revoke the browser's key; the history lasts at most a day after the last message anyway.
 - Messages pass through the service in plain text (over TLS where it is set up). They are not end-to-end encrypted; the service does not log or keep them.
+
+Current state (2026-10-22): renamed to **direct chat** ("Persönlicher Chat", a message is a "direct message" / "persönliche Nachricht"); the name "tube mail" (Rohrpost) now belongs to sending files between people (ADR-0022). In code `tube` became `chat`: `ChatSend`, `ChatMessage`, `UiChat` (event `chat`), `POST /api/chat`, `localStorage` key `ruumble.chat.<person>` (a browser takes over `ruumble.tube.<person>` once). The Mumble-log line reads "Message from Anna: …". Everything else above still applies.

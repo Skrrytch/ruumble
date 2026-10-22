@@ -1,19 +1,19 @@
 /**
- * Tube mail (Rohrpost, ADR-0021): the conversations of the own user as this browser keeps them. The service only
+ * Direct chat (ADR-0021): the conversations of the own user as this browser keeps them. The service only
  * passes messages on; the browser keeps each conversation until a day after its last text or invitation.
- * Pure functions without Svelte and without DOM; the state (tube/state.svelte.ts) stores the result.
+ * Pure functions without Svelte and without DOM; the state (chat/state.svelte.ts) stores the result.
  */
-import { REACTION_KINDS, TUBE_LIMITS, type Reaction, type ReactionKind, type TubeMessage } from "@ruumble/protocol";
+import { REACTION_KINDS, CHAT_LIMITS, type Reaction, type ReactionKind, type ChatMessage } from "@ruumble/protocol";
 
 /** a quick reaction (A1) on a message: set by the own user, by the other one, or both */
-export interface TubeReaction {
+export interface ChatReaction {
   kind: ReactionKind;
   mine: boolean;
   theirs: boolean;
 }
 
 /** a text or an invitation to a room ("come over") */
-export interface TubeItem {
+export interface ChatItem {
   id: string;
   mine: boolean;
   at: number;
@@ -24,7 +24,7 @@ export interface TubeItem {
   channelId: number | null;
   channelName: string;
   /** only kinds someone has set, in the order of REACTION_KINDS */
-  reactions: TubeReaction[];
+  reactions: ChatReaction[];
 }
 
 export interface Conversation {
@@ -33,8 +33,8 @@ export interface Conversation {
   /** their name as last seen */
   name: string;
   /** oldest first */
-  items: TubeItem[];
-  /** time of the last text or invitation (or of opening it): the conversation is forgotten TUBE_LIMITS.keepMs later */
+  items: ChatItem[];
+  /** time of the last text or invitation (or of opening it): the conversation is forgotten CHAT_LIMITS.keepMs later */
   last: number;
   /** messages from the other one not seen yet */
   unread: number;
@@ -50,14 +50,14 @@ export type Book = Record<string, Conversation>;
 /** what a message changed: the new book, and a new text or invitation from the other one (null: none) */
 export interface Received {
   book: Book;
-  arrived: { conversation: Conversation; item: TubeItem } | null;
+  arrived: { conversation: Conversation; item: ChatItem } | null;
 }
 
 /**
  * Add a message from or to `me`. `seen`: the other one's conversation is in view, so it does not count as unread.
  * A message that is already there (the answer and the event of the same send) changes nothing.
  */
-export function receive(book: Book, m: TubeMessage, me: string, seen: boolean, now = m.at): Received {
+export function receive(book: Book, m: ChatMessage, me: string, seen: boolean, now = m.at): Received {
   const mine = m.from === me;
   if (!mine && m.to !== me) return { book, arrived: null };
   const person = mine ? m.to : m.from;
@@ -69,7 +69,7 @@ export function receive(book: Book, m: TubeMessage, me: string, seen: boolean, n
     return { book: { ...book, [person]: { ...current, items } }, arrived: null };
   }
   if (current?.items.some((i) => i.id === m.id)) return { book, arrived: null };
-  const item: TubeItem = {
+  const item: ChatItem = {
     id: m.id, mine, at: m.at, kind: m.kind, text: m.kind === "text" ? m.text : "",
     channelId: m.kind === "invite" ? m.channelId : null, channelName: m.kind === "invite" ? m.channelName : "", reactions: [],
   };
@@ -86,7 +86,7 @@ export function receive(book: Book, m: TubeMessage, me: string, seen: boolean, n
   return { book: { ...book, [person]: conversation }, arrived: mine ? null : { conversation, item } };
 }
 
-function setReaction(reactions: TubeReaction[], kind: ReactionKind, mine: boolean, on: boolean): TubeReaction[] {
+function setReaction(reactions: ChatReaction[], kind: ReactionKind, mine: boolean, on: boolean): ChatReaction[] {
   const old = reactions.find((r) => r.kind === kind) ?? { kind, mine: false, theirs: false };
   const next = mine ? { ...old, mine: on } : { ...old, theirs: on };
   const others = reactions.filter((r) => r.kind !== kind);
@@ -122,7 +122,7 @@ export function forget(book: Book, person: string): Book {
 
 /** without the conversations whose last text or invitation is older than a day */
 export function prune(book: Book, now: number): Book {
-  const keep = Object.values(book).filter((c) => now - c.last < TUBE_LIMITS.keepMs);
+  const keep = Object.values(book).filter((c) => now - c.last < CHAT_LIMITS.keepMs);
   return keep.length === Object.keys(book).length ? book : Object.fromEntries(keep.map((c) => [c.person, c]));
 }
 
@@ -151,7 +151,7 @@ export function tabAfterClose(tabs: readonly Conversation[], closed: string): st
 }
 
 /** the reactions of a message as the reaction picker of the board shows them, with the names of who set them */
-export function reactionsOf(item: TubeItem, myName: string, theirName: string): Reaction[] {
+export function reactionsOf(item: ChatItem, myName: string, theirName: string): Reaction[] {
   return item.reactions.map((r) => ({
     kind: r.kind,
     count: (r.mine ? 1 : 0) + (r.theirs ? 1 : 0),
@@ -168,8 +168,10 @@ export function tintOf(person: string): number {
 }
 
 /** where this browser keeps the conversations of `me` */
-export const STORAGE_PREFIX = "ruumble.tube.";
+export const STORAGE_PREFIX = "ruumble.chat.";
 export const storageKey = (me: string) => `${STORAGE_PREFIX}${me}`;
+/** where 0.30.0 kept them, when the direct chat was still called tube mail; taken over once */
+export const LEGACY_PREFIX = "ruumble.tube.";
 
 /** read a stored book; anything that does not fit is left out */
 export function parseBook(raw: string | null): Book {
@@ -192,7 +194,7 @@ export function parseBook(raw: string | null): Book {
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const isNumber = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 
-function isItem(v: unknown): v is TubeItem {
+function isItem(v: unknown): v is ChatItem {
   if (!isObject(v)) return false;
   const kindOk = v.kind === "text" || v.kind === "invite";
   const channelOk = v.channelId === null || isNumber(v.channelId);

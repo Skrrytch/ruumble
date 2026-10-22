@@ -113,7 +113,7 @@
     },
     {
       "v": 1,
-      "type": "tube",
+      "type": "chat",
       "message": {
         "id": "m1",
         "from": "a1b2c3d4e5f60718",
@@ -127,7 +127,7 @@
     },
     {
       "v": 1,
-      "type": "tube",
+      "type": "chat",
       "message": {
         "id": "m2",
         "from": "0f1e2d3c4b5a6978",
@@ -142,7 +142,7 @@
     },
     {
       "v": 1,
-      "type": "tube",
+      "type": "chat",
       "message": {
         "id": "m3",
         "from": "a1b2c3d4e5f60718",
@@ -187,7 +187,7 @@
     },
     {
       "v": 1,
-      "type": "tube",
+      "type": "chat",
       "message": {
         "id": "m4",
         "from": "not-a-person",
@@ -201,7 +201,7 @@
     },
     {
       "v": 1,
-      "type": "tube",
+      "type": "chat",
       "message": {
         "id": "m5",
         "from": "a1b2c3d4e5f60718",

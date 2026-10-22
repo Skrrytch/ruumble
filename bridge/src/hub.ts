@@ -190,7 +190,7 @@ export class Hub {
     return plugin ? this.person(plugin) : null;
   }
 
-  /** the same, by the stable name from the snapshot (tube mail, ADR-0021) */
+  /** the same, by the stable name from the snapshot (direct chat, ADR-0021) */
   personById(personId: string): Person | null {
     const plugin = [...this.plugins.values()].find((p) => p.personId === personId);
     return plugin ? this.person(plugin) : null;
@@ -492,7 +492,7 @@ export class Hub {
 }
 
 /**
- * The stable name of a person in the snapshot (tube mail, ADR-0021): a hash of the certificate hash, so web UIs can
+ * The stable name of a person in the snapshot (direct chat, ADR-0021): a hash of the certificate hash, so web UIs can
  * keep conversations across reconnects without learning the certificate hash itself.
  */
 export function personIdOf(certHash: string): string {

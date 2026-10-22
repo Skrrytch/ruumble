@@ -10,7 +10,7 @@ import { t } from "./i18n/index.svelte.ts";
 import type { BoardSide } from "./model/float.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type BuildOptions, type Building, type Floor } from "./model/building.ts";
 import { playNudgeSound, readNudgeSound, storeNudgeSound } from "./nudge.ts";
-import { TubeState } from "./tube/state.svelte.ts";
+import { ChatState } from "./chat/state.svelte.ts";
 
 export type Notice = { text: string };
 
@@ -157,16 +157,16 @@ export class RuumbleState {
 
   private noticeTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** tube mail (ADR-0021): conversations, its window and notices */
-  readonly tube: TubeState;
+  /** direct chat (ADR-0021): conversations, its window and notices */
+  readonly chat: ChatState;
 
   constructor(private readonly adapter: MumbleAdapter) {
-    this.tube = new TubeState(adapter, { notice: (text) => this.setNotice({ text }) });
+    this.chat = new ChatState(adapter, { notice: (text) => this.setNotice({ text }) });
   }
 
   start(): void {
     void this.adapter.versions().then((v) => (this.versions = v));
-    this.tube.start();
+    this.chat.start();
     this.adapter.start({
       snapshot: (s) => this.onSnapshot(s),
       talking: (session, state) => this.onTalking(session, state),
@@ -182,7 +182,7 @@ export class RuumbleState {
           this.closeKeys();
           this.closeMaintenance();
           this.closeStatus();
-          this.tube.forgetAll(); // what this browser kept of the conversations goes with the key
+          this.chat.forgetAll(); // what this browser kept of the conversations goes with the key
         }
       },
       // also while closed: the toggle shows posts the user has not seen yet
@@ -193,13 +193,13 @@ export class RuumbleState {
         this.setNotice({ text: t().nudge.received(name) }, NUDGE_NOTICE_MS);
         if (this.nudgeSound) playNudgeSound();
       },
-      tube: (message) => this.tube.receive(message),
+      chat: (message) => this.chat.receive(message),
     });
   }
 
   stop(): void {
     this.adapter.stop();
-    this.tube.stop();
+    this.chat.stop();
   }
 
   async requestPairing(): Promise<void> {
@@ -678,7 +678,7 @@ export class RuumbleState {
 
   private onSnapshot(s: Snapshot): void {
     this.snapshot = s;
-    this.tube.identify(s.users.find((u) => u.session === s.self?.session)?.person ?? null);
+    this.chat.identify(s.users.find((u) => u.session === s.self?.session)?.person ?? null);
     // room changed: the sidebar always shows the board of the current room; closed, the toggle counts its unseen posts
     const channel = s.users.find((u) => u.session === s.self?.session)?.channel ?? null;
     if (channel !== this.boardChannel) void this.loadBoard();

@@ -115,7 +115,7 @@ describe("UI language", () => {
     expect(de.care.sourceOption("Lab", 1, "1F", true)).toBe("Lab (1F) · 1 Beitrag · nicht mehr da");
     expect(de.care.confirmForgetOne("TAG")).toBe("Ticket-Link von TAG zurücksetzen?");
     expect(en.care.confirmForgetAll(3)).toBe("Reset all 3 ticket links?");
-    expect([de.tube.unread(1), de.tube.unread(3), en.tube.unread(1), en.tube.unread(3)]).toEqual([
+    expect([de.chat.unread(1), de.chat.unread(3), en.chat.unread(1), en.chat.unread(3)]).toEqual([
       "1 ungelesene Nachricht", "3 ungelesene Nachrichten", "1 unread message", "3 unread messages",
     ]);
     expect(de.keys.device("Firefox", "Linux")).toBe("Firefox unter Linux");

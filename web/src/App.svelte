@@ -20,8 +20,8 @@
   import BuildingOverview from "./lib/ui/overview/BuildingOverview.svelte";
   import ShortcutsDialog from "./lib/ui/ShortcutsDialog.svelte";
   import StatusDialog from "./lib/ui/StatusDialog.svelte";
-  import TubePanel from "./lib/ui/tube/TubePanel.svelte";
-  import TubeToast from "./lib/ui/tube/TubeToast.svelte";
+  import ChatPanel from "./lib/ui/chat/ChatPanel.svelte";
+  import ChatToast from "./lib/ui/chat/ChatToast.svelte";
 
   let { app, mock = null }: { app: RuumbleState; mock?: MockAdapter | null } = $props();
 
@@ -83,12 +83,12 @@
     } else if (shortcut === "overview") {
       e.preventDefault();
       app.openOverview();
-    } else if (shortcut === "tube" && app.me) {
+    } else if (shortcut === "chat" && app.me) {
       e.preventDefault();
-      app.tube.toggle();
-    } else if ((shortcut === "tubePrev" || shortcut === "tubeNext") && app.tube.panel === "open") {
+      app.chat.toggle();
+    } else if ((shortcut === "chatPrev" || shortcut === "chatNext") && app.chat.panel === "open") {
       e.preventDefault();
-      app.tube.cycle(shortcut === "tubeNext" ? 1 : -1);
+      app.chat.cycle(shortcut === "chatNext" ? 1 : -1);
     }
   }
 </script>
@@ -131,7 +131,7 @@
           ontoggleboard={() => app.toggleBoard()}
           ontend={(target) => app.openCare(target)}
           onnudge={(user) => void app.nudge(user)}
-          ontube={(user) => { if (user.person) app.tube.open(user.person, user.name); }}
+          onchat={(user) => { if (user.person) app.chat.open(user.person, user.name); }}
         />
       {:else}
         <div class="vacancy" role="status">
@@ -148,8 +148,8 @@
     {#if app.helpOpen}<ShortcutsDialog onclose={() => (app.helpOpen = false)} />{/if}
     {#if app.overviewOpen && building}<BuildingOverview {app} {building} />{/if}
     {#if app.me}
-      <TubePanel {app} />
-      <TubeToast {app} />
+      <ChatPanel {app} />
+      <ChatToast {app} />
     {/if}
   {/if}
 

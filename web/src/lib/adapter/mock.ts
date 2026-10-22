@@ -7,12 +7,12 @@
  * - Mute/deaf follow the semantics of the Mumble buttons (only emulated here, the web UI itself does not do this).
  * - Talking events only exist for users in your own room, and not when you are deafened yourself.
  */
-import { BOARD_IMAGE_TYPES, BOARD_LIMITS, NUDGE_INTERVAL_MS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, STATUS_LIMITS, StatusRequest, TubeSend, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type StatusView, type TalkingState, type TicketLinks, type TubeMessage, type Uploaded, type Versions } from "@ruumble/protocol";
+import { BOARD_IMAGE_TYPES, BOARD_LIMITS, NUDGE_INTERVAL_MS, PRUNE_DAYS, BuildingSettings, REACTION_KINDS, STATUS_LIMITS, StatusRequest, ChatSend, learnTicketLinks, setTask, ticketProjects, type Attachment, type DeviceKey, type KeyCabinet, type OrphanedFloor, type OrphanedRoom, type TransferSource, type CommandBody, type CommandResult, type NewPost, type Pinned, type Post, type PostUpdate, type ReactionKind, type Snapshot, type StatusView, type TalkingState, type TicketLinks, type ChatMessage, type Uploaded, type Versions } from "@ruumble/protocol";
 import edgeCases from "@ruumble/protocol/fixtures/edge-cases.json";
 import sample from "@ruumble/protocol/fixtures/sample.json";
 import unpaired from "@ruumble/protocol/fixtures/unpaired.json";
 import vacant from "@ruumble/protocol/fixtures/vacant.json";
-import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus, StatusApi, TubeApi } from "./types.ts";
+import type { AdapterEvents, BoardApi, BoardErrorCode, BoardResult, CareApi, KeysApi, MaintenanceApi, MumbleAdapter, PairApi, PluginStatus, StatusApi, ChatApi } from "./types.ts";
 
 const MINUTE = 60_000;
 
@@ -30,7 +30,7 @@ export function mockPersonId(name: string): string {
 }
 
 /** what the others answer in the mock, in turn */
-const TUBE_REPLIES = ["Sounds good!", "Give me five minutes.", "Thanks, will do.", "Sure, why not?"];
+const CHAT_REPLIES = ["Sounds good!", "Give me five minutes.", "Thanks, will do.", "Sure, why not?"];
 
 const hexId = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
 
@@ -173,7 +173,7 @@ export interface MockOptions {
   talking?: boolean;
   /** false: this browser is not paired yet; code 123456 pairs it (ADR-0012) */
   paired?: boolean;
-  /** the others answer tube mail and come over when invited (ADR-0021) */
+  /** the others answer direct messages and come over when invited (ADR-0021) */
   replies?: boolean;
 }
 
@@ -523,8 +523,8 @@ export class MockAdapter implements MumbleAdapter {
 
   stop(): void {
     if (this.talkTimer) clearInterval(this.talkTimer);
-    for (const timer of this.tubeTimers) clearTimeout(timer);
-    this.tubeTimers.clear();
+    for (const timer of this.chatTimers) clearTimeout(timer);
+    this.chatTimers.clear();
     if (this.pendingJoin) clearTimeout(this.pendingJoin.timer);
     if (this.statusTimer) clearTimeout(this.statusTimer);
     this.events = null;
@@ -546,27 +546,27 @@ export class MockAdapter implements MumbleAdapter {
   }
 
   /** like the service (ADR-0021): to someone else whose plugin is connected; the answer also comes as an event */
-  private tubeSeq = 1;
-  private tubeReply = 0;
-  private tubeTimers = new Set<ReturnType<typeof setTimeout>>();
-  readonly tube: TubeApi = {
+  private chatSeq = 1;
+  private chatReply = 0;
+  private chatTimers = new Set<ReturnType<typeof setTimeout>>();
+  readonly chat: ChatApi = {
     send: async (request) => {
       const me = this.me();
       if (this.plugin === "disconnected" || !me) return { ok: false, error: "not-paired" };
-      const parsed = TubeSend.safeParse(request);
+      const parsed = ChatSend.safeParse(request);
       const other = parsed.success ? this.state.users.find((u) => u.ruumble && u.session !== me.session && mockPersonId(u.name) === parsed.data.to) : undefined;
       if (!parsed.success || parsed.data.to === mockPersonId(me.name)) return { ok: false, error: "invalid" };
       if (!other) return { ok: false, error: "not-found" };
       const send = parsed.data;
-      const head = { id: `tube-${this.tubeSeq++}`, from: mockPersonId(me.name), to: send.to, fromName: me.name, toName: other.name, at: Date.now() };
-      const message: TubeMessage =
+      const head = { id: `chat-${this.chatSeq++}`, from: mockPersonId(me.name), to: send.to, fromName: me.name, toName: other.name, at: Date.now() };
+      const message: ChatMessage =
         send.kind === "text" ? { ...head, kind: "text", text: send.text }
         : send.kind === "invite" ? { ...head, kind: "invite", channelId: me.channel, channelName: this.channelName(me.channel) }
         : { ...head, kind: "reaction", target: send.target, reaction: send.reaction, on: send.on };
-      this.events?.tube(message);
-      if (this.opts.replies && message.kind === "text") this.later(1500, () => this.tubeFrom(other.session, TUBE_REPLIES[this.tubeReply++ % TUBE_REPLIES.length]!));
+      this.events?.chat(message);
+      if (this.opts.replies && message.kind === "text") this.later(1500, () => this.chatFrom(other.session, CHAT_REPLIES[this.chatReply++ % CHAT_REPLIES.length]!));
       if (this.opts.replies && message.kind === "invite") {
-        this.later(1200, () => this.tubeFrom(other.session, "On my way!"));
+        this.later(1200, () => this.chatFrom(other.session, "On my way!"));
         this.later(2400, () => {
           other.channel = message.channelId;
           this.emit();
@@ -578,19 +578,19 @@ export class MockAdapter implements MumbleAdapter {
 
   private later(ms: number, fn: () => void): void {
     const timer = setTimeout(() => {
-      this.tubeTimers.delete(timer);
+      this.chatTimers.delete(timer);
       fn();
     }, ms);
-    this.tubeTimers.add(timer);
+    this.chatTimers.add(timer);
   }
 
-  /** tube mail from someone else to the own user: a text, or an invitation to their room */
-  private tubeFrom(session: number, text: string | null): void {
+  /** a direct message from someone else to the own user: a text, or an invitation to their room */
+  private chatFrom(session: number, text: string | null): void {
     const me = this.me();
     const other = this.state.users.find((u) => u.session === session);
     if (!me || !other || this.plugin === "disconnected") return;
-    const head = { id: `tube-${this.tubeSeq++}`, from: mockPersonId(other.name), to: mockPersonId(me.name), fromName: other.name, toName: me.name, at: Date.now() };
-    this.events?.tube(text === null ? { ...head, kind: "invite", channelId: other.channel, channelName: this.channelName(other.channel) } : { ...head, kind: "text", text });
+    const head = { id: `chat-${this.chatSeq++}`, from: mockPersonId(other.name), to: mockPersonId(me.name), fromName: other.name, toName: me.name, at: Date.now() };
+    this.events?.chat(text === null ? { ...head, kind: "invite", channelId: other.channel, channelName: this.channelName(other.channel) } : { ...head, kind: "text", text });
   }
 
   async versions(): Promise<Versions> {
@@ -673,11 +673,11 @@ export class MockAdapter implements MumbleAdapter {
     if (other) this.events?.nudge(other.session, other.name);
   }
 
-  /** someone with Ruumble elsewhere in the building sends the own user tube mail, or invites them to their room */
-  tubeMe(invite = false): void {
+  /** someone with Ruumble elsewhere in the building sends the own user a direct message, or invites them to their room */
+  chatMe(invite = false): void {
     const me = this.me();
     const other = me && this.state.users.find((u) => u.session !== me.session && u.channel !== me.channel && u.ruumble);
-    if (other) this.tubeFrom(other.session, invite ? null : `Hi ${me.name}, do you have a minute?`);
+    if (other) this.chatFrom(other.session, invite ? null : `Hi ${me.name}, do you have a minute?`);
   }
 
   /** The next switch is not confirmed despite access permission (as with the rate limit, S2). */

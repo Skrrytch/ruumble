@@ -387,7 +387,7 @@ test.describe("Tab title and shortcuts", () => {
   test("? lists the shortcuts, also from the user menu", async ({ page }) => {
     await page.keyboard.press("?");
     const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
-    const rows: [string, string][] = [["B", "Show and hide the board"], ["H", "Building overview"], ["S", "My status"], ["P", "Open and close tube mail"], [",", "Tube mail: previous tab"], [".", "Tube mail: next tab"], ["?", "This list"], ["Esc", "Close a dialog or tube mail"]];
+    const rows: [string, string][] = [["B", "Show and hide the board"], ["H", "Building overview"], ["S", "My status"], ["P", "Open and close the direct chat"], [",", "Direct chat: previous tab"], [".", "Direct chat: next tab"], ["?", "This list"], ["Esc", "Close a dialog or the direct chat"]];
     for (const [key, what] of rows) {
       await expect(dialog.getByText(key, { exact: true })).toBeVisible();
       await expect(dialog.getByText(what, { exact: true })).toBeVisible();

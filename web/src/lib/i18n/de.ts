@@ -400,7 +400,7 @@ export const de = {
     enterRoom: (name: string) => `${name} betreten`,
     locked: "gesperrt",
     inHouse: (n: number) => (n === 1 ? "1 Person im Haus" : `${n} Personen im Haus`),
-    hint: "Klick auf eine Person: hingehen. P: ihr Rohrpost schicken.",
+    hint: "Klick auf eine Person: hingehen. P: ihr eine persönliche Nachricht schicken.",
   },
   /** the list of keyboard shortcuts (?), also from the user menu */
   shortcuts: {
@@ -410,10 +410,10 @@ export const de = {
     overview: "Gebäudeübersicht",
     status: "Mein Status",
     help: "Diese Übersicht",
-    tube: "Rohrpost öffnen und schließen",
-    tubePrev: "Rohrpost: vorheriger Reiter",
-    tubeNext: "Rohrpost: nächster Reiter",
-    escape: "Dialog oder Rohrpost schließen",
+    chat: "Persönlichen Chat öffnen und schließen",
+    chatPrev: "Persönlicher Chat: vorheriger Reiter",
+    chatNext: "Persönlicher Chat: nächster Reiter",
+    escape: "Dialog oder persönlichen Chat schließen",
     note: "Kürzel wirken nicht beim Tippen und nicht in einem offenen Dialog.",
   },
   /** the own status (B, ADR-0018): a short text at the avatar that everyone sees */
@@ -481,16 +481,16 @@ export const de = {
     /** user menu: play a sound in this browser when someone nudges you */
     sound: "Ton beim Anstupsen",
   },
-  /** tube mail (ADR-0021): private messages between two people, wherever they are in the building */
-  tube: {
-    title: "Rohrpost",
+  /** direct chat (ADR-0021): private messages between two people, wherever they are in the building */
+  chat: {
+    title: "Persönlicher Chat",
     /** the button in the person card */
-    button: "Rohrpost schicken",
-    label: (name: string) => `Rohrpost an ${name}`,
+    button: "Persönliche Nachricht schicken",
+    label: (name: string) => `Nachricht an ${name}`,
     tabs: "Gespräche",
     closeTab: (name: string) => `Gespräch mit ${name} schließen`,
     unread: (n: number) => (n === 1 ? "1 ungelesene Nachricht" : `${n} ungelesene Nachrichten`),
-    placeholder: (name: string) => `Rohrpost an ${name} …`,
+    placeholder: (name: string) => `Nachricht an ${name} …`,
     send: "Senden",
     invite: (name: string) => `${name} in deinen Raum einladen`,
     comeOver: "Komm rüber!",
@@ -505,7 +505,7 @@ export const de = {
     gone: "Den Raum gibt es nicht mehr.",
     sameRoom: "im selben Raum",
     notInHouse: "nicht im Haus",
-    away: (name: string) => `${name} ist gerade nicht im Haus – Rohrpost kommt nicht an.`,
+    away: (name: string) => `${name} ist gerade nicht im Haus – Nachrichten kommen nicht an.`,
     forget: "Verlauf vergessen",
     forgetLabel: (name: string) => `Verlauf mit ${name} in diesem Browser vergessen`,
     keep: "Bleibt 24 Stunden nach der letzten Nachricht in diesem Browser.",
@@ -513,14 +513,14 @@ export const de = {
     keyTabs: "Reiter",
     keyClose: "schließen",
     none: "Keine offenen Gespräche",
-    noneHint: "Fahr mit der Maus über eine Person im Haus oder öffne die Haustafel (H) und schick ihr Rohrpost.",
-    first: (name: string) => `Noch keine Rohrpost mit ${name}.`,
-    from: (name: string) => `Rohrpost von ${name}`,
+    noneHint: "Fahr mit der Maus über eine Person im Haus oder öffne die Haustafel (H) und schick ihr eine persönliche Nachricht.",
+    first: (name: string) => `Noch keine Nachrichten mit ${name}.`,
+    from: (name: string) => `Nachricht von ${name}`,
     reply: "Antworten",
     react: "Reagieren",
     chars: (used: number, max: number) => `${used}/${max} Zeichen`,
     errors: {
-      rateLimited: "Zu viel Rohrpost in kurzer Zeit – bitte kurz warten.",
+      rateLimited: "Zu viele Nachrichten in kurzer Zeit – bitte kurz warten.",
       unreachable: (name: string) => `${name} ist gerade nicht erreichbar.`,
       invalid: "Die Nachricht ist leer oder zu lang.",
     },

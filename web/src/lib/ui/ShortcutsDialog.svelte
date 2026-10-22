@@ -10,7 +10,7 @@
 
   let dialog: HTMLDialogElement;
   $effect(() => showModal(dialog, () => onclose()));
-  const order: Shortcut[] = ["toggleBoard", "overview", "status", "tube", "tubePrev", "tubeNext", "help"];
+  const order: Shortcut[] = ["toggleBoard", "overview", "status", "chat", "chatPrev", "chatNext", "help"];
 </script>
 
 <dialog bind:this={dialog} class="shortcuts" aria-labelledby="shortcuts-title">

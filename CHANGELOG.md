@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Changed
+- **Tube mail is now the direct chat.** Private messages between two people are called "direct chat" and "direct message" (German "Persönlicher Chat", "persönliche Nachricht"); the Mumble-log line reads "Message from Anna: …". Conversations kept by the browser carry over. The name "tube mail" is kept for sending files between people.
+
 ## [0.30.0] - 2026-10-22
 
 Plugin 0.5.0 (unchanged). Tube mail for private messages between two people, a person card for everyone with Ruumble, and clearer symbols in the top bar.

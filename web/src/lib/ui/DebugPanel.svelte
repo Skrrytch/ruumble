@@ -30,8 +30,8 @@
     <button type="button" onclick={() => mock.postAsOther()}>Someone posts in my room</button>
     <button type="button" onclick={() => mock.toggleDeafNearby()}>Someone in my room deafens</button>
     <button type="button" onclick={() => mock.nudgeMe()}>Someone nudges me</button>
-    <button type="button" onclick={() => mock.tubeMe()}>Someone sends me tube mail</button>
-    <button type="button" onclick={() => mock.tubeMe(true)}>Someone invites me over</button>
+    <button type="button" onclick={() => mock.chatMe()}>Someone sends me a direct message</button>
+    <button type="button" onclick={() => mock.chatMe(true)}>Someone invites me over</button>
   {/if}
 </aside>
 

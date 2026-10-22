@@ -6,39 +6,39 @@
   import SendHorizontal from "@lucide/svelte/icons/send-horizontal";
   import SmilePlus from "@lucide/svelte/icons/smile-plus";
   import X from "@lucide/svelte/icons/x";
-  import { TUBE_LIMITS } from "@ruumble/protocol";
+  import { CHAT_LIMITS } from "@ruumble/protocol";
   import { t } from "../../i18n/index.svelte.ts";
   import { initials } from "../../model/building.ts";
   import { buildDirectory } from "../../model/overview.ts";
   import { SHORTCUT_KEYS } from "../../shortcuts.ts";
   import type { RuumbleState } from "../../state.svelte.ts";
   import { untilTime } from "../../status.ts";
-  import { reactionsOf, tintOf, type TubeItem } from "../../tube/model.ts";
+  import { reactionsOf, tintOf, type ChatItem } from "../../chat/model.ts";
   import Avatar from "../Avatar.svelte";
   import ReactionPicker from "../board/ReactionPicker.svelte";
   import { REACTION_ICONS } from "../board/reactionIcons.ts";
 
-  // Tube mail (ADR-0021): a window docked at the bottom right, over the floor plan and the board, with one tab per
+  // Direct chat (ADR-0021): a window docked at the bottom right, over the floor plan and the board, with one tab per
   // person. The head of a conversation says where the other one is right now (from the snapshot), with the way to go
   // there; below the messages, the reactions of the board (A1) and the invitation to the own room ("come over").
   // Closed, the button in the top bar counts what is unread, and P brings the window back.
   let { app }: { app: RuumbleState } = $props();
 
-  const tube = $derived(app.tube);
-  const conversation = $derived(tube.conversation);
+  const chat = $derived(app.chat);
+  const conversation = $derived(chat.conversation);
   /** everyone in the building with their place, as on the directory board */
   const people = $derived(
     app.snapshot && app.building ? buildDirectory(app.snapshot, app.building, app.avatarOptions).flatMap((g) => g.people.map((entry) => ({ entry, group: g }))) : [],
   );
   const partner = $derived(conversation ? (people.find((p) => p.entry.user.person === conversation.person) ?? null) : null);
   const place = $derived.by(() => {
-    if (!partner) return t().tube.notInHouse;
+    if (!partner) return t().chat.notInHouse;
     const { entry, group } = partner;
     return group.kind === "floor" && group.badge ? `${entry.place} · ${t().floors.floor(group.badge)}` : entry.place;
   });
   const myName = $derived(app.me?.name ?? "");
-  const draft = $derived(conversation ? (tube.drafts[conversation.person] ?? "") : "");
-  const nearLimit = $derived(draft.length > TUBE_LIMITS.textChars - 200);
+  const draft = $derived(conversation ? (chat.drafts[conversation.person] ?? "") : "");
+  const nearLimit = $derived(draft.length > CHAT_LIMITS.textChars - 200);
   const tint = $derived(conversation ? tintOf(conversation.person) : 1);
 
   let picker = $state<string | null>(null);
@@ -63,9 +63,9 @@
     void person;
     picker = null;
   });
-  // the text field to write, or the chosen tab to go on with the keyboard (TubeState.focus)
+  // the text field to write, or the chosen tab to go on with the keyboard (ChatState.focus)
   $effect(() => {
-    const { target } = tube.focus;
+    const { target } = chat.focus;
     if (!panel) return;
     if (target === "composer" && input) input.focus();
     else panel.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus();
@@ -75,11 +75,11 @@
   function ontabkey(e: KeyboardEvent): void {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     e.preventDefault();
-    tube.cycle(e.key === "ArrowRight" ? 1 : -1);
+    chat.cycle(e.key === "ArrowRight" ? 1 : -1);
   }
 
   /** an invitation: go there, already there, not allowed in by Mumble, or the room is gone */
-  function inviteState(item: TubeItem): "go" | "there" | "locked" | "gone" {
+  function inviteState(item: ChatItem): "go" | "there" | "locked" | "gone" {
     const id = item.channelId;
     if (id === null || !app.snapshot?.channels.some((c) => c.id === id)) return "gone";
     if (app.me?.channel === id) return "there";
@@ -93,7 +93,7 @@
   }
 
   async function send(): Promise<void> {
-    if (await tube.sendText()) queueMicrotask(grow);
+    if (await chat.sendText()) queueMicrotask(grow);
   }
 
   function onkeydown(e: KeyboardEvent): void {
@@ -111,41 +111,41 @@
       picker = null;
       return;
     }
-    tube.closePanel();
-    document.querySelector<HTMLElement>("[data-tube-button]")?.focus();
+    chat.closePanel();
+    document.querySelector<HTMLElement>("[data-chat-button]")?.focus();
   }
 </script>
 
-{#if tube.panel === "open"}
+{#if chat.panel === "open"}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <section class="tube tint-{tint}" aria-label={t().tube.title} bind:this={panel} onkeydown={onpanelkey}>
+  <section class="chat tint-{tint}" aria-label={t().chat.title} bind:this={panel} onkeydown={onpanelkey}>
     <header class="bar">
       <MessagesSquare size={18} aria-hidden="true" />
-      <h2>{t().tube.title}</h2>
-      <button type="button" class="bar-btn" aria-label={t().common.close} title={`${t().common.close} (P, Esc)`} onclick={() => tube.closePanel()}><X size={18} /></button>
+      <h2>{t().chat.title}</h2>
+      <button type="button" class="bar-btn" aria-label={t().common.close} title={`${t().common.close} (P, Esc)`} onclick={() => chat.closePanel()}><X size={18} /></button>
     </header>
 
-    {#if tube.tabs.length}
-      <div class="tabs" role="tablist" aria-label={t().tube.tabs}>
-        {#each tube.tabs as c (c.person)}
-          {@const active = c.person === tube.active}
+    {#if chat.tabs.length}
+      <div class="tabs" role="tablist" aria-label={t().chat.tabs}>
+        {#each chat.tabs as c (c.person)}
+          {@const active = c.person === chat.active}
           <div class="tab tint-{tintOf(c.person)}" class:active>
             <button
-              type="button" role="tab" class="tab-btn" aria-selected={active} aria-controls="tube-conversation" tabindex={active ? 0 : -1}
-              onclick={() => tube.select(c.person)} onkeydown={ontabkey}
+              type="button" role="tab" class="tab-btn" aria-selected={active} aria-controls="chat-conversation" tabindex={active ? 0 : -1}
+              onclick={() => chat.select(c.person)} onkeydown={ontabkey}
             >
               <span class="mini" aria-hidden="true">{initials(c.name)}</span>
               <span class="tab-name">{c.name}</span>
-              {#if c.unread && !active}<span class="badge" aria-label={t().tube.unread(c.unread)}>{c.unread}</span>{/if}
+              {#if c.unread && !active}<span class="badge" aria-label={t().chat.unread(c.unread)}>{c.unread}</span>{/if}
             </button>
-            <button type="button" class="tab-close" aria-label={t().tube.closeTab(c.name)} title={t().tube.closeTab(c.name)} onclick={() => tube.close(c.person)}><X size={13} /></button>
+            <button type="button" class="tab-close" aria-label={t().chat.closeTab(c.name)} title={t().chat.closeTab(c.name)} onclick={() => chat.close(c.person)}><X size={13} /></button>
           </div>
         {/each}
       </div>
     {/if}
 
     {#if conversation}
-      <div class="conversation" id="tube-conversation" role="tabpanel" aria-label={conversation.name}>
+      <div class="conversation" id="chat-conversation" role="tabpanel" aria-label={conversation.name}>
         <div class="who">
           {#if partner}
             <Avatar user={partner.entry.user} talking={app.talking[partner.entry.user.session] ?? false} showName={false} />
@@ -160,11 +160,11 @@
             {/if}
           </div>
           {#if partner?.entry.canGo}
-            <button type="button" class="go" title={t().overview.goTo(conversation.name, partner.entry.place)} onclick={() => app.visit(partner!.entry.channelId)}>{t().tube.go}</button>
+            <button type="button" class="go" title={t().overview.goTo(conversation.name, partner.entry.place)} onclick={() => app.visit(partner!.entry.channelId)}>{t().chat.go}</button>
           {:else if partner?.entry.blocked === "here"}
-            <span class="same">{t().tube.sameRoom}</span>
+            <span class="same">{t().chat.sameRoom}</span>
           {/if}
-          <button type="button" class="icon-btn" aria-label={t().tube.forgetLabel(conversation.name)} title={t().tube.forget} onclick={() => tube.forget(conversation!.person)}><Eraser size={16} /></button>
+          <button type="button" class="icon-btn" aria-label={t().chat.forgetLabel(conversation.name)} title={t().chat.forget} onclick={() => chat.forget(conversation!.person)}><Eraser size={16} /></button>
         </div>
 
         <div class="messages" bind:this={list}>
@@ -176,13 +176,13 @@
               {:else}
                 {@const reach = inviteState(item)}
                 <div class="bubble invite">
-                  <span class="invite-head"><DoorOpen size={16} aria-hidden="true" />{t().tube.comeOver}</span>
-                  <span class="invite-text">{item.mine ? t().tube.invited(conversation.name, item.channelName) : t().tube.invitesYou(conversation.name, item.channelName)}</span>
+                  <span class="invite-head"><DoorOpen size={16} aria-hidden="true" />{t().chat.comeOver}</span>
+                  <span class="invite-text">{item.mine ? t().chat.invited(conversation.name, item.channelName) : t().chat.invitesYou(conversation.name, item.channelName)}</span>
                   {#if !item.mine}
                     {#if reach === "go"}
-                      <button type="button" class="go solid" aria-label={t().tube.goTo(item.channelName)} onclick={() => app.visit(item.channelId!)}>{t().tube.go}</button>
+                      <button type="button" class="go solid" aria-label={t().chat.goTo(item.channelName)} onclick={() => app.visit(item.channelId!)}>{t().chat.go}</button>
                     {:else}
-                      <span class="invite-note">{reach === "there" ? t().tube.there : reach === "locked" ? t().tube.noEntry : t().tube.gone}</span>
+                      <span class="invite-note">{reach === "there" ? t().chat.there : reach === "locked" ? t().chat.noEntry : t().chat.gone}</span>
                     {/if}
                   {/if}
                 </div>
@@ -192,55 +192,55 @@
                 {#each reactions as r (r.kind)}
                   {@const Icon = REACTION_ICONS[r.kind]}
                   {@const label = t().board.reactionTitle(t().board.reactions[r.kind], r.names.join(", "))}
-                  <button type="button" class="chip" class:pressed={r.mine} aria-pressed={r.mine} aria-label={label} title={label} onclick={() => void tube.react(item, r.kind)}>
+                  <button type="button" class="chip" class:pressed={r.mine} aria-pressed={r.mine} aria-label={label} title={label} onclick={() => void chat.react(item, r.kind)}>
                     <Icon size={13} aria-hidden="true" />{#if r.count > 1}<span>{r.count}</span>{/if}
                   </button>
                 {/each}
                 {#if !item.mine}
-                  <button type="button" class="chip add" aria-label={t().tube.react} title={t().tube.react} aria-expanded={picker === item.id} onclick={() => (picker = picker === item.id ? null : item.id)}>
+                  <button type="button" class="chip add" aria-label={t().chat.react} title={t().chat.react} aria-expanded={picker === item.id} onclick={() => (picker = picker === item.id ? null : item.id)}>
                     <SmilePlus size={14} aria-hidden="true" />
                   </button>
                 {/if}
               </div>
               {#if picker === item.id}
                 <div class="picker">
-                  <ReactionPicker {reactions} onpick={(kind) => { picker = null; void tube.react(item, kind); }} onclose={() => (picker = null)} />
+                  <ReactionPicker {reactions} onpick={(kind) => { picker = null; void chat.react(item, kind); }} onclose={() => (picker = null)} />
                 </div>
               {/if}
             </div>
           {:else}
-            <p class="first">{t().tube.first(conversation.name)}</p>
+            <p class="first">{t().chat.first(conversation.name)}</p>
           {/each}
         </div>
 
         <div class="compose">
-          {#if partner?.entry.canTube}
+          {#if partner?.entry.canChat}
             <div class="compose-row">
-              <label class="sr" for="tube-input">{t().tube.label(conversation.name)}</label>
+              <label class="sr" for="chat-input">{t().chat.label(conversation.name)}</label>
               <textarea
-                id="tube-input" bind:this={input} rows="1" value={draft} placeholder={t().tube.placeholder(conversation.name)} maxlength={TUBE_LIMITS.textChars + 200}
-                oninput={(e) => { tube.setDraft(conversation!.person, e.currentTarget.value); grow(); }} {onkeydown}
+                id="chat-input" bind:this={input} rows="1" value={draft} placeholder={t().chat.placeholder(conversation.name)} maxlength={CHAT_LIMITS.textChars + 200}
+                oninput={(e) => { chat.setDraft(conversation!.person, e.currentTarget.value); grow(); }} {onkeydown}
               ></textarea>
-              <button type="button" class="round" aria-label={t().tube.invite(conversation.name)} title={t().tube.invite(conversation.name)} disabled={tube.busy} onclick={() => void tube.invite()}><DoorOpen size={18} /></button>
-              <button type="button" class="round solid" aria-label={t().tube.send} title={`${t().tube.send} (Enter)`} disabled={tube.busy || !draft.trim()} onclick={() => void send()}><SendHorizontal size={17} /></button>
+              <button type="button" class="round" aria-label={t().chat.invite(conversation.name)} title={t().chat.invite(conversation.name)} disabled={chat.busy} onclick={() => void chat.invite()}><DoorOpen size={18} /></button>
+              <button type="button" class="round solid" aria-label={t().chat.send} title={`${t().chat.send} (Enter)`} disabled={chat.busy || !draft.trim()} onclick={() => void send()}><SendHorizontal size={17} /></button>
             </div>
-            {#if nearLimit}<span class="chars" class:over={draft.length > TUBE_LIMITS.textChars}>{t().tube.chars(draft.length, TUBE_LIMITS.textChars)}</span>{/if}
+            {#if nearLimit}<span class="chars" class:over={draft.length > CHAT_LIMITS.textChars}>{t().chat.chars(draft.length, CHAT_LIMITS.textChars)}</span>{/if}
           {:else}
-            <p class="away-note">{t().tube.away(conversation.name)}</p>
+            <p class="away-note">{t().chat.away(conversation.name)}</p>
           {/if}
           <p class="hint">
-            <span><kbd>{SHORTCUT_KEYS.tube.toUpperCase()}</kbd> {t().tube.keyToggle}</span>
-            <span><kbd>{SHORTCUT_KEYS.tubePrev}</kbd> <kbd>{SHORTCUT_KEYS.tubeNext}</kbd> {t().tube.keyTabs}</span>
-            <span><kbd>Esc</kbd> {t().tube.keyClose}</span>
+            <span><kbd>{SHORTCUT_KEYS.chat.toUpperCase()}</kbd> {t().chat.keyToggle}</span>
+            <span><kbd>{SHORTCUT_KEYS.chatPrev}</kbd> <kbd>{SHORTCUT_KEYS.chatNext}</kbd> {t().chat.keyTabs}</span>
+            <span><kbd>Esc</kbd> {t().chat.keyClose}</span>
           </p>
-          <p class="hint">{t().tube.keep}</p>
+          <p class="hint">{t().chat.keep}</p>
         </div>
       </div>
     {:else}
       <div class="empty">
         <MessagesSquare size={36} aria-hidden="true" />
-        <strong>{t().tube.none}</strong>
-        <span>{t().tube.noneHint}</span>
+        <strong>{t().chat.none}</strong>
+        <span>{t().chat.noneHint}</span>
       </div>
     {/if}
   </section>
@@ -248,14 +248,14 @@
 
 <style>
   /* the tint of a person: the bubbles of the other one and the line under their tab */
-  .tint-1 { --tint: var(--tube-1); --tint-line: var(--tube-1-line); }
-  .tint-2 { --tint: var(--tube-2); --tint-line: var(--tube-2-line); }
-  .tint-3 { --tint: var(--tube-3); --tint-line: var(--tube-3-line); }
-  .tint-4 { --tint: var(--tube-4); --tint-line: var(--tube-4-line); }
-  .tint-5 { --tint: var(--tube-5); --tint-line: var(--tube-5-line); }
-  .tint-6 { --tint: var(--tube-6); --tint-line: var(--tube-6-line); }
+  .tint-1 { --tint: var(--chat-1); --tint-line: var(--chat-1-line); }
+  .tint-2 { --tint: var(--chat-2); --tint-line: var(--chat-2-line); }
+  .tint-3 { --tint: var(--chat-3); --tint-line: var(--chat-3-line); }
+  .tint-4 { --tint: var(--chat-4); --tint-line: var(--chat-4-line); }
+  .tint-5 { --tint: var(--chat-5); --tint-line: var(--chat-5-line); }
+  .tint-6 { --tint: var(--chat-6); --tint-line: var(--chat-6-line); }
 
-  .tube {
+  .chat {
     --color-paper: var(--color-raised);
     position: fixed; right: 32px; bottom: 24px; z-index: 20; width: 384px; height: min(580px, calc(100vh - 120px));
     display: flex; flex-direction: column; overflow: hidden; border-radius: 10px; background: var(--color-paper); color: var(--color-ink);
@@ -263,7 +263,7 @@
     animation: rise 200ms var(--ease-out) both;
   }
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { .tube, .row { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .chat, .row { animation: none; } }
 
   .bar { display: flex; align-items: center; gap: 8px; height: 44px; flex: none; padding: 0 6px 0 14px; background: var(--color-wall); color: var(--color-white); }
   h2 { margin: 0; flex: 1; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; }

@@ -4,7 +4,7 @@
   import Users from "@lucide/svelte/icons/users";
   import VolumeX from "@lucide/svelte/icons/volume-x";
   import { onActivateKey } from "./activate.ts";
-  import { canNudge, canTube, countText, fitPeople, type Room, type Space, type UserView } from "../model/building.ts";
+  import { canNudge, canChat, countText, fitPeople, type Room, type Space, type UserView } from "../model/building.ts";
   import Avatar from "./Avatar.svelte";
   import BoardNotes from "./board/BoardNotes.svelte";
   import DescriptionPopover from "./DescriptionPopover.svelte";
@@ -28,7 +28,7 @@
     ontoggleboard,
     ontend,
     onnudge,
-    ontube,
+    onchat,
   }: {
     space: Space | Room;
     variant: "room" | "corridor" | "open";
@@ -51,8 +51,8 @@
     ontend?: () => void;
     /** nudge a deafened person in the own room (ADR-0020) */
     onnudge?: (user: UserView) => void;
-    /** send someone else who uses Ruumble tube mail (ADR-0021) */
-    ontube?: (user: UserView) => void;
+    /** send someone else who uses Ruumble direct chat (ADR-0021) */
+    onchat?: (user: UserView) => void;
   } = $props();
 
 
@@ -100,11 +100,11 @@
   });
   const countLine = $derived(pending && slow ? t().space.enteringText : (subtitle ?? countText(space.users.length)));
 
-  // the person card instead of the tooltip: for someone else who uses Ruumble (tube mail, ADR-0021) and for a
+  // the person card instead of the tooltip: for someone else who uses Ruumble (direct chat, ADR-0021) and for a
   // deafened person in the own room (nudge, ADR-0020); it stays while the pointer moves from the avatar onto the card
   const nudgeable = (user: UserView) => !!onnudge && !readonly && canNudge(user, space.isSelf);
-  const tubeable = (user: UserView) => !!ontube && !readonly && canTube(user, true);
-  const cardable = (user: UserView) => nudgeable(user) || tubeable(user);
+  const chatable = (user: UserView) => !!onchat && !readonly && canChat(user, true);
+  const cardable = (user: UserView) => nudgeable(user) || chatable(user);
   let card = $state<{ session: number; anchor: HTMLElement } | null>(null);
   const cardUser = $derived(card ? space.users.find((u) => u.session === card!.session && cardable(u)) : undefined);
   /** a new card waits a moment, so moving across a room does not flash one card after the other */
@@ -245,7 +245,7 @@
 {#if card && cardUser}
   <PersonCard user={cardUser} anchor={card.anchor} talking={talking[cardUser.session] ?? false} onenter={keepCard} onleave={dropCard}
     onnudge={onnudge && nudgeable(cardUser) ? (user) => { card = null; onnudge(user); } : undefined}
-    ontube={ontube && tubeable(cardUser) ? (user) => { card = null; ontube(user); } : undefined} />
+    onchat={onchat && chatable(cardUser) ? (user) => { card = null; onchat(user); } : undefined} />
 {/if}
 </div>
 

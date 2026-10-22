@@ -1,6 +1,6 @@
 <script lang="ts">
   // The card at the avatar of someone else who uses Ruumble: instead of the plain tooltip, who it is with their
-  // states, and what one can do: send them tube mail (ADR-0021) and, for a deafened person in the own room, nudge
+  // states, and what one can do: send them a direct message (ADR-0021) and, for a deafened person in the own room, nudge
   // them (ADR-0020). Shown while the pointer is on the avatar or the card, in the top layer so neither the room nor
   // the scrolling floor plan clips it. The avatar sits inside the room's button, so the card is placed beside it
   // rather than in it; the keyboard way is the directory board (H).
@@ -15,7 +15,7 @@
     anchor,
     talking = false,
     onnudge,
-    ontube,
+    onchat,
     onenter,
     onleave,
   }: {
@@ -25,8 +25,8 @@
     talking?: boolean;
     /** only for a deafened person in the own room */
     onnudge?: (user: UserView) => void;
-    /** only for someone who can get tube mail */
-    ontube?: (user: UserView) => void;
+    /** only for someone who can get direct messages */
+    onchat?: (user: UserView) => void;
     onenter: () => void;
     onleave: () => void;
   } = $props();
@@ -59,9 +59,9 @@
   <span class="label">{personLabel(user, talking)}</span>
   {#if onnudge}<span class="hint">{t().nudge.deafHint}</span>{/if}
   <span class="actions">
-    {#if ontube}
-      <button type="button" class="act" aria-label={t().tube.label(user.name)} onclick={() => ontube(user)}>
-        <MessagesSquare size={16} aria-hidden="true" />{t().tube.button}
+    {#if onchat}
+      <button type="button" class="act" aria-label={t().chat.label(user.name)} onclick={() => onchat(user)}>
+        <MessagesSquare size={16} aria-hidden="true" />{t().chat.button}
       </button>
     {/if}
     {#if onnudge}
