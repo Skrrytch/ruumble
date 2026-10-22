@@ -6,6 +6,8 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+Plugin 0.5.0 (unchanged). Tube mail for private messages between two people, a person card for everyone with Ruumble, and clearer symbols in the top bar.
+
 ### Added
 - **Tube mail.** Private messages between two people who use Ruumble, wherever they are in the building. Hover someone with Ruumble and choose "Send tube mail", or use the conversation symbol beside them in the directory board (H), also P on the focused person. A window at the bottom right has one tab per person and shows where the other one is right now, with their status and "Go there"; "Come over!" invites them to your room, and messages take the board's quick reactions. New messages show a notice with "Reply", the button with two speech bubbles in the top bar counts the unread ones, and texts also appear in the recipient's Mumble log. P opens and closes the window, comma and full stop switch tabs, Escape closes it. The service only passes messages on; your browser keeps a conversation for 24 hours after its last message, "Forget history" removes it at once, and revoking the browser's key removes them all (ADR-0021).
 
@@ -13,6 +15,10 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 - **Person card for everyone with Ruumble.** Hovering someone who uses Ruumble shows a card with their states and "Send tube mail" instead of the plain tooltip, shortly after the pointer rests on them; "Nudge" stays limited to deafened people in your room.
 - **Status as a tag.** The status is a small tag at the avatar and in the top bar instead of a speech bubble, which now stands for tube mail.
 - **Mute and deafen as a pair.** The two buttons in the top bar form one joined pair, set a little apart from tube mail and status.
+
+### Upgrading
+- No configuration changes: change the image tag to `0.30.0` and restart.
+- The service stores no tube mail; it only passes messages on between connected browsers. Nothing new to back up.
 
 ## [0.29.0] - 2026-10-19
 
