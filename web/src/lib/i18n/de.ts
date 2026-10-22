@@ -400,7 +400,7 @@ export const de = {
     enterRoom: (name: string) => `${name} betreten`,
     locked: "gesperrt",
     inHouse: (n: number) => (n === 1 ? "1 Person im Haus" : `${n} Personen im Haus`),
-    hint: "Klick auf eine Person: hingehen. P: ihr eine persönliche Nachricht schicken.",
+    hint: "Klick auf eine Person: hingehen. P: mit ihr unter vier Augen schreiben.",
   },
   /** the list of keyboard shortcuts (?), also from the user menu */
   shortcuts: {
@@ -410,10 +410,10 @@ export const de = {
     overview: "Gebäudeübersicht",
     status: "Mein Status",
     help: "Diese Übersicht",
-    chat: "Persönlichen Chat öffnen und schließen",
-    chatPrev: "Persönlicher Chat: vorheriger Reiter",
-    chatNext: "Persönlicher Chat: nächster Reiter",
-    escape: "Dialog oder persönlichen Chat schließen",
+    chat: "Unter vier Augen: öffnen und schließen",
+    chatPrev: "Unter vier Augen: vorheriger Reiter",
+    chatNext: "Unter vier Augen: nächster Reiter",
+    escape: "Dialog oder Gespräche schließen",
     note: "Kürzel wirken nicht beim Tippen und nicht in einem offenen Dialog.",
   },
   /** the own status (B, ADR-0018): a short text at the avatar that everyone sees */
@@ -481,11 +481,11 @@ export const de = {
     /** user menu: play a sound in this browser when someone nudges you */
     sound: "Ton beim Anstupsen",
   },
-  /** direct chat (ADR-0021): private messages between two people, wherever they are in the building */
+  /** "Unter vier Augen", the direct chat (ADR-0021): private messages between two people, wherever they are in the building */
   chat: {
-    title: "Persönlicher Chat",
+    title: "Unter vier Augen",
     /** the button in the person card */
-    button: "Persönliche Nachricht schicken",
+    button: "Unter vier Augen schreiben",
     label: (name: string) => `Nachricht an ${name}`,
     tabs: "Gespräche",
     closeTab: (name: string) => `Gespräch mit ${name} schließen`,
@@ -513,7 +513,7 @@ export const de = {
     keyTabs: "Reiter",
     keyClose: "schließen",
     none: "Keine offenen Gespräche",
-    noneHint: "Fahr mit der Maus über eine Person im Haus oder öffne die Haustafel (H) und schick ihr eine persönliche Nachricht.",
+    noneHint: "Fahr mit der Maus über eine Person im Haus oder öffne die Haustafel (H) und schreib ihr unter vier Augen.",
     first: (name: string) => `Noch keine Nachrichten mit ${name}.`,
     from: (name: string) => `Nachricht von ${name}`,
     reply: "Antworten",

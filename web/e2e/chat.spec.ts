@@ -1,12 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Direct chat (ADR-0021) against the mock: Anna is in "Let's talk" with Clara (Ruumble) and David (Mumble only); Ben
+// A quiet word, the direct chat (ADR-0021) against the mock: Anna is in "Let's talk" with Clara (Ruumble) and David (Mumble only); Ben
 // (Ruumble) is in his office. In the mock the others answer after a moment and come over when invited.
-test.describe("Direct chat", () => {
+test.describe("A quiet word", () => {
   test.beforeEach(async ({ page }) => page.goto("/?fixture=sample&talking=0&debug"));
 
   const person = (page: Page, name: string) => page.locator(".floorplan").getByRole("img", { name: new RegExp(`^${name}`) });
-  const panel = (page: Page) => page.getByRole("region", { name: "Direct chat" });
+  const panel = (page: Page) => page.getByRole("region", { name: "A quiet word" });
   const input = (page: Page, name: string) => panel(page).getByRole("textbox", { name: `Message to ${name}` });
 
   async function openFromCard(page: Page, name: string): Promise<void> {
@@ -64,11 +64,11 @@ test.describe("Direct chat", () => {
     await page.getByRole("button", { name: "Someone sends me a direct message" }).click();
     const toast = page.getByRole("status").filter({ hasText: "Message from Ben" });
     await expect(toast).toContainText("Hi Anna, do you have a minute?");
-    await expect(page.getByRole("button", { name: "Direct chat, 1 unread message" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "A quiet word, 1 unread message" })).toBeVisible();
     await toast.getByRole("button", { name: "Reply" }).click();
     await expect(toast).toHaveCount(0);
     await expect(panel(page).getByRole("tab", { name: "Ben" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("button", { name: "Direct chat", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "A quiet word", exact: true })).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("button", { name: "Someone invites me over" }).click();
     await expect(panel(page)).toContainText("Ben invites you to Ben's office.");
     await panel(page).getByRole("button", { name: "Go to Ben's office" }).click();
@@ -80,12 +80,12 @@ test.describe("Direct chat", () => {
     await openFromCard(page, "Clara");
     await input(page, "Clara").fill("First");
     await page.keyboard.press("Enter");
-    await panel(page).getByRole("heading", { name: "Direct chat" }).click(); // out of the text field
+    await panel(page).getByRole("heading", { name: "A quiet word" }).click(); // out of the text field
     await page.keyboard.press("h");
     await page.getByRole("dialog", { name: "Building overview" }).getByRole("button", { name: "Message to Ben" }).click();
     await expect(panel(page).getByRole("tab", { name: "Ben" })).toHaveAttribute("aria-selected", "true");
 
-    await panel(page).getByRole("heading", { name: "Direct chat" }).click(); // out of the text field
+    await panel(page).getByRole("heading", { name: "A quiet word" }).click(); // out of the text field
     await page.keyboard.press(",");
     await expect(panel(page).getByRole("tab", { name: "Clara" })).toHaveAttribute("aria-selected", "true");
     await page.keyboard.press(".");
@@ -93,10 +93,10 @@ test.describe("Direct chat", () => {
 
     await input(page, "Ben").press("Escape");
     await expect(panel(page)).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Direct chat", exact: true })).toBeFocused();
+    await expect(page.getByRole("button", { name: "A quiet word", exact: true })).toBeFocused();
     await page.keyboard.press("p");
     await expect(panel(page).getByRole("tab", { name: "Ben" })).toHaveAttribute("aria-selected", "true");
-    await panel(page).getByRole("heading", { name: "Direct chat" }).click();
+    await panel(page).getByRole("heading", { name: "A quiet word" }).click();
     await page.keyboard.press("p");
     await expect(panel(page)).toHaveCount(0);
 
