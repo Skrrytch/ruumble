@@ -16,10 +16,14 @@ export function expiryText(until: number | null, now = Date.now()): string {
   return until === null ? t().status.noExpiry : t().status.until(untilTime(until, now));
 }
 
-/** tooltip of the status bubble: "Status: Lunch break (until 14:30)" */
+/** tooltip of the status tag at the avatar: "Lunch break (until 14:30)" */
+export function statusText(status: NonNullable<UserView["status"]>, now = Date.now()): string {
+  return status.until === null ? status.text : `${status.text} (${expiryText(status.until, now)})`;
+}
+
+/** the status within the avatar's label, where it needs saying what it is: "Status: Lunch break (until 14:30)" */
 export function statusLabel(status: NonNullable<UserView["status"]>, now = Date.now()): string {
-  const text = t().people.status(status.text);
-  return status.until === null ? text : `${text} (${expiryText(status.until, now)})`;
+  return t().people.status(statusText(status, now));
 }
 
 /** the avatar's label: name, mute, talking, presence, recording, without Ruumble, status ("Anna (you), muted, …") */

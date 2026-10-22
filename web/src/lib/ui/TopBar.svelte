@@ -22,6 +22,7 @@
   import { countText, initials, ownPlace, type Building, type Floor } from "../model/building.ts";
   import type { RuumbleState } from "../state.svelte.ts";
   import { setTheme, theme } from "../theme.svelte.ts";
+  import { statusText } from "../status.ts";
   import Avatar from "./Avatar.svelte";
   import Key from "./Key.svelte";
 
@@ -219,7 +220,7 @@
            its text in the tooltip, dashed while none is set. A button of its own: the badge opens the user menu -->
       {#if me}
         <button type="button" class="status-tag" class:set={!!myStatus} aria-pressed={!!myStatus} aria-label={t().status.title} aria-keyshortcuts="S"
-          title={`${myStatus ? t().status.current(myStatus.text) : t().status.set} (S)`} onclick={() => void app.openStatus()}>
+          title={myStatus ? statusText(myStatus) : `${t().status.set} (S)`} onclick={() => void app.openStatus()}>
           <span class="tag-face"><Tag size={12} strokeWidth={2.5} /></span>
         </button>
       {/if}
@@ -431,7 +432,9 @@
     background: var(--color-paper); border: 1px dashed var(--color-blue-300); color: var(--color-blue-700);
     transition: transform var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
   }
-  .status-tag.set .tag-face { border: 1px solid var(--color-ink); color: var(--color-ink); box-shadow: 0 1px 2px rgb(0 56 105 / 0.25); }
+  /* set: filled like the tag at every avatar in the floor plan, so it stands out */
+  .status-tag.set .tag-face { width: 24px; height: 24px; background: var(--color-ink); border: 2px solid var(--color-paper); color: var(--color-paper); box-shadow: 0 1px 3px rgb(0 56 105 / 0.35); }
+  .status-tag.set:hover .tag-face { border-color: var(--color-paper); color: var(--color-paper); }
   .status-tag:hover .tag-face { transform: scale(1.1); border-color: var(--color-ink); color: var(--color-ink); }
   .status-tag:focus-visible { outline: none; }
   .status-tag:focus-visible .tag-face { outline: 3px solid var(--color-sky); outline-offset: 1px; }

@@ -231,7 +231,7 @@ test.describe("Status (B)", () => {
 
   test("others' status shows as a bubble with its text", async ({ page }) => {
     await expect(page.getByRole("img", { name: /^Clara, .*Status: Focus time, please write$/ })).toBeVisible();
-    await expect(page.locator(".status-tag[title='Status: Focus time, please write']")).toBeVisible();
+    await expect(page.locator(".status-tag[title='Focus time, please write']")).toBeVisible();
   });
 
   test("close to the limit a counter shows how much is left", async ({ page }) => {
@@ -279,7 +279,7 @@ test.describe("Status (B)", () => {
     await dialog.getByRole("button", { name: "Set status" }).click();
     await expect(dialog).toHaveCount(0);
     await expect(button).toHaveAttribute("aria-pressed", "true");
-    await expect(button).toHaveAttribute("title", "My status: Reviewing the release (S)");
+    await expect(button).toHaveAttribute("title", /^Reviewing the release \(until (\w+ )?\d\d:\d\d\)$/);
     await expect(page.getByRole("img", { name: /^Anna \(you\), .*Status: Reviewing the release \(until (\w+ )?\d\d:\d\d\)$/ })).toBeVisible();
 
     await button.click();
@@ -293,6 +293,10 @@ test.describe("Status (B)", () => {
     await expect(page.getByRole("img", { name: /^Anna \(you\), .*Status: Lunch break$/ })).toBeVisible();
 
     await expect(dialog).toHaveCount(0); // shortcuts never apply while a dialog is open
+    // so does a click on the own avatar (a real click; the own room is aria-disabled for entering, which Playwright honours)
+    await page.locator(".floorplan").getByRole("img", { name: /^Anna \(you\)/ }).click({ force: true });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Close" }).first().click();
     await page.keyboard.press("s"); // the shortcut opens it as well
     await dialog.getByRole("button", { name: "Clear status" }).click();
     await expect(button).toHaveAttribute("aria-pressed", "false");

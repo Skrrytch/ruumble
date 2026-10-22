@@ -47,9 +47,9 @@ Avatars only work with Mumble server 1.5.x. From 1.6, Mumble's Ice `getTexture` 
 
 ### Status
 
-- The tag at the avatar of your name badge (top right), "My status …" in the user menu or the key **S** opens **My status**: a free text (one line, up to 80 characters) and when it expires: after 2 hours by default, or after 30 minutes, 1, 4 or 8 hours, or never. Set it, change it, or clear it.
+- The tag at the avatar of your name badge (top right), a click on your own avatar in the floor plan, "My status …" in the user menu or the key **S** opens **My status**: a free text (one line, up to 80 characters) and when it expires: after 2 hours by default, or after 30 minutes, 1, 4 or 8 hours, or never. Set it, change it, or clear it.
 - Below, the **last five texts** you used, for a quick choice: a click puts the text into the field.
-- Everyone in Ruumble sees a small **tag** at your avatar, with the text and the expiry in its tooltip; the tag on your name badge is solid while your status is set and dashed while none is. It shows while your Mumble is connected with the plugin.
+- Everyone in Ruumble sees a small **tag** at your avatar, with the text and the expiry in its tooltip; the tag on your name badge is filled while your status is set and dashed while none is. It shows while your Mumble is connected with the plugin.
 - Kept by the service per person, so it follows you to other browsers; plain Mumble clients do not see it (ADR-0018). Someone without a status for 90 days is forgotten, recent texts included.
 
 ### Nudge

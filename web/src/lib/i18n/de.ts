@@ -422,7 +422,8 @@ export const de = {
     set: "Status setzen",
     /** the entry in the user menu */
     menu: "Mein Status …",
-    current: (text: string) => `Mein Status: ${text}`,
+    /** the tooltip of the own avatar in the floor plan */
+    clickHint: "klicken, um deinen Status zu ändern",
     intro: "Ein kurzer Text an deinem Avatar, den alle in Ruumble sehen. Er erscheint, solange dein Mumble mit dem Plugin verbunden ist.",
     label: "Status",
     placeholder: "Was machst du gerade?",

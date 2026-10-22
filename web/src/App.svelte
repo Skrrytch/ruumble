@@ -145,6 +145,7 @@
           onchat={(user) => { if (user.person) app.chat.open(user.person, user.name); }}
           onparcel={(user) => { if (user.person) app.tube.compose(null, [user.person]); }}
           ondropfile={(file, people) => app.tube.compose(file, people)}
+          onself={() => void app.openStatus()}
         />
       {:else}
         <div class="vacancy" role="status">

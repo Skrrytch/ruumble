@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { Snapshot } from "@ruumble/protocol";
 import { setLocale } from "../src/lib/i18n/index.svelte.ts";
 import { buildBuilding } from "../src/lib/model/building.ts";
-import { expiryText, statusLabel, untilTime } from "../src/lib/status.ts";
+import { expiryText, statusLabel, statusText, untilTime } from "../src/lib/status.ts";
 
 const sample = Snapshot.parse(JSON.parse(readFileSync(new URL("../../protocol/fixtures/sample.json", import.meta.url), "utf8")));
 
@@ -26,6 +26,9 @@ describe("Status at the avatar (B, ADR-0018)", () => {
     expect(expiryText(null)).toBe("no expiry");
     expect(statusLabel({ text: "Lunch", until: new Date(2026, 9, 5, 14, 30).getTime() }, now)).toBe("Status: Lunch (until 14:30)");
     expect(statusLabel({ text: "Away", until: null })).toBe("Status: Away");
+    // the tag's own tooltip: only the text and its expiry
+    expect(statusText({ text: "Lunch", until: new Date(2026, 9, 5, 14, 30).getTime() }, now)).toBe("Lunch (until 14:30)");
+    expect(statusText({ text: "Away", until: null })).toBe("Away");
     setLocale("de", false);
     expect(statusLabel({ text: "Mittag", until: new Date(2026, 9, 6, 9, 0).getTime() }, now)).toBe("Status: Mittag (bis Di., 09:00)");
   });

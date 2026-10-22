@@ -11,7 +11,7 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 - **Tube mail bandwidth** in the building maintenance: all transfers together, 16 Mbit/s by default (`TUBE_MAIL_MBIT`), 0 for unlimited, so files do not crowd out Mumble's voice.
 
 ### Changed
-- **Status at the name badge.** The own status is a small tag at the avatar of the name badge, as at every avatar in the floor plan, instead of a button in the toolbar: solid while a status is set (its text in the tooltip), dashed while none is. "My status …" in the user menu and S still open it.
+- **Status at the name badge.** The own status is a small tag at the avatar of the name badge, as at every avatar in the floor plan, instead of a button in the toolbar: filled while a status is set, dashed while none is. A click on your own avatar in the floor plan opens it too, as do "My status …" in the user menu and S. Status tags are filled so a set status stands out, and their tooltip shows just the text and its expiry, without "Status:".
 - **Tube mail is now "A quiet word".** Private messages between two people are called "A quiet word" (German "Unter vier Augen"), the person card offers "Have a quiet word"; the Mumble-log line reads "Message from Anna: …". Conversations kept by the browser carry over. The name "tube mail" is kept for sending files between people.
 
 ## [0.30.0] - 2026-10-22

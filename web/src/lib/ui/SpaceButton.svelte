@@ -31,6 +31,7 @@
     onchat,
     onparcel,
     ondropfile,
+    onself,
   }: {
     space: Space | Room;
     variant: "room" | "corridor" | "open";
@@ -59,7 +60,17 @@
     onparcel?: (user: UserView) => void;
     /** a file dropped here: tube mail to these people (the one under the pointer, else everyone with Ruumble here, ADR-0022) */
     ondropfile?: (file: File, people: string[]) => void;
+    /** a click on the own avatar: change the own status (ADR-0018) */
+    onself?: () => void;
   } = $props();
+
+  // the own avatar answers a single click (the room itself only a double click)
+  function clickSelf(e: MouseEvent): void {
+    const anchor = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-session]");
+    if (!onself || readonly || !anchor || !space.users.some((u) => u.isSelf && u.session === Number(anchor.dataset.session))) return;
+    e.stopPropagation();
+    onself();
+  }
 
   // tube mail: a file dragged over a space with someone to send to lights it up, or the person under the pointer;
   // dropped, it opens the send dialog with them chosen
@@ -202,6 +213,7 @@
   aria-disabled={disabled || space.isSelf || undefined}
   aria-busy={pending || undefined}
   data-channel={space.channelId}
+  onclick={clickSelf}
   ondblclick={click}
   onkeydown={onActivateKey(click)}
   ondragover={dragOver}
@@ -220,7 +232,7 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <span class="people" bind:clientWidth={peopleWidth} bind:clientHeight={peopleHeight} onpointerover={overPerson} onpointerout={dropCard}>
       {#each fit.shown as user (user.session)}
-        <Avatar {user} talking={talking[user.session] ?? false} tooltip={!cardable(user)} dropTarget={dropSession === user.session} />
+        <Avatar {user} talking={talking[user.session] ?? false} tooltip={!cardable(user)} dropTarget={dropSession === user.session} action={user.isSelf && onself && !readonly ? t().status.clickHint : undefined} />
       {/each}
       {#if fit.hidden.length}
         {@const names = t().space.morePeople(fit.hidden.map((u) => u.name).join(", "))}
@@ -246,7 +258,7 @@
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <span class="people" onpointerover={overPerson} onpointerout={dropCard}>
         {#each space.users as user (user.session)}
-          <Avatar {user} talking={talking[user.session] ?? false} tooltip={!cardable(user)} dropTarget={dropSession === user.session} />
+          <Avatar {user} talking={talking[user.session] ?? false} tooltip={!cardable(user)} dropTarget={dropSession === user.session} action={user.isSelf && onself && !readonly ? t().status.clickHint : undefined} />
         {/each}
       </span>
     {/if}

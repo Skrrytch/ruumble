@@ -5,7 +5,7 @@
   import Unplug from "@lucide/svelte/icons/unplug";
   import type { UserView } from "../model/building.ts";
   import { t } from "../i18n/index.svelte.ts";
-  import { personLabel, statusLabel } from "../status.ts";
+  import { personLabel, statusText } from "../status.ts";
 
   let {
     user,
@@ -13,6 +13,7 @@
     showName = true,
     tooltip = true,
     dropTarget = false,
+    action,
   }: {
     user: UserView;
     talking?: boolean;
@@ -21,6 +22,8 @@
     tooltip?: boolean;
     /** a file is dragged over this person: tube mail goes to them alone (ADR-0022) */
     dropTarget?: boolean;
+    /** a click on the avatar does something (the own one: the status): said in the tooltip, shown by the pointer */
+    action?: string;
   } = $props();
 
   // image not loadable → initials (AP9)
@@ -31,13 +34,14 @@
 
   const p = $derived(t().people);
   // status (B, ADR-0018): a tag at the top right, its text in the tooltip
-  const status = $derived(user.status ? statusLabel(user.status) : null);
+  const status = $derived(user.status ? statusText(user.status) : null);
   const label = $derived(personLabel(user, talking));
+  const title = $derived(action ? `${label} – ${action}` : label);
   /** same words as in the label, capitalised as the badge tooltip */
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 </script>
 
-<span class="person" title={tooltip ? label : undefined} aria-label={label} role="img" data-session={user.session}>
+<span class="person" class:action={!!action} title={tooltip ? title : undefined} aria-label={label} role="img" data-session={user.session}>
   <span class="av {presence}" class:me={user.isSelf} class:talking class:drop={dropTarget} aria-hidden="true">
     {#if imageUrl}
       <img src={imageUrl} alt="" onerror={() => (failedUrl = imageUrl)} />
@@ -99,10 +103,12 @@
   }
   /* a file dragged over the person (tube mail): a dashed ring */
   .av.drop { outline: 3px dashed var(--color-blue-500); outline-offset: 3px; }
+  .person.action { cursor: pointer; }
+  /* a set status stands out: a filled tag, cut out from the avatar by a ring in the page colour */
   .status-tag {
-    position: absolute; right: -7px; top: -7px; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--color-paper); border: 1px solid var(--color-ink); color: var(--color-ink);
-    display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgb(0 56 105 / 0.25);
+    position: absolute; right: -8px; top: -8px; width: 24px; height: 24px; border-radius: 50%; box-sizing: border-box;
+    background: var(--color-ink); border: 2px solid var(--color-paper); color: var(--color-paper);
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgb(0 56 105 / 0.35);
   }
   .flag {
     position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 50%;
