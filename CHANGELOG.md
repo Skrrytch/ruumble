@@ -6,6 +6,8 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-10-22
+
 Plugin 0.5.0 (unchanged). Tube mail hands files directly to other people, private messages are now "A quiet word", and the status sits at the name badge.
 
 ### Added
@@ -359,6 +361,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.31.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.31.0
 [0.30.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.29.0
 [0.28.2]: https://github.com/Skrrytch/ruumble/releases/tag/v0.28.2
