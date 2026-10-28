@@ -26,6 +26,8 @@ const PRUNE_EVERY_MS = 60_000;
 /** what the direct chat needs from the rest of the web UI */
 export interface ChatHost {
   notice(text: string): void;
+  /** a message from someone else arrived; `seen` when its conversation is in view */
+  arrived(name: string, seen: boolean): void;
 }
 
 /** plain text for a message that did not go out */
@@ -123,6 +125,7 @@ export class ChatState {
     const r = receive(this.book, m, this.me, seen, Date.now());
     this.update(r.book);
     if (this.active === null || !this.book[this.active]?.open) this.active = person;
+    if (r.arrived) this.host.arrived(r.arrived.conversation.name, seen);
     if (r.arrived && !seen) {
       const { conversation, item } = r.arrived;
       this.showToast({ person, name: conversation.name, text: item.kind === "text" ? item.text : t().chat.inviteFrom(item.channelName) });

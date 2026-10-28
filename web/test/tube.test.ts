@@ -116,7 +116,7 @@ describe("tube mail in the web UI (state)", () => {
         downloadUrl: (ticket: string) => `/dl/${ticket}`,
       },
     } as unknown as MumbleAdapter;
-    const tube = new TubeState(adapter, { notice: (t) => notices.push(t), download: (url, name) => downloads.push([url, name]) });
+    const tube = new TubeState(adapter, { notice: (t) => notices.push(t), download: (url, name) => downloads.push([url, name]), arrived: () => {} });
     tube.identify(ME);
     return { tube, offers, pieces, held, notices, downloads };
   }

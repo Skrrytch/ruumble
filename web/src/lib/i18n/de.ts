@@ -139,6 +139,15 @@ export const de = {
   notices: {
     joinFailed: (name: string) => `Wechsel nach „${name}“ nicht möglich.`,
     actionFailed: "Aktion nicht möglich.",
+    /** the tab title flashes with this text while the window is in the background (ADR-0023) */
+    flash: {
+      entered: { one: (who: string) => `${who} ist hereingekommen`, many: (n: number) => `${n} Personen sind hereingekommen` },
+      nudge: { one: (who: string) => `${who} hat dich angestupst`, many: (n: number) => `${n} Anstupser` },
+      board: { one: (who: string) => `Neu im Board von ${who}`, many: (n: number) => `${n} neue Board-Beiträge` },
+      parcel: { one: (who: string) => `${who} hat eine Datei in die Rohrpost gesteckt`, many: (n: number) => `${n} Dateien in der Rohrpost` },
+      "parcel-to-me": { one: (who: string) => `${who} schickt dir eine Datei`, many: (n: number) => `${n} Dateien für dich` },
+      message: { one: (who: string) => `Nachricht von ${who}`, many: (n: number) => `${n} neue Nachrichten` },
+    },
   },
   board: {
     title: "Pinnwand",

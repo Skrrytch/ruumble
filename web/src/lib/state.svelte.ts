@@ -9,6 +9,7 @@ import type { CareTarget } from "./care/model.ts";
 import { t } from "./i18n/index.svelte.ts";
 import type { BoardSide } from "./model/float.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type BuildOptions, type Building, type Floor } from "./model/building.ts";
+import { NoticeCenter } from "./notices/center.svelte.ts";
 import { playNudgeSound, readNudgeSound, storeNudgeSound } from "./nudge.ts";
 import { ChatState } from "./chat/state.svelte.ts";
 import { TubeState } from "./tube/state.svelte.ts";
@@ -162,16 +163,28 @@ export class RuumbleState {
   readonly chat: ChatState;
   /** tube mail (ADR-0022): parcels sent and received, the panel, the send dialog, the files this tab holds */
   readonly tube: TubeState;
+  readonly notices: NoticeCenter;
 
   constructor(private readonly adapter: MumbleAdapter) {
-    this.chat = new ChatState(adapter, { notice: (text) => this.setNotice({ text }) });
-    this.tube = new TubeState(adapter, { notice: (text) => this.setNotice({ text }), download: startDownload });
+    this.notices = new NoticeCenter({ speaking: () => (this.me ? this.talking[this.me.session] === true : false) });
+    this.chat = new ChatState(adapter, {
+      notice: (text) => this.setNotice({ text }),
+      arrived: (name, seen) => {
+        if (!seen || !this.notices.foreground()) this.notices.notify("message", name);
+      },
+    });
+    this.tube = new TubeState(adapter, {
+      notice: (text) => this.setNotice({ text }),
+      download: startDownload,
+      arrived: (name) => this.notices.notify("parcel-to-me", name),
+    });
   }
 
   start(): void {
     void this.adapter.versions().then((v) => (this.versions = v));
     this.chat.start();
     this.tube.start();
+    this.notices.start();
     this.adapter.start({
       snapshot: (s) => this.onSnapshot(s),
       talking: (session, state) => this.onTalking(session, state),
@@ -198,6 +211,7 @@ export class RuumbleState {
       nudge: (_session, name) => {
         this.setNotice({ text: t().nudge.received(name) }, NUDGE_NOTICE_MS);
         if (this.nudgeSound) playNudgeSound();
+        this.notices.notify("nudge", name);
       },
       chat: (message) => this.chat.receive(message),
       parcel: (parcel) => this.tube.receive(parcel),
@@ -210,6 +224,7 @@ export class RuumbleState {
     this.adapter.stop();
     this.chat.stop();
     this.tube.stop();
+    this.notices.stop();
   }
 
   async requestPairing(): Promise<void> {

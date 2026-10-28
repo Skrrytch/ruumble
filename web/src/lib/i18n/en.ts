@@ -141,6 +141,15 @@ export const en: Messages = {
   notices: {
     joinFailed: (name) => `Cannot move to “${name}”.`,
     actionFailed: "Action not possible.",
+    /** the tab title flashes with this text while the window is in the background (ADR-0023) */
+    flash: {
+      entered: { one: (who: string) => `${who} came in`, many: (n: number) => `${n} people came in` },
+      nudge: { one: (who: string) => `${who} nudged you`, many: (n: number) => `${n} nudges` },
+      board: { one: (who: string) => `New post by ${who}`, many: (n: number) => `${n} new posts` },
+      parcel: { one: (who: string) => `${who} put a file in the tube`, many: (n: number) => `${n} files in the tube` },
+      "parcel-to-me": { one: (who: string) => `${who} sends you a file`, many: (n: number) => `${n} files for you` },
+      message: { one: (who: string) => `Message from ${who}`, many: (n: number) => `${n} new messages` },
+    },
   },
   board: {
     title: "Board",

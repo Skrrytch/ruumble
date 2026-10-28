@@ -6,6 +6,9 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+### Added
+- **Notices while Ruumble is in the background.** A nudge, a quiet word or a file in the tube for you now shows in the tab title (`(2) Room · Ruumble`, flashing a few times for these), as a dot on the tab icon and, in the installed app, as a number on its icon. All of it goes when you come back to the window (ADR-0023).
+
 ## [0.31.0] - 2026-10-22
 
 Plugin 0.5.0 (unchanged). Tube mail hands files directly to other people, private messages are now "A quiet word", and the status sits at the name badge.

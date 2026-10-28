@@ -21,6 +21,8 @@ export interface TubeHost {
   notice(text: string): void;
   /** start the browser's download of this address (a click on a link with `download`) */
   download(url: string, name: string): void;
+  /** a parcel for the own person arrived, from this sender */
+  arrived(name: string): void;
 }
 
 /** plain text for a request that did not go through */
@@ -190,6 +192,7 @@ export class TubeState {
       if (parcel.ended !== null) this.release(parcel.id);
     } else if (!known && waiting(parcel, this.me)) {
       this.toast = parcel.id;
+      this.host.arrived(parcel.fromName);
     } else if (this.toast === parcel.id && !waiting(parcel, this.me)) {
       this.toast = null;
     }

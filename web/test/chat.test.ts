@@ -156,7 +156,7 @@ describe("direct chat in the web UI (state)", () => {
         },
       },
     } as unknown as MumbleAdapter;
-    const chat = new ChatState(adapter, { notice: (t) => notices.push(t) });
+    const chat = new ChatState(adapter, { notice: (t) => notices.push(t), arrived: () => {} });
     chat.identify(ME);
     return { chat, sent, notices };
   }

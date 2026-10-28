@@ -26,5 +26,6 @@ Format: short MADR. Status: **accepted** = decided by the project owner. **propo
 | [0020](0020-nudge.md) | Nudge a deafened person in the own room | proposed |
 | [0021](0021-tube-mail.md) | Tube mail (now "A quiet word"): private messages between two people | proposed |
 | [0022](0022-tube-mail-files.md) | Tube mail: files directly between people | proposed |
+| [0023](0023-notices.md) | Notices: levels and output channels (title, favicon, badge, desktop) | proposed |
 
 ADRs record a decision as it was made. Where the code has moved on since, the ADR has a short "Current state" note instead of a silent rewrite.

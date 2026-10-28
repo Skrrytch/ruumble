@@ -63,7 +63,7 @@
   // the tab says where one is: "Let's talk · Ruumble"; without an own place just "Ruumble"
   $effect(() => {
     const place = building && app.snapshot ? ownPlace(building, app.snapshot) : null;
-    document.title = place ? `${place.name} · Ruumble` : "Ruumble";
+    app.notices.setBaseTitle(place ? `${place.name} · Ruumble` : "Ruumble");
   });
 
   // a file dropped where nothing takes it would replace Ruumble with the file in this tab: the drop is swallowed here,
