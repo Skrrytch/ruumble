@@ -29,6 +29,7 @@
     <button type="button" onclick={() => mock.rejectNextJoin()}>Reject next move</button>
     <button type="button" onclick={() => mock.postAsOther()}>Someone posts in my room</button>
     <button type="button" onclick={() => mock.toggleDeafNearby()}>Someone in my room deafens</button>
+    <button type="button" onclick={() => mock.enterMyRoom()}>Someone comes into my room</button>
     <button type="button" onclick={() => mock.nudgeMe()}>Someone nudges me</button>
     <button type="button" onclick={() => mock.chatMe()}>Someone sends me a direct message</button>
     <button type="button" onclick={() => mock.chatMe(true)}>Someone invites me over</button>

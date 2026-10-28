@@ -17,13 +17,15 @@ Events say *what happened and how urgent it is*; they know nothing about sounds 
 | **Nudge breaks through** | A nudge to oneself is never capped by "do not disturb" and its desktop notification stays until clicked (`requireInteraction`). Whoever does not want nudges sets that kind to `off`. |
 | **Speaking** | While the own user is talking, no sound and no toast; the visual channels still apply. |
 | **Bundling** | Events of one kind within 10 s become one ("3 people entered"); a bundled event does not play the sound again. |
-| **Defaults** | Someone enters: `visible`. Board post: `quiet`. File in the tube for others in the room: `visible`; for oneself: `loud`. Private message: `loud`. Nudge: `loud`. |
+| **Defaults** | Someone enters: `visible`. Board post: `quiet`. File in the tube for oneself: `loud`. Private message: `loud`. Nudge: `loud`. |
 | **Who gets told of what** | Only the person concerned hears of a nudge or a quiet word ("Anna nudged you"); nobody else in the room learns that it happened, who was nudged, or what was said. |
 | **Desktop notifications** | Opt-in per browser (one explicit permission prompt), only used while the tab is hidden. Text shows the sender only ("Message from Anna"), not the message, unless switched on; titles, favicon and badge show only numbers. |
 | **App Badging** | `navigator.setAppBadge` behind a feature check and a `catch`; without support or without the installed app it does nothing. The manifest already makes Ruumble installable. |
 | **Code** | `web/src/lib/notices/`: `model.ts` is pure (policy, bundling, title text, settings parsing) and unit-tested with the 95 % threshold; the channels and the centre that listens to the sources are the thin, browser-bound part. |
 
 ## Rejected options
+- **A notice for tube mail between other people in the room.** The service passes a parcel only to its recipients, so nobody else could learn of it; it would also reveal who sends files to whom.
+- **A separate counter beside the board button.** The board toggle already counts unseen posts; the title, favicon and badge count what happens while the window is in the background.
 - **A web push service.** Would reach closed tabs, but needs a service worker, push keys and a push server; too heavy for a self-hosted bridge without a cloud. A background tab is enough.
 - **Raising the window with `window.focus()`.** Blocked by browsers, and rightly so.
 - **Telling the room about others' nudges or quiet words** ("Anna was nudged"). Private between the two people; the room hears nothing.
@@ -31,5 +33,5 @@ Events say *what happened and how urgent it is*; they know nothing about sounds 
 
 ## Consequences
 - The nudge sound (ADR-0020), the toast of quiet words (ADR-0021) and the toast of tube mail (ADR-0022) move behind the centre; the setting "Sound when nudged" becomes the nudge's level.
-- Entering a room is derived from the snapshot on the client; no protocol change is needed for the first step.
+- Entering a room is derived from two snapshots on the client (`entrants`), a board post by someone else from the posts before and after the reload (`newPostAuthors`); no protocol change is needed.
 - Without a granted permission or in an unsupported browser a channel silently drops out; the others still work.

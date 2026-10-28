@@ -29,6 +29,8 @@ function readSettings(): Settings {
 export interface NoticeHost {
   /** the own user is talking right now */
   speaking(): boolean;
+  /** show a short cue in the room that vanishes by itself */
+  cue(text: string): void;
 }
 
 export class NoticeCenter {
@@ -98,12 +100,14 @@ export class NoticeCenter {
     this.last = event;
     const ctx = this.context();
     const channels = route(event, this.settings, ctx);
+    const { one, many } = t().notices.flash[kind];
+    const message = event.count > 1 ? many(event.count) : one(who);
+    // a nudge, a quiet word and tube mail have a notice of their own
+    if (channels.includes("cue") && (kind === "entered" || kind === "board")) this.host.cue(message);
     if (channels.includes("sound")) playNudgeSound();
     if (!channels.includes("title")) return; // in front, or switched off: the channels in the room come with the next step
     // a bundled event counts once more, not again as a whole
     this.unseen += 1;
-    const { one, many } = t().notices.flash[kind];
-    const message = event.count > 1 ? many(event.count) : one(who);
     this.title.set(this.unseen, flashes(event, this.settings, ctx) ? message : undefined);
     if (channels.includes("desktop")) {
       showDesktop({ title: message, body: this.settings.desktopText ? text : undefined, tag: kind, sticky: sticky(event) });

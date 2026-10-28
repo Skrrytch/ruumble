@@ -52,4 +52,15 @@ test.describe("Nudge", () => {
     await dnd.click();
     await expect(dnd).toHaveAttribute("aria-pressed", "true");
   });
+
+  test("someone coming into the room shows a short cue, which the notices dialog can switch off", async ({ page }) => {
+    await page.getByRole("button", { name: "Someone comes into my room" }).click();
+    await expect(page.getByRole("alert")).toHaveText(/came in/);
+    await page.reload();
+    await (await userMenu(page)).getByRole("button", { name: "Notices …" }).click();
+    await page.getByRole("dialog", { name: "Notices" }).getByLabel("Someone enters the room").selectOption("off");
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Someone comes into my room" }).click();
+    await expect(page.getByRole("alert")).toHaveCount(0);
+  });
 });

@@ -822,6 +822,16 @@ export class MockAdapter implements MumbleAdapter {
     }
   }
 
+  /** someone from another room comes into the own room */
+  enterMyRoom(): void {
+    const me = this.me();
+    const other = me && this.state.users.find((u) => u.session !== me.session && u.channel !== me.channel);
+    if (other && me) {
+      other.channel = me.channel;
+      this.emit();
+    }
+  }
+
   // ---------------------------------------------------------------- internal
 
   /** like the service: learned from the issue links in all rooms (oldest first); a reset project only from newer posts */

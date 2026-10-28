@@ -4,11 +4,13 @@
  * to the sources are separate.
  */
 
-export type NoticeKind = "entered" | "nudge" | "board" | "parcel" | "parcel-to-me" | "message";
+import type { Post, Snapshot } from "@ruumble/protocol";
+
+export type NoticeKind = "entered" | "nudge" | "board" | "parcel-to-me" | "message";
 export type Level = "off" | "quiet" | "visible" | "loud";
 export type ChannelId = "counter" | "cue" | "toast" | "sound" | "title" | "favicon" | "badge" | "desktop";
 
-export const NOTICE_KINDS: readonly NoticeKind[] = ["entered", "nudge", "board", "parcel", "parcel-to-me", "message"];
+export const NOTICE_KINDS: readonly NoticeKind[] = ["entered", "nudge", "board", "parcel-to-me", "message"];
 export const LEVELS: readonly Level[] = ["off", "quiet", "visible", "loud"];
 
 export interface NoticeEvent {
@@ -43,7 +45,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  levels: { entered: "visible", nudge: "loud", board: "quiet", parcel: "visible", "parcel-to-me": "loud", message: "loud" },
+  levels: { entered: "visible", nudge: "loud", board: "quiet", "parcel-to-me": "loud", message: "loud" },
   desktop: false,
   desktopText: false,
   doNotDisturb: false,
@@ -139,4 +141,23 @@ export function parseSettings(raw: string | null): Settings {
   if (typeof desktopText === "boolean") fallback.desktopText = desktopText;
   if (typeof doNotDisturb === "boolean") fallback.doNotDisturb = doNotDisturb;
   return fallback;
+}
+
+/** the own channel in a snapshot, `null` without a paired plugin */
+function ownChannel(s: Snapshot): number | null {
+  return s.users.find((u) => u.session === s.self?.session)?.channel ?? null;
+}
+
+/** names of the people who came into the own room between two snapshots; nobody when the own user moved or on the first one */
+export function entrants(previous: Snapshot | null, next: Snapshot): string[] {
+  const channel = ownChannel(next);
+  if (!previous || channel === null || ownChannel(previous) !== channel) return [];
+  const before = new Set(previous.users.filter((u) => u.channel === channel).map((u) => u.session));
+  return next.users.filter((u) => u.channel === channel && u.session !== next.self?.session && !before.has(u.session)).map((u) => u.name);
+}
+
+/** authors of posts by other people that are in `next` but not in `previous` (the same room's board, oldest first) */
+export function newPostAuthors(previous: readonly Post[], next: readonly Post[]): string[] {
+  const known = new Set(previous.map((p) => p.id));
+  return next.filter((p) => !known.has(p.id) && !p.mine).map((p) => p.authorName);
 }

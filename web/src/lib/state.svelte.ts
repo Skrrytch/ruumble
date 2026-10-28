@@ -9,6 +9,7 @@ import type { CareTarget } from "./care/model.ts";
 import { t } from "./i18n/index.svelte.ts";
 import type { BoardSide } from "./model/float.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type BuildOptions, type Building, type Floor } from "./model/building.ts";
+import { entrants, newPostAuthors } from "./notices/model.ts";
 import { NoticeCenter } from "./notices/center.svelte.ts";
 import { ChatState } from "./chat/state.svelte.ts";
 import { TubeState } from "./tube/state.svelte.ts";
@@ -46,6 +47,7 @@ export type CareView = { kind: "room"; value: RoomCare } | { kind: "floor"; valu
 
 /** a nudge for the own user stays longer than other notices: whoever was away from the screen should still see it */
 const NUDGE_NOTICE_MS = 30_000;
+const CUE_MS = 4000;
 
 /** per room: creation time of the newest post the user has seen on its board (only in this browser) */
 const SEEN_KEY = "ruumble.boardSeen";
@@ -165,7 +167,9 @@ export class RuumbleState {
   readonly notices: NoticeCenter;
 
   constructor(private readonly adapter: MumbleAdapter) {
-    this.notices = new NoticeCenter({ speaking: () => (this.me ? this.talking[this.me.session] === true : false) });
+    this.notices = new NoticeCenter({ speaking: () => (this.me ? this.talking[this.me.session] === true : false),
+      cue: (text) => this.setNotice({ text }, CUE_MS),
+    });
     this.chat = new ChatState(adapter, {
       notice: (text) => this.setNotice({ text }),
       arrived: (name, seen, text) => {
@@ -205,7 +209,7 @@ export class RuumbleState {
       },
       // also while closed: the toggle shows posts the user has not seen yet
       board: (channelId) => {
-        if (this.me?.channel === channelId) void this.loadBoard();
+        if (this.me?.channel === channelId) void this.announceNewPosts();
       },
       nudge: (_session, name) => {
         this.setNotice({ text: t().nudge.received(name) }, NUDGE_NOTICE_MS);
@@ -321,6 +325,13 @@ export class RuumbleState {
       this.boardError = r.error;
       this.boardUnseen = 0;
     }
+  }
+
+  /** load the board of the own room and tell of the posts by others that came with it (same room only) */
+  private async announceNewPosts(): Promise<void> {
+    const before = this.board && this.board.channelId === this.me?.channel ? this.board.posts : null;
+    await this.loadBoard();
+    if (before && this.board) for (const name of newPostAuthors(before, this.board.posts)) this.notices.notify("board", name);
   }
 
   /** Open board: everything counts as seen. Closed: count what arrived since. A room seen for the first time starts as seen. */
@@ -695,6 +706,7 @@ export class RuumbleState {
   }
 
   private onSnapshot(s: Snapshot): void {
+    for (const name of entrants(this.snapshot, s)) this.notices.notify("entered", name);
     this.snapshot = s;
     this.chat.identify(s.users.find((u) => u.session === s.self?.session)?.person ?? null);
     this.tube.identify(s.users.find((u) => u.session === s.self?.session)?.person ?? null);

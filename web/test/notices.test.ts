@@ -1,3 +1,4 @@
+import type { Post, Snapshot } from "@ruumble/protocol";
 import { describe, expect, it } from "vitest";
 import {
   BUNDLE_MS,
@@ -5,6 +6,8 @@ import {
   badgeCount,
   bundle,
   effectiveLevel,
+  entrants,
+  newPostAuthors,
   flashFrames,
   flashes,
   parseSettings,
@@ -151,5 +154,38 @@ describe("settings", () => {
   it("does not hand out the shared defaults to be modified", () => {
     parseSettings(null).levels.board = "loud";
     expect(DEFAULT_SETTINGS.levels.board).toBe("quiet");
+  });
+});
+
+const user = (session: number, name: string, channel: number) => ({ session, name, channel }) as Snapshot["users"][number];
+const snap = (self: number | null, users: Snapshot["users"]) => ({ self: self === null ? null : { session: self }, users }) as Snapshot;
+
+describe("entrants", () => {
+  const me = user(1, "Me", 5);
+  const before = snap(1, [me, user(2, "Anna", 5), user(3, "Ben", 6)]);
+
+  it("names who came into the own room", () => {
+    expect(entrants(before, snap(1, [me, user(2, "Anna", 5), user(3, "Ben", 5), user(4, "Cleo", 5)]))).toEqual(["Ben", "Cleo"]);
+  });
+
+  it("is silent for the first snapshot, when the own user moved, and without a paired plugin", () => {
+    const after = snap(1, [user(1, "Me", 6), user(2, "Anna", 6), user(3, "Ben", 6)]);
+    expect(entrants(null, after)).toEqual([]);
+    expect(entrants(before, after)).toEqual([]);
+    expect(entrants(snap(null, before.users), snap(null, [...before.users, user(9, "Zoe", 5)]))).toEqual([]);
+  });
+
+  it("ignores people who stay, leave, or come into other rooms", () => {
+    expect(entrants(before, snap(1, [me, user(3, "Ben", 7)]))).toEqual([]);
+  });
+});
+
+describe("newPostAuthors", () => {
+  const post = (id: string, authorName: string, mine = false) => ({ id, authorName, mine }) as Post;
+
+  it("names the authors of new posts by others, not the own posts or known ones", () => {
+    const known = [post("a", "Anna")];
+    expect(newPostAuthors(known, [...known, post("b", "Ben"), post("c", "Me", true)])).toEqual(["Ben"]);
+    expect(newPostAuthors(known, known)).toEqual([]);
   });
 });
