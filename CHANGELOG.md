@@ -6,6 +6,8 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-10-28
+
 Plugin 0.5.0 (unchanged). Notices that reach you while Ruumble is in the background: the tab title, the tab icon, the app badge and desktop notifications, set per browser in a new notices dialog, with a do-not-disturb switch.
 
 ### Added
@@ -375,6 +377,7 @@ Plugin 0.1.0 to 0.2.0.
 - Real Mumble avatars and presence (quiet, away, recording).
 - Docker image with the plugin bundle served under `/download`.
 
+[0.32.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.32.0
 [0.31.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.31.0
 [0.30.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Skrrytch/ruumble/releases/tag/v0.29.0
