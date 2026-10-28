@@ -6,17 +6,19 @@ All notable changes to Ruumble. The service and the web UI share one version; th
 
 ## [Unreleased]
 
-### Changed
-- The pairing code in the Mumble log has no space any more (`482913`), so a double click selects all of it. The page accepts it with or without spaces.
+Plugin 0.5.0 (unchanged). Notices that reach you while Ruumble is in the background: the tab title, the tab icon, the app badge and desktop notifications, set per browser in a new notices dialog, with a do-not-disturb switch.
 
 ### Added
 - **Notices while Ruumble is in the background.** A nudge, a quiet word or a file in the tube for you now shows in the tab title (`(2) Room · Ruumble`, flashing a few times for these), as a dot on the tab icon and, in the installed app, as a number on its icon. All of it goes when you come back to the window (ADR-0023).
-- **Notices dialog and desktop notifications.** "Notices …" in the user menu sets, per browser, what Ruumble does for each event: off, count only, a short cue, or a notice with sound. Desktop notifications (asked for once, shown only while the window is not in front; they name who it is from, not the text unless you want it) and a "Do not disturb" switch that keeps everything quiet except a nudge, which always rings through.
-
-- **Someone comes into your room, or posts on its board.** A short cue shows for a few seconds (setting "Short cue in the room" for entering, "Count only" for board posts, which counts in the title, tab icon and app badge while the window is in the background). Both can be changed or switched off in the notices dialog.
+- **Notices dialog and desktop notifications.** "Notices …" in the user menu sets, per browser, what Ruumble does for each event: off, count only, a short cue, or a notice with sound. Desktop notifications are asked for once and shown only while the window is not in front; they name who it is from, not the text unless you want it. A "Do not disturb" switch keeps everything quiet except a nudge, which always rings through.
+- **Someone comes into your room, or posts on its board.** A short cue shows for a few seconds for entering ("Short cue in the room"), and a board post by someone else counts in the title, tab icon and app badge while the window is in the background ("Count only"). Both can be changed or switched off in the notices dialog.
 
 ### Changed
 - "Sound when nudged" is now the nudge's level in the notices dialog (an earlier "off" carries over). A private message now plays the same sound by default.
+- The pairing code in the Mumble log has no space any more (`482913`), so a double click selects all of it. The page accepts it with or without spaces.
+
+### Upgrading
+- No configuration changes needed: change the image tag to `0.32.0` and restart. The notices are set per browser; the service stores nothing new.
 
 ## [0.31.0] - 2026-10-22
 
