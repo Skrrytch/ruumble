@@ -3,16 +3,24 @@
  * the channels do it. This step covers the channels that work outside the tab: title, favicon and app badge.
  */
 import { t } from "../i18n/index.svelte.ts";
+import { playNudgeSound } from "../nudge.ts";
 import { setBadge } from "./channels/badge.ts";
+import { desktopPermission, requestDesktopPermission, showDesktop, type DesktopPermission } from "./channels/desktop.ts";
 import { setFaviconDot } from "./channels/favicon.ts";
 import { TitleChannel } from "./channels/title.ts";
-import { bundle, flashes, parseSettings, route, type Context, type NoticeEvent, type NoticeKind, type Settings } from "./model.ts";
+import { bundle, flashes, parseSettings, route, serializeSettings, sticky, type Context, type Level, type NoticeEvent, type NoticeKind, type Settings } from "./model.ts";
 
 const SETTINGS_KEY = "ruumble.notices";
 
+const LEGACY_NUDGE_SOUND_KEY = "ruumble.nudgeSound";
+
 function readSettings(): Settings {
   try {
-    return parseSettings(localStorage.getItem(SETTINGS_KEY));
+    const stored = localStorage.getItem(SETTINGS_KEY);
+    const settings = parseSettings(stored);
+    // "Sound when nudged: off" of before the notices (ADR-0020) becomes the nudge being off
+    if (stored === null && localStorage.getItem(LEGACY_NUDGE_SOUND_KEY) === "off") settings.levels.nudge = "off";
+    return settings;
   } catch {
     return parseSettings(null);
   }
@@ -26,7 +34,9 @@ export interface NoticeHost {
 export class NoticeCenter {
   /** how many notices came while the window was in the background and have not been seen yet */
   unseen = $state(0);
-  settings = readSettings();
+  settings = $state(readSettings());
+  /** the browser's answer to the permission question, as of the last look */
+  permission = $state<DesktopPermission>(desktopPermission());
 
   private readonly title = new TitleChannel();
   private last: NoticeEvent | null = null;
@@ -57,17 +67,47 @@ export class NoticeCenter {
     this.title.setBase(base);
   }
 
-  /** something happened that concerns the room or the own user */
-  notify(kind: NoticeKind, who: string, now = Date.now()): void {
+  setLevel(kind: NoticeKind, level: Level): void {
+    this.settings.levels[kind] = level;
+    this.save();
+  }
+
+  setDoNotDisturb(on: boolean): void {
+    this.settings.doNotDisturb = on;
+    this.save();
+  }
+
+  setDesktopText(on: boolean): void {
+    this.settings.desktopText = on;
+    this.save();
+  }
+
+  /** switching on asks the browser for the permission; without it the switch stays off */
+  async setDesktop(on: boolean): Promise<void> {
+    if (on) {
+      this.permission = await requestDesktopPermission();
+      on = this.permission === "granted";
+    }
+    this.settings.desktop = on;
+    this.save();
+  }
+
+  /** something happened that concerns the room or the own user; `text` is the message, shown only if the user wants it */
+  notify(kind: NoticeKind, who: string, text?: string, now = Date.now()): void {
     const event = bundle(this.last, { kind, at: now, who: [who], count: 1 });
     this.last = event;
     const ctx = this.context();
     const channels = route(event, this.settings, ctx);
+    if (channels.includes("sound")) playNudgeSound();
     if (!channels.includes("title")) return; // in front, or switched off: the channels in the room come with the next step
     // a bundled event counts once more, not again as a whole
     this.unseen += 1;
     const { one, many } = t().notices.flash[kind];
-    this.title.set(this.unseen, flashes(event, this.settings, ctx) ? (event.count > 1 ? many(event.count) : one(who)) : undefined);
+    const message = event.count > 1 ? many(event.count) : one(who);
+    this.title.set(this.unseen, flashes(event, this.settings, ctx) ? message : undefined);
+    if (channels.includes("desktop")) {
+      showDesktop({ title: message, body: this.settings.desktopText ? text : undefined, tag: kind, sticky: sticky(event) });
+    }
     if (channels.includes("favicon")) void setFaviconDot(true);
     if (channels.includes("badge")) setBadge(this.unseen);
   }
@@ -82,7 +122,19 @@ export class NoticeCenter {
   }
 
   private context(): Context {
-    // "do not disturb" has no status to read yet, and desktop notifications come with their own step
-    return { visible: this.foreground(), doNotDisturb: false, speaking: this.host.speaking(), desktop: false };
+    return {
+      visible: this.foreground(),
+      doNotDisturb: this.settings.doNotDisturb,
+      speaking: this.host.speaking(),
+      desktop: this.settings.desktop && desktopPermission() === "granted",
+    };
+  }
+
+  private save(): void {
+    try {
+      localStorage.setItem(SETTINGS_KEY, serializeSettings(this.settings));
+    } catch {
+      /* private mode: only until reload */
+    }
   }
 }

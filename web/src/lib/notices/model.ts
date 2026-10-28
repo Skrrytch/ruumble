@@ -38,12 +38,15 @@ export interface Settings {
   desktop: boolean;
   /** show the text of a message in a desktop notification instead of just who it is from */
   desktopText: boolean;
+  /** caps every level at "quiet" except the nudge (switched on by hand in the user menu, remembered per browser) */
+  doNotDisturb: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   levels: { entered: "visible", nudge: "loud", board: "quiet", parcel: "visible", "parcel-to-me": "loud", message: "loud" },
   desktop: false,
   desktopText: false,
+  doNotDisturb: false,
 };
 
 export const BUNDLE_MS = 10_000;
@@ -125,7 +128,7 @@ export function parseSettings(raw: string | null): Settings {
     return fallback;
   }
   if (typeof data !== "object" || data === null) return fallback;
-  const { levels, desktop, desktopText } = data as Record<string, unknown>;
+  const { levels, desktop, desktopText, doNotDisturb } = data as Record<string, unknown>;
   if (typeof levels === "object" && levels !== null) {
     for (const kind of NOTICE_KINDS) {
       const level = (levels as Record<string, unknown>)[kind];
@@ -134,5 +137,6 @@ export function parseSettings(raw: string | null): Settings {
   }
   if (typeof desktop === "boolean") fallback.desktop = desktop;
   if (typeof desktopText === "boolean") fallback.desktopText = desktopText;
+  if (typeof doNotDisturb === "boolean") fallback.doNotDisturb = doNotDisturb;
   return fallback;
 }

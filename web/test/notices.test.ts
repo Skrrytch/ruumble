@@ -128,7 +128,7 @@ describe("title and badge", () => {
 
 describe("settings", () => {
   it("round-trips", () => {
-    const changed: Settings = { levels: { ...DEFAULT_SETTINGS.levels, board: "off", entered: "loud" }, desktop: true, desktopText: true };
+    const changed: Settings = { levels: { ...DEFAULT_SETTINGS.levels, board: "off", entered: "loud" }, desktop: true, desktopText: true, doNotDisturb: true };
     expect(parseSettings(serializeSettings(changed))).toEqual(changed);
   });
 
@@ -137,7 +137,7 @@ describe("settings", () => {
     expect(parseSettings("{nope")).toEqual(DEFAULT_SETTINGS);
     expect(parseSettings("42")).toEqual(DEFAULT_SETTINGS);
     expect(parseSettings("null")).toEqual(DEFAULT_SETTINGS);
-    expect(parseSettings(JSON.stringify({ levels: "x", desktop: "yes", desktopText: 1 }))).toEqual(DEFAULT_SETTINGS);
+    expect(parseSettings(JSON.stringify({ levels: "x", desktop: "yes", desktopText: 1, doNotDisturb: "no" }))).toEqual(DEFAULT_SETTINGS);
   });
 
   it("keeps the valid parts and defaults the invalid ones", () => {

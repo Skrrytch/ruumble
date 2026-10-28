@@ -10,7 +10,6 @@ import { t } from "./i18n/index.svelte.ts";
 import type { BoardSide } from "./model/float.ts";
 import { avatarUrlOf, buildBuilding, homeFloor, type BuildOptions, type Building, type Floor } from "./model/building.ts";
 import { NoticeCenter } from "./notices/center.svelte.ts";
-import { playNudgeSound, readNudgeSound, storeNudgeSound } from "./nudge.ts";
 import { ChatState } from "./chat/state.svelte.ts";
 import { TubeState } from "./tube/state.svelte.ts";
 
@@ -110,8 +109,8 @@ export class RuumbleState {
   status = $state<StatusView | null>(null);
   statusBusy = $state(false);
   statusError = $state<BoardErrorCode | null>(null);
-  /** play a sound in this browser when someone nudges the own user (ADR-0020), remembered per browser */
-  nudgeSound = $state(readNudgeSound());
+  /** the dialog for the notices of this browser (ADR-0023) */
+  noticesOpen = $state(false);
   /** the board floats over the floor plan (remembered per browser); its side is chosen by the floor plan (model/float.ts) */
   boardFloating = $state(readFlag(FLOATING_KEY));
   boardSide = $state<BoardSide>("right");
@@ -169,8 +168,8 @@ export class RuumbleState {
     this.notices = new NoticeCenter({ speaking: () => (this.me ? this.talking[this.me.session] === true : false) });
     this.chat = new ChatState(adapter, {
       notice: (text) => this.setNotice({ text }),
-      arrived: (name, seen) => {
-        if (!seen || !this.notices.foreground()) this.notices.notify("message", name);
+      arrived: (name, seen, text) => {
+        if (!seen || !this.notices.foreground()) this.notices.notify("message", name, text);
       },
     });
     this.tube = new TubeState(adapter, {
@@ -210,7 +209,6 @@ export class RuumbleState {
       },
       nudge: (_session, name) => {
         this.setNotice({ text: t().nudge.received(name) }, NUDGE_NOTICE_MS);
-        if (this.nudgeSound) playNudgeSound();
         this.notices.notify("nudge", name);
       },
       chat: (message) => this.chat.receive(message),
@@ -282,11 +280,6 @@ export class RuumbleState {
   async nudge(user: { session: number; name: string }): Promise<void> {
     const r = await this.adapter.nudge(user.session);
     this.setNotice({ text: r.ok ? t().nudge.sent(user.name) : nudgeErrorText(r.error, user.name) });
-  }
-
-  toggleNudgeSound(): void {
-    this.nudgeSound = !this.nudgeSound;
-    storeNudgeSound(this.nudgeSound);
   }
 
   // ---------------------------------------------------------------- Board

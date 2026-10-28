@@ -34,14 +34,22 @@ test.describe("Nudge", () => {
     await expect(page.getByRole("alert")).toHaveText(/Clara was nudged\./);
   });
 
-  test("being nudged: a notice; the sound can be switched off in the user menu and stays off", async ({ page }) => {
+  test("being nudged: a notice; the nudge can be switched off in the notices dialog and stays off", async ({ page }) => {
     await page.getByRole("button", { name: "Someone nudges me" }).click();
     await expect(page.getByRole("alert")).toHaveText(/Clara nudged you and would like your attention\./);
-    const sound = (await userMenu(page)).getByRole("button", { name: /Sound when nudged/ });
-    await expect(sound).toHaveAttribute("aria-pressed", "true");
-    await sound.click();
-    await expect(sound).toHaveAttribute("aria-pressed", "false");
+    await (await userMenu(page)).getByRole("button", { name: "Notices …" }).click();
+    const level = page.getByRole("dialog", { name: "Notices" }).getByLabel("You are nudged");
+    await expect(level).toHaveValue("loud");
+    await level.selectOption("off");
     await page.reload();
-    await expect((await userMenu(page)).getByRole("button", { name: /Sound when nudged/ })).toHaveAttribute("aria-pressed", "false");
+    await (await userMenu(page)).getByRole("button", { name: "Notices …" }).click();
+    await expect(page.getByRole("dialog", { name: "Notices" }).getByLabel("You are nudged")).toHaveValue("off");
+  });
+
+  test("do not disturb is a switch in the user menu", async ({ page }) => {
+    const dnd = (await userMenu(page)).getByRole("button", { name: /Do not disturb/ });
+    await expect(dnd).toHaveAttribute("aria-pressed", "false");
+    await dnd.click();
+    await expect(dnd).toHaveAttribute("aria-pressed", "true");
   });
 });

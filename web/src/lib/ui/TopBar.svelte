@@ -248,9 +248,12 @@
           <button type="button" class="item" aria-pressed={theme() === "dark"} onclick={() => setTheme(theme() === "dark" ? "light" : "dark")}>
             <Moon size={18} aria-hidden="true" />{t().core.darkMode}<span class="switch">{theme() === "dark" ? t().common.on : t().common.off}</span>
           </button>
-          <!-- a sound when someone nudges you, for this browser (ADR-0020); the notice shows either way -->
-          <button type="button" class="item" aria-pressed={app.nudgeSound} onclick={() => app.toggleNudgeSound()}>
-            {#if app.nudgeSound}<Bell size={18} aria-hidden="true" />{:else}<BellOff size={18} aria-hidden="true" />{/if}{t().nudge.sound}<span class="switch">{app.nudgeSound ? t().common.on : t().common.off}</span>
+          <!-- what Ruumble does when something happens in the room, for this browser (ADR-0023) -->
+          <button type="button" class="item" onclick={() => { open = null; app.noticesOpen = true; }}>
+            <Bell size={18} aria-hidden="true" />{t().notices.menu}
+          </button>
+          <button type="button" class="item" aria-pressed={app.notices.settings.doNotDisturb} onclick={() => app.notices.setDoNotDisturb(!app.notices.settings.doNotDisturb)}>
+            <BellOff size={18} aria-hidden="true" />{t().notices.doNotDisturb}<span class="switch">{app.notices.settings.doNotDisturb ? t().common.on : t().common.off}</span>
           </button>
           <!-- the keyboard shortcuts, also with ? -->
           <button type="button" class="item" onclick={() => { open = null; app.helpOpen = true; }}>

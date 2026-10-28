@@ -139,6 +139,25 @@ export const en: Messages = {
     versions: (service, plugin) => `Ruumble service ${service}` + (plugin ? ` · plugin ${plugin}` : ""),
   },
   notices: {
+    menu: "Notices …",
+    doNotDisturb: "Do not disturb",
+    title: "Notices",
+    intro: "How Ruumble draws your attention to what happens in the room. Applies to this browser only.",
+    doNotDisturbHint: "Do not disturb: everything stays quiet, only a nudge still rings through.",
+    kinds: {
+      entered: "Someone enters the room",
+      nudge: "You are nudged",
+      board: "New post on the board",
+      parcel: "Tube mail to others in the room",
+      "parcel-to-me": "Tube mail to you",
+      message: "Message to you",
+    },
+    levels: { off: "Off", quiet: "Count only", visible: "Short cue in the room", loud: "Notice with sound" },
+    levelHelp: "Count: a number in the tab title, on the tab icon and on the app icon while the window is not in front.",
+    desktop: "Desktop notifications while the window is not in front",
+    desktopText: "Show the text of a message in the notification (otherwise only who it is from)",
+    desktopDenied: "The browser blocks notifications for this site. Allow them in the site settings.",
+    desktopUnsupported: "This browser cannot show desktop notifications.",
     joinFailed: (name) => `Cannot move to “${name}”.`,
     actionFailed: "Action not possible.",
     /** the tab title flashes with this text while the window is in the background (ADR-0023) */
@@ -462,7 +481,6 @@ export const en: Messages = {
     notDeaf: (name: string) => `${name} hears you again – just talk.`,
     notInRoom: (name: string) => `${name} is no longer in your room.`,
     unreachable: (name: string) => `${name} cannot be reached right now.`,
-    sound: "Sound when nudged",
   },
   chat: {
     title: "A quiet word",

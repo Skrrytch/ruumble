@@ -137,6 +137,25 @@ export const de = {
     versions: (service: string, plugin: string | null) => `Ruumble-Dienst ${service}` + (plugin ? ` · Plugin ${plugin}` : ""),
   },
   notices: {
+    menu: "Hinweise …",
+    doNotDisturb: "Nicht stören",
+    title: "Hinweise",
+    intro: "Wie Ruumble auf Ereignisse im Raum aufmerksam macht. Gilt nur für diesen Browser.",
+    doNotDisturbHint: "Nicht stören: alles bleibt leise, nur ein Anstupser klingelt durch.",
+    kinds: {
+      entered: "Jemand betritt den Raum",
+      nudge: "Du wirst angestupst",
+      board: "Neuer Beitrag im Board",
+      parcel: "Rohrpost an andere im Raum",
+      "parcel-to-me": "Rohrpost an dich",
+      message: "Nachricht an dich",
+    },
+    levels: { off: "Aus", quiet: "Nur zählen", visible: "Kurzer Hinweis im Raum", loud: "Hinweis mit Ton" },
+    levelHelp: "Zählen: Zahl im Tab-Titel, am Tab-Symbol und am App-Symbol, solange das Fenster nicht vorne ist.",
+    desktop: "Desktop-Benachrichtigungen, wenn das Fenster nicht vorne ist",
+    desktopText: "Nachrichtentext in der Benachrichtigung zeigen (sonst nur, von wem sie ist)",
+    desktopDenied: "Der Browser blockiert Benachrichtigungen für diese Seite. Erlaube sie in den Seiteneinstellungen.",
+    desktopUnsupported: "Dieser Browser kann keine Desktop-Benachrichtigungen zeigen.",
     joinFailed: (name: string) => `Wechsel nach „${name}“ nicht möglich.`,
     actionFailed: "Aktion nicht möglich.",
     /** the tab title flashes with this text while the window is in the background (ADR-0023) */
@@ -492,8 +511,6 @@ export const de = {
     notDeaf: (name: string) => `${name} hört dich wieder – sprich einfach.`,
     notInRoom: (name: string) => `${name} ist nicht mehr in deinem Raum.`,
     unreachable: (name: string) => `${name} ist gerade nicht erreichbar.`,
-    /** user menu: play a sound in this browser when someone nudges you */
-    sound: "Ton beim Anstupsen",
   },
   /** "Unter vier Augen", the direct chat (ADR-0021): private messages between two people, wherever they are in the building */
   chat: {

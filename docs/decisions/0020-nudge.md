@@ -19,12 +19,14 @@ Someone who has deafened themselves in Mumble hears nothing: no voice, and no Mu
 
 Current state (2026-10-20): the card is now the person card of every person with Ruumble (ADR-0021); it shows "Nudge" only under the rules above, next to "Send tube mail".
 
+Current state (2026-10-28): the sound and the switch "Sound when nudged" are part of the notices (ADR-0023): the nudge is one kind of notice with a level, set in the notices dialog (an old "off" carries over). The nudge also rings through "do not disturb" and, where the browser may, shows a desktop notification.
+
 ## Rejected options
 - **A sound from the plugin (`playSample`).** Available since plugin API 1.0 (1.2 only adds a volume), and Mumble's audio output does not check for deafen, so it would probably be heard. It needs a plugin release, a sound file in the bundle and a live test; the browser sound needs none of it. Kept as the next step if people without an open Ruumble tab should hear a nudge.
 - **Nudging from anywhere in the building.** Unwanted: a nudge is the tap on the shoulder of someone next to you, not a call across the building.
 - **Nudging people who are not deafened.** They hear you; talking is the way.
 - **Double click on the avatar.** The avatar sits in the room's button: the first click would move into that room, and people behind "+N" cannot be clicked at all.
-- **Browser notifications (Notification API).** Need a permission prompt; the Mumble log line already gives a desktop notification where the user has enabled it. Possible later.
+- **Browser notifications (Notification API).** Need a permission prompt (taken up later by ADR-0023); the Mumble log line already gives a desktop notification where the user has enabled it. Possible later.
 - **"Do not disturb".** Not now; a status already says it in words.
 
 ## Consequences

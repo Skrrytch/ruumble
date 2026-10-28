@@ -19,6 +19,7 @@
   import MaintenanceDialog from "./lib/ui/MaintenanceDialog.svelte";
   import BuildingOverview from "./lib/ui/overview/BuildingOverview.svelte";
   import ShortcutsDialog from "./lib/ui/ShortcutsDialog.svelte";
+  import NoticesDialog from "./lib/ui/NoticesDialog.svelte";
   import StatusDialog from "./lib/ui/StatusDialog.svelte";
   import ChatPanel from "./lib/ui/chat/ChatPanel.svelte";
   import ChatToast from "./lib/ui/chat/ChatToast.svelte";
@@ -159,6 +160,7 @@
     {#if app.keysOpen}<KeysDialog {app} />{/if}
     {#if app.maintenanceOpen}<MaintenanceDialog {app} />{/if}
     {#if app.statusOpen}<StatusDialog {app} />{/if}
+    {#if app.noticesOpen}<NoticesDialog {app} />{/if}
     {#if app.helpOpen}<ShortcutsDialog onclose={() => (app.helpOpen = false)} />{/if}
     {#if app.overviewOpen && building}<BuildingOverview {app} {building} />{/if}
     {#if app.me}

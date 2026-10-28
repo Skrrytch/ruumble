@@ -1,10 +1,8 @@
 /**
  * The sound of a nudge (ADR-0020): two soft tones made with WebAudio, no file. Browsers play sound only after the page
  * was used once, so the first click or key press in the page unlocks it; after that a nudge is heard even while the
- * tab is in the background. Whether to play it is a setting of this browser (user menu).
+ * tab is in the background. Whether it plays is decided by the notice centre (ADR-0023).
  */
-const SOUND_KEY = "ruumble.nudgeSound";
-
 let context: AudioContext | null = null;
 
 /** create (and resume) the audio context with the first click or key press; returns the cleanup */
@@ -43,23 +41,5 @@ export function playNudgeSound(): void {
     osc.connect(gain).connect(context.destination);
     osc.start(at);
     osc.stop(at + 0.65);
-  }
-}
-
-/** play the sound when nudged (default) or not, remembered in this browser */
-export function readNudgeSound(): boolean {
-  try {
-    return localStorage.getItem(SOUND_KEY) !== "off";
-  } catch {
-    return true;
-  }
-}
-
-export function storeNudgeSound(on: boolean): void {
-  try {
-    if (on) localStorage.removeItem(SOUND_KEY);
-    else localStorage.setItem(SOUND_KEY, "off");
-  } catch {
-    /* private mode: only until reload */
   }
 }
