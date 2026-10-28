@@ -14,7 +14,7 @@
     "build": "node scripts/gen-ice.mjs && esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/main.mjs --external:ice --external:better-sqlite3 --external:fastify --external:@fastify/* --banner:js=\"import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);\""
   },
   "dependencies": {
-    "@fastify/static": "10.1.6",
+    "@fastify/static": "10.1.7",
     "@fastify/websocket": "11.3.4",
     "@ruumble/protocol": "workspace:*",
     "better-sqlite3": "13.0.3",
