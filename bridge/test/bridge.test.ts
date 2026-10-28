@@ -108,8 +108,8 @@ describe("Pairing with a code (ADR-0012)", () => {
   });
 
   it("notice text in the plugin's language, code in two groups", () => {
-    expect(pairingCodeText("482913", "en")).toBe("Pairing code for a browser: 482 913 (valid for 5 minutes). Ignore it if you did not request it.");
-    expect(pairingCodeText("482913")).toContain("Kopplungscode für einen Browser: 482 913");
+    expect(pairingCodeText("482913", "en")).toBe("Pairing code for a browser: 482913 (valid for 5 minutes). Ignore it if you did not request it.");
+    expect(pairingCodeText("482913")).toContain("Kopplungscode für einen Browser: 482913");
   });
 });
 
@@ -291,7 +291,7 @@ describe("Hub: pairing with a code", () => {
     const r = hub.requestPairing("::ffff:203.0.113.5");
     if (typeof r === "string") throw new Error(r);
     const text = anna.last("notify")?.text ?? "";
-    const code = /(\d{3}) (\d{3})/.exec(text)!.slice(1).join("");
+    const code = /\b(\d{6})\b/.exec(text)![1]!;
     expect(pairing.certHashOf(pairing.confirmCode(r.request, code))).toBe(A);
     // Mumble's address of Anna is 10.0.0.7 (fake)
     const again = hub.requestPairing("10.0.0.7");

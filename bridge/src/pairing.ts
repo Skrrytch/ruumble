@@ -76,9 +76,9 @@ export function newKeyText(device: string, created: number, now: number, locale:
   return KEY_TEXT[locale](device, date);
 }
 
-/** "482913" → "482 913" (easier to read in the log; the page accepts both) */
+/** the code without spaces: a double click in the Mumble log selects all of it; the page accepts it with or without them */
 export function pairingCodeText(code: string, locale: Locale = "de"): string {
-  return CODE_TEXT[locale](`${code.slice(0, 3)} ${code.slice(3)}`);
+  return CODE_TEXT[locale](code);
 }
 
 export class Pairing {
